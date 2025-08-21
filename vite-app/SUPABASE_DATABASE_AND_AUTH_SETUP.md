@@ -16,17 +16,104 @@
 ## 1. Supabase Database Configuration
 
 ### Tables Created
+
 - **user_profiles**
-  - user_id (uuid, primary key)
-  - name (text)
-  - email (text)
-  - phone (text)
-  - address (text)
-  - city (text)
-  - postal_code (text)
+   - id (uuid, primary key)
+   - user_id (uuid, unique, references auth)
+   - name (text)
+   - email (text)
+   - phone (text)
+   - address (text)
+   - city (text)
+   - province (text)
+   - postal_code (text)
+   - created_at (timestamp with time zone)
+
 - **requests**
+   - id (uuid, primary key)
+   - created_at (timestamp with time zone)
+   - is_emergency (boolean)
+   - customer_name (text)
+   - service_address (text)
+   - contact_info (text)
+   - problem_category (text)
+   - problem_location (text)
+   - problem_description (text)
+   - property_type (text)
+   - is_homeowner (boolean)
+   - preferred_timing (text)
+   - additional_notes (text)
+
 - **quotes**
+   - id (uuid, primary key)
+   - user_id (uuid)
+   - request_id (uuid, foreign key → requests.id)
+   - quote_amount (numeric)
+   - status (text)
+   - created_at (timestamp with time zone)
+
 - **invoices**
+   - id (uuid, primary key)
+   - user_id (uuid)
+   - quote_id (uuid, foreign key → quotes.id)
+   - amount_due (numeric)
+   - due_date (timestamp with time zone)
+   - status (text)
+   - created_at (timestamp with time zone)
+
+- **quote_attachments**
+   - id (uuid, primary key)
+   - request_id (uuid, foreign key → requests.id)
+   - file_url (text)
+   - file_name (text)
+   - mime_type (text)
+   - uploaded_at (timestamp with time zone)
+### Row Level Security (RLS) Policies
+
+- **requests**
+   - Users can delete their own requests (DELETE, authenticated)
+   - Users can update their own requests (UPDATE, authenticated)
+   - Users can insert requests (INSERT, authenticated)
+   - Users can view all requests (SELECT, authenticated)
+   - All policies are permissive and allow authenticated users to perform these actions.
+
+- **user_profiles**
+   - Allow authenticated users to select their own profile
+      - Expression: `user_id = auth.uid()`
+      - Action: SELECT
+      - Enabled: Yes
+
+### Supabase Storage Bucket
+**PlumbingPoCBucket**
+   - Used for storing quote attachments (images, PDFs, etc.)
+   - Allowed MIME types: image/jpeg, image/png, application/pdf
+   - Files are linked to quote requests via the `quote_attachments` table
+
+#### Example Storage RLS Policies (GUI-generated syntax)
+
+```
+CREATE POLICY "Enable insert for authenticated users only" ON "storage"."objects"
+AS PERMISSIVE FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Enable select for authenticated users only" ON "storage"."objects"
+AS PERMISSIVE FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Enable update for authenticated users only" ON "storage"."objects"
+AS PERMISSIVE FOR UPDATE
+TO authenticated
+USING (true);
+
+CREATE POLICY "Enable delete for authenticated users only" ON "storage"."objects"
+AS PERMISSIVE FOR DELETE
+TO authenticated
+USING (true);
+```
+
+You can further restrict access by adding conditions (e.g., bucket_id, owner) as needed in the GUI.
 
 ### Row Level Security (RLS) Policies
 - **user_profiles**: Allow authenticated users to select their own profile
