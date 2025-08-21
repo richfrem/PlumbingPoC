@@ -1,0 +1,22 @@
+{
+  "name": "plumbingpoc-vite-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start:api": "node api/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.55.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "lucide-react": "^0.540.0",
+    "typescript": "^5.9.2",
+    "vite": "^5.4.2"
+  }
+}
