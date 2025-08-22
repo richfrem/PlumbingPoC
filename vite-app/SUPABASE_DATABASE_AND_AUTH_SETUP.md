@@ -193,16 +193,62 @@ URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_R
 
 ---
 
-### SQL Statements for Supabase Setup
+### supabase cli
+-- npx supabase login
+-- npx supabase link
 
-```sql
--- Remove columns from requests table
-ALTER TABLE requests DROP COLUMN IF EXISTS problem_location;
-ALTER TABLE requests DROP COLUMN IF EXISTS category;
+### install supabase on macos
+brew install supabase/tap/supabase
+supabase --version
 
--- Re-add columns to requests table (if needed)
-ALTER TABLE requests ADD COLUMN IF NOT EXISTS problem_location text;
-ALTER TABLE requests ADD COLUMN IF NOT EXISTS category text;
-```
+### supabase database dump
+export PGPASSWORD='YOUR_PASSWORD'
+pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
+
+### Query 1: Table & Column Schema
+SELECT 
+    c.table_schema,
+    c.table_name,
+    c.column_name,
+    c.data_type,
+    c.is_nullable,
+    c.column_default
+FROM 
+    information_schema.columns c
+WHERE 
+    c.table_schema = 'public'
+ORDER BY 
+    c.table_name, 
+    c.ordinal_position;
+
+### Query 2: Row Level Security (RLS) Policies
+SELECT
+    p.schemaname AS schema_name,
+    p.tablename AS table_name,
+    p.policyname AS policy_name,
+    p.permissive,
+    p.cmd AS command_type,
+    p.qual AS policy_expression,
+    p.with_check AS with_check_expression
+FROM
+    pg_policies p
+WHERE
+    p.schemaname = 'public'
+ORDER BY
+    p.tablename,
+    p.policyname;
+
+### Query 3: Storage Buckets & Policies
+
+SELECT 
+    id,
+    name,
+    public,
+    avif_autodetection,
+    file_size_limit,
+    allowed_mime_types
+FROM 
+    storage.buckets;
+
 
 _Last updated: August 21, 2025_

@@ -1,40 +1,69 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { Session, User } from '@supabase/supabase-js';
+
+// Define a more specific type for your profile data
+export interface UserProfile {
+  user_id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  role?: string;
+}
 
 interface AuthContextType {
-  user: any;
-  profile: any;
+  user: User | null;
+  profile: UserProfile | null;
   loading: boolean;
   profileIncomplete: boolean;
   refreshProfile: () => void;
-  signIn: () => void;
   signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
 
   useEffect(() => {
-    const session = supabase.auth.getSession();
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-    setLoading(false);
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchProfile = async () => {
-    if (user) {
-      const { data } = await supabase
+  const fetchProfile = async (currentUser: User | null) => {
+    if (currentUser) {
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error fetching profile:', error);
+      }
+
       setProfile(data);
+      // A profile is incomplete if it doesn't exist, or if the required 'name' field is missing.
       setProfileIncomplete(!data || !data.name);
     } else {
       setProfile(null);
@@ -43,13 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    fetchProfile();
-    // eslint-disable-next-line
+    fetchProfile(user);
   }, [user]);
-
-  const signIn = () => {
-    // Open sign-in modal (handled in AuthModal)
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -57,9 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   };
 
-  const refreshProfile = () => fetchProfile();
+  const refreshProfile = () => fetchProfile(user);
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, profileIncomplete, refreshProfile, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileIncomplete, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -67,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

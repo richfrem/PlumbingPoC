@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabaseClient";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
 
@@ -15,15 +16,16 @@ const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCou
 type ModalStatus = 'ASKING_EMERGENCY' | 'SELECTING_CATEGORY' | 'INITIAL_QUESTIONS' | 'AWAITING_GPT' | 'FOLLOW_UP_QUESTIONS' | 'SUMMARY' | 'SUBMITTED';
 
 const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
   const [chatHistory, setChatHistory] = useState<Array<{ sender: string; message: string }>>([]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isEmergency, setIsEmergency] = useState<boolean | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // ✅ UPDATED: Added `preferred_timing` to the generic questions list.
   const GENERIC_QUESTIONS = [
     { key: 'property_type', question: 'What is the property type?', choices: ['Residential', 'Apartment', 'Commercial', 'Other'] },
     { key: 'is_homeowner', question: 'Are you the homeowner?', choices: ['Yes', 'No'] },
@@ -50,6 +52,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setChatHistory([]);
     setStatus('ASKING_EMERGENCY');
     setIsEmergency(null);
+    setSelectedFile(null);
     setUserInput("");
     setLoading(false);
     setInitialQuestions([]);
@@ -58,6 +61,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setAllAnswers([]);
     setCurrentQuestionIndex(0);
     setSelectedCategory(null);
+    setErrorMessage("");
   };
 
   useEffect(() => {
@@ -70,7 +74,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setIsEmergency(choice);
     setChatHistory([
       { sender: "agent", message: "Is this an emergency?" },
-      { sender: "user", message: choice ? "Yes, it is an emergency." : "No, it's not an emergency." },
+      { sender: "user", message: choice ? "Yes" : "No" },
       { sender: "agent", message: "Thank you. What would you like a quote for?" }
     ]);
     setStatus('SELECTING_CATEGORY');
@@ -78,16 +82,9 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
   const handleSelectCategory = (category: ServiceQuoteCategory) => {
     setSelectedCategory(category);
-    const combinedQuestions = [
-      ...GENERIC_QUESTIONS.map(q => q.question),
-      ...category.questions,
-    ];
+    const combinedQuestions = [...GENERIC_QUESTIONS.map(q => q.question), ...category.questions];
     setInitialQuestions(combinedQuestions);
-    setChatHistory((prev) => [
-      ...prev,
-      { sender: "user", message: category.label },
-      { sender: "agent", message: combinedQuestions[0] ?? "" },
-    ]);
+    setChatHistory((prev) => [...prev, { sender: "user", message: category.label }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
     setCurrentQuestionIndex(0);
     setStatus('INITIAL_QUESTIONS');
   };
@@ -104,31 +101,28 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
     setUserInput("");
     setLoading(true);
+
     if (status === 'INITIAL_QUESTIONS') {
       const isLastInitialQuestion = currentQuestionIndex === initialQuestions.length - 1;
       if (isLastInitialQuestion) {
         setStatus('AWAITING_GPT');
-        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. Reviewing your answers..." }]);
+        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers to see if I need any more details..." }]);
         try {
-          const response = await fetch("/api/request", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ clarifyingAnswers: updatedRawAnswers, category: selectedCategory?.key }),
-          });
+          const payload = {
+            clarifyingAnswers: updatedRawAnswers,
+            category: selectedCategory?.key,
+            problem_description: genericAnswers['problem_description'] || ''
+          };
+          const response = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
           const data = await response.json();
           if (data.additionalQuestions && data.additionalQuestions.length > 0) {
             setFollowUpQuestions(data.additionalQuestions);
             setCurrentQuestionIndex(0);
             setStatus('FOLLOW_UP_QUESTIONS');
             setChatHistory((prev) => [...prev, { sender: "agent", message: data.additionalQuestions[0] ?? "" }]);
-          } else {
-            setStatus('SUMMARY');
-          }
-        } catch (err) {
-          setStatus('SUMMARY');
-        } finally {
-          setLoading(false);
-        }
+          } else { setStatus('SUMMARY'); }
+        } catch (err) { console.error("GPT request failed, proceeding to summary.", err); setStatus('SUMMARY'); } 
+        finally { setLoading(false); }
       } else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
@@ -137,9 +131,8 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       }
     } else if (status === 'FOLLOW_UP_QUESTIONS') {
       const isLastFollowUpQuestion = currentQuestionIndex === followUpQuestions.length - 1;
-      if (isLastFollowUpQuestion) {
-        setStatus('SUMMARY');
-      } else {
+      if (isLastFollowUpQuestion) { setStatus('SUMMARY'); } 
+      else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
         setChatHistory((prev) => [...prev, { sender: "agent", message: followUpQuestions[nextIdx] ?? "" }]);
@@ -149,24 +142,68 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   };
   
   const handleSubmitQuote = async () => {
-    if (!profile || !selectedCategory) return;
+    if (!profile || !selectedCategory || !user) return;
     setLoading(true);
+    setErrorMessage("");
+
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            throw new Error("You are not signed in. Please sign in again.");
+        }
+        const token = session.access_token;
+
+        const allQuestions = [...initialQuestions, ...followUpQuestions];
+        const structuredAnswers = allQuestions.map((question, index) => ({
+            question: question,
+            answer: allAnswers[index] || '(No answer provided)'
+        }));
+
         const payload = {
-            clarifyingAnswers: allAnswers,
+            clarifyingAnswers: structuredAnswers,
             contactInfo: profile,
             category: selectedCategory.key,
             isEmergency: isEmergency,
             ...genericAnswers
         };
-        await fetch("/api/submit-quote", {
+        
+        const response = await fetch("/api/submit-quote", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify(payload),
         });
+
+        const result = await response.json();
+        if (!response.ok) { throw new Error(result.error || 'Failed to submit quote data.'); }
+        const newRequestId = result.request?.id;
+
+        if (selectedFile && newRequestId) {
+            const formData = new FormData();
+            formData.append('attachment', selectedFile);
+            formData.append('request_id', newRequestId);
+            
+            const uploadResponse = await fetch("/api/upload-attachment", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                const uploadResult = await uploadResponse.json();
+                console.error('File upload failed, but the quote request was created.');
+                throw new Error(uploadResult.error || 'File upload failed after quote submission.');
+            }
+        }
+
         setStatus('SUBMITTED');
-    } catch (err) {
-        setChatHistory((prev) => [...prev, { sender: "agent", message: "Sorry, there was an error submitting your quote." }]);
+    } catch (err: any) {
+        console.error("Submission Error:", err);
+        setErrorMessage("Sorry, we couldn't submit your request. Please check your connection and try again, or call us directly for immediate assistance.");
     }
     setLoading(false);
   }
@@ -180,12 +217,8 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             <Box sx={{ textAlign: 'center', py: 2 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Is this an emergency?</Typography>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                <Button variant="contained" color="error" size="large" onClick={() => handleEmergencyChoice(true)}>
-                  Yes
-                </Button>
-                <Button variant="contained" color="primary" size="large" onClick={() => handleEmergencyChoice(false)}>
-                  No
-                </Button>
+                <Button variant="contained" color="error" size="large" onClick={() => handleEmergencyChoice(true)}>Yes</Button>
+                <Button variant="contained" color="primary" size="large" onClick={() => handleEmergencyChoice(false)}>No</Button>
               </Box>
             </Box>
           );
@@ -194,11 +227,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontWeight: 500, marginBottom: 8 }}>Select a service type:</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {SERVICE_QUOTE_CATEGORIES.map((cat) => (
-                  <Button key={cat.key} variant="contained" onClick={() => handleSelectCategory(cat)}>
-                    {cat.label}
-                  </Button>
-                ))}
+                {SERVICE_QUOTE_CATEGORIES.map((cat) => ( <Button key={cat.key} variant="contained" onClick={() => handleSelectCategory(cat)}>{cat.label}</Button> ))}
               </div>
             </div>
           );
@@ -212,30 +241,15 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 inputControl = (
                     <FormControl fullWidth sx={{ mt: 2 }}>
                         <InputLabel>{currentGenericQuestion.question}</InputLabel>
-                        <Select
-                            value={userInput}
-                            label={currentGenericQuestion.question}
-                            onChange={e => setUserInput(e.target.value)}
-                        >
-                            {currentGenericQuestion.choices.map(choice => (
-                                <MenuItem key={choice} value={choice}>{choice}</MenuItem>
-                            ))}
+                        <Select value={userInput} label={currentGenericQuestion.question} onChange={e => setUserInput(e.target.value)}>
+                            {currentGenericQuestion.choices.map(choice => ( <MenuItem key={choice} value={choice}>{choice}</MenuItem> ))}
                         </Select>
                     </FormControl>
                 );
-            } 
-            else {
+            } else {
                 const isTextarea = currentGenericQuestion?.textarea === true;
                 inputControl = (
-                    <TextField
-                        value={userInput}
-                        onChange={e => setUserInput(e.target.value)}
-                        placeholder="Type your answer..."
-                        fullWidth
-                        multiline={isTextarea}
-                        rows={isTextarea ? 3 : 1}
-                        sx={{ mt: 2 }}
-                    />
+                    <TextField value={userInput} onChange={e => setUserInput(e.target.value)} placeholder="Type your answer..." fullWidth multiline={isTextarea} rows={isTextarea ? 3 : 1} sx={{ mt: 2 }} />
                 );
             }
 
@@ -243,73 +257,59 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
                     {inputControl}
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button type="submit" variant="contained" color="primary" disabled={loading || userInput.trim() === ''}>
-                            {loading ? '...' : 'Send'}
-                        </Button>
+                        <Button type="submit" variant="contained" color="primary" disabled={loading || userInput.trim() === ''}>{loading ? '...' : 'Send'}</Button>
                     </Box>
                 </form>
             );
         }
         case 'SUMMARY':
           const allQuestions = [...initialQuestions, ...followUpQuestions];
+          const summaryAnswers = allQuestions.map((question, index) => ({
+            question,
+            answer: allAnswers[index] || '(No answer provided)'
+          }));
           return (
             <>
               <div style={{ flex: '1 1 auto', overflowY: 'auto', paddingRight: '8px', marginRight: '-8px' }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>Service Type: {selectedCategory?.label}</div>
-                { isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1 }}>EMERGENCY REQUEST</Typography> }
+                {isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1 }}>EMERGENCY REQUEST</Typography>}
                 <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
-                    {allQuestions.map((q, i) => (
-                      <li key={i} style={{ marginBottom: 6 }}>
-                        <div style={{ fontWeight: 500 }}>{q}</div>
-                        <div style={{ color: '#333', marginLeft: 4 }}>{allAnswers[i] || '(No answer)'}</div>
-                      </li>
-                    ))}
+                    {summaryAnswers.map((item, i) => ( <li key={i} style={{ marginBottom: 6 }}> <div style={{ fontWeight: 500 }}>{item.question}</div> <div style={{ color: '#333', marginLeft: 4 }}>{item.answer}</div> </li> ))}
                 </ul>
-                {profile && (
-                  <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div>
-                    <div><b>Name:</b> {profile.name}</div>
-                    <div><b>Email:</b> {profile.email}</div>
-                    <div><b>Phone:</b> {profile.phone}</div>
-                    <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div>
-                  </div>
-                )}
+                {profile && ( <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}> <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </div> )}
+                <div style={{ marginTop: 16, borderTop: '1px solid #eee', paddingTop: '16px' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Upload Photos (Optional)</Typography>
+                  <input type="file" accept="image/jpeg, image/png, application/pdf" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} style={{ width: '100%' }} />
+                  {selectedFile && <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>Selected: {selectedFile.name}</Typography>}
+                </div>
               </div>
+              {errorMessage && (
+                  <div style={{ marginTop: 16, padding: 12, background: '#ffebee', color: '#c62828', borderRadius: 6, border: '1px solid #ef9a9a' }}>
+                      <p style={{ fontWeight: 600, marginBottom: 4 }}>Submission Failed</p>
+                      <p>{errorMessage}</p>
+                  </div>
+              )}
               <div style={{ flexShrink: 0, paddingTop: '16px', borderTop: '1px solid #eee' }}>
-                <Button variant="contained" fullWidth onClick={handleSubmitQuote} disabled={loading}>
-                  {loading ? 'Submitting...' : 'Confirm & Submit Request'}
-                </Button>
+                <Button variant="contained" fullWidth onClick={handleSubmitQuote} disabled={loading}>{loading ? 'Submitting...' : 'Confirm & Submit Request'}</Button>
               </div>
             </>
           );
-          case 'SUBMITTED':
-              return ( <div style={{ textAlign: 'center', fontWeight: 500 }}> Thank you! Your quote request has been submitted. We will get back to you soon. </div> );
+        case 'SUBMITTED':
+            return ( <div style={{ textAlign: 'center', fontWeight: 500 }}> Thank you! Your quote request has been submitted. We will get back to you soon. </div> );
         default: return null;
       }
   }
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{
-          background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-          maxWidth: 400, width: '100%', padding: 24, position: 'relative',
-          display: 'flex', flexDirection: 'column', maxHeight: '90vh'
-      }}>
+      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 400, width: '100%', padding: 24, position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <button style={{ position: 'absolute', top: 16, right: 16, fontSize: 22, color: '#888', background: 'none', border: 'none', cursor: 'pointer' }} onClick={onClose}>&times;</button>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: '#1976d2', flexShrink: 0 }}>Request a Quote</h2>
         <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {status !== 'ASKING_EMERGENCY' && (
             <div style={{ maxHeight: 220, overflowY: 'auto', background: '#f8f8f8', padding: 10, borderRadius: 8, marginBottom: 12, flexShrink: 0 }}>
-              {chatHistory.map((msg, idx) => (
-                <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}>
-                  <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span>
-                </div>
-              ))}
-              {status === 'AWAITING_GPT' && (
-                 <div style={{ textAlign: 'left', margin: '8px 0' }}>
-                     <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span>
-                 </div>
-              )}
+              {chatHistory.map((msg, idx) => ( <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}> <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span> </div> ))}
+              {status === 'AWAITING_GPT' && ( <div style={{ textAlign: 'left', margin: '8px 0' }}> <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span> </div> )}
               <div ref={chatEndRef} />
             </div>
           )}
@@ -317,14 +317,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         </div>
         {showDebugPanel && (
           <div style={{ flexShrink: 0 }}>
-            <DebugInfo 
-              status={status}
-              isEmergency={isEmergency}
-              initialCount={initialQuestions.length}
-              followUpCount={followUpQuestions.length}
-              answerCount={allAnswers.length}
-              currentIndex={currentQuestionIndex}
-            />
+            <DebugInfo status={status} isEmergency={isEmergency} initialCount={initialQuestions.length} followUpCount={followUpQuestions.length} answerCount={allAnswers.length} currentIndex={currentQuestionIndex} />
           </div>
         )}
       </div>

@@ -9,6 +9,5 @@ node_modules/
 *.db
 *.pkl
 *.env.*
-PROMPTS/
 EXAMPLE_UI_REFERENCE/
 EXAMPLE_UI_REFERENCE2/

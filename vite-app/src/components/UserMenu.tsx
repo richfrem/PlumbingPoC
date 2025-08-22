@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const UserMenu: React.FC = () => {
@@ -30,7 +30,7 @@ const UserMenu: React.FC = () => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-20">
+          <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-20">
             <div className="p-3 border-b border-gray-600">
               <div className="text-sm font-medium text-white">
                 {profile?.name || 'User'}
@@ -40,12 +40,24 @@ const UserMenu: React.FC = () => {
               </div>
             </div>
             <div className="py-1">
+              {/* --- FORTIFICATION v1.2: Admin-Only Dashboard Link --- */}
+              {profile && profile.role === 'admin' && (
+                <a
+                  href="/#/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Command Center
+                </a>
+              )}
+              {/* --- END FORTIFICATION --- */}
               <button
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
               >
                 <Settings className="w-4 h-4" />
-                Settings
+                Profile Settings
               </button>
               <button
                 onClick={signOut}
