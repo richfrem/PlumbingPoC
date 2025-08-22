@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-22T20:02:58.202Z
+Generated On: 2025-08-22T21:19:48.418Z
 
-# Mnemonic Weight (Token Count): ~109,601 tokens
+# Mnemonic Weight (Token Count): ~115,582 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -34,7 +34,17 @@ Generated On: 2025-08-22T20:02:58.202Z
   ./vite-app/SUPABASE_QUOTE_ATTACHMENTS_TABLE.sql
   ./vite-app/SUPABASE_TABLES.sql
   ./vite-app/api/
+  ./vite-app/api/README.md
+  ./vite-app/api/controllers/
+  ./vite-app/api/controllers/requestController.js
+  ./vite-app/api/middleware/
+  ./vite-app/api/middleware/authMiddleware.js
+  ./vite-app/api/middleware/validationMiddleware.js
+  ./vite-app/api/routes/
+  ./vite-app/api/routes/requestRoutes.js
   ./vite-app/api/server.js
+  ./vite-app/api/validation/
+  ./vite-app/api/validation/schemas.js
   ./vite-app/index.html
   ./vite-app/package-lock.json
   ./vite-app/package.json
@@ -55,6 +65,7 @@ Generated On: 2025-08-22T20:02:58.202Z
   ./vite-app/src/contexts/
   ./vite-app/src/contexts/AuthContext.tsx
   ./vite-app/src/lib/
+  ./vite-app/src/lib/apiClient.ts
   ./vite-app/src/lib/serviceQuoteQuestions.ts
   ./vite-app/src/lib/servicesData.ts
   ./vite-app/src/lib/supabaseClient.ts
@@ -201,36 +212,46 @@ The final JSON should be rich with qualified data:
 
 --- START OF FILE README.md ---
 
-# PlumbingPOC: Fullstack AI-Powered Quoting & Lead Intake Platform
+# PlumbingPOC: AI-Powered Client Management & Quoting Platform
 
-**PlumbingPOC** is a modern, fullstack proof-of-concept for a local trades business. It features a responsive Vite + React (TypeScript/TSX) web application, a modular backend API (Express/Node), and deep integrations with OpenAI and Supabase for intelligent agent functionality and data persistence.
+**PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation, and extends into a full client portal for managing the entire job lifecycle.
 
-The platform's core innovation is an **AI-powered quoting agent** that replaces traditional contact forms with an intelligent, guided intake process. This agent expertly qualifies leads, gathers all necessary job details, and even handles file attachments, ensuring that every quote request delivered to the business is high-quality, actionable, and ready for an accurate quote.
+Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI and Supabase for its core functionality.
 
 ## Features
 
 -   **Modern Frontend:** A fully responsive web app built with Vite, React, and Tailwind CSS (TypeScript/TSX).
--   **Intelligent Quoting Agent:** A guided, conversational modal that uses expert logic and dynamic, AI-generated questions to qualify leads.
--   **Robust Backend:** An Express/Node API that securely handles OpenAI GPT integration, Supabase data operations, and file uploads.
--   **Secure Database & Auth:** Full integration with Supabase for user profiles, quote requests, file storage, and secure authentication (Email/Password, Google, and Azure/Microsoft).
--   **Modular & Scalable:** Architected for easy iteration, with a clear separation of frontend, backend, and agent logic.
+-   **Intelligent Quoting Agent:** A guided, conversational modal that uses expert logic and dynamic, AI-generated questions to ensure every lead is perfectly qualified.
+-   **Scalable MVC Backend:** A robust Express/Node API architected for maintainability, featuring separate layers for routing, controllers, middleware, and validation.
+-   **Secure Database & Auth:** Full integration with Supabase for user profiles, requests, quotes, notes, file storage, and secure authentication (Email/Password, Google, and Azure/Microsoft).
+-   **Comprehensive Admin Dashboard:** A "Command Center" for business owners to view, manage, and act on all incoming quote requests in a professional, interactive UI.
+-   **Interactive Job Management:** Update the status of any job (`new`, `quoted`, `scheduled`, `completed`) directly from the dashboard.
+-   **Integrated Quoting & Communication:** Admins can create official quotes and both parties can add notes, creating a persistent, secure communication log for each job.
 
 ## Project Structure
 
-The repository is organized for clarity and maintainability:
+The repository is organized for clarity and professional development standards.
 
 ```
 .
-├── PROMPTS/                  # Prompt engineering & agent logic
+├── PROMPTS/ # Prompt engineering & agent logic
 ├── vite-app/
-│   ├── public/               # Static assets (images, etc.)
-│   ├── src/                  # Frontend React application (TSX)
-│   ├── api/                  # Backend API (Express/Node)
-│   ├── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide for Supabase
-│   └── ...                   # Vite config, etc.
-├── blueprint.md              # The original "Operation Overmatch" strategic plan
-└── startup.sh                # Convenience script for local development
+│ ├── public/ # Static assets (images, etc.)
+│ ├── src/ # Frontend React application (TSX)
+│ ├── api/ # Backend API (Express/Node)
+│ │ ├── controllers/ # Contains the core business logic for each route.
+│ │ ├── middleware/ # Handles auth, validation, etc. before the controller.
+│ │ ├── routes/ # Defines API endpoints and connects them to controllers.
+│ │ ├── validation/ # Holds all Zod data validation schemas.
+│ │ ├── README.md # Detailed API architecture documentation.
+│ │ └── server.js # Initializes and wires up the Express server.
+│ ├── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide for Supabase
+│ └── ... # Vite config, etc.
+├── blueprint.md # The original "Operation Overmatch" strategic plan
+└── startup.sh # Convenience script for local development
 ```
+
+---
 
 ---
 
@@ -238,7 +259,7 @@ The repository is organized for clarity and maintainability:
 
 ### 1. Prerequisites
 
--   Node.js (v18 or higher)
+-   Node.js (v20 or higher recommended)
 -   npm (or yarn/pnpm)
 -   A Supabase account (free tier is sufficient)
 -   An OpenAI API key
@@ -252,10 +273,10 @@ The repository is organized for clarity and maintainability:
     ```
 
 2.  **Configure Supabase:**
-    Follow the detailed instructions in `vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md` to set up your database tables, Row Level Security (RLS) policies, storage bucket, and authentication providers (Google, Azure).
+    Follow the detailed instructions in `vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md`. Run the **Master SQL Setup Script** to create all tables and apply the necessary Row Level Security (RLS) policies.
 
 3.  **Set Up Environment Variables:**
-    Navigate to the `vite-app/` directory, copy the `.env.example` file to a new file named `.env`, and fill in your Supabase and OpenAI API keys.
+    Navigate to the `vite-app/` directory, create a copy of `.env.example` named `.env`, and fill in your Supabase and OpenAI API keys.
 
 4.  **Install Dependencies:**
     ```sh
@@ -265,17 +286,14 @@ The repository is organized for clarity and maintainability:
 
 ### 3. Running the Application
 
-For the application to function correctly, **both the backend API and the frontend server must be running simultaneously.** The frontend proxies all `/api` requests to the backend.
+Both the backend API and the frontend server must be running simultaneously.
 
 #### Recommended Method: Startup Script
 
-A convenient `startup.sh` script is included to automate the process and check for port conflicts.
-
+From the project root directory, run the convenience script:
 ```sh
-# From the project root directory
 ./startup.sh
 ```
-
 This script will start both services in the background and provide you with the URLs. It will also give you a command to stop both services when you're done.
 
 #### Manual Method
@@ -299,69 +317,94 @@ This script will start both services in the background and provide you with the 
 
 ---
 
-## The AI Quoting Flow
-
+## Application Flows
+### 1. The AI-Powered Intake Flow
+This diagram illustrates the initial, intelligent lead qualification process.
 The intelligent agent is the core of this POC. Here's how it works:
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Frontend
-    participant Backend
-    participant OpenAI_API as "OpenAI API (GPT-4)"
+    participant Backend API
+    participant OpenAI API
     participant Supabase
 
     User->>Frontend: Signs in or registers
-    activate User
-    Frontend->>Supabase: Authenticates user
+    Frontend->>Supabase: Authenticates user, gets session
     Supabase-->>Frontend: Returns user session & profile
-    deactivate User
 
     User->>Frontend: Clicks "Request a Quote"
-    activate Frontend
-    Frontend->>User: Asks initial, pre-defined questions based on selected service
+    Frontend->>User: Asks initial, pre-defined questions
     User-->>Frontend: Provides answers
-    deactivate Frontend
 
-    User->>Frontend: Submits initial info
-    activate Frontend
-    Frontend->>Backend: Sends all collected answers and user context to /api/request
-    activate Backend
-    Backend->>OpenAI_API: Packages info and asks GPT-4 for necessary follow-up questions
-    activate OpenAI_API
-    OpenAI_API-->>Backend: Returns intelligent, context-aware follow-up questions (or confirms none needed)
-    deactivate OpenAI_API
-    Backend-->>Frontend: Relays follow-up questions to frontend
-    deactivate Backend
+    Frontend->>Backend API: POST /api/requests/gpt-follow-up (with answers)
+    activate Backend API
+    Backend API->>OpenAI API: Packages info and asks GPT-4 for follow-up questions
+    activate OpenAI API
+    OpenAI API-->>Backend API: Returns context-aware questions (or confirms none needed)
+    deactivate OpenAI API
+    Backend API-->>Frontend: Relays follow-up questions
+    deactivate Backend API
     
     loop Until GPT has no more questions
         Frontend->>User: Asks AI-generated follow-up question
         User-->>Frontend: Provides answer
     end
     
-    Frontend->>User: Displays a final, readable summary of the entire request for confirmation
-    deactivate Frontend
+    Frontend->>User: Displays a final summary for confirmation
 
-    User->>Frontend: Confirms and submits the final quote request
-    activate Frontend
-    Frontend->>Backend: POSTs the complete, verified request to /api/submit-quote
-    activate Backend
-    Backend->>Supabase: Inserts the final quote request into the 'requests' table
-    activate Supabase
-    Supabase-->>Backend: Confirms successful insertion
-    deactivate Supabase
+    User->>Frontend: Confirms and submits the final request
+    Frontend->>Backend API: POST /api/requests/submit (with all data)
+    activate Backend API
+    Backend API->>Supabase: Inserts the new row into 'requests' table
     
     opt User uploaded a file
-        Frontend->>Backend: POSTs file and request ID to /api/upload-attachment
-        Backend->>Supabase: Uploads file to Storage and links it in 'quote_attachments' table
+        Frontend->>Backend API: POST /api/requests/attachments (with file)
+        Backend API->>Supabase: Uploads file to Storage & inserts record into 'quote_attachments'
     end
 
-    Backend-->>Frontend: Returns success confirmation
-    deactivate Backend
+    Backend API-->>Frontend: Returns success confirmation
+    deactivate Backend API
     Frontend->>User: Displays "Thank you" message
-    deactivate Frontend
 ```
 
+### 2. The Client & Admin Management Flow
+
+This diagram shows how admins and clients interact with a request after it has been submitted, turning the app into a client portal.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Customer
+    participant Frontend
+    participant Backend API
+    participant Supabase
+
+    Admin->>Frontend: Logs in and navigates to Dashboard
+    Frontend->>Backend API: GET /api/requests (fetch all data)
+    Backend API->>Supabase: SELECT * from requests with joins
+    Supabase-->>Backend API: Returns all request data
+    Backend API-->>Frontend: Sends data to dashboard
+    Frontend->>Admin: Displays list of active requests
+
+    Admin->>Frontend: Clicks on a request to open details modal
+    Admin->>Frontend: Adds a new note in the modal
+    Frontend->>Backend API: POST /api/requests/:id/notes (with note text)
+    activate Backend API
+    Backend API->>Supabase: INSERT new row into 'request_notes'
+    Supabase-->>Backend API: Confirms note saved
+    Backend API-->>Frontend: Returns new note data
+    deactivate Backend API
+    Frontend->>Admin: UI updates instantly with the new note
+
+    Customer->>Frontend: Logs in and views their request
+    Frontend->>Backend API: GET /api/requests/:id (fetch single request)
+    Backend API->>Supabase: SELECT request data for this user
+    Supabase-->>Backend API: Returns request, including admin's note
+    Backend API-->>Frontend: Sends data to client view
+    Frontend->>Customer: Displays the conversation log
+```
 
 --- END OF FILE README.md ---
 
@@ -3268,142 +3311,203 @@ echo "Frontend: http://localhost:$FRONTEND_PORT"
 
 # Table of Contents
 
-1. [Supabase Database Configuration](#1-supabase-database-configuration)
-2. [Authentication Provider Configuration](#2-authentication-provider-configuration)
-    - [Updating URLs](#2a-updating-urls)
-    - [Adding Authentication Providers](#2b-adding-authentication-providers)
-    - [Configuring Applications for OAuth](#2c-configuring-applications-for-oauth)
-       - [Google OAuth2 Client Setup](#google-oauth2-client-setup-google-cloud-console)
-       - [Azure Entra App Registration](#azure-entra-app-registration-microsoft-entra-admin-center)
-3. [Troubleshooting](#3-troubleshooting)
+1.  [Supabase Database Configuration](#1-supabase-database-configuration)
+    -   [Table Schema Overview](#1a-table-schema-overview)
+    -   [Storage Bucket: PlumbingPoCBucket](#1b-storage-bucket-plumbingpocbucket)
+    -   [Row Level Security (RLS) Policies](#1c-row-level-security-rls-policies)
+2.  [Master SQL Setup Script](#2-master-sql-setup-script)
+3.  [Authentication Provider Configuration](#3-authentication-provider-configuration)
+4.  [Helpful CLI Commands & Queries](#4-helpful-cli-commands--queries)
 
-#
+---
 
 # Supabase & Authentication Provider Setup Reference
 
+This document provides a comprehensive reference for the project's Supabase database schema, security policies, and authentication provider setup.
+
 ## 1. Supabase Database Configuration
 
-### Tables Created
+### 1a. Table Schema Overview
 
-- **user_profiles**
-   - id (uuid, primary key)
-   - user_id (uuid, unique, references auth)
-   - name (text)
-   - email (text)
-   - phone (text)
-   - address (text)
-   - city (text)
-   - province (text)
-   - postal_code (text)
-   - created_at (timestamp with time zone)
+The database is composed of several related tables to manage users, requests, quotes, and communications.
 
-- **requests**
-   - id (uuid, primary key)
-   - created_at (timestamp with time zone)
-   - is_emergency (boolean)
-   - customer_name (text)
-   - service_address (text)
-   - contact_info (text)
-   - problem_category (text)
-   - problem_description (text)
-   - property_type (text)
-   - is_homeowner (boolean)
-   - preferred_timing (text)
-   - additional_notes (text)
-   - answers (jsonb)  # stores all questions and answers in JSON format
-   - status (text)
+-   **user_profiles**
+    -   Stores public-facing user data, linked one-to-one with `auth.users`.
+    -   `id` (uuid, primary key)
+    -   `user_id` (uuid, **unique**, references `auth.users.id`)
+    -   `role` (text, e.g., 'admin', 'customer')
+    -   `name`, `email`, `phone`, `address`, `city`, `province`, `postal_code` (text)
+    -   `created_at` (timestamptz)
 
-- **quotes**
-   - id (uuid, primary key)
-   - user_id (uuid)
-   - request_id (uuid, foreign key → requests.id)  # links quote to the original request
-   - quote_amount (numeric)
-   - status (text)
-   - created_at (timestamp with time zone)
+-   **requests**
+    -   The core table for initial customer quote requests.
+    -   `id` (uuid, primary key)
+    -   `user_id` (uuid, references `user_profiles.user_id`)
+    -   `customer_name`, `service_address`, `contact_info`, `problem_category`, etc. (text)
+    -   `is_emergency` (boolean)
+    -   `answers` (jsonb)
+    -   `status` (text, e.g., 'new', 'viewed', 'quoted')
+    -   `created_at` (timestamptz)
 
-- **invoices**
-   - id (uuid, primary key)
-   - user_id (uuid)
-   - quote_id (uuid, foreign key → quotes.id)
-   - amount_due (numeric)
-   - due_date (timestamp with time zone)
-   - status (text)
-   - created_at (timestamp with time zone)
+-   **quote_attachments**
+    -   Stores records of files uploaded for a specific request.
+    -   `id` (uuid, primary key)
+    -   `request_id` (uuid, references `requests.id`)
+    -   `file_name` (text)
+    -   `mime_type` (text)
+    -   `file_url` (text, public URL from storage)
+    -   `created_at` (timestamptz)
 
-- **quote_attachments**
-   - id (uuid, primary key)
-   - request_id (uuid, foreign key → requests.id)
-   - file_url (text)
-   - file_name (text)
-   - mime_type (text)
-   - uploaded_at (timestamp with time zone)
-### Row Level Security (RLS) Policies
+-   **quotes**
+    -   Stores formal quotes generated by an admin for a request.
+    -   `id` (uuid, primary key)
+    -   `request_id` (uuid, references `requests.id`)
+    -   `user_id` (uuid, references `auth.users.id`)
+    -   `quote_amount` (numeric)
+    -   `details` (text)
+    -   `status` (text, e.g., 'draft', 'sent', 'accepted')
+    -   `created_at` (timestamptz)
 
-- **requests**
-   - Users can delete their own requests (DELETE, authenticated)
-   - Users can update their own requests (UPDATE, authenticated)
-   - Users can insert requests (INSERT, authenticated)
-   - Users can view all requests (SELECT, authenticated)
-   - All policies are permissive and allow authenticated users to perform these actions.
+-   **request_notes**
+    -   A log of all communication between the customer and admin regarding a request.
+    -   `id` (uuid, primary key)
+    -   `request_id` (uuid, references `requests.id`)
+    -   `user_id` (uuid, references `auth.users.id`)
+    -   `author_role` (text, 'admin' or 'customer')
+    -   `note` (text)
+    -   `created_at` (timestamptz)
 
-- **user_profiles**
-   - Allow authenticated users to select their own profile
-      - Expression: `user_id = auth.uid()`
-      - Action: SELECT
-      - Enabled: Yes
+-   **invoices**
+    -   Stores invoice data linked to an accepted quote.
+    -   `id` (uuid, primary key)
+    -   `quote_id` (uuid, references `quotes.id`)
+    -   `user_id` (uuid)
+    -   `amount_due` (numeric), `due_date` (timestamptz), `status` (text)
 
-### Supabase Storage Bucket
-**PlumbingPoCBucket**
-   - Used for storing quote attachments (images, PDFs, etc.)
-   - Allowed MIME types: image/jpeg, image/png, application/pdf
-   - Files are linked to quote requests via the `quote_attachments` table
+### 1b. Storage Bucket: PlumbingPoCBucket
 
-#### Example Storage RLS Policies (GUI-generated syntax)
+-   **Purpose:** Securely stores all user-uploaded files (images, PDFs) related to quote requests.
+-   **Access:** This bucket is **NOT** public. All access is controlled by Storage Policies.
+-   **Policies (SQL):**
+    ```sql
+    -- Allows any logged-in user to UPLOAD a file.
+    CREATE POLICY "Allow authenticated uploads"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK ( bucket_id = 'PlumbingPoCBucket' );
 
-```
-CREATE POLICY "Enable insert for authenticated users only" ON "storage"."objects"
-AS PERMISSIVE FOR INSERT
-TO authenticated
-WITH CHECK (true);
+    -- Allows an ADMIN to view/download ANY file for the dashboard.
+    CREATE POLICY "Allow admin read access"
+    ON storage.objects FOR SELECT
+    TO authenticated
+    USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
+    ```
 
-CREATE POLICY "Enable select for authenticated users only" ON "storage"."objects"
-AS PERMISSIVE FOR SELECT
-TO authenticated
-USING (true);
+### 1c. Row Level Security (RLS) Policies
 
-CREATE POLICY "Enable update for authenticated users only" ON "storage"."objects"
-AS PERMISSIVE FOR UPDATE
-TO authenticated
-USING (true);
+RLS is **ENABLED** on all public tables to ensure users can only access their own data.
 
-CREATE POLICY "Enable delete for authenticated users only" ON "storage"."objects"
-AS PERMISSIVE FOR DELETE
-TO authenticated
-USING (true);
-```
+-   **user_profiles:**
+    -   Users can view, update, and insert their own profile only.
+-   **requests:**
+    -   Admins have full access.
+    -   Users can perform all actions on their own requests only.
+-   **quote_attachments:**
+    -   Admins and the request owner can view attachments.
+    -   Only the request owner can insert new attachments.
+-   **quotes:**
+    -   Admins have full access.
+    -   Users can only view quotes linked to their `user_id`.
+-   **request_notes:**
+    -   Admins have full access.
+    -   Users can view and create notes on their own requests.
+-   **invoices:**
+    -   Admins have full access.
+    -   Users can only view invoices linked to their `user_id`.
 
-You can further restrict access by adding conditions (e.g., bucket_id, owner) as needed in the GUI.
+## 2. Master SQL Setup Script
 
-### Row Level Security (RLS) Policies
-- **user_profiles**: Allow authenticated users to select their own profile
-  - Expression: `user_id = auth.uid()`
-  - Action: SELECT
-  - Enabled: Yes
+This single, idempotent script can be run in the Supabase SQL Editor to create all tables, establish relationships, and apply all security policies from a fresh project.
 
-## 2. Authentication Provider Configuration
+```sql
+-- ========= Create Tables (if they don't exist) =========
+CREATE TABLE IF NOT EXISTS public.quotes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid NOT NULL REFERENCES public.requests(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  quote_amount numeric(10, 2), details text, status text DEFAULT 'draft' NOT NULL, created_at timestamptz DEFAULT now()
+);
 
-### 2a. Updating URLs
+CREATE TABLE IF NOT EXISTS public.request_notes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid NOT NULL REFERENCES public.requests(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  author_role text NOT NULL, note text NOT NULL, created_at timestamptz DEFAULT now()
+);
+
+-- ========= Add Constraints (if they don't exist) =========
+ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_user_id_key UNIQUE (user_id);
+ALTER TABLE public.requests ADD CONSTRAINT requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(user_id);
+
+-- ========= Enable RLS on All Tables =========
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quote_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.request_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+-- ========= RLS Policies for user_profiles =========
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.user_profiles;
+CREATE POLICY "Users can view their own profile" ON public.user_profiles FOR SELECT TO authenticated USING ( auth.uid() = user_id );
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.user_profiles;
+CREATE POLICY "Users can update their own profile" ON public.user_profiles FOR UPDATE TO authenticated USING ( auth.uid() = user_id ) WITH CHECK ( auth.uid() = user_id );
+
+-- ========= RLS Policies for quote_attachments =========
+DROP POLICY IF EXISTS "Allow authenticated insert for attachments" ON public.quote_attachments;
+CREATE POLICY "Allow authenticated insert for attachments" ON public.quote_attachments FOR INSERT TO authenticated WITH CHECK ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
+
+DROP POLICY IF EXISTS "Admins and owners can view attachments" ON public.quote_attachments;
+CREATE POLICY "Admins and owners can view attachments" ON public.quote_attachments FOR SELECT TO authenticated USING ( ((SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin') OR (auth.uid() = (SELECT user_id FROM requests WHERE id = request_id)) );
+
+-- ========= RLS Policies for quotes =========
+DROP POLICY IF EXISTS "Admins have full access to quotes" ON public.quotes;
+CREATE POLICY "Admins have full access to quotes" ON public.quotes FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
+
+DROP POLICY IF EXISTS "Users can view their own quotes" ON public.quotes;
+CREATE POLICY "Users can view their own quotes" ON public.quotes FOR SELECT TO authenticated USING ( auth.uid() = user_id );
+
+-- ========= RLS Policies for request_notes =========
+DROP POLICY IF EXISTS "Admins have full access to request notes" ON public.request_notes;
+CREATE POLICY "Admins have full access to request notes" ON public.request_notes FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
+
+DROP POLICY IF EXISTS "Users can view notes on their own requests" ON public.request_notes;
+CREATE POLICY "Users can view notes on their own requests" ON public.request_notes FOR SELECT TO authenticated USING ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
+
+DROP POLICY IF EXISTS "Users can create notes on their own requests" ON public.request_notes;
+CREATE POLICY "Users can create notes on their own requests" ON public.request_notes FOR INSERT TO authenticated WITH CHECK ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
+
+-- ========= RLS Policies for invoices =========
+DROP POLICY IF EXISTS "Admins have full access to invoices" ON public.invoices;
+CREATE POLICY "Admins have full access to invoices" ON public.invoices FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' ) WITH CHECK ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
+
+DROP POLICY IF EXISTS "Users can view their own invoices" ON public.invoices;
+CREATE POLICY "Users can view their own invoices" ON public.invoices FOR SELECT TO authenticated USING ( auth.uid() = user_id );
+
+## 3. Authentication Provider Configuration
+
+### 3a. Updating URLs
 - Set Site URL for local development: `http://localhost:3000` or `http://localhost:5173/`
 - Add Redirect URLs:
   - `http://localhost:3000/*`
   - `http://localhost:5173/`
 - Save changes in Supabase dashboard under Authentication → URL Configuration.
 
-### 2b. Adding Authentication Providers
+### 3b. Adding Authentication Providers
 - Go to Supabase dashboard → Authentication → Providers
 - Enable and configure each provider (Google, Azure)
 
-### 2c. Configuring Applications for OAuth
+### 3c. Configuring Applications for OAuth
 
 #### Google OAuth2 Client Setup (Google Cloud Console)
 1. Go to Google Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID.
@@ -3452,7 +3556,7 @@ URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqd
 
 URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/d9c00059-056f-4ab3-93c6-ea7009c00f23/isMSAApp~/false
 
-## 3. Troubleshooting
+## 4. Troubleshooting
 - Ensure all permissions are granted and consented.
 - Make sure the client secret is valid and matches Supabase.
 - Confirm the redirect URI is identical in both provider and Supabase.
@@ -3460,6 +3564,8 @@ URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_R
 - For Microsoft, ensure `openid`, `email`, and `profile` scopes are enabled.
 
 ---
+
+## 5. Supabase information
 
 ### supabase cli
 -- npx supabase login
@@ -3545,100 +3651,260 @@ CREATE INDEX idx_quote_attachments_request_id ON quote_attachments(request_id);
 
 --- END OF FILE vite-app/SUPABASE_TABLES.sql ---
 
---- START OF FILE vite-app/api/server.js ---
+--- START OF FILE vite-app/api/README.md ---
 
-// server.js (v1.9 - Final: Includes file_url on DB insert to match schema)
 
-const express = require('express');
-const multer = require('multer');
+# PlumbingPOC API Server
+
+This document outlines the architecture and conventions for the PlumbingPOC API server, built with Node.js and Express using an MVC-inspired pattern.
+
+## Core Architecture: MVC Pattern
+
+**Model:** Supabase handles all database interactions, data shaping, and enforces data integrity through its schema and Row Level Security (RLS) policies.
+
+**View:** For a REST API, the "View" is the JSON data sent to the client. Controllers assemble and send these responses.
+
+**Controller:** Contains the core business logic. Controllers receive requests from routes, interact with the Model (Supabase), and send a response back through the View (JSON).
+
+---
+
+## Directory Structure
+
+```text
+api/
+├── controllers/           # Business logic (MVC: Controller)
+│   └── requestController.js
+├── middleware/            # Reusable functions before controllers
+│   ├── authMiddleware.js
+│   └── validationMiddleware.js
+├── routes/                # Maps URLs to controllers
+│   └── requestRoutes.js
+├── validation/            # Data contracts (schemas)
+│   └── schemas.js
+└── server.js              # Main application entry point
+```
+
+## File Responsibilities
+
+### `server.js`
+
+- Initializes the Express app
+- Configures core middleware (CORS, body-parser)
+- Loads and delegates all API routes to the `routes/` directory
+- Defines a global error handler
+- Starts the server
+
+### `/routes`
+
+Defines endpoints (e.g., `/submit`, `/:requestId/notes`), specifies HTTP methods (GET, POST), and chains middleware before passing the request to the controller.
+
+**Example from `requestRoutes.js`:**
+
+```javascript
+// Create a formal quote for a request (admin only)
+router.post(
+    '/:requestId/quotes', // The Path
+    authenticate,         // Middleware 1: Is the user logged in?
+    isAdmin,              // Middleware 2: Does the user have admin role?
+    validate(createQuoteSchema), // Middleware 3: Is the request body valid?
+    createQuoteForRequest // The Controller function to run
+);
+```
+
+### `/controllers`
+
+Self-contained business logic for specific tasks (e.g., submitting a quote, adding a note). Receives `req` and `res` after middleware.
+
+### `/middleware`
+
+Reusable functions between route and controller.
+- `authMiddleware.js`: Handles authentication (`authenticate`) and role-based authorization (`isAdmin`).
+- `validationMiddleware.js`: Generic `validate` function checks incoming request data against a schema.
+
+### `/validation`
+
+Defines "data contracts" using zod. Each schema in `schemas.js` clearly defines the expected shape and types for endpoint request bodies, params, or queries.
+
+## Request Lifecycle
+
+1. **Client Request:** React app sends a POST request to `/api/requests/:id/notes`.
+2. **server.js:** Request hits `server.js`, passes through CORS and JSON body parser.
+3. **routes/requestRoutes.js:** Router matches path/method, applies `authenticate` middleware and `addNote` controller.
+4. **middleware/authMiddleware.js:** `authenticate` checks for valid JWT, attaches `req.user` and calls `next()`. If invalid, sends 401 Unauthorized and stops flow.
+5. **controllers/requestController.js:** `addRequestNote` runs, interacts with Supabase, sends JSON response (e.g., `res.status(201).json(...)`).
+6. **Client Receives Response:** React app receives JSON data or error message.
+
+This clean separation makes the system robust and predictable.
+
+## Mermaid diagrams
+
+### relationship diagram
+```mermaid
+graph TD
+    subgraph "API Server"
+        A[server.js] --> B{/api/requests/*};
+        
+        subgraph "Routes"
+            B --> C[requestRoutes.js];
+        end
+        
+        subgraph "Middleware"
+            D[authMiddleware.js];
+            E[validationMiddleware.js];
+        end
+
+        subgraph "Validation"
+            F[schemas.js];
+        end
+
+        subgraph "Controllers"
+            G[requestController.js];
+        end
+
+        C -- "Defines Path & Chains Middleware" --> D;
+        C -- " " --> E;
+        E -- "Uses" --> F;
+        C -- "Calls" --> G;
+    end
+    
+    H((Supabase));
+    G -- "Interacts with (Model)" --> H;
+    
+    I([Client]);
+    I -- "HTTP Request" --> A;
+    G -- "JSON Response (View)" --> I;
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#9f9,stroke:#333,stroke-width:2px
+    style E fill:#9f9,stroke:#333,stroke-width:2px
+    style F fill:#f99,stroke:#333,stroke-width:2px
+    style G fill:#ff9,stroke:#333,stroke-width:2px
+```
+
+### Sequence Diagram Admin Creates a Quote (The Original Diagram)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant server.js
+    participant requestRoutes.js
+    participant authMiddleware.js
+    participant validationMiddleware.js
+    participant requestController.js
+    participant Supabase
+
+    Client->>server.js: POST /api/requests/:id/quotes (with data & token)
+    activate server.js
+    
+    server.js->>requestRoutes.js: Route request
+    activate requestRoutes.js
+    
+    requestRoutes.js->>authMiddleware.js: 1. call authenticate()
+    activate authMiddleware.js
+    authMiddleware.js->>Supabase: supabase.auth.getUser(token)
+    Supabase-->>authMiddleware.js: Returns user object
+    authMiddleware.js-->>requestRoutes.js: next()
+    deactivate authMiddleware.js
+    
+    requestRoutes.js->>authMiddleware.js: 2. call isAdmin()
+    activate authMiddleware.js
+    authMiddleware.js->>Supabase: Check user_profiles.role
+    Supabase-->>authMiddleware.js: Returns { role: 'admin' }
+    authMiddleware.js-->>requestRoutes.js: next()
+    deactivate authMiddleware.js
+    
+    requestRoutes.js->>validationMiddleware.js: 3. call validate(schema)
+    activate validationMiddleware.js
+    validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
+    deactivate validationMiddleware.js
+
+    requestRoutes.js->>requestController.js: 4. call createQuoteForRequest()
+    activate requestController.js
+    
+    requestController.js->>Supabase: INSERT into quotes table
+    activate Supabase
+    Supabase-->>requestController.js: Confirms insert
+    deactivate Supabase
+    
+    requestController.js->>Supabase: UPDATE requests table status
+    activate Supabase
+    Supabase-->>requestController.js: Confirms update
+    deactivate Supabase
+    
+    requestController.js-->>server.js: Sends JSON response
+    deactivate requestController.js
+    deactivate requestRoutes.js
+    
+    server.js-->>Client: 201 Created (with quote data)
+    deactivate server.js
+```
+### Sequence diagram AI Generates Follow-up Questions
+```mermaid
+sequenceDiagram
+    participant Client
+    participant server.js
+    participant requestRoutes.js
+    participant authMiddleware.js
+    participant validationMiddleware.js
+    participant requestController.js
+    participant OpenAI_API as "OpenAI API (GPT-4)"
+
+    Client->>server.js: POST /api/requests/gpt-follow-up (with answers & token)
+    activate server.js
+    
+    server.js->>requestRoutes.js: Route request
+    activate requestRoutes.js
+    
+    requestRoutes.js->>authMiddleware.js: 1. call authenticate()
+    activate authMiddleware.js
+    authMiddleware.js-->>requestRoutes.js: next() (User is valid)
+    deactivate authMiddleware.js
+    
+    requestRoutes.js->>validationMiddleware.js: 2. call validate(schema)
+    activate validationMiddleware.js
+    validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
+    deactivate validationMiddleware.js
+
+    requestRoutes.js->>requestController.js: 3. call getGptFollowUp()
+    activate requestController.js
+    
+    requestController.js->>OpenAI_API: axios.post to /v1/chat/completions
+    activate OpenAI_API
+    OpenAI_API-->>requestController.js: Returns follow-up questions
+    deactivate OpenAI_API
+    
+    requestController.js-->>server.js: Sends JSON response { additionalQuestions: [...] }
+    deactivate requestController.js
+    deactivate requestRoutes.js
+    
+    server.js-->>Client: 200 OK (with questions array)
+    deactivate server.js
+```
+--- END OF FILE vite-app/api/README.md ---
+
+--- START OF FILE vite-app/api/controllers/requestController.js ---
+
+// /controllers/requestController.js
+/*
+This controller file exports a function for each route we defined. 
+Each function is focused on a single task, making the code much easier 
+to understand and maintain. Notice that there's no routing or 
+middleware logic here—just the core operations for each API endpoint.
+*/
 const path = require('path');
-const cors = require('cors');
-const { z } = require('zod');
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
-// --- Basic Setup ---
-const app = express();
-const PORT = process.env.PORT || 3001;
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-
-// --- Supabase & Multer Setup ---
+// Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Supabase URL or Service Role Key is missing from .env file");
-}
 const supabase = createClient(supabaseUrl, supabaseKey);
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
-// --- Middleware ---
-
-// 1. CORS Middleware
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
-    : 'http://localhost:5173',
-};
-app.use(cors(corsOptions));
-
-// 2. Body Parser
-app.use(express.json());
-
-// 3. Authentication Middleware
-const authenticate = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Missing JWT token.' });
-  }
-  const token = authHeader.split(' ')[1];
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid token.' });
-  }
-  req.user = user;
-  next();
-};
-
-// --- Zod Validation Schemas ---
-const submitQuoteSchema = z.object({
-  body: z.object({
-    clarifyingAnswers: z.array(z.object({ question: z.string(), answer: z.string() })),
-    contactInfo: z.object({
-      name: z.string().optional(),
-      address: z.string().optional(),
-      city: z.string().optional(),
-      province: z.string().optional(),
-      postal_code: z.string().optional(),
-      email: z.string().email().optional(),
-      phone: z.string().optional(),
-    }),
-    category: z.string(),
-    isEmergency: z.boolean().optional(),
-    property_type: z.string().optional(),
-    is_homeowner: z.string().optional(),
-    problem_description: z.string().optional(),
-    preferred_timing: z.string().optional(),
-    additional_notes: z.string().optional(),
-  }),
-});
-
-const validate = (schema) => (req, res, next) => {
-  try {
-    schema.parse({ body: req.body, query: req.query, params: req.params });
-    next();
-  } catch (error) {
-    res.status(400).json({ error: 'Validation failed', details: error.errors });
-  }
-};
-
-// --- API Routes ---
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-app.post('/api/request', authenticate, async (req, res, next) => {
+/**
+ * Handles getting AI follow-up questions from GPT.
+ */
+const getGptFollowUp = async (req, res, next) => {
   try {
     const { clarifyingAnswers, category, problem_description } = req.body;
     const isOtherCategory = category === 'other';
@@ -3646,6 +3912,7 @@ app.post('/api/request', authenticate, async (req, res, next) => {
     const hasAmbiguousKeywords = problem_description && ambiguousKeywords.some(keyword => problem_description.toLowerCase().includes(keyword));
     
     if (!isOtherCategory && !hasAmbiguousKeywords) {
+      console.log('[API EFFICIENCY] Skipping GPT-4 call for standard, clear request.');
       return res.json({ additionalQuestions: [] });
     }
     
@@ -3670,9 +3937,12 @@ app.post('/api/request', authenticate, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-app.post('/api/submit-quote', authenticate, validate(submitQuoteSchema), async (req, res, next) => {
+/**
+ * Handles the final submission of a new quote request.
+ */
+const submitQuoteRequest = async (req, res, next) => {
   try {
     const { clarifyingAnswers, contactInfo, category, isEmergency, property_type, is_homeowner, problem_description, preferred_timing, additional_notes } = req.body;
     
@@ -3690,13 +3960,16 @@ app.post('/api/submit-quote', authenticate, validate(submitQuoteSchema), async (
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
     
-    res.status(200).json({ message: 'Quote request submitted successfully.', request: data });
+    res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
   } catch (err) {
     next(err);
   }
-});
+};
 
-app.post('/api/upload-attachment', authenticate, upload.single('attachment'), async (req, res, next) => {
+/**
+ * Handles uploading a file attachment and linking it to a request.
+ */
+const uploadAttachment = async (req, res, next) => {
   try {
     const { request_id } = req.body;
     const file = req.file;
@@ -3716,12 +3989,10 @@ app.post('/api/upload-attachment', authenticate, upload.single('attachment'), as
       .upload(filePath, file.buffer, { contentType: file.mimetype });
     if (uploadError) throw uploadError;
 
-    // After uploading, get the public URL for the file to satisfy the NOT NULL constraint.
     const { data: urlData } = supabase.storage
       .from('PlumbingPoCBucket')
       .getPublicUrl(uploadData.path);
 
-    // Create the full record that now matches the table schema perfectly.
     const attachmentRecord = { 
       request_id, 
       file_name: file.originalname, 
@@ -3737,16 +4008,14 @@ app.post('/api/upload-attachment', authenticate, upload.single('attachment'), as
   } catch (err) {
     next(err);
   }
-});
+};
 
-app.get('/api/storage/object/*', authenticate, async (req, res, next) => {
+/**
+ * Handles retrieving a file from Supabase storage for an admin.
+ */
+const getStorageObject = async (req, res, next) => {
   try {
     const objectPath = req.params[0];
-    const { data: profile } = await supabase.from('user_profiles').select('role').eq('user_id', req.user.id).single();
-    if (!profile || profile.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden.' });
-    }
-
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
     if (error) {
       return error.message.includes('not found')
@@ -3762,9 +4031,305 @@ app.get('/api/storage/object/*', authenticate, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+/**
+ * Handles adding a note to a request from either a customer or admin.
+ */
+const addRequestNote = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const { note } = req.body;
+    const { user } = req;
+
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const noteData = {
+      request_id: requestId,
+      user_id: user.id,
+      note,
+      author_role: profile.role === 'admin' ? 'admin' : 'customer',
+    };
+
+    const { data, error } = await supabase.from('request_notes').insert(noteData).select().single();
+    if (error) throw error;
+    
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Handles an admin creating a formal quote for a request.
+ */
+const createQuoteForRequest = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const { quote_amount, details } = req.body;
+    
+    const { data: requestData, error: requestError } = await supabase
+      .from('requests')
+      .select('user_id')
+      .eq('id', requestId)
+      .single();
+    if (requestError) throw requestError;
+
+    const quoteData = {
+      request_id: requestId,
+      user_id: requestData.user_id, // Assign quote to the CUSTOMER
+      quote_amount,
+      details,
+      status: 'sent',
+    };
+
+    const { data, error } = await supabase.from('quotes').insert(quoteData).select().single();
+    if (error) throw error;
+    
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getGptFollowUp,
+  submitQuoteRequest,
+  uploadAttachment,
+  getStorageObject,
+  addRequestNote,
+  createQuoteForRequest,
+};
+--- END OF FILE vite-app/api/controllers/requestController.js ---
+
+--- START OF FILE vite-app/api/middleware/authMiddleware.js ---
+
+// /middleware/authMiddleware.js
+/*
+This file isolates all authentication and authorization logic. It's clean, 
+reusable, and easy to update if your permission rules change.
+*/
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+// Note: We use the SERVICE_ROLE_KEY here for admin-level operations like checking roles.
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+/**
+ * Middleware to verify a user's JWT token from the Authorization header.
+ * Attaches the authenticated user object to the request.
+ */
+const authenticate = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing JWT token.' });
+  }
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      throw new Error('Unauthorized: Invalid token.');
+    }
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: error.message });
+  }
+};
+
+/**
+ * Middleware to ensure the authenticated user has the 'admin' role.
+ * Must be used AFTER the authenticate middleware.
+ */
+const isAdmin = async (req, res, next) => {
+  // Ensure we have a user from the previous `authenticate` middleware
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  try {
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (error) {
+        // This could happen if the profile doesn't exist yet, which is a valid state.
+        // We treat it as non-admin.
+        console.warn(`Could not fetch profile for user ${req.user.id}:`, error.message);
+        return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+    }
+
+    if (!profile || profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+    }
+    
+    // User is an admin, proceed to the next handler
+    next();
+  } catch (error) {
+      next(error); // Pass unexpected errors to the global handler
+  }
+};
+
+module.exports = {
+  authenticate,
+  isAdmin,
+};
+--- END OF FILE vite-app/api/middleware/authMiddleware.js ---
+
+--- START OF FILE vite-app/api/middleware/validationMiddleware.js ---
+
+// /middleware/validationMiddleware.js
+/*
+This file creates a generic, reusable middleware function. 
+Instead of writing validation logic inside every controller, 
+we use this function to check an incoming request against a 
+zod schema. If the data is bad, it stops the request and sends 
+a helpful error. If the data is good, it passes the request on to the controller.
+*/
+/**
+ * A generic middleware factory for validating requests against a Zod schema.
+ * @param {object} schema - The Zod schema to validate against.
+ * @returns {function} An Express middleware function.
+ */
+const validate = (schema) => (req, res, next) => {
+  try {
+    // Zod's parse method will throw an error if validation fails.
+    schema.parse({
+      body: req.body,
+      query: req.query,
+      params: req.params,
+    });
+    // If we reach here, validation was successful.
+    next();
+  } catch (error) {
+    // Zod errors are rich with detail, which we can send to the client.
+    res.status(400).json({
+      error: 'Validation failed',
+      details: error.errors, // This provides an array of specific field errors
+    });
+  }
+};
+
+module.exports = {
+  validate,
+};
+--- END OF FILE vite-app/api/middleware/validationMiddleware.js ---
+
+--- START OF FILE vite-app/api/routes/requestRoutes.js ---
+
+// /routes/requestRoutes.js
+/*
+This file defines all your API endpoints. Notice how clean it is. 
+Each route clearly states its path, any middleware it needs 
+(like authenticate or isAdmin), and which controller function 
+will handle the request.
+*/
+const express = require('express');
+const multer = require('multer');
+const {
+  getGptFollowUp,
+  submitQuoteRequest,
+  uploadAttachment,
+  getStorageObject,
+  addRequestNote,
+  createQuoteForRequest,
+} = require('../controllers/requestController');
+const { authenticate, isAdmin } = require('../middleware/authMiddleware');
+const { validate } = require('../middleware/validationMiddleware'); // We will create this next
+const {
+  gptRequestSchema,
+  submitQuoteSchema,
+  addNoteSchema,
+  createQuoteSchema,
+  getObjectSchema,
+} = require('../validation/schemas');
+
+const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// --- Core Quote Intake Routes ---
+
+// Get AI follow-up questions
+router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
+
+// Submit the final, completed quote request form
+router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+
+// Upload a file attachment for a request
+router.post('/attachments', authenticate, upload.single('attachment'), uploadAttachment);
+
+// Get a storage object (for admins to view attachments)
+router.get('/storage-object/*', authenticate, isAdmin, validate(getObjectSchema), getStorageObject);
+
+
+// --- Client Portal & Admin Routes ---
+
+// Add a note to a specific request
+router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
+
+// Create a formal quote for a request (admin only)
+router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
+
+
+module.exports = router;
+--- END OF FILE vite-app/api/routes/requestRoutes.js ---
+
+--- START OF FILE vite-app/api/server.js ---
+
+// server.js (v2.1 - Refactored for Scalability with MVC Pattern)
+/*
+This is the new, streamlined main server file. Its only job is to configure 
+the application, load the necessary middleware, and delegate routing to the 
+dedicated route files.
+*/
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const requestRoutes = require('./routes/requestRoutes'); // <-- Import the new router
+
+// --- Basic Setup ---
+const app = express();
+const PORT = process.env.PORT || 3001;
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// --- Core Middleware ---
+
+// 1. CORS Middleware
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
+    : 'http://localhost:5173',
+};
+app.use(cors(corsOptions));
+
+// 2. Body Parser for JSON payloads
+app.use(express.json());
+
+// --- API Routing ---
+
+// Delegate all routes starting with '/api/requests' to our new router file
+app.use('/api/requests', requestRoutes);
+
+// A simple health check route to ensure the server is up
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'API is healthy' });
 });
 
 // --- Centralized Error Handler ---
+// This should be the LAST piece of middleware.
 app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR HANDLER]', err);
   res.status(500).json({
@@ -3775,9 +4340,89 @@ app.use((err, req, res, next) => {
 
 // --- Server Start ---
 app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT}`);
+  console.log(`API server v2.1 running on http://localhost:${PORT}`);
 });
 --- END OF FILE vite-app/api/server.js ---
+
+--- START OF FILE vite-app/api/validation/schemas.js ---
+
+// /validation/schemas.js
+/*
+This file centralizes all zod schemas. Keeping them here makes your API's 
+data contracts explicit and easy to find. If you need to change 
+what data a route accepts, you only need to look in this one file.
+*/
+const { z } = require('zod');
+
+// Schema for the initial request from the AI agent for follow-up questions
+const gptRequestSchema = z.object({
+  body: z.object({
+    clarifyingAnswers: z.array(z.object({ question: z.string(), answer: z.string() })),
+    category: z.string(),
+    problem_description: z.string().optional(),
+  }),
+});
+
+// Schema for the final submission of the entire quote request form
+const submitQuoteSchema = z.object({
+  body: z.object({
+    clarifyingAnswers: z.array(z.object({ question: z.string(), answer: z.string() })),
+    contactInfo: z.object({
+      name: z.string().optional(),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      province: z.string().optional(),
+      postal_code: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+    }),
+    category: z.string(),
+    isEmergency: z.boolean().optional(),
+    property_type: z.string().optional(),
+    is_homeowner: z.string().optional(),
+    problem_description: z.string().optional(),
+    preferred_timing: z.string().optional(),
+    additional_notes: z.string().optional(),
+  }),
+});
+
+// Schema for adding a new note to a request
+const addNoteSchema = z.object({
+  params: z.object({ 
+    requestId: z.string().uuid("Invalid request ID format.") 
+  }),
+  body: z.object({ 
+    note: z.string().min(1, "Note cannot be empty.") 
+  }),
+});
+
+// Schema for an admin creating a quote for a request
+const createQuoteSchema = z.object({
+  params: z.object({ 
+    requestId: z.string().uuid("Invalid request ID format.") 
+  }),
+  body: z.object({
+    quote_amount: z.number().positive("Quote amount must be a positive number."),
+    details: z.string().min(1, "Quote details cannot be empty."),
+  }),
+});
+
+// Schema for getting an object from storage
+const getObjectSchema = z.object({
+    params: z.object({
+        // The '*' in Express routes doesn't have a name, it's just index 0
+        0: z.string().min(1, "Object path cannot be empty."),
+    })
+});
+
+module.exports = {
+  gptRequestSchema,
+  submitQuoteSchema,
+  addNoteSchema,
+  createQuoteSchema,
+  getObjectSchema,
+};
+--- END OF FILE vite-app/api/validation/schemas.js ---
 
 --- START OF FILE vite-app/index.html ---
 
@@ -8332,6 +8977,36 @@ export const useAuth = () => {
   return context;
 };
 --- END OF FILE vite-app/src/contexts/AuthContext.tsx ---
+
+--- START OF FILE vite-app/src/lib/apiClient.ts ---
+
+// /lib/apiClient.ts
+import axios from 'axios';
+import { supabase } from './supabaseClient';
+
+const apiClient = axios.create({
+  // The base URL is already handled by Vite's proxy,
+  // so we just need to start with the '/api' prefix.
+  baseURL: '/api',
+});
+
+// Axios interceptor to automatically add the auth token to every request
+apiClient.interceptors.request.use(
+  async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;
+--- END OF FILE vite-app/src/lib/apiClient.ts ---
 
 --- START OF FILE vite-app/src/lib/serviceQuoteQuestions.ts ---
 

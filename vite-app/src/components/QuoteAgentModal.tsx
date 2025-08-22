@@ -1,7 +1,9 @@
+// QuoteAgentModal.tsx (v2.0 - Refactored API Integration)
+
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabaseClient";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
+import apiClient from "../lib/apiClient"; // <-- IMPORT the new apiClient
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
 
 // Diagnostic component (kept for development)
@@ -92,12 +94,20 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const handleSend = async () => {
     if (loading || userInput.trim() === "") return;
     const currentAnswer = userInput;
-    const updatedRawAnswers = [...allAnswers, currentAnswer];
-    setAllAnswers(updatedRawAnswers);
+    
+    const allQuestions = [...initialQuestions, ...followUpQuestions];
+    const structuredAnswers = [...allAnswers, currentAnswer].map((ans, index) => ({
+      question: allQuestions[index] || 'Follow-up',
+      answer: ans,
+    }));
+    
+    setAllAnswers(prev => [...prev, currentAnswer]);
+
     if (status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length) {
       const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex].key;
       setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
     }
+    
     setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
     setUserInput("");
     setLoading(true);
@@ -106,23 +116,30 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       const isLastInitialQuestion = currentQuestionIndex === initialQuestions.length - 1;
       if (isLastInitialQuestion) {
         setStatus('AWAITING_GPT');
-        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers to see if I need any more details..." }]);
+        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers..." }]);
         try {
           const payload = {
-            clarifyingAnswers: updatedRawAnswers,
+            clarifyingAnswers: structuredAnswers,
             category: selectedCategory?.key,
             problem_description: genericAnswers['problem_description'] || ''
           };
-          const response = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          const data = await response.json();
+          
+          const { data } = await apiClient.post('/requests/gpt-follow-up', payload);
+          
           if (data.additionalQuestions && data.additionalQuestions.length > 0) {
             setFollowUpQuestions(data.additionalQuestions);
             setCurrentQuestionIndex(0);
             setStatus('FOLLOW_UP_QUESTIONS');
             setChatHistory((prev) => [...prev, { sender: "agent", message: data.additionalQuestions[0] ?? "" }]);
-          } else { setStatus('SUMMARY'); }
-        } catch (err) { console.error("GPT request failed, proceeding to summary.", err); setStatus('SUMMARY'); } 
-        finally { setLoading(false); }
+          } else { 
+            setStatus('SUMMARY'); 
+            setChatHistory(prev => [...prev, { sender: "agent", message: "Everything looks clear. Please review your request below." }]);
+          }
+        } catch (err) { 
+            console.error("GPT request failed, proceeding to summary.", err); 
+            setStatus('SUMMARY'); 
+            setChatHistory(prev => [...prev, { sender: "agent", message: "Couldn't reach my assistant, but please review your request below." }]);
+        } finally { setLoading(false); }
       } else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
@@ -131,8 +148,10 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       }
     } else if (status === 'FOLLOW_UP_QUESTIONS') {
       const isLastFollowUpQuestion = currentQuestionIndex === followUpQuestions.length - 1;
-      if (isLastFollowUpQuestion) { setStatus('SUMMARY'); } 
-      else {
+      if (isLastFollowUpQuestion) { 
+        setStatus('SUMMARY'); 
+        setChatHistory(prev => [...prev, { sender: "agent", message: "Thank you. Please review your request below." }]);
+      } else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
         setChatHistory((prev) => [...prev, { sender: "agent", message: followUpQuestions[nextIdx] ?? "" }]);
@@ -147,12 +166,6 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setErrorMessage("");
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            throw new Error("You are not signed in. Please sign in again.");
-        }
-        const token = session.access_token;
-
         const allQuestions = [...initialQuestions, ...followUpQuestions];
         const structuredAnswers = allQuestions.map((question, index) => ({
             question: question,
@@ -167,17 +180,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             ...genericAnswers
         };
         
-        const response = await fetch("/api/submit-quote", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-        if (!response.ok) { throw new Error(result.error || 'Failed to submit quote data.'); }
+        const { data: result } = await apiClient.post('/requests/submit', payload);
         const newRequestId = result.request?.id;
 
         if (selectedFile && newRequestId) {
@@ -185,27 +188,19 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             formData.append('attachment', selectedFile);
             formData.append('request_id', newRequestId);
             
-            const uploadResponse = await fetch("/api/upload-attachment", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: formData,
+            await apiClient.post('/requests/attachments', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
             });
-
-            if (!uploadResponse.ok) {
-                const uploadResult = await uploadResponse.json();
-                console.error('File upload failed, but the quote request was created.');
-                throw new Error(uploadResult.error || 'File upload failed after quote submission.');
-            }
         }
 
         setStatus('SUBMITTED');
     } catch (err: any) {
         console.error("Submission Error:", err);
-        setErrorMessage("Sorry, we couldn't submit your request. Please check your connection and try again, or call us directly for immediate assistance.");
+        const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
+        setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   }
 
   if (!isOpen) return null;

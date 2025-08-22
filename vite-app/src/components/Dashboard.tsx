@@ -1,12 +1,16 @@
-// version 2.3 - Final Query Fix after adding DB relationship.
+// version 2.4 - MVC API Integration & Eager Loading
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 
-// Defines the full shape of the data we are fetching, including nested relations.
-interface QuoteRequest {
+// --- NEW EXPANDED INTERFACE ---
+// This now includes the new tables we are fetching.
+interface Quote { id: string; quote_amount: number; details: string; status: string; }
+interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
+export interface QuoteRequest {
   id: string;
   created_at: string;
   customer_name: string;
@@ -23,6 +27,8 @@ interface QuoteRequest {
     phone: string;
   } | null;
   service_address: string;
+  quotes: Quote[];
+  request_notes: RequestNote[];
 }
 
 const Dashboard: React.FC = () => {
@@ -30,7 +36,6 @@ const Dashboard: React.FC = () => {
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -42,27 +47,32 @@ const Dashboard: React.FC = () => {
       }
 
       try {
-        // This query now works because we created the foreign key relationship in the database.
+        // --- UPDATED QUERY ---
+        // Eagerly loads all related data for quotes and notes in a single network request.
         const { data, error: fetchError } = await supabase
           .from('requests')
           .select(`
             *,
             user_profiles ( name, email, phone ),
-            quote_attachments ( file_name, mime_type )
+            quote_attachments ( file_name, mime_type ),
+            quotes ( * ),
+            request_notes ( * )
           `)
           .order('created_at', { ascending: false });
 
         if (fetchError) throw fetchError;
         
+        // We cast the result to our detailed QuoteRequest interface.
         setRequests((data as QuoteRequest[]) || []);
 
       } catch (err: any) {
-        setError("Failed to fetch quote requests.");
+        setError("Failed to fetch quote requests. Please check the browser console for details.");
         console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchRequests();
   }, [profile]);
 
@@ -97,7 +107,7 @@ const Dashboard: React.FC = () => {
     return (
         <Box sx={{ maxWidth: '1200px', margin: 'auto', p: 3, textAlign: 'center' }}>
             <Typography variant="h5" color="error">Error Loading Data</Typography>
-            <Typography>{"An error occurred while fetching data. Please check the console for details."}</Typography>
+            <Typography>{error}</Typography>
         </Box>
     );
   }
@@ -113,12 +123,14 @@ const Dashboard: React.FC = () => {
             {requests.length > 0 ? (
               requests.map((req, index) => (
                 <React.Fragment key={req.id}>
-                  <ListItem button onClick={() => handleOpenModal(req)}>
+                  {/* Using ListItemButton for better accessibility and hover effects */}
+                  <ListItemButton onClick={() => handleOpenModal(req)}>
                     <ListItemText
-                      primary={`${req.problem_category} - ${req.customer_name || 'N/A'}`}
+                      primary={`${req.problem_category.replace(/_/g, " ")} - ${req.customer_name || 'N/A'}`}
                       secondary={`Received: ${new Date(req.created_at).toLocaleString()} | Status: ${req.status}`}
+                      primaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
                     />
-                  </ListItem>
+                  </ListItemButton>
                   {index < requests.length - 1 && <Divider />}
                 </React.Fragment>
               ))
