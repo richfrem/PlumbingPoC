@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
 
-// Diagnostic component to visualize state
+// Diagnostic component (kept for development)
 const DebugInfo = ({ status, initialCount, followUpCount, answerCount, currentIndex }: { status: string; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
   <div style={{ background: '#333', color: '#fff', padding: '8px', marginTop: '16px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
     <div>Status: {status}</div>
@@ -11,7 +11,6 @@ const DebugInfo = ({ status, initialCount, followUpCount, answerCount, currentIn
   </div>
 );
 
-// Define a clear state machine for the modal's flow
 type ModalStatus = 'SELECTING_CATEGORY' | 'INITIAL_QUESTIONS' | 'AWAITING_GPT' | 'FOLLOW_UP_QUESTIONS' | 'SUMMARY' | 'SUBMITTED';
 
 const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -74,24 +73,19 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setStatus('INITIAL_QUESTIONS');
   };
 
-  // ✅ FINAL, HARDENED FIX: The logic is now entirely contained and imperative.
   const handleSend = async () => {
     if (loading || userInput.trim() === "") return;
-
     const currentAnswer = userInput;
     const updatedAnswers = [...allAnswers, currentAnswer];
-    
     setAllAnswers(updatedAnswers);
     setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
     setUserInput("");
     setLoading(true);
-
     if (status === 'INITIAL_QUESTIONS') {
       const isLastInitialQuestion = currentQuestionIndex === initialQuestions.length - 1;
       if (isLastInitialQuestion) {
         setStatus('AWAITING_GPT');
         setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. Reviewing your answers..." }]);
-        
         try {
           const response = await fetch("/api/request", {
             method: "POST",
@@ -99,9 +93,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             body: JSON.stringify({ clarifyingAnswers: updatedAnswers, category: selectedCategory?.key }),
           });
           const data = await response.json();
-          
           if (data.additionalQuestions && data.additionalQuestions.length > 0) {
-            // All state transitions are queued AT ONCE, based on the API data, not stale state.
             setFollowUpQuestions(data.additionalQuestions);
             setCurrentQuestionIndex(0);
             setStatus('FOLLOW_UP_QUESTIONS');
@@ -152,7 +144,6 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   if (!isOpen) return null;
 
   const renderContent = () => {
-    // ... This function remains unchanged ...
     switch (status) {
         case 'SELECTING_CATEGORY':
           return (
@@ -181,25 +172,32 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           const allQuestions = [...initialQuestions, ...followUpQuestions];
           return (
             <>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Service Type: {selectedCategory?.label}</div>
-              <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
-                  {allQuestions.map((q, i) => (
-                    <li key={i} style={{ marginBottom: 6 }}>
-                      <div style={{ fontWeight: 500 }}>{q}</div>
-                      <div style={{ color: '#333', marginLeft: 4 }}>{allAnswers[i] || '(No answer)'}</div>
-                    </li>
-                  ))}
-              </ul>
-              {profile && (
-                <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div>
-                  <div><b>Name:</b> {profile.name}</div>
-                  <div><b>Email:</b> {profile.email}</div>
-                </div>
-              )}
-              <button style={{ width: '100%', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16, marginTop: 8 }} onClick={handleSubmitQuote} disabled={loading} >
-                {loading ? 'Submitting...' : 'Confirm & Submit Request'}
-              </button>
+              <div style={{ flex: '1 1 auto', overflowY: 'auto', paddingRight: '8px', marginRight: '-8px' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Service Type: {selectedCategory?.label}</div>
+                <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
+                    {allQuestions.map((q, i) => (
+                      <li key={i} style={{ marginBottom: 6 }}>
+                        <div style={{ fontWeight: 500 }}>{q}</div>
+                        <div style={{ color: '#333', marginLeft: 4 }}>{allAnswers[i] || '(No answer)'}</div>
+                      </li>
+                    ))}
+                </ul>
+                {profile && (
+                  // ✅ CHANGE: Added more profile details as requested.
+                  <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div>
+                    <div><b>Name:</b> {profile.name}</div>
+                    <div><b>Email:</b> {profile.email}</div>
+                    <div><b>Phone:</b> {profile.phone}</div>
+                    <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div>
+                  </div>
+                )}
+              </div>
+              <div style={{ flexShrink: 0, paddingTop: '16px', borderTop: '1px solid #eee' }}>
+                <button style={{ width: '100%', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, fontSize: 16 }} onClick={handleSubmitQuote} disabled={loading} >
+                  {loading ? 'Submitting...' : 'Confirm & Submit Request'}
+                </button>
+              </div>
             </>
           );
           case 'SUBMITTED':
@@ -210,31 +208,41 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 400, width: '100%', padding: 24, position: 'relative' }}>
+      <div style={{
+          background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          maxWidth: 400, width: '100%', padding: 24, position: 'relative',
+          display: 'flex', flexDirection: 'column', maxHeight: '90vh'
+      }}>
         <button style={{ position: 'absolute', top: 16, right: 16, fontSize: 22, color: '#888', background: 'none', border: 'none', cursor: 'pointer' }} onClick={onClose}>&times;</button>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: '#1976d2' }}>Request a Quote</h2>
-        <div style={{ maxHeight: 220, overflowY: 'auto', background: '#f8f8f8', padding: 10, borderRadius: 8, marginBottom: 12 }}>
-          {chatHistory.map((msg, idx) => (
-            <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}>
-              <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span>
-            </div>
-          ))}
-          {status === 'AWAITING_GPT' && (
-             <div style={{ textAlign: 'left', margin: '8px 0' }}>
-                 <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span>
-             </div>
-          )}
-          <div ref={chatEndRef} />
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: '#1976d2', flexShrink: 0 }}>Request a Quote</h2>
+        
+        <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ maxHeight: 220, overflowY: 'auto', background: '#f8f8f8', padding: 10, borderRadius: 8, marginBottom: 12, flexShrink: 0 }}>
+            {chatHistory.map((msg, idx) => (
+              <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}>
+                <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span>
+              </div>
+            ))}
+            {status === 'AWAITING_GPT' && (
+               <div style={{ textAlign: 'left', margin: '8px 0' }}>
+                   <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span>
+               </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          {renderContent()}
         </div>
-        {renderContent()}
+
         {showDebugPanel && (
-          <DebugInfo 
-            status={status}
-            initialCount={initialQuestions.length}
-            followUpCount={followUpQuestions.length}
-            answerCount={allAnswers.length}
-            currentIndex={currentQuestionIndex}
-          />
+          <div style={{ flexShrink: 0 }}>
+            <DebugInfo 
+              status={status}
+              initialCount={initialQuestions.length}
+              followUpCount={followUpQuestions.length}
+              answerCount={allAnswers.length}
+              currentIndex={currentQuestionIndex}
+            />
+          </div>
         )}
       </div>
     </div>
