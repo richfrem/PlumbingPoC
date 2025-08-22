@@ -146,6 +146,27 @@ sequenceDiagram
 - Integrate Supabase storage in both frontend and backend
 - Add authentication, quote history, and more business features
 
+## requesting a quote requirements
+
+1. in order to request a quote, a user has to register and be signed in. the quote agent will take information from the user profile to complete a quote requestest.  need a profile in the system with contact info and be registered and signed in.
+2. the agent will reduce chattiness with gpt4.0 as much as possible to reduce api consumption costs.  common questions based on the coding / design LLM of the agent service will economize by asking and anticipating common questions that will be built into the app.  "what would you like a quote for" give a list of all the common choices.  use list from #3 to generate that
+3. Maintain a separate json file of 
+service quote request types:  e.g. bathroom reno, perimiter drains, a list of all main types of plumbing requests as a list in json format. for each request type maintain a list of very common anticipated questions for each type of service quote request .  e.g. for a bathroom reno these types of questions would be there.  "What specific fixtures does the homeowner plan to use, or would they like options/recommendations?",
+  "Are there any special requirements or features the homeowner is interested in, such as water-saving or smart fixtures?",
+  "Is there an existing blueprint or design plan to follow for the renovation?",
+  "Will any additional renovations be happening simultaneously that might affect the plumbing work?",
+  "Are there any known issues with the existing plumbing that might complicate the renovation process?"
+ but maintain similar common questions based on your expertise there. 
+4. ask all these questions one at a time in conversation style like a chat conversation.  with text box at the bottom where user can hit send.  one question at a time. 
+5. pull in the user profile information to add to the quote request.  don't ask for information you already know. 
+6. don't share the personal information with GPT about name, phone, email, address ok.  only information to get context a follow-up questions for a better high quality quote request from gpt with all key questions answered.
+8. package the quote for gpt with all the answers to the questions provided with what you know already.  format as an efficient prompt to gpt and all the answers provided. along with the high level quote request summary from the requestor
+7. ask gpt if additional questions are required to have a all the key questions answered for the current context of the quote request 
+8. take all the questions dyanmic ones from gpt and ask them . asking in the same way so transparent to the user.  they won't even know talking to gpt. 
+like #4 above approach.  
+9. if gpt has more questions repeat #7
+10. package summary of request in user readable form. that includes their contact information.  give high level summary to the user of the quote request in user readable format.  then say submitting request for quote.  we will get back to you with a quote soon thank you very much. 
+
 ## Quick Start with Startup Script
 
 A convenient `startup.sh` script is included to start both the backend and frontend services in the correct sequence, ensuring required ports are free. This helps avoid port conflicts and streamlines local development.
