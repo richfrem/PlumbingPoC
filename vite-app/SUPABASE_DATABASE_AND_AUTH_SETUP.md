@@ -37,17 +37,18 @@
    - service_address (text)
    - contact_info (text)
    - problem_category (text)
-   - problem_location (text)
    - problem_description (text)
    - property_type (text)
    - is_homeowner (boolean)
    - preferred_timing (text)
    - additional_notes (text)
+   - answers (jsonb)  # stores all questions and answers in JSON format
+   - status (text)
 
 - **quotes**
    - id (uuid, primary key)
    - user_id (uuid)
-   - request_id (uuid, foreign key → requests.id)
+   - request_id (uuid, foreign key → requests.id)  # links quote to the original request
    - quote_amount (numeric)
    - status (text)
    - created_at (timestamp with time zone)
@@ -191,4 +192,17 @@ URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_R
 - For Microsoft, ensure `openid`, `email`, and `profile` scopes are enabled.
 
 ---
+
+### SQL Statements for Supabase Setup
+
+```sql
+-- Remove columns from requests table
+ALTER TABLE requests DROP COLUMN IF EXISTS problem_location;
+ALTER TABLE requests DROP COLUMN IF EXISTS category;
+
+-- Re-add columns to requests table (if needed)
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS problem_location text;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS category text;
+```
+
 _Last updated: August 21, 2025_
