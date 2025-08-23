@@ -1,16 +1,17 @@
+// This is the complete, final version of QuoteFormModal.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, CalendarDays, Paperclip } from 'lucide-react';
+import { X as XIcon, Paperclip } from 'lucide-react';
 import apiClient from '../lib/apiClient';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  quote?: any; // Replace with your Quote type
+  onClose: (updated?: boolean) => void; // Allow passing a flag to indicate an update happened
+  quote?: any;
   editable: boolean;
-  request?: any; // Should be the full request object with user_profiles, answers, etc.
+  request?: any;
   requestId?: string;
 }
 
@@ -23,9 +24,47 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const [request, setRequest] = useState<any>(initialRequest);
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [errorRequest, setErrorRequest] = useState<string | null>(null);
+  const [goodUntil, setGoodUntil] = useState('');
+  const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
+  const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
+  const [notes, setNotes] = useState('');
+  const [status, setStatus] = useState('pending');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initialRequest && requestId) {
+    if (isOpen) {
+      if (quote) {
+        let detailsObj: any = {};
+        if (quote.details) {
+          try {
+            detailsObj = typeof quote.details === 'string' ? JSON.parse(quote.details) : quote.details;
+          } catch (e) {
+            console.error("Failed to parse quote details:", e);
+            detailsObj = {};
+          }
+        } else {
+          detailsObj = quote;
+        }
+        setLaborItems(detailsObj.labor_items?.length > 0 ? detailsObj.labor_items : [{ description: '', price: '' }]);
+        setMaterialItems(detailsObj.material_items?.length > 0 ? detailsObj.material_items : [{ description: '', price: '' }]);
+        setNotes(detailsObj.notes || '');
+        setGoodUntil(detailsObj.good_until || '');
+        setStatus(detailsObj.status || 'pending');
+      } else {
+        setLaborItems([{ description: '', price: '' }]);
+        setMaterialItems([{ description: '', price: '' }]);
+        setNotes('');
+        setGoodUntil('');
+        setStatus('pending');
+      }
+    }
+  }, [quote, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && !initialRequest && requestId) {
       setLoadingRequest(true);
       setErrorRequest(null);
       (async () => {
@@ -39,65 +78,32 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           setLoadingRequest(false);
         }
       })();
-    } else {
+    } else if (initialRequest) {
       setRequest(initialRequest);
     }
-  }, [initialRequest, requestId]);
-  const [goodUntil, setGoodUntil] = useState(quote?.goodUntil || '');
-  const [laborItems, setLaborItems] = useState<Item[]>(quote?.laborItems || [{ description: '', price: '' }]);
-  const [materialItems, setMaterialItems] = useState<Item[]>(quote?.materialItems || [{ description: '', price: '' }]);
-  const [tax, setTax] = useState(quote?.tax || '');
-  const [notes, setNotes] = useState(quote?.notes || '');
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [requestInfo, setRequestInfo] = useState<any>(null);
-  
-  useEffect(() => {
-    if (requestId && isOpen) {
-      (async () => {
-        try {
-          const res = await apiClient.get(`/requests/${requestId}`);
-          setRequestInfo(res.data);
-        } catch (err: any) {
-          setRequestInfo(null);
-        }
-      })();
-    }
-  }, [requestId, isOpen]);
+  }, [initialRequest, requestId, isOpen]);
 
-  // Lookup job type and description from request
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleClose = () => {
+    onClose();
+  };
+
   const jobType = request?.problem_category || 'N/A';
-  const problemDescription = request?.answers?.find((a: any) => a.question.toLowerCase().includes('describe the general problem'))?.answer || 'N/A';
-
-  // BC tax rates
   const GST_RATE = 0.05;
   const PST_RATE = 0.07;
-
-  // Calculate totals
   const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-
-  // requestId is already in props
-  // GST applies to both labor and materials
   const gst = (laborTotal + materialTotal) * GST_RATE;
-  // PST logic
-  const pst = jobType === 'commercial'
-    ? (laborTotal + materialTotal) * PST_RATE
-    : materialTotal * PST_RATE;
-
-  const totalPrice = (laborTotal + materialTotal + gst + pst).toFixed(2);
-
-
-  // Validation: At least one cost item
-  const hasValidCostItem =
-    laborItems.some(item => item.description && parseFloat(item.price) > 0) ||
-    materialItems.some(item => item.description && parseFloat(item.price) > 0);
-
+  const pst = jobType.toLowerCase().includes('commercial') ? (laborTotal + materialTotal) * PST_RATE : materialTotal * PST_RATE;
+  const totalPrice = laborTotal + materialTotal + gst + pst;
+  const taxDetails = { gst: Number(gst.toFixed(2)), pst: Number(pst.toFixed(2)) };
+  const hasValidCostItem = laborItems.some(item => item.description && parseFloat(item.price) > 0) || materialItems.some(item => item.description && parseFloat(item.price) > 0);
   const handleAddLabor = () => setLaborItems([...laborItems, { description: '', price: '' }]);
   const handleAddMaterial = () => setMaterialItems([...materialItems, { description: '', price: '' }]);
 
-  // Save Quote handler
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const handleSaveQuote = async () => {
     setSaveError(null);
     if (!hasValidCostItem) {
@@ -107,16 +113,31 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     setSaving(true);
     try {
       const payload = {
-        goodUntil,
-        laborItems: laborItems.filter(item => item.description && parseFloat(item.price) > 0),
-        materialItems: materialItems.filter(item => item.description && parseFloat(item.price) > 0),
-        tax,
-        notes,
-        attachments: [], // TODO: handle attachments if needed
-        total: totalPrice,
+        quote_amount: Number(totalPrice.toFixed(2)),
+        details: JSON.stringify({
+          labor_items: laborItems.filter(item => item.description && parseFloat(item.price) > 0),
+          material_items: materialItems.filter(item => item.description && parseFloat(item.price) > 0),
+          notes,
+          good_until: goodUntil,
+          tax_details: taxDetails,
+          status,
+        }),
       };
-      await apiClient.post(`/requests/${requestId}/quotes`, payload);
-      onClose();
+
+      if (quote && quote.id) {
+        // --- THIS IS THE FIX ---
+        // Call the new PUT endpoint for updates
+        await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload);
+      } else {
+        // Call the POST endpoint for creating new quotes
+        await apiClient.post(`/requests/${requestId}/quotes`, payload);
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        onClose(true); // Close modal on success and signal that an update occurred
+      }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
     } finally {
@@ -126,184 +147,58 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-  <Paper elevation={24} sx={{ width: '95%', maxWidth: '700px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden' }}>
-        {/* Header Section */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2 }}>
+      <Paper elevation={24} sx={{ width: '95%', maxWidth: '700px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            {request?.problem_category ? `Quote for ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}` : 'Create Quote'}
+            {request?.problem_category ? `${quote?.id ? 'Update Quote for' : 'Create Quote for'} ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}` : 'Create Quote'}
           </Typography>
-          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+          <IconButton onClick={handleClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
         </Box>
-
-        {/* --- Request Info Section --- */}
-        <Box sx={{ mb: 2, mx: 3, mt: 3, p: 2, bgcolor: '#e3f2fd', borderRadius: 2, border: '1px solid #90caf9', position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 120 }}>
-          {loadingRequest ? (
-            <Box sx={{ fontSize: 16, color: 'text.primary', lineHeight: 1.7, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              Loading request info...
-            </Box>
-          ) : errorRequest ? (
-            <Box sx={{ fontSize: 16, color: 'error.main', lineHeight: 1.7, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              Error: {errorRequest}
-            </Box>
-          ) : (
-            <Box sx={{ fontSize: 16, color: 'text.primary', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <span role="img" aria-label="user" style={{ fontSize: 18 }}>👤</span>
-                <span>{request?.user_profiles?.name || 'N/A'}</span>
-                {request?.user_profiles?.phone && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    sx={{ ml: 2, minWidth: 0, px: 1, fontSize: 14 }}
-                    component="a"
-                    href={`tel:${request.user_profiles.phone}`}
-                    startIcon={<span role="img" aria-label="phone" style={{ fontSize: 18 }}>📞</span>}
-                  >
-                    {request.user_profiles.phone}
-                  </Button>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span role="img" aria-label="location" style={{ fontSize: 18 }}>📍</span>
-                <span>{request?.user_profiles?.address || ''}{request?.user_profiles?.address ? ', ' : ''}{request?.user_profiles?.city || ''}{request?.user_profiles?.city ? ', ' : ''}{request?.user_profiles?.province || ''}{request?.user_profiles?.province ? ' ' : ''}{request?.user_profiles?.postal_code || ''}</span>
-              </Box>
-              <Box>
-                <span>
-                  {request?.answers?.find((a: any) => a.question.toLowerCase().includes('describe the general problem'))?.answer || 'N/A'}
-                </span>
-              </Box>
+        <Box sx={{ mb: 2, mx: 3, mt: 3, p: 2, bgcolor: '#e3f2fd', borderRadius: 2, border: '1px solid #90caf9', display: 'flex', justifyContent: 'space-between' }}>
+          {loadingRequest ? ( <Typography>Loading request info...</Typography> ) : errorRequest ? ( <Typography color="error">Error: {errorRequest}</Typography> ) : (
+            <Box>
+              <Typography variant="body1"><strong>Client:</strong> {request?.user_profiles?.name || 'N/A'}</Typography>
+              <Typography variant="body2" color="text.secondary"><strong>Address:</strong> {request?.service_address || 'N/A'}</Typography>
             </Box>
           )}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-            <TextField
-              label="Good Until"
-              type="date"
-              value={goodUntil}
-              onChange={e => setGoodUntil(e.target.value)}
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              disabled={!editable}
-              sx={{ minWidth: 160, mb: 1, bgcolor: '#fff', borderRadius: 1 }}
-            />
-            <Button variant="outlined" color="primary" onClick={onClose}>Return to Request</Button>
-          </Box>
+          <Box><TextField label="Good Until" type="date" value={goodUntil} onChange={e => setGoodUntil(e.target.value)} size="small" InputLabelProps={{ shrink: true }} disabled={!editable} sx={{ bgcolor: '#fff', borderRadius: 1 }} /></Box>
         </Box>
-  <Box sx={{ flex: '1 1 auto', overflowY: 'auto', pr: 1, mb: 2, px: 3 }}>
-          {/* ...existing code... */}
-    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Labor</Typography>
+        <Box sx={{ flex: '1 1 auto', overflowY: 'auto', px: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Labor</Typography>
           {laborItems.map((item, idx) => (
-            <Grid container spacing={1} key={idx} sx={{ mb: 1 }}>
-              <Grid item xs={8}>
-                <TextField
-                  label="Description"
-                  value={item.description}
-                  onChange={e => {
-                    const newItems = [...laborItems];
-                    if (newItems[idx]) newItems[idx].description = e.target.value;
-                    setLaborItems(newItems);
-                  }}
-                  fullWidth
-                  disabled={!editable}
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <TextField
-                  label="Price"
-                  value={item.price}
-                  onChange={e => {
-                    const newItems = [...laborItems];
-                    if (newItems[idx]) newItems[idx].price = e.target.value;
-                    setLaborItems(newItems);
-                  }}
-                  fullWidth
-                  disabled={!editable}
-                />
-              </Grid>
+            <Grid container spacing={1} key={`labor-${idx}`} sx={{ mb: 1 }}>
+              <Grid item xs={8}><TextField label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" /></Grid>
+              <Grid item xs={4}><TextField label="Price" value={item.price} onChange={e => { const newItems = [...laborItems]; newItems[idx].price = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" type="number" InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} /></Grid>
             </Grid>
           ))}
           {editable && <Button onClick={handleAddLabor} sx={{ mb: 2 }}>Add Labor Item</Button>}
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Materials</Typography>
           {materialItems.map((item, idx) => (
-            <Grid container spacing={1} key={idx} sx={{ mb: 1 }}>
-              <Grid item xs={8}>
-                <TextField
-                  label="Description"
-                  value={item.description}
-                  onChange={e => {
-                    const newItems = [...materialItems];
-                    if (newItems[idx]) newItems[idx].description = e.target.value;
-                    setMaterialItems(newItems);
-                  }}
-                  fullWidth
-                  disabled={!editable}
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <TextField
-                  label="Price"
-                  value={item.price}
-                  onChange={e => {
-                    const newItems = [...materialItems];
-                    if (newItems[idx]) newItems[idx].price = e.target.value;
-                    setMaterialItems(newItems);
-                  }}
-                  fullWidth
-                  disabled={!editable}
-                />
-              </Grid>
+            <Grid container spacing={1} key={`material-${idx}`} sx={{ mb: 1 }}>
+              <Grid item xs={8}><TextField label="Description" value={item.description} onChange={e => { const newItems = [...materialItems]; newItems[idx].description = e.target.value; setMaterialItems(newItems); }} fullWidth disabled={!editable} size="small" /></Grid>
+              <Grid item xs={4}><TextField label="Price" value={item.price} onChange={e => { const newItems = [...materialItems]; newItems[idx].price = e.target.value; setMaterialItems(newItems); }} fullWidth disabled={!editable} size="small" type="number" InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} /></Grid>
             </Grid>
           ))}
           {editable && <Button onClick={handleAddMaterial} sx={{ mb: 2 }}>Add Material Item</Button>}
           <Divider sx={{ my: 2 }} />
-          <Grid container spacing={2}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Notes / Clarifications"
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  fullWidth
-                  multiline
-                  disabled={!editable}
-                />
-              </Grid>
-            </Grid>
-          </Grid>
+          <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
           <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments / Screenshots</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-            {/* Display uploaded attachments here */}
-          </Box>
-          {editable && (
-            <Button component="label" startIcon={<Paperclip />} sx={{ mb: 2 }}>
-              Upload Attachment
-              <input type="file" hidden multiple onChange={e => setAttachments(Array.from(e.target.files || []))} />
-            </Button>
-          )}
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
+          {editable && <Button component="label" startIcon={<Paperclip />}>Upload File <input type="file" hidden multiple onChange={e => setAttachments(Array.from(e.target.files || []))} /></Button>}
           <Divider sx={{ my: 2 }} />
-          {/* Cost Section at Bottom with GST/PST breakdown */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Total Cost</Typography>
-            <Typography variant="h5" color="primary">${totalPrice}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              (Labor: ${laborTotal.toFixed(2)} + Materials: ${materialTotal.toFixed(2)})<br/>
-              GST (5%): ${gst.toFixed(2)}<br/>
-              PST (7%): ${pst.toFixed(2)}<br/>
-              <span style={{fontWeight:'bold'}}>Job Type: {jobType.charAt(0).toUpperCase() + jobType.slice(1)}</span>
-            </Typography>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="body2" color="text.secondary">Subtotal: ${ (laborTotal + materialTotal).toFixed(2) }</Typography>
+            <Typography variant="body2" color="text.secondary">GST (5%): ${gst.toFixed(2)}</Typography>
+            <Typography variant="body2" color="text.secondary">PST (7%): ${pst.toFixed(2)}</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>Total: ${totalPrice.toFixed(2)}</Typography>
           </Box>
         </Box>
         {editable && (
-          <Box sx={{ position: 'sticky', bottom: 0, left: 0, bgcolor: '#f4f6f8', pt: 2, pb: 1, zIndex: 10 }}>
-            {saveError && <Typography color="error" sx={{ mb: 1 }}>{saveError}</Typography>}
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleSaveQuote}
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save Quote'}
+          <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+            {saveError && <Typography color="error" sx={{ mb: 1, textAlign: 'center' }}>{saveError}</Typography>}
+            {saveSuccess && <Typography color="success.main" sx={{ mb: 1, textAlign: 'center' }}>Quote saved successfully!</Typography>}
+            <Button variant="contained" color="primary" fullWidth onClick={handleSaveQuote} disabled={saving || saveSuccess}>
+              {saving ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
             </Button>
           </Box>
         )}

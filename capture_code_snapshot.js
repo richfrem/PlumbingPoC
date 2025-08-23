@@ -5,7 +5,7 @@ const path = require('path');
 const { encode } = require('gpt-tokenizer');
 
 const projectRoot = __dirname;
-const distilledOutputFile = path.join(projectRoot, 'all_markdown_snapshot_llm_distilled.txt');
+const distilledOutputFile = path.join(projectRoot, 'all_markdown_and_code_snapshot_llm_distilled.txt');
 
 // --- CONFIGURATION ---
 const excludeDirNames = new Set([
@@ -20,7 +20,7 @@ const excludeRelativePaths = [
 ];
 
 const alwaysExcludeFiles = new Set([
-    'all_markdown_snapshot_llm_distilled.txt',
+    'all_markdown_and_code_snapshot_llm_distilled.txt',
     '.gitignore',
     '.DS_Store',
     '.env', 

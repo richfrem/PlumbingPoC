@@ -1,9 +1,5 @@
-// /validation/schemas.js
-/*
-This file centralizes all zod schemas. Keeping them here makes your API's 
-data contracts explicit and easy to find. If you need to change 
-what data a route accepts, you only need to look in this one file.
-*/
+// vite-app/api/validation/schemas.js
+
 const { z } = require('zod');
 
 // Schema for the initial request from the AI agent for follow-up questions
@@ -59,10 +55,21 @@ const createQuoteSchema = z.object({
   }),
 });
 
+// --- NEW SCHEMA FOR UPDATING A QUOTE ---
+const updateQuoteSchema = z.object({
+  params: z.object({
+    requestId: z.string().uuid("Invalid request ID format."),
+    quoteId: z.string().uuid("Invalid quote ID format."),
+  }),
+  body: z.object({
+    quote_amount: z.number().positive("Quote amount must be a positive number."),
+    details: z.string().min(1, "Quote details cannot be empty."),
+  }),
+});
+
 // Schema for getting an object from storage
 const getObjectSchema = z.object({
     params: z.object({
-        // The '*' in Express routes doesn't have a name, it's just index 0
         0: z.string().min(1, "Object path cannot be empty."),
     })
 });
@@ -72,5 +79,6 @@ module.exports = {
   submitQuoteSchema,
   addNoteSchema,
   createQuoteSchema,
+  updateQuoteSchema, // <-- EXPORT THE NEW SCHEMA
   getObjectSchema,
 };

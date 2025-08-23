@@ -230,6 +230,38 @@ const createQuoteForRequest = async (req, res, next) => {
   }
 };
 
+
+/**
+ * Handles an admin updating an existing quote for a request.
+ */
+const updateQuote = async (req, res, next) => {
+  try {
+    const { requestId, quoteId } = req.params;
+    const { quote_amount, details } = req.body;
+
+    const { data, error } = await supabase
+      .from('quotes')
+      .update({
+        quote_amount,
+        details,
+        // You could also update a status here if needed, e.g., status: 'updated'
+      })
+      .eq('id', quoteId)
+      .eq('request_id', requestId) // Ensures the quote belongs to the correct request
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
+
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// At the bottom of the file, add updateQuote to the module.exports object
 module.exports = {
   getGptFollowUp,
   submitQuoteRequest,
@@ -238,4 +270,5 @@ module.exports = {
   addRequestNote,
   createQuoteForRequest,
   getRequestById,
+  updateQuote, // <-- ADD THIS
 };

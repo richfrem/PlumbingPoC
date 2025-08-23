@@ -1,10 +1,5 @@
-// /routes/requestRoutes.js
-/*
-This file defines all your API endpoints. Notice how clean it is. 
-Each route clearly states its path, any middleware it needs 
-(like authenticate or isAdmin), and which controller function 
-will handle the request.
-*/
+// vite-app/api/routes/requestRoutes.js
+
 const express = require('express');
 const multer = require('multer');
 const {
@@ -15,14 +10,16 @@ const {
   addRequestNote,
   createQuoteForRequest,
   getRequestById,
+  updateQuote, // <-- IMPORTED
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
-const { validate } = require('../middleware/validationMiddleware'); // We will create this next
+const { validate } = require('../middleware/validationMiddleware');
 const {
   gptRequestSchema,
   submitQuoteSchema,
   addNoteSchema,
   createQuoteSchema,
+  updateQuoteSchema, // <-- IMPORTED
   getObjectSchema,
 } = require('../validation/schemas');
 
@@ -51,6 +48,9 @@ router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addReque
 
 // Create a formal quote for a request (admin only)
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
+
+// [NEW] Update an existing formal quote for a request (admin only)
+router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
 
 // Get request details by ID (for quote modal)
 router.get('/:requestId', authenticate, getRequestById);
