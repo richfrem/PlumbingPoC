@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../lib/apiClient';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemButton, ListItemText, Divider, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, User, Phone, MessageSquare, FilePlus, Image as ImageIcon, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
@@ -14,7 +14,7 @@ interface RequestDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: QuoteRequest | null;
-  onUpdateRequest: () => void; // Prop to trigger a data refresh in the parent component
+  onUpdateRequest: () => void;
 }
 
 const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
@@ -126,16 +126,33 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: { xs: 2, md: 3 }, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8' }}>
-        <Box sx={{ flexShrink: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* --- STYLE CHANGE: Removed padding from parent Paper --- */}
+      <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
+        
+        {/* --- STYLE CHANGE: Applied blue header style --- */}
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: 'primary.main',
+          color: '#fff',
+          px: 3,
+          py: 2,
+          flexShrink: 0
+        }}>
           <Box>
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
-            <Typography variant="caption" color="text.secondary">ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}
+            </Typography>
           </Box>
-          <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16 }}><XIcon size={24} /></IconButton>
+          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
         </Box>
-        <Divider sx={{ mb: 2, flexShrink: 0 }} />
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 2 }}>
+
+        {/* --- STYLE CHANGE: Added padding to content area --- */}
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
@@ -201,8 +218,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             </Paper>
           </Box>
         </Box>
-        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 'auto' }}>
+        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
             <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>Call Customer</Button>
           </Box>

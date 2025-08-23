@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-23T03:00:39.458Z
+Generated On: 2025-08-23T03:32:13.108Z
 
-# Mnemonic Weight (Token Count): ~120,312 tokens
+# Mnemonic Weight (Token Count): ~120,567 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -7991,10 +7991,10 @@ export default ContactSection;
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 
-// Interface remains the same
+// Interfaces remain the same
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
 export interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
 export interface QuoteRequest {
@@ -8026,7 +8026,6 @@ const Dashboard: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // This function fetches the initial list of all requests
   const fetchAllRequests = async () => {
     if (!profile || profile.role !== 'admin') {
       setLoading(false);
@@ -8058,19 +8057,11 @@ const Dashboard: React.FC = () => {
     fetchAllRequests();
   }, [profile]);
 
-  // --- NEW FUNCTION TO REFRESH A SINGLE REQUEST ---
-  // This is more efficient than refetching the entire list every time.
   const refreshRequestData = async (requestId: string) => {
     try {
       const { data, error: fetchError } = await supabase
         .from('requests')
-        .select(`
-          *,
-          user_profiles ( name, email, phone ),
-          quote_attachments ( file_name, mime_type ),
-          quotes ( * ),
-          request_notes ( * )
-        `)
+        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('id', requestId)
         .single();
       
@@ -8078,9 +8069,7 @@ const Dashboard: React.FC = () => {
 
       if (data) {
         const updatedRequest = data as QuoteRequest;
-        // 1. Update the request in the main list
         setRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
-        // 2. Update the request being viewed in the modal
         setSelectedRequest(updatedRequest);
       }
     } catch (err) {
@@ -8097,37 +8086,74 @@ const Dashboard: React.FC = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
   };
+
+  const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
+    const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
+      new: 'primary',
+      viewed: 'info',
+      quoted: 'warning',
+      scheduled: 'success',
+      completed: 'default'
+    };
+    return colorMap[status] || 'default';
+  };
   
-  if (loading) { /* ... no changes here ... */ }
-  if (!profile || profile.role !== 'admin') { /* ... no changes here ... */ }
-  if (error) { /* ... no changes here ... */ }
+  if (loading) { /* ... */ }
+  if (!profile || profile.role !== 'admin') { /* ... */ }
+  if (error) { /* ... */ }
 
   return (
     <>
-      <Box sx={{ maxWidth: '1200px', margin: 'auto', p: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Plumber's Command Center
-        </Typography>
-        <Paper elevation={3}>
-          <List>
-            {requests.length > 0 ? (
-              requests.map((req, index) => (
-                <React.Fragment key={req.id}>
-                  <ListItemButton onClick={() => handleOpenModal(req)}>
-                    <ListItemText
-                      primary={`${req.problem_category.replace(/_/g, " ")} - ${req.customer_name || 'N/A'}`}
-                      secondary={`Received: ${new Date(req.created_at).toLocaleString()} | Status: ${req.status}`}
-                      primaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
-                    />
-                  </ListItemButton>
-                  {index < requests.length - 1 && <Divider />}
-                </React.Fragment>
-              ))
-            ) : (
-              <ListItem><ListItemText primary="No new quote requests found." /></ListItem>
-            )}
-          </List>
-        </Paper>
+      {/* --- NEW STYLING APPLIED HERE --- */}
+      <Box sx={{ bgcolor: '#f4f6f8', minHeight: 'calc(100vh - 80px)', p: { xs: 2, md: 4 } }}>
+        <Box sx={{ maxWidth: '1000px', margin: 'auto' }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
+            Plumber's Command Center
+          </Typography>
+          
+          {requests.length > 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {requests.map((req) => (
+                <Paper 
+                  key={req.id} 
+                  component={ListItemButton} // Makes the whole paper clickable
+                  onClick={() => handleOpenModal(req)}
+                  sx={{ 
+                    p: 2, 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    transition: 'box-shadow 0.3s',
+                    '&:hover': {
+                      boxShadow: 3, // Elevate on hover
+                    }
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
+                      {req.problem_category.replace(/_/g, " ")} - {req.customer_name || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Received: {new Date(req.created_at).toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={req.status} 
+                    color={getStatusChipColor(req.status)}
+                    size="small"
+                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                  />
+                </Paper>
+              ))}
+            </Box>
+          ) : (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary">
+                No new quote requests found.
+              </Typography>
+            </Paper>
+          )}
+        </Box>
       </Box>
 
       {selectedRequest && (
@@ -8135,7 +8161,6 @@ const Dashboard: React.FC = () => {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           request={selectedRequest}
-          // --- PASS THE REFRESH FUNCTION DOWN ---
           onUpdateRequest={() => refreshRequestData(selectedRequest.id)}
         />
       )}
@@ -8869,7 +8894,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../lib/apiClient';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemButton, ListItemText, Divider, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, User, Phone, MessageSquare, FilePlus, Image as ImageIcon, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
@@ -8879,7 +8904,7 @@ interface RequestDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: QuoteRequest | null;
-  onUpdateRequest: () => void; // Prop to trigger a data refresh in the parent component
+  onUpdateRequest: () => void;
 }
 
 const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
@@ -8991,16 +9016,33 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: { xs: 2, md: 3 }, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8' }}>
-        <Box sx={{ flexShrink: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* --- STYLE CHANGE: Removed padding from parent Paper --- */}
+      <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
+        
+        {/* --- STYLE CHANGE: Applied blue header style --- */}
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: 'primary.main',
+          color: '#fff',
+          px: 3,
+          py: 2,
+          flexShrink: 0
+        }}>
           <Box>
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
-            <Typography variant="caption" color="text.secondary">ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}
+            </Typography>
           </Box>
-          <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16 }}><XIcon size={24} /></IconButton>
+          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
         </Box>
-        <Divider sx={{ mb: 2, flexShrink: 0 }} />
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 2 }}>
+
+        {/* --- STYLE CHANGE: Added padding to content area --- */}
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
@@ -9066,8 +9108,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             </Paper>
           </Box>
         </Box>
-        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 'auto' }}>
+        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
             <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>Call Customer</Button>
           </Box>
