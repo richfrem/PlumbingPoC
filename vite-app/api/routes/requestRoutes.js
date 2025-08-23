@@ -14,6 +14,7 @@ const {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getRequestById,
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware'); // We will create this next
@@ -50,6 +51,9 @@ router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addReque
 
 // Create a formal quote for a request (admin only)
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
+
+// Get request details by ID (for quote modal)
+router.get('/:requestId', authenticate, getRequestById);
 
 
 module.exports = router;

@@ -1,3 +1,25 @@
+/**
+ * Handles fetching a request by ID, including user profile info.
+ */
+const getRequestById = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    // Fetch request and join user_profiles
+    const { data: request, error } = await supabase
+      .from('requests')
+      .select(`*, user_profiles!requests_user_id_fkey(*)`)
+      .eq('id', requestId)
+      .single();
+    if (error || !request) {
+      return res.status(404).json({ error: 'Request not found.' });
+    }
+    // Rename user_profiles for frontend compatibility
+    request.user_profiles = request.user_profiles || null;
+    res.json(request);
+  } catch (err) {
+    next(err);
+  }
+};
 // /controllers/requestController.js
 /*
 This controller file exports a function for each route we defined. 
@@ -215,4 +237,5 @@ module.exports = {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getRequestById,
 };

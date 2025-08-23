@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-22T21:19:48.418Z
+Generated On: 2025-08-23T00:48:34.291Z
 
-# Mnemonic Weight (Token Count): ~115,582 tokens
+# Mnemonic Weight (Token Count): ~120,500 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -35,6 +35,8 @@ Generated On: 2025-08-22T21:19:48.418Z
   ./vite-app/SUPABASE_TABLES.sql
   ./vite-app/api/
   ./vite-app/api/README.md
+  ./vite-app/api/config/
+  ./vite-app/api/config/supabase.js
   ./vite-app/api/controllers/
   ./vite-app/api/controllers/requestController.js
   ./vite-app/api/middleware/
@@ -58,6 +60,7 @@ Generated On: 2025-08-22T21:19:48.418Z
   ./vite-app/src/components/Dashboard.tsx
   ./vite-app/src/components/ProfileModal.tsx
   ./vite-app/src/components/QuoteAgentModal.tsx
+  ./vite-app/src/components/QuoteFormModal.tsx
   ./vite-app/src/components/RequestDetailModal.tsx
   ./vite-app/src/components/ReviewsSection.tsx
   ./vite-app/src/components/ServicesSection.tsx
@@ -3883,8 +3886,51 @@ sequenceDiagram
 ```
 --- END OF FILE vite-app/api/README.md ---
 
+--- START OF FILE vite-app/api/config/supabase.js ---
+
+// /config/supabase.js
+const { createClient } = require('@supabase/supabase-js');
+
+// Load environment variables immediately
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL or Service Role Key is missing. Check your .env file.");
+}
+
+// Create and export a single, shared Supabase client instance
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = supabase;
+--- END OF FILE vite-app/api/config/supabase.js ---
+
 --- START OF FILE vite-app/api/controllers/requestController.js ---
 
+/**
+ * Handles fetching a request by ID, including user profile info.
+ */
+const getRequestById = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    // Fetch request and join user_profiles
+    const { data: request, error } = await supabase
+      .from('requests')
+      .select(`*, user_profiles!requests_user_id_fkey(*)`)
+      .eq('id', requestId)
+      .single();
+    if (error || !request) {
+      return res.status(404).json({ error: 'Request not found.' });
+    }
+    // Rename user_profiles for frontend compatibility
+    request.user_profiles = request.user_profiles || null;
+    res.json(request);
+  } catch (err) {
+    next(err);
+  }
+};
 // /controllers/requestController.js
 /*
 This controller file exports a function for each route we defined. 
@@ -3894,12 +3940,7 @@ middleware logic here—just the core operations for each API endpoint.
 */
 const path = require('path');
 const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
-
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = require('../config/supabase'); // <-- THE FIX
 
 /**
  * Handles getting AI follow-up questions from GPT.
@@ -4107,6 +4148,7 @@ module.exports = {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getRequestById,
 };
 --- END OF FILE vite-app/api/controllers/requestController.js ---
 
@@ -4117,13 +4159,8 @@ module.exports = {
 This file isolates all authentication and authorization logic. It's clean, 
 reusable, and easy to update if your permission rules change.
 */
-const { createClient } = require('@supabase/supabase-js');
-
-// Initialize Supabase client
-// Note: We use the SERVICE_ROLE_KEY here for admin-level operations like checking roles.
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// /middleware/authMiddleware.js
+const supabase = require('../config/supabase'); // <-- THE FIX
 
 /**
  * Middleware to verify a user's JWT token from the Authorization header.
@@ -4246,6 +4283,7 @@ const {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getRequestById,
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware'); // We will create this next
@@ -4283,6 +4321,9 @@ router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addReque
 // Create a formal quote for a request (admin only)
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 
+// Get request details by ID (for quote modal)
+router.get('/:requestId', authenticate, getRequestById);
+
 
 module.exports = router;
 --- END OF FILE vite-app/api/routes/requestRoutes.js ---
@@ -4303,7 +4344,7 @@ const requestRoutes = require('./routes/requestRoutes'); // <-- Import the new r
 // --- Basic Setup ---
 const app = express();
 const PORT = process.env.PORT || 3001;
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+//require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // --- Core Middleware ---
 
@@ -4457,6 +4498,7 @@ module.exports = {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
         "@mui/material": "^7.3.1",
+        "@mui/system": "^7.3.1",
         "@supabase/supabase-js": "^2.55.0",
         "axios": "^1.7.2",
         "cors": "^2.8.5",
@@ -5713,9 +5755,9 @@ module.exports = {
       }
     },
     "node_modules/@supabase/postgrest-js": {
-      "version": "1.19.4",
-      "resolved": "https://registry.npmjs.org/@supabase/postgrest-js/-/postgrest-js-1.19.4.tgz",
-      "integrity": "sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==",
+      "version": "1.21.3",
+      "resolved": "https://registry.npmjs.org/@supabase/postgrest-js/-/postgrest-js-1.21.3.tgz",
+      "integrity": "sha512-rg3DmmZQKEVCreXq6Am29hMVe1CzemXyIWVYyyua69y6XubfP+DzGfLxME/1uvdgwqdoaPbtjBDpEBhqxq1ZwA==",
       "license": "MIT",
       "dependencies": {
         "@supabase/node-fetch": "^2.6.14"
@@ -5743,15 +5785,15 @@ module.exports = {
       }
     },
     "node_modules/@supabase/supabase-js": {
-      "version": "2.55.0",
-      "resolved": "https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.55.0.tgz",
-      "integrity": "sha512-Y1uV4nEMjQV1x83DGn7+Z9LOisVVRlY1geSARrUHbXWgbyKLZ6/08dvc0Us1r6AJ4tcKpwpCZWG9yDQYo1JgHg==",
+      "version": "2.56.0",
+      "resolved": "https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.56.0.tgz",
+      "integrity": "sha512-XqwhHSyVnkjdliPN61CmXsmFGnFHTX2WDdwjG3Ukvdzuu3Trix+dXupYOQ3BueIyYp7B6t0yYpdQtJP2hIInyg==",
       "license": "MIT",
       "dependencies": {
         "@supabase/auth-js": "2.71.1",
         "@supabase/functions-js": "2.4.5",
         "@supabase/node-fetch": "2.6.15",
-        "@supabase/postgrest-js": "1.19.4",
+        "@supabase/postgrest-js": "1.21.3",
         "@supabase/realtime-js": "2.15.1",
         "@supabase/storage-js": "^2.10.4"
       }
@@ -5791,9 +5833,9 @@ module.exports = {
       "license": "MIT"
     },
     "node_modules/@types/react": {
-      "version": "19.1.10",
-      "resolved": "https://registry.npmjs.org/@types/react/-/react-19.1.10.tgz",
-      "integrity": "sha512-EhBeSYX0Y6ye8pNebpKrwFJq7BoQ8J5SO6NlvNwwHjSj6adXJViPQrKlsyPw7hLBLvckEMO1yxeGdR82YBBlDg==",
+      "version": "19.1.11",
+      "resolved": "https://registry.npmjs.org/@types/react/-/react-19.1.11.tgz",
+      "integrity": "sha512-lr3jdBw/BGj49Eps7EvqlUaoeA0xpj3pc0RoJkHpYaCHkVK7i28dKyImLQb3JVlqs3aYSXf7qYuWOW/fgZnTXQ==",
       "license": "MIT",
       "dependencies": {
         "csstype": "^3.0.2"
@@ -7897,15 +7939,19 @@ export default ContactSection;
 
 --- START OF FILE vite-app/src/components/Dashboard.tsx ---
 
-// version 2.3 - Final Query Fix after adding DB relationship.
+// version 2.4 - MVC API Integration & Eager Loading
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 
-// Defines the full shape of the data we are fetching, including nested relations.
-interface QuoteRequest {
+// --- NEW EXPANDED INTERFACE ---
+// This now includes the new tables we are fetching.
+interface Quote { id: string; quote_amount: number; details: string; status: string; }
+interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
+export interface QuoteRequest {
   id: string;
   created_at: string;
   customer_name: string;
@@ -7922,6 +7968,8 @@ interface QuoteRequest {
     phone: string;
   } | null;
   service_address: string;
+  quotes: Quote[];
+  request_notes: RequestNote[];
 }
 
 const Dashboard: React.FC = () => {
@@ -7929,7 +7977,6 @@ const Dashboard: React.FC = () => {
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -7941,27 +7988,32 @@ const Dashboard: React.FC = () => {
       }
 
       try {
-        // This query now works because we created the foreign key relationship in the database.
+        // --- UPDATED QUERY ---
+        // Eagerly loads all related data for quotes and notes in a single network request.
         const { data, error: fetchError } = await supabase
           .from('requests')
           .select(`
             *,
             user_profiles ( name, email, phone ),
-            quote_attachments ( file_name, mime_type )
+            quote_attachments ( file_name, mime_type ),
+            quotes ( * ),
+            request_notes ( * )
           `)
           .order('created_at', { ascending: false });
 
         if (fetchError) throw fetchError;
         
+        // We cast the result to our detailed QuoteRequest interface.
         setRequests((data as QuoteRequest[]) || []);
 
       } catch (err: any) {
-        setError("Failed to fetch quote requests.");
+        setError("Failed to fetch quote requests. Please check the browser console for details.");
         console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchRequests();
   }, [profile]);
 
@@ -7996,7 +8048,7 @@ const Dashboard: React.FC = () => {
     return (
         <Box sx={{ maxWidth: '1200px', margin: 'auto', p: 3, textAlign: 'center' }}>
             <Typography variant="h5" color="error">Error Loading Data</Typography>
-            <Typography>{"An error occurred while fetching data. Please check the console for details."}</Typography>
+            <Typography>{error}</Typography>
         </Box>
     );
   }
@@ -8012,12 +8064,14 @@ const Dashboard: React.FC = () => {
             {requests.length > 0 ? (
               requests.map((req, index) => (
                 <React.Fragment key={req.id}>
-                  <ListItem button onClick={() => handleOpenModal(req)}>
+                  {/* Using ListItemButton for better accessibility and hover effects */}
+                  <ListItemButton onClick={() => handleOpenModal(req)}>
                     <ListItemText
-                      primary={`${req.problem_category} - ${req.customer_name || 'N/A'}`}
+                      primary={`${req.problem_category.replace(/_/g, " ")} - ${req.customer_name || 'N/A'}`}
                       secondary={`Received: ${new Date(req.created_at).toLocaleString()} | Status: ${req.status}`}
+                      primaryTypographyProps={{ sx: { textTransform: 'capitalize' } }}
                     />
-                  </ListItem>
+                  </ListItemButton>
                   {index < requests.length - 1 && <Divider />}
                 </React.Fragment>
               ))
@@ -8214,10 +8268,12 @@ export default ProfileModal;
 
 --- START OF FILE vite-app/src/components/QuoteAgentModal.tsx ---
 
+// QuoteAgentModal.tsx (v2.0 - Refactored API Integration)
+
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabaseClient";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
+import apiClient from "../lib/apiClient"; // <-- IMPORT the new apiClient
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
 
 // Diagnostic component (kept for development)
@@ -8258,7 +8314,8 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
+  // Use process.env for CommonJS compatibility
+  const showDebugPanel = typeof process !== 'undefined' && process.env && process.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -8308,12 +8365,22 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const handleSend = async () => {
     if (loading || userInput.trim() === "") return;
     const currentAnswer = userInput;
-    const updatedRawAnswers = [...allAnswers, currentAnswer];
-    setAllAnswers(updatedRawAnswers);
+    
+    const allQuestions = [...initialQuestions, ...followUpQuestions];
+    const structuredAnswers = [...allAnswers, currentAnswer].map((ans, index) => ({
+      question: allQuestions[index] || 'Follow-up',
+      answer: ans,
+    }));
+    
+    setAllAnswers(prev => [...prev, currentAnswer]);
+
     if (status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length) {
-      const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex].key;
-      setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
+      const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex]?.key ?? '';
+      if (genericQuestionKey) {
+        setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
+      }
     }
+    
     setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
     setUserInput("");
     setLoading(true);
@@ -8322,23 +8389,30 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       const isLastInitialQuestion = currentQuestionIndex === initialQuestions.length - 1;
       if (isLastInitialQuestion) {
         setStatus('AWAITING_GPT');
-        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers to see if I need any more details..." }]);
+        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers..." }]);
         try {
           const payload = {
-            clarifyingAnswers: updatedRawAnswers,
+            clarifyingAnswers: structuredAnswers,
             category: selectedCategory?.key,
             problem_description: genericAnswers['problem_description'] || ''
           };
-          const response = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          const data = await response.json();
+          
+          const { data } = await apiClient.post('/requests/gpt-follow-up', payload);
+          
           if (data.additionalQuestions && data.additionalQuestions.length > 0) {
             setFollowUpQuestions(data.additionalQuestions);
             setCurrentQuestionIndex(0);
             setStatus('FOLLOW_UP_QUESTIONS');
             setChatHistory((prev) => [...prev, { sender: "agent", message: data.additionalQuestions[0] ?? "" }]);
-          } else { setStatus('SUMMARY'); }
-        } catch (err) { console.error("GPT request failed, proceeding to summary.", err); setStatus('SUMMARY'); } 
-        finally { setLoading(false); }
+          } else { 
+            setStatus('SUMMARY'); 
+            setChatHistory(prev => [...prev, { sender: "agent", message: "Everything looks clear. Please review your request below." }]);
+          }
+        } catch (err) { 
+            console.error("GPT request failed, proceeding to summary.", err); 
+            setStatus('SUMMARY'); 
+            setChatHistory(prev => [...prev, { sender: "agent", message: "Couldn't reach my assistant, but please review your request below." }]);
+        } finally { setLoading(false); }
       } else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
@@ -8347,8 +8421,10 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       }
     } else if (status === 'FOLLOW_UP_QUESTIONS') {
       const isLastFollowUpQuestion = currentQuestionIndex === followUpQuestions.length - 1;
-      if (isLastFollowUpQuestion) { setStatus('SUMMARY'); } 
-      else {
+      if (isLastFollowUpQuestion) { 
+        setStatus('SUMMARY'); 
+        setChatHistory(prev => [...prev, { sender: "agent", message: "Thank you. Please review your request below." }]);
+      } else {
         const nextIdx = currentQuestionIndex + 1;
         setCurrentQuestionIndex(nextIdx);
         setChatHistory((prev) => [...prev, { sender: "agent", message: followUpQuestions[nextIdx] ?? "" }]);
@@ -8363,12 +8439,6 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setErrorMessage("");
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            throw new Error("You are not signed in. Please sign in again.");
-        }
-        const token = session.access_token;
-
         const allQuestions = [...initialQuestions, ...followUpQuestions];
         const structuredAnswers = allQuestions.map((question, index) => ({
             question: question,
@@ -8383,17 +8453,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             ...genericAnswers
         };
         
-        const response = await fetch("/api/submit-quote", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-        if (!response.ok) { throw new Error(result.error || 'Failed to submit quote data.'); }
+        const { data: result } = await apiClient.post('/requests/submit', payload);
         const newRequestId = result.request?.id;
 
         if (selectedFile && newRequestId) {
@@ -8401,27 +8461,19 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             formData.append('attachment', selectedFile);
             formData.append('request_id', newRequestId);
             
-            const uploadResponse = await fetch("/api/upload-attachment", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: formData,
+            await apiClient.post('/requests/attachments', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
             });
-
-            if (!uploadResponse.ok) {
-                const uploadResult = await uploadResponse.json();
-                console.error('File upload failed, but the quote request was created.');
-                throw new Error(uploadResult.error || 'File upload failed after quote submission.');
-            }
         }
 
         setStatus('SUBMITTED');
     } catch (err: any) {
         console.error("Submission Error:", err);
-        setErrorMessage("Sorry, we couldn't submit your request. Please check your connection and try again, or call us directly for immediate assistance.");
+        const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
+        setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   }
 
   if (!isOpen) return null;
@@ -8495,7 +8547,10 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 {profile && ( <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}> <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </div> )}
                 <div style={{ marginTop: 16, borderTop: '1px solid #eee', paddingTop: '16px' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Upload Photos (Optional)</Typography>
-                  <input type="file" accept="image/jpeg, image/png, application/pdf" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} style={{ width: '100%' }} />
+                  <input type="file" accept="image/jpeg, image/png, application/pdf" onChange={(e) => {
+                    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                    setSelectedFile(file);
+                  }} style={{ width: '100%' }} />
                   {selectedFile && <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>Selected: {selectedFile.name}</Typography>}
                 </div>
               </div>
@@ -8544,162 +8599,550 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 export default QuoteAgentModal;
 --- END OF FILE vite-app/src/components/QuoteAgentModal.tsx ---
 
+--- START OF FILE vite-app/src/components/QuoteFormModal.tsx ---
+
+
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
+import Grid from '@mui/material/Grid';
+import { X as XIcon, CalendarDays, Paperclip } from 'lucide-react';
+import apiClient from '../lib/apiClient';
+
+interface QuoteFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  quote?: any; // Replace with your Quote type
+  editable: boolean;
+  request?: any; // Should be the full request object with user_profiles, answers, etc.
+  requestId?: string;
+}
+
+interface Item {
+  description: string;
+  price: string;
+}
+
+const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request: initialRequest, requestId }) => {
+  const [request, setRequest] = useState<any>(initialRequest);
+  const [loadingRequest, setLoadingRequest] = useState(false);
+  const [errorRequest, setErrorRequest] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialRequest && requestId) {
+      setLoadingRequest(true);
+      setErrorRequest(null);
+      (async () => {
+        try {
+          const res = await apiClient.get(`/requests/${requestId}`);
+          setRequest(res.data);
+        } catch (err: any) {
+          setErrorRequest(err?.response?.data?.error || err.message || 'Unknown error');
+          setRequest(null);
+        } finally {
+          setLoadingRequest(false);
+        }
+      })();
+    } else {
+      setRequest(initialRequest);
+    }
+  }, [initialRequest, requestId]);
+  const [goodUntil, setGoodUntil] = useState(quote?.goodUntil || '');
+  const [laborItems, setLaborItems] = useState<Item[]>(quote?.laborItems || [{ description: '', price: '' }]);
+  const [materialItems, setMaterialItems] = useState<Item[]>(quote?.materialItems || [{ description: '', price: '' }]);
+  const [tax, setTax] = useState(quote?.tax || '');
+  const [notes, setNotes] = useState(quote?.notes || '');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [requestInfo, setRequestInfo] = useState<any>(null);
+  
+  useEffect(() => {
+    if (requestId && isOpen) {
+      (async () => {
+        try {
+          const res = await apiClient.get(`/requests/${requestId}`);
+          setRequestInfo(res.data);
+        } catch (err: any) {
+          setRequestInfo(null);
+        }
+      })();
+    }
+  }, [requestId, isOpen]);
+
+  // Lookup job type and description from request
+  const jobType = request?.problem_category || 'N/A';
+  const problemDescription = request?.answers?.find((a: any) => a.question.toLowerCase().includes('describe the general problem'))?.answer || 'N/A';
+
+  // BC tax rates
+  const GST_RATE = 0.05;
+  const PST_RATE = 0.07;
+
+  // Calculate totals
+  const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+
+  // requestId is already in props
+  // GST applies to both labor and materials
+  const gst = (laborTotal + materialTotal) * GST_RATE;
+  // PST logic
+  const pst = jobType === 'commercial'
+    ? (laborTotal + materialTotal) * PST_RATE
+    : materialTotal * PST_RATE;
+
+  const totalPrice = (laborTotal + materialTotal + gst + pst).toFixed(2);
+
+
+  // Validation: At least one cost item
+  const hasValidCostItem =
+    laborItems.some(item => item.description && parseFloat(item.price) > 0) ||
+    materialItems.some(item => item.description && parseFloat(item.price) > 0);
+
+  const handleAddLabor = () => setLaborItems([...laborItems, { description: '', price: '' }]);
+  const handleAddMaterial = () => setMaterialItems([...materialItems, { description: '', price: '' }]);
+
+  // Save Quote handler
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const handleSaveQuote = async () => {
+    setSaveError(null);
+    if (!hasValidCostItem) {
+      setSaveError('Please add at least one labor or material item with a non-zero price.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        goodUntil,
+        laborItems: laborItems.filter(item => item.description && parseFloat(item.price) > 0),
+        materialItems: materialItems.filter(item => item.description && parseFloat(item.price) > 0),
+        tax,
+        notes,
+        attachments: [], // TODO: handle attachments if needed
+        total: totalPrice,
+      };
+      await apiClient.post(`/requests/${requestId}/quotes`, payload);
+      onClose();
+    } catch (err: any) {
+      setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <Paper elevation={24} sx={{ width: '95%', maxWidth: '700px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden' }}>
+        {/* Header Section */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {request?.problem_category ? `Quote for ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}` : 'Create Quote'}
+          </Typography>
+          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+        </Box>
+
+        {/* --- Request Info Section --- */}
+        <Box sx={{ mb: 2, mx: 3, mt: 3, p: 2, bgcolor: '#e3f2fd', borderRadius: 2, border: '1px solid #90caf9', position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 120 }}>
+          {loadingRequest ? (
+            <Box sx={{ fontSize: 16, color: 'text.primary', lineHeight: 1.7, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              Loading request info...
+            </Box>
+          ) : errorRequest ? (
+            <Box sx={{ fontSize: 16, color: 'error.main', lineHeight: 1.7, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              Error: {errorRequest}
+            </Box>
+          ) : (
+            <Box sx={{ fontSize: 16, color: 'text.primary', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <span role="img" aria-label="user" style={{ fontSize: 18 }}>👤</span>
+                <span>{request?.user_profiles?.name || 'N/A'}</span>
+                {request?.user_profiles?.phone && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    sx={{ ml: 2, minWidth: 0, px: 1, fontSize: 14 }}
+                    component="a"
+                    href={`tel:${request.user_profiles.phone}`}
+                    startIcon={<span role="img" aria-label="phone" style={{ fontSize: 18 }}>📞</span>}
+                  >
+                    {request.user_profiles.phone}
+                  </Button>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span role="img" aria-label="location" style={{ fontSize: 18 }}>📍</span>
+                <span>{request?.user_profiles?.address || ''}{request?.user_profiles?.address ? ', ' : ''}{request?.user_profiles?.city || ''}{request?.user_profiles?.city ? ', ' : ''}{request?.user_profiles?.province || ''}{request?.user_profiles?.province ? ' ' : ''}{request?.user_profiles?.postal_code || ''}</span>
+              </Box>
+              <Box>
+                <span>
+                  {request?.answers?.find((a: any) => a.question.toLowerCase().includes('describe the general problem'))?.answer || 'N/A'}
+                </span>
+              </Box>
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+            <TextField
+              label="Good Until"
+              type="date"
+              value={goodUntil}
+              onChange={e => setGoodUntil(e.target.value)}
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              disabled={!editable}
+              sx={{ minWidth: 160, mb: 1, bgcolor: '#fff', borderRadius: 1 }}
+            />
+            <Button variant="outlined" color="primary" onClick={onClose}>Return to Request</Button>
+          </Box>
+        </Box>
+  <Box sx={{ flex: '1 1 auto', overflowY: 'auto', pr: 1, mb: 2, px: 3 }}>
+          {/* ...existing code... */}
+    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Labor</Typography>
+          {laborItems.map((item, idx) => (
+            <Grid container spacing={1} key={idx} sx={{ mb: 1 }}>
+              <Grid item xs={8}>
+                <TextField
+                  label="Description"
+                  value={item.description}
+                  onChange={e => {
+                    const newItems = [...laborItems];
+                    if (newItems[idx]) newItems[idx].description = e.target.value;
+                    setLaborItems(newItems);
+                  }}
+                  fullWidth
+                  disabled={!editable}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  label="Price"
+                  value={item.price}
+                  onChange={e => {
+                    const newItems = [...laborItems];
+                    if (newItems[idx]) newItems[idx].price = e.target.value;
+                    setLaborItems(newItems);
+                  }}
+                  fullWidth
+                  disabled={!editable}
+                />
+              </Grid>
+            </Grid>
+          ))}
+          {editable && <Button onClick={handleAddLabor} sx={{ mb: 2 }}>Add Labor Item</Button>}
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Materials</Typography>
+          {materialItems.map((item, idx) => (
+            <Grid container spacing={1} key={idx} sx={{ mb: 1 }}>
+              <Grid item xs={8}>
+                <TextField
+                  label="Description"
+                  value={item.description}
+                  onChange={e => {
+                    const newItems = [...materialItems];
+                    if (newItems[idx]) newItems[idx].description = e.target.value;
+                    setMaterialItems(newItems);
+                  }}
+                  fullWidth
+                  disabled={!editable}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  label="Price"
+                  value={item.price}
+                  onChange={e => {
+                    const newItems = [...materialItems];
+                    if (newItems[idx]) newItems[idx].price = e.target.value;
+                    setMaterialItems(newItems);
+                  }}
+                  fullWidth
+                  disabled={!editable}
+                />
+              </Grid>
+            </Grid>
+          ))}
+          {editable && <Button onClick={handleAddMaterial} sx={{ mb: 2 }}>Add Material Item</Button>}
+          <Divider sx={{ my: 2 }} />
+          <Grid container spacing={2}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Notes / Clarifications"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  fullWidth
+                  multiline
+                  disabled={!editable}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments / Screenshots</Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+            {/* Display uploaded attachments here */}
+          </Box>
+          {editable && (
+            <Button component="label" startIcon={<Paperclip />} sx={{ mb: 2 }}>
+              Upload Attachment
+              <input type="file" hidden multiple onChange={e => setAttachments(Array.from(e.target.files || []))} />
+            </Button>
+          )}
+          <Divider sx={{ my: 2 }} />
+          {/* Cost Section at Bottom with GST/PST breakdown */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Total Cost</Typography>
+            <Typography variant="h5" color="primary">${totalPrice}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              (Labor: ${laborTotal.toFixed(2)} + Materials: ${materialTotal.toFixed(2)})<br/>
+              GST (5%): ${gst.toFixed(2)}<br/>
+              PST (7%): ${pst.toFixed(2)}<br/>
+              <span style={{fontWeight:'bold'}}>Job Type: {jobType.charAt(0).toUpperCase() + jobType.slice(1)}</span>
+            </Typography>
+          </Box>
+        </Box>
+        {editable && (
+          <Box sx={{ position: 'sticky', bottom: 0, left: 0, bgcolor: '#f4f6f8', pt: 2, pb: 1, zIndex: 10 }}>
+            {saveError && <Typography color="error" sx={{ mb: 1 }}>{saveError}</Typography>}
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleSaveQuote}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Quote'}
+            </Button>
+          </Box>
+        )}
+      </Paper>
+    </div>
+  );
+};
+
+export default QuoteFormModal;
+
+--- END OF FILE vite-app/src/components/QuoteFormModal.tsx ---
+
 --- START OF FILE vite-app/src/components/RequestDetailModal.tsx ---
 
-// RequestDetailModal.tsx (v3.3 - Final Polished UI)
+// RequestDetailModal.tsx (v6.6 - Final Polished UI Spec Implementation)
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, Button, CircularProgress, Grid, Chip, Select, MenuItem, FormControl, InputLabel, ListItemIcon } from '@mui/material';
-import { X as XIcon, User, Phone, Mail, MapPin, Wrench, Clock, Image as ImageIcon, FileText as FileTextIcon } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../lib/apiClient';
+import { Box, Typography, Paper, Grid, Chip, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
+import { X as XIcon, User, Phone, Mail, MapPin, MessageSquare, FilePlus, Image as ImageIcon, FileText as FileTextIcon, HelpCircle, AlertTriangle } from 'lucide-react';
+import { QuoteRequest } from './Dashboard';
+import QuoteFormModal from './QuoteFormModal';
 
-// --- Interfaces (no changes needed) ---
-interface UserProfile { name: string; email: string; phone: string; }
-interface Attachment { file_name: string; mime_type: string | null; }
-interface Answer { question: string; answer: string; }
-interface QuoteRequest {
-  id: string; created_at: string; problem_category: string; status: string;
-  answers: Answer[]; quote_attachments: Attachment[]; service_address: string;
-  user_profiles: UserProfile | null;
+interface RequestDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  request: QuoteRequest | null;
+  onUpdateRequest: (updatedRequest: QuoteRequest) => void;
 }
-interface RequestDetailModalProps { isOpen: boolean; onClose: () => void; request: QuoteRequest | null; }
 
-const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request }) => {
+// Reusable component for consistent key-value pair display in the Q&A section
+const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
+    <Grid container item xs={12} spacing={1} sx={{ mb: 1 }}>
+        <Grid item xs={12} sm={5}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                {question}
+            </Typography>
+        </Grid>
+        <Grid item xs={12} sm={7}>
+            <Typography variant="body1">
+                {answer || 'N/A'}
+            </Typography>
+        </Grid>
+    </Grid>
+);
+
+const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
+  const { profile } = useAuth();
   const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [quoteAmount, setQuoteAmount] = useState('');
+  const [quoteDetails, setQuoteDetails] = useState('');
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteModalMode, setQuoteModalMode] = useState<'create'|'update'>('create');
 
-  useEffect(() => { if (request) setCurrentStatus(request.status); }, [request]);
+  useEffect(() => {
+    if (request) {
+      setCurrentStatus(request.status);
+      setShowQuoteForm(false);
+      setQuoteAmount('');
+      setQuoteDetails('');
+    }
+  }, [request]);
+
+  useEffect(() => {
+    if (!request?.quote_attachments?.length) {
+      setImageUrls({}); return;
+    }
+    let isMounted = true;
+    const fetchAttachments = async () => {
+      setLoadingImages(true);
+      const newImageUrls: { [key: string]: string } = {};
+      for (const att of request.quote_attachments) {
+        if (att.mime_type?.startsWith('image/')) {
+          try {
+            const response = await apiClient.get(`/requests/storage-object/${request.id}/${att.file_name}`, { responseType: 'blob' });
+            if (response.data && isMounted) newImageUrls[att.file_name] = URL.createObjectURL(response.data);
+          } catch (error) { console.error(`Failed to fetch attachment blob:`, error); }
+        }
+      }
+      if (isMounted) { setImageUrls(newImageUrls); setLoadingImages(false); }
+    };
+    fetchAttachments();
+    return () => { isMounted = false; Object.values(imageUrls).forEach(URL.revokeObjectURL); };
+  }, [request]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!request) return;
     setIsUpdating(true);
     setCurrentStatus(newStatus);
-    const { error } = await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
-    if (error) { console.error("Failed to update status:", error); setCurrentStatus(request.status); }
+    try {
+      await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
+      onUpdateRequest({ ...request, status: newStatus });
+    } catch (error) { console.error("Failed to update status:", error); setCurrentStatus(request.status); }
     setIsUpdating(false);
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchAttachments = async () => {
-      setImageUrls({});
-      if (!request || !request.quote_attachments || request.quote_attachments.length === 0) return;
-      
-      setLoadingImages(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !isMounted) { setLoadingImages(false); return; }
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !request) return;
+    setIsUpdating(true);
+    try {
+      const { data: addedNote } = await apiClient.post(`/requests/${request.id}/notes`, { note: newNote });
+      const updatedNotes = [...request.request_notes, addedNote].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      onUpdateRequest({ ...request, request_notes: updatedNotes });
+      setNewNote("");
+    } catch (error) { console.error("Failed to add note:", error); } 
+    finally { setIsUpdating(false); }
+  };
 
-      const urls: { [key: string]: string } = {};
-      await Promise.all(
-        request.quote_attachments.map(async (att) => {
-          try {
-            const encodedFileName = encodeURIComponent(att.file_name);
-            const response = await fetch(`/api/storage/object/${request.id}/${encodedFileName}`, {
-              method: 'GET', headers: { 'Authorization': `Bearer ${session.access_token}` },
-            });
-            if (response.ok) {
-              const blob = await response.blob();
-              if (isMounted) urls[att.file_name] = URL.createObjectURL(blob);
-            }
-          } catch (error) { console.error("Failed to fetch attachment blob:", error); }
-        })
-      );
-      if (isMounted) { setImageUrls(urls); setLoadingImages(false); }
-    };
-
-    if (isOpen) fetchAttachments();
-    return () => { isMounted = false; Object.values(imageUrls).forEach(url => URL.revokeObjectURL(url)); };
-  }, [isOpen, request]);
+  const handleCreateQuote = async () => {
+    if (!quoteAmount || !quoteDetails || !request) return;
+    setIsUpdating(true);
+    try {
+      const payload = { quote_amount: parseFloat(quoteAmount), details: quoteDetails };
+      const { data: newQuote } = await apiClient.post(`/requests/${request.id}/quotes`, payload);
+      const updatedQuotes = [...request.quotes, newQuote];
+      onUpdateRequest({ ...request, quotes: updatedQuotes, status: 'quoted' });
+      setCurrentStatus('quoted');
+    } catch (error) { console.error("Failed to create quote:", error); } 
+    finally { setIsUpdating(false); }
+  };
 
   if (!isOpen || !request) return null;
-
+  const isAdmin = profile?.role === 'admin';
   const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
     const colorMap = { new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default' };
     return colorMap[status as keyof typeof colorMap] || 'default';
   };
 
+  const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
+  const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={12} sx={{ width: '90%', maxWidth: '900px', height: '90vh', p: { xs: 2, sm: 3, md: 4 }, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f7f9fc' }}>
-        <Button onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, minWidth: 'auto', p: 1, zIndex: 1 }}><XIcon size={24} /></Button>
+      <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: { xs: 2, md: 3 }, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8' }}>
         
-        <Box sx={{ mb: 2, flexShrink: 0 }}>
-          <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Quote Request Details</Typography>
-          <Typography variant="caption" color="text.secondary">Request ID: {request.id}</Typography>
-        </Box>
-
-        <Paper elevation={0} sx={{ p: 2, mb: 2, bgcolor: '#e3f2fd', border: '1px solid #bbdefb', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Wrench size={24} color="#1976d2" />
-              <Typography variant="h6" component="h3" sx={{ fontWeight: 500 }}>
-                {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
-                  <Clock size={16} />
-                  <Typography variant="body2">{new Date(request.created_at).toLocaleString()}</Typography>
-              </Box>
-            </Box>
+        <Box sx={{ flexShrink: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
+            <Typography variant="caption" color="text.secondary">ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}</Typography>
           </Box>
-          <Divider sx={{ my: 1.5 }} />
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}><List dense><ListItem><ListItemIcon sx={{minWidth: 32}}><User size={18}/></ListItemIcon><ListItemText primary="Name" secondary={request.user_profiles?.name || 'N/A'} /></ListItem><ListItem><ListItemIcon sx={{minWidth: 32}}><Mail size={18}/></ListItemIcon><ListItemText primary="Email" secondary={request.user_profiles?.email || 'N/A'} /></ListItem></List></Grid>
-            <Grid item xs={12} sm={6}><List dense><ListItem><ListItemIcon sx={{minWidth: 32}}><Phone size={18}/></ListItemIcon><ListItemText primary="Phone" secondary={request.user_profiles?.phone || 'N/A'} /></ListItem><ListItem><ListItemIcon sx={{minWidth: 32}}><MapPin size={18}/></ListItemIcon><ListItemText primary="Service Address" secondary={request.service_address || 'N/A'} /></ListItem></List></Grid>
-          </Grid>
-        </Paper>
+          <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16 }}><XIcon size={24} /></IconButton>
+        </Box>
+        <Divider sx={{ mb: 2, flexShrink: 0 }} />
 
-        {/* --- MAIN SCROLLABLE CONTENT AREA --- */}
-        <Box sx={{ overflowY: 'auto', flexGrow: 1, pr: 1.5 }}>
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'white', mb: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>Customer's Answers</Typography>
-              <List dense>
-                {request.answers.map((item, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}>
-                      <ListItemText primary={<Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.primary' }}>{item.question}</Typography>} />
-                      <ListItemText secondary={<Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', pl: 2, color: 'text.secondary' }}>{item.answer}</Typography>} />
-                    </ListItem>
-                    {index < request.answers.length - 1 && <Divider component="li" light />}
-                  </React.Fragment>
-                ))}
-              </List>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1}}><User size={16}/> Customer Info</Typography>
+              <Grid container spacing={2} sx={{mt: 0.5}}>
+                {/* Re-using DetailItem for consistency was a good idea, but here we need more control */}
+                <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography>
+                    <Typography variant="body1">{request.user_profiles?.name || 'N/A'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Phone</Typography>
+                    <Button component="a" href={`tel:${request.user_profiles?.phone}`} size="small" sx={{p:0, justifyContent: 'flex-start'}}>{request.user_profiles?.phone}</Button>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography>
+                    <Button component="a" href={`mailto:${request.user_profiles?.email}`} size="small" sx={{p:0, justifyContent: 'flex-start', textTransform: 'none'}}>{request.user_profiles?.email}</Button>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography>
+                    <Button component="a" href={`https://maps.google.com/?q=${encodeURIComponent(request.service_address)}`} target="_blank" size="small" sx={{p:0, justifyContent: 'flex-start', textAlign: 'left'}}>{request.service_address}</Button>
+                </Grid>
+              </Grid>
             </Paper>
 
-            {request.quote_attachments && request.quote_attachments.length > 0 && (
-              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'white' }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>Attachments</Typography>
-                {loadingImages ? <CircularProgress size={24} /> : (
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {request.quote_attachments.map((att) => (
-                      <a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={`View ${att.file_name}`}>
-                        {att.mime_type?.startsWith('image/') ? (
-                           <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd', cursor: 'pointer' }} />
-                        ) : (
-                          <Box sx={{width: 120, height: 120, border: '1px solid #ddd', borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p:1}}>
-                            <FileTextIcon size={24} />
-                            <Typography variant="caption" sx={{ mt: 1, wordBreak: 'break-all' }}>{att.file_name}</Typography>
-                          </Box>
-                        )}
-                      </a>
-                    ))}
+            <Paper variant="outlined">
+              <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1}}><AlertTriangle size={16}/> Reported Problem</Typography>
+                  <Typography variant="body1" sx={{ fontStyle: 'italic', mt: 1 }}>"{problemDescriptionAnswer?.answer || 'N/A'}"</Typography>
+              </Box>
+              <Divider />
+              <Box sx={{p: 2}}>
+                <Grid container spacing={2}>
+                    {otherAnswers.map(ans => (<AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />))}
+                </Grid>
+              </Box>
+            </Paper>
+            
+            {request.quote_attachments.length > 0 && (
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="overline" color="text.secondary">Attachments</Typography>
+                {loadingImages ? <CircularProgress size={24} sx={{mt:1}}/> : (
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    {request.quote_attachments.map((att) => (<a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>{att.mime_type?.startsWith('image/') && imageUrls[att.file_name] ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> : <Box sx={{width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200'}}><FileTextIcon size={24} /><Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography></Box>}</a>))}
                   </Box>
                 )}
               </Paper>
             )}
+
+            <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16}/> Communication Log</Typography>
+              <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
+                {request.request_notes.length > 0 ? request.request_notes.map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'You' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{p:2, textAlign:'center'}}>No notes yet.</Typography>}
+              </Box>
+              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or log a call..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Save Note</Button></Box>
+              </Box>
+            </Paper>
+          </Box>
         </Box>
 
-        {/* --- ACTION FOOTER --- */}
-        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
-          <Button variant="outlined" startIcon={<Phone />}>Call Customer</Button>
-          <Button variant="contained" onClick={onClose}>Close</Button>
+        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          {isAdmin && (
+            <Box>
+      {request.quotes.length > 0 ? (
+        <Button variant="outlined" color="success" startIcon={<FilePlus/>} onClick={() => { setQuoteModalMode('update'); setShowQuoteForm(true); }}>Update Quote</Button>
+      ) : (
+        <Button variant="contained" startIcon={<FilePlus />} onClick={() => { setQuoteModalMode('create'); setShowQuoteForm(true); }}>Create Quote</Button>
+      )}
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 'auto' }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
+            <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>Call Customer</Button>
+          </Box>
         </Box>
       </Paper>
+      <QuoteFormModal
+        isOpen={showQuoteForm}
+        onClose={() => setShowQuoteForm(false)}
+        quote={quoteModalMode === 'update' ? request.quotes[0] : undefined}
+        editable={isAdmin}
+        address={request?.address || ''}
+        requestId={request.id}
+      />
     </div>
   );
 };
@@ -9174,16 +9617,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
-import AuthModal from './components/AuthModal.tsx';
-import QuoteAgentModal from './components/QuoteAgentModal.tsx';
-import ServicesSection from './components/ServicesSection.tsx';
-import ReviewsSection from './components/ReviewsSection.tsx';
-import AboutSection from './components/AboutSection.tsx';
-import ContactSection from './components/ContactSection.tsx';
-import UserMenu from './components/UserMenu.tsx';
-import ProfileModal from './components/ProfileModal.tsx';
-import Dashboard from './components/Dashboard.tsx'; // <-- IMPORT THE NEW DASHBOARD
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthModal from './components/AuthModal';
+import QuoteAgentModal from './components/QuoteAgentModal';
+import ServicesSection from './components/ServicesSection';
+import ReviewsSection from './components/ReviewsSection';
+import AboutSection from './components/AboutSection';
+import ContactSection from './components/ContactSection';
+import UserMenu from './components/UserMenu';
+import ProfileModal from './components/ProfileModal';
+import Dashboard from './components/Dashboard'; // <-- IMPORT THE NEW DASHBOARD
 import {
   Phone,
   Wrench,
@@ -9345,7 +9788,7 @@ const AppContent: React.FC = () => {
         <ProfileModal
           isOpen={true}
           userId={user.id}
-          email={user.email}
+          email={user.email ?? ''}
           onComplete={refreshProfile}
         />
       )}
@@ -9372,7 +9815,7 @@ if (root) {
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-  "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     // File Layout
     // "rootDir": "./src",
     // "outDir": "./dist",

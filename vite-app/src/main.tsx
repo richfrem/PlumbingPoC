@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
-import AuthModal from './components/AuthModal.tsx';
-import QuoteAgentModal from './components/QuoteAgentModal.tsx';
-import ServicesSection from './components/ServicesSection.tsx';
-import ReviewsSection from './components/ReviewsSection.tsx';
-import AboutSection from './components/AboutSection.tsx';
-import ContactSection from './components/ContactSection.tsx';
-import UserMenu from './components/UserMenu.tsx';
-import ProfileModal from './components/ProfileModal.tsx';
-import Dashboard from './components/Dashboard.tsx'; // <-- IMPORT THE NEW DASHBOARD
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthModal from './components/AuthModal';
+import QuoteAgentModal from './components/QuoteAgentModal';
+import ServicesSection from './components/ServicesSection';
+import ReviewsSection from './components/ReviewsSection';
+import AboutSection from './components/AboutSection';
+import ContactSection from './components/ContactSection';
+import UserMenu from './components/UserMenu';
+import ProfileModal from './components/ProfileModal';
+import Dashboard from './components/Dashboard'; // <-- IMPORT THE NEW DASHBOARD
 import {
   Phone,
   Wrench,
@@ -171,7 +171,7 @@ const AppContent: React.FC = () => {
         <ProfileModal
           isOpen={true}
           userId={user.id}
-          email={user.email}
+          email={user.email ?? ''}
           onComplete={refreshProfile}
         />
       )}

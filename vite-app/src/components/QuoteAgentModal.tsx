@@ -44,7 +44,8 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
+  // Use process.env for CommonJS compatibility
+  const showDebugPanel = typeof process !== 'undefined' && process.env && process.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,8 +105,10 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     setAllAnswers(prev => [...prev, currentAnswer]);
 
     if (status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length) {
-      const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex].key;
-      setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
+      const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex]?.key ?? '';
+      if (genericQuestionKey) {
+        setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
+      }
     }
     
     setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
@@ -274,7 +277,10 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 {profile && ( <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}> <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </div> )}
                 <div style={{ marginTop: 16, borderTop: '1px solid #eee', paddingTop: '16px' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Upload Photos (Optional)</Typography>
-                  <input type="file" accept="image/jpeg, image/png, application/pdf" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} style={{ width: '100%' }} />
+                  <input type="file" accept="image/jpeg, image/png, application/pdf" onChange={(e) => {
+                    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                    setSelectedFile(file);
+                  }} style={{ width: '100%' }} />
                   {selectedFile && <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>Selected: {selectedFile.name}</Typography>}
                 </div>
               </div>
