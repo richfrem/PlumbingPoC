@@ -1,3 +1,5 @@
+// vite-app/src/main.tsx
+
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -9,7 +11,7 @@ import AboutSection from './components/AboutSection';
 import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
-import Dashboard from './components/Dashboard'; // <-- IMPORT THE NEW DASHBOARD
+import Dashboard from './components/Dashboard';
 import {
   Phone,
   Wrench,
@@ -23,8 +25,10 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
+
+  // --- NEW STATE FOR PROFILE MODAL ---
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
-  // --- FORTIFICATION v1.2: Simple Hash-Based Routing ---
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -36,13 +40,12 @@ const AppContent: React.FC = () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
-  // --- END FORTIFICATION ---
 
   const handleOpenQuoteModal = () => {
     if (!user) {
       setShowAuthModal(true);
     } else if (profileIncomplete) {
-      // Profile modal is shown automatically
+      // Profile modal is shown automatically by the logic below
     } else {
       setShowAgentModal(true);
     }
@@ -109,7 +112,7 @@ const AppContent: React.FC = () => {
                 <span>Call Now</span>
               </a>
               {user ? (
-                <UserMenu />
+                <UserMenu onOpenProfile={() => setShowProfileModal(true)} />
               ) : (
                 <button
                   className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 ml-2"
@@ -129,9 +132,7 @@ const AppContent: React.FC = () => {
         </header>
         
         <main className="pt-20 flex-grow">
-          {/* --- FORTIFICATION v1.2: Conditional Rendering based on Route --- */}
           {route === '#/dashboard' ? <Dashboard /> : renderHomePage()}
-          {/* --- END FORTIFICATION --- */}
         </main>
 
         {user && !profileIncomplete && (
@@ -167,12 +168,28 @@ const AppContent: React.FC = () => {
 
       {!user && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
       
+      {/* This modal is for first-time users or those with incomplete profiles */}
       {user && profileIncomplete && (
         <ProfileModal
           isOpen={true}
-          userId={user.id}
-          email={user.email ?? ''}
+          profile={profile}
+          onClose={() => { /* This modal cannot be closed by the user */ }}
           onComplete={refreshProfile}
+          isClosable={false} // Explicitly make it non-closable
+        />
+      )}
+
+      {/* This modal is for editing an existing, complete profile */}
+      {user && !profileIncomplete && (
+        <ProfileModal
+          isOpen={showProfileModal}
+          profile={profile}
+          onClose={() => setShowProfileModal(false)}
+          onComplete={() => {
+            refreshProfile();
+            setShowProfileModal(false);
+          }}
+          isClosable={true} // This one can be closed
         />
       )}
     </React.Fragment>

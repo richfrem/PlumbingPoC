@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const requestRoutes = require('./routes/requestRoutes'); // <-- Import the new router
+const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THE NEW USER ROUTER
 
 // --- Basic Setup ---
 const app = express();
@@ -31,6 +32,8 @@ app.use(express.json());
 
 // Delegate all routes starting with '/api/requests' to our new router file
 app.use('/api/requests', requestRoutes);
+
+app.use('/api/users', userRoutes); // <-- WIRE UP THE NEW ROUTER
 
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {
