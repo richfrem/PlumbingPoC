@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider, Chip } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
+import { AlertTriangle } from 'lucide-react';
 
 // Interfaces remain the same
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
@@ -15,6 +17,7 @@ export interface QuoteRequest {
   customer_name: string;
   problem_category: string;
   status: string;
+  is_emergency: boolean;
   answers: { question: string; answer: string }[];
   quote_attachments: {
     file_name: string;
@@ -44,15 +47,11 @@ const Dashboard: React.FC = () => {
       return;
     }
     try {
+      // ***************** THE FIX *****************
+      // Added quote_attachments(*) to the select query
       const { data, error: fetchError } = await supabase
         .from('requests')
-        .select(`
-          *,
-          user_profiles ( name, email, phone ),
-          quote_attachments ( file_name, mime_type ),
-          quotes ( * ),
-          request_notes ( * )
-        `)
+        .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -68,20 +67,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchAllRequests();
   }, [profile]);
-
-  const refreshRequestData = async (requestId: string) => {
+  
+  const refreshRequestData = async () => {
+    if (!selectedRequest) return;
     try {
+      // ***************** THE FIX *****************
+      // Also added quote_attachments(*) here for consistency
       const { data, error: fetchError } = await supabase
         .from('requests')
         .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
-        .eq('id', requestId)
+        .eq('id', selectedRequest.id)
         .single();
       
       if (fetchError) throw fetchError;
-
       if (data) {
         const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
         setSelectedRequest(updatedRequest);
       }
     } catch (err) {
@@ -89,9 +90,12 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (req: QuoteRequest) => {
-    setSelectedRequest(req);
-    setIsModalOpen(true);
+  const handleRowClick = (params: any) => {
+    const fullRequestData = requests.find(r => r.id === params.id);
+    if (fullRequestData) {
+      setSelectedRequest(fullRequestData);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -101,70 +105,56 @@ const Dashboard: React.FC = () => {
 
   const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
     const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary',
-      viewed: 'info',
-      quoted: 'warning',
-      scheduled: 'success',
-      completed: 'default'
+      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
     };
     return colorMap[status] || 'default';
   };
-  
-  if (loading) { /* ... */ }
-  if (!profile || profile.role !== 'admin') { /* ... */ }
-  if (error) { /* ... */ }
+
+  const columns: GridColDef[] = [
+    { field: 'is_emergency', headerName: 'Urgency', width: 120,
+      renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
+    },
+    { field: 'problem_category', headerName: 'Request Type', width: 180, 
+      valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A'
+    },
+    { field: 'customer_name', headerName: 'Customer Name', width: 180,
+      valueGetter: (value, row) => row.user_profiles?.name || row.customer_name || 'N/A'
+    },
+    { field: 'created_at', headerName: 'Received', width: 180, type: 'dateTime', valueGetter: (value) => value ? new Date(value) : null },
+    { field: 'quote_amount', headerName: 'Quote Amount', width: 130, type: 'number',
+      valueGetter: (value, row) => row.quotes?.sort((a: Quote, b: Quote) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.quote_amount,
+      renderCell: (params) => params.value != null ? `$${params.value.toFixed(2)}` : '—'
+    },
+    { field: 'status', headerName: 'Status', width: 120,
+      renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )
+    },
+    { field: 'service_address', headerName: 'Address', flex: 1 },
+  ];
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+  if (!profile || profile.role !== 'admin') return <Box sx={{ p: 4 }}><Typography>Access Denied.</Typography></Box>;
+  if (error) return <Box sx={{ p: 4 }}><Typography color="error">{error}</Typography></Box>;
 
   return (
     <>
-      {/* --- NEW STYLING APPLIED HERE --- */}
       <Box sx={{ bgcolor: '#f4f6f8', minHeight: 'calc(100vh - 80px)', p: { xs: 2, md: 4 } }}>
-        <Box sx={{ maxWidth: '1000px', margin: 'auto' }}>
+        <Box sx={{ maxWidth: '1200px', margin: 'auto' }}>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
             Plumber's Command Center
           </Typography>
-          
-          {requests.length > 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {requests.map((req) => (
-                <Paper 
-                  key={req.id} 
-                  component={ListItemButton} // Makes the whole paper clickable
-                  onClick={() => handleOpenModal(req)}
-                  sx={{ 
-                    p: 2, 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    transition: 'box-shadow 0.3s',
-                    '&:hover': {
-                      boxShadow: 3, // Elevate on hover
-                    }
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
-                      {req.problem_category.replace(/_/g, " ")} - {req.customer_name || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Received: {new Date(req.created_at).toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={req.status} 
-                    color={getStatusChipColor(req.status)}
-                    size="small"
-                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
-                  />
-                </Paper>
-              ))}
-            </Box>
-          ) : (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary">
-                No new quote requests found.
-              </Typography>
-            </Paper>
-          )}
+          <Paper sx={{ height: 600, width: '100%' }}>
+            <DataGrid
+              rows={requests}
+              columns={columns}
+              onRowClick={handleRowClick}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+                sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] },
+              }}
+              pageSizeOptions={[10, 25, 50]}
+              sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }}
+            />
+          </Paper>
         </Box>
       </Box>
 
@@ -173,7 +163,7 @@ const Dashboard: React.FC = () => {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           request={selectedRequest}
-          onUpdateRequest={() => refreshRequestData(selectedRequest.id)}
+          onUpdateRequest={refreshRequestData}
         />
       )}
     </>

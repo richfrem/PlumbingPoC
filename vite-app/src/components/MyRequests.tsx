@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
-import { QuoteRequest } from './Dashboard'; // Re-use the interface from Dashboard
+import { QuoteRequest } from './Dashboard';
 
 const MyRequests: React.FC = () => {
   const { user } = useAuth();
@@ -20,7 +20,8 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // This is the key difference: we filter by the logged-in user's ID
+      // ***************** THE FIX *****************
+      // Added quote_attachments(*) to the select query
       const { data, error } = await supabase
         .from('requests')
         .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
@@ -41,8 +42,25 @@ const MyRequests: React.FC = () => {
   }, [user]);
 
   const refreshRequestData = async () => {
-    // A simple way to refresh is to just re-fetch all requests
-    await fetchUserRequests();
+    if (!selectedRequest) return;
+    try {
+      // ***************** THE FIX *****************
+      // Also added quote_attachments(*) here for consistency
+      const { data, error } = await supabase
+        .from('requests')
+        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .eq('id', selectedRequest.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const updatedRequest = data as QuoteRequest;
+        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
+        setSelectedRequest(updatedRequest);
+      }
+    } catch (err) {
+      console.error("Error refreshing user request data:", err);
+    }
   };
   
   const handleOpenModal = (req: QuoteRequest) => {
@@ -57,22 +75,12 @@ const MyRequests: React.FC = () => {
 
   const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
     const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary',
-      viewed: 'info',
-      quoted: 'warning',
-      scheduled: 'success',
-      completed: 'default'
+      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
     };
     return colorMap[status] || 'default';
   };
   
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
   return (
     <>
@@ -84,29 +92,29 @@ const MyRequests: React.FC = () => {
           
           {requests.length > 0 ? (
             <Box sx={{ maxWidth: '800px', margin: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {requests.map((req) => (
-                <Paper 
-                  key={req.id} 
-                  component={ListItemButton}
-                  onClick={() => handleOpenModal(req)}
-                  sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}
-                >
-                  <Box>
-                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
-                      {req.problem_category.replace(/_/g, " ")}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Submitted: {new Date(req.created_at).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={req.status} 
-                    color={getStatusChipColor(req.status)}
-                    size="small"
-                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
-                  />
-                </Paper>
-              ))}
+              {requests.map((req) => {
+                const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                return (
+                  <Paper key={req.id} component={ListItemButton} onClick={() => handleOpenModal(req)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}>
+                    <Box>
+                      <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
+                        {req.problem_category.replace(/_/g, " ")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Submitted: {new Date(req.created_at).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {mostRecentQuote && (
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                          ${mostRecentQuote.quote_amount.toFixed(2)}
+                        </Typography>
+                      )}
+                      <Chip label={req.status} color={getStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
+                    </Box>
+                  </Paper>
+                );
+              })}
             </Box>
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '800px', margin: 'auto' }}>

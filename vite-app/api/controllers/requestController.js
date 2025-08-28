@@ -1,10 +1,15 @@
+// vite-app/api/controllers/requestController.js
+
+const path = require('path');
+const axios = require('axios');
+const supabase = require('../config/supabase');
+
 /**
  * Handles fetching a request by ID, including user profile info.
  */
 const getRequestById = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    // Fetch request and join user_profiles
     const { data: request, error } = await supabase
       .from('requests')
       .select(`*, user_profiles!requests_user_id_fkey(*)`)
@@ -13,23 +18,12 @@ const getRequestById = async (req, res, next) => {
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
     }
-    // Rename user_profiles for frontend compatibility
     request.user_profiles = request.user_profiles || null;
     res.json(request);
   } catch (err) {
     next(err);
   }
 };
-// /controllers/requestController.js
-/*
-This controller file exports a function for each route we defined. 
-Each function is focused on a single task, making the code much easier 
-to understand and maintain. Notice that there's no routing or 
-middleware logic here—just the core operations for each API endpoint.
-*/
-const path = require('path');
-const axios = require('axios');
-const supabase = require('../config/supabase'); // <-- THE FIX
 
 /**
  * Handles getting AI follow-up questions from GPT.
@@ -98,6 +92,7 @@ const submitQuoteRequest = async (req, res, next) => {
 
 /**
  * Handles uploading a file attachment and linking it to a request.
+ * This version is for a PRIVATE bucket and generates a signed URL.
  */
 const uploadAttachment = async (req, res, next) => {
   try {
@@ -119,15 +114,18 @@ const uploadAttachment = async (req, res, next) => {
       .upload(filePath, file.buffer, { contentType: file.mimetype });
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
+    // Since the bucket is now private, we must generate a temporary signed URL.
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from('PlumbingPoCBucket')
-      .getPublicUrl(uploadData.path);
+      .createSignedUrl(uploadData.path, 3600); // Expires in 1 hour
+    
+    if (signedUrlError) throw signedUrlError;
 
     const attachmentRecord = { 
       request_id, 
       file_name: file.originalname, 
       mime_type: file.mimetype,
-      file_url: urlData.publicUrl 
+      file_url: signedUrlData.signedUrl // Store the signed URL
     };
 
     const { error: insertError } = await supabase.from('quote_attachments').insert(attachmentRecord);
@@ -141,16 +139,18 @@ const uploadAttachment = async (req, res, next) => {
 };
 
 /**
- * Handles retrieving a file from Supabase storage for an admin.
+ * Handles retrieving a file from Supabase storage.
+ * The server uses its admin key to bypass RLS and download the file directly.
  */
 const getStorageObject = async (req, res, next) => {
   try {
     const objectPath = req.params[0];
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
+    
     if (error) {
-      return error.message.includes('not found')
-        ? res.status(404).send('Object not found.')
-        : next(error);
+      // The error here is likely from the storage RLS policies we set up
+      console.error('Supabase storage download error:', error.message);
+      return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
     
     const fileName = path.basename(objectPath);
@@ -213,7 +213,7 @@ const createQuoteForRequest = async (req, res, next) => {
 
     const quoteData = {
       request_id: requestId,
-      user_id: requestData.user_id, // Assign quote to the CUSTOMER
+      user_id: requestData.user_id,
       quote_amount,
       details,
       status: 'sent',
@@ -230,7 +230,6 @@ const createQuoteForRequest = async (req, res, next) => {
   }
 };
 
-
 /**
  * Handles an admin updating an existing quote for a request.
  */
@@ -244,10 +243,9 @@ const updateQuote = async (req, res, next) => {
       .update({
         quote_amount,
         details,
-        // You could also update a status here if needed, e.g., status: 'updated'
       })
       .eq('id', quoteId)
-      .eq('request_id', requestId) // Ensures the quote belongs to the correct request
+      .eq('request_id', requestId)
       .select()
       .single();
 
@@ -260,8 +258,6 @@ const updateQuote = async (req, res, next) => {
   }
 };
 
-
-// At the bottom of the file, add updateQuote to the module.exports object
 module.exports = {
   getGptFollowUp,
   submitQuoteRequest,
@@ -270,5 +266,5 @@ module.exports = {
   addRequestNote,
   createQuoteForRequest,
   getRequestById,
-  updateQuote, // <-- ADD THIS
+  updateQuote,
 };

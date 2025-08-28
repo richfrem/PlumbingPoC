@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../lib/apiClient';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
@@ -32,7 +31,6 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
   </Grid>
 );
 
-// Helper function for status chip color
 const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
   const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
     new: 'primary',
@@ -62,7 +60,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   }, [request]);
 
   useEffect(() => {
-    if (!request?.quote_attachments?.length) {
+    if (!isOpen || !request?.quote_attachments?.length) {
       setImageUrls({});
       return;
     }
@@ -70,29 +68,36 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     const fetchAttachments = async () => {
       setLoadingImages(true);
       const newImageUrls: { [key: string]: string } = {};
-      for (const att of request.quote_attachments) {
-        if (att.mime_type?.startsWith('image/')) {
-          try {
-            const response = await apiClient.get(`/requests/storage-object/${request.id}/${att.file_name}`, { responseType: 'blob' });
-            if (response.data && isMounted) {
-              newImageUrls[att.file_name] = URL.createObjectURL(response.data);
+      const filePaths = request.quote_attachments.map(att => `${request.id}/${att.file_name.replace(/\s/g, '_')}`);
+      
+      const { data: signedUrlsData, error } = await supabase.storage
+        .from('PlumbingPoCBucket')
+        .createSignedUrls(filePaths, 3600); // 1 hour expiry
+
+      if (error) {
+        console.error("Error creating signed URLs:", error);
+        setLoadingImages(false);
+        return;
+      }
+
+      if (signedUrlsData && isMounted) {
+        for (const item of signedUrlsData) {
+          if (item.signedUrl) {
+            const fileName = item.path.split('/').pop();
+            const originalFileName = request.quote_attachments.find(att => att.file_name.replace(/\s/g, '_') === fileName)?.file_name;
+            if (originalFileName) {
+              newImageUrls[originalFileName] = item.signedUrl;
             }
-          } catch (error) {
-            console.error(`Failed to fetch attachment blob:`, error);
           }
         }
-      }
-      if (isMounted) {
         setImageUrls(newImageUrls);
-        setLoadingImages(false);
       }
+      
+      setLoadingImages(false);
     };
     fetchAttachments();
-    return () => {
-      isMounted = false;
-      Object.values(imageUrls).forEach(URL.revokeObjectURL);
-    };
-  }, [request]);
+    return () => { isMounted = false; };
+  }, [request, isOpen]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!request) return;
@@ -103,7 +108,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       onUpdateRequest();
     } catch (error) {
       console.error("Failed to update status:", error);
-      setCurrentStatus(request.status);
+      setCurrentStatus(request.status); // Revert on error
     }
     setIsUpdating(false);
   };
@@ -189,7 +194,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Typography variant="overline" color="text.secondary">Attachments</Typography>
                 {loadingImages ? <CircularProgress size={24} sx={{ mt: 1 }} /> : (
                   <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {request.quote_attachments.map((att) => (<a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>{att.mime_type?.startsWith('image/') && imageUrls[att.file_name] ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}><FileTextIcon size={24} /><Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography></Box>}</a>))}
+                    {request.quote_attachments.map((att) => (
+                      <a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>
+                        {att.mime_type?.startsWith('image/') && imageUrls[att.file_name] 
+                          ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> 
+                          : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}>
+                              <FileTextIcon size={24} />
+                              <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography>
+                            </Box>
+                        }
+                      </a>
+                    ))}
                   </Box>
                 )}
               </Paper>
@@ -230,9 +245,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           </Box>
         </Box>
 
-        {/* --- THE FIX IS HERE --- */}
         <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography component="div" variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             Status: <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
           </Typography>
           
@@ -240,7 +254,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value as string)} disabled={isUpdating}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
@@ -255,8 +269,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           )}
         </Box>
       </Paper>
-
-      {/* This QuoteFormModal logic remains the same, but now respects the `editable` prop which is driven by `isAdmin` */}
+      
       <QuoteFormModal
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}

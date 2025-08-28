@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-28T20:01:36.517Z
+Generated On: 2025-08-28T21:37:04.415Z
 
-# Mnemonic Weight (Token Count): ~132,288 tokens
+# Mnemonic Weight (Token Count): ~134,258 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -4780,13 +4780,18 @@ module.exports = supabase;
 
 --- START OF FILE vite-app/api/controllers/requestController.js ---
 
+// vite-app/api/controllers/requestController.js
+
+const path = require('path');
+const axios = require('axios');
+const supabase = require('../config/supabase');
+
 /**
  * Handles fetching a request by ID, including user profile info.
  */
 const getRequestById = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    // Fetch request and join user_profiles
     const { data: request, error } = await supabase
       .from('requests')
       .select(`*, user_profiles!requests_user_id_fkey(*)`)
@@ -4795,23 +4800,12 @@ const getRequestById = async (req, res, next) => {
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
     }
-    // Rename user_profiles for frontend compatibility
     request.user_profiles = request.user_profiles || null;
     res.json(request);
   } catch (err) {
     next(err);
   }
 };
-// /controllers/requestController.js
-/*
-This controller file exports a function for each route we defined. 
-Each function is focused on a single task, making the code much easier 
-to understand and maintain. Notice that there's no routing or 
-middleware logic here—just the core operations for each API endpoint.
-*/
-const path = require('path');
-const axios = require('axios');
-const supabase = require('../config/supabase'); // <-- THE FIX
 
 /**
  * Handles getting AI follow-up questions from GPT.
@@ -4880,6 +4874,7 @@ const submitQuoteRequest = async (req, res, next) => {
 
 /**
  * Handles uploading a file attachment and linking it to a request.
+ * This version is for a PRIVATE bucket and generates a signed URL.
  */
 const uploadAttachment = async (req, res, next) => {
   try {
@@ -4901,15 +4896,18 @@ const uploadAttachment = async (req, res, next) => {
       .upload(filePath, file.buffer, { contentType: file.mimetype });
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
+    // Since the bucket is now private, we must generate a temporary signed URL.
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from('PlumbingPoCBucket')
-      .getPublicUrl(uploadData.path);
+      .createSignedUrl(uploadData.path, 3600); // Expires in 1 hour
+    
+    if (signedUrlError) throw signedUrlError;
 
     const attachmentRecord = { 
       request_id, 
       file_name: file.originalname, 
       mime_type: file.mimetype,
-      file_url: urlData.publicUrl 
+      file_url: signedUrlData.signedUrl // Store the signed URL
     };
 
     const { error: insertError } = await supabase.from('quote_attachments').insert(attachmentRecord);
@@ -4923,16 +4921,18 @@ const uploadAttachment = async (req, res, next) => {
 };
 
 /**
- * Handles retrieving a file from Supabase storage for an admin.
+ * Handles retrieving a file from Supabase storage.
+ * The server uses its admin key to bypass RLS and download the file directly.
  */
 const getStorageObject = async (req, res, next) => {
   try {
     const objectPath = req.params[0];
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
+    
     if (error) {
-      return error.message.includes('not found')
-        ? res.status(404).send('Object not found.')
-        : next(error);
+      // The error here is likely from the storage RLS policies we set up
+      console.error('Supabase storage download error:', error.message);
+      return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
     
     const fileName = path.basename(objectPath);
@@ -4995,7 +4995,7 @@ const createQuoteForRequest = async (req, res, next) => {
 
     const quoteData = {
       request_id: requestId,
-      user_id: requestData.user_id, // Assign quote to the CUSTOMER
+      user_id: requestData.user_id,
       quote_amount,
       details,
       status: 'sent',
@@ -5012,7 +5012,6 @@ const createQuoteForRequest = async (req, res, next) => {
   }
 };
 
-
 /**
  * Handles an admin updating an existing quote for a request.
  */
@@ -5026,10 +5025,9 @@ const updateQuote = async (req, res, next) => {
       .update({
         quote_amount,
         details,
-        // You could also update a status here if needed, e.g., status: 'updated'
       })
       .eq('id', quoteId)
-      .eq('request_id', requestId) // Ensures the quote belongs to the correct request
+      .eq('request_id', requestId)
       .select()
       .single();
 
@@ -5042,8 +5040,6 @@ const updateQuote = async (req, res, next) => {
   }
 };
 
-
-// At the bottom of the file, add updateQuote to the module.exports object
 module.exports = {
   getGptFollowUp,
   submitQuoteRequest,
@@ -5052,7 +5048,7 @@ module.exports = {
   addRequestNote,
   createQuoteForRequest,
   getRequestById,
-  updateQuote, // <-- ADD THIS
+  updateQuote,
 };
 --- END OF FILE vite-app/api/controllers/requestController.js ---
 
@@ -5541,7 +5537,7 @@ module.exports = {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
         "@mui/material": "^7.3.1",
-        "@mui/system": "^7.3.1",
+        "@mui/x-data-grid": "^8.10.2",
         "@supabase/supabase-js": "^2.55.0",
         "axios": "^1.7.2",
         "cors": "^2.8.5",
@@ -6475,6 +6471,88 @@ module.exports = {
         "@types/react": {
           "optional": true
         }
+      }
+    },
+    "node_modules/@mui/x-data-grid": {
+      "version": "8.10.2",
+      "resolved": "https://registry.npmjs.org/@mui/x-data-grid/-/x-data-grid-8.10.2.tgz",
+      "integrity": "sha512-3RnGJ/J55yQxao97TbjUZO8WadLNhEZLLqUjCsJq+O2TN1XNFj5LaCkG+5xGmVhP+OsAhlTm5UDht7wX6/T1Mg==",
+      "license": "MIT",
+      "dependencies": {
+        "@babel/runtime": "^7.28.2",
+        "@mui/utils": "^7.3.1",
+        "@mui/x-internals": "8.10.2",
+        "@mui/x-virtualizer": "0.1.3",
+        "clsx": "^2.1.1",
+        "prop-types": "^15.8.1",
+        "use-sync-external-store": "^1.5.0"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/mui-org"
+      },
+      "peerDependencies": {
+        "@emotion/react": "^11.9.0",
+        "@emotion/styled": "^11.8.1",
+        "@mui/material": "^5.15.14 || ^6.0.0 || ^7.0.0",
+        "@mui/system": "^5.15.14 || ^6.0.0 || ^7.0.0",
+        "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
+      },
+      "peerDependenciesMeta": {
+        "@emotion/react": {
+          "optional": true
+        },
+        "@emotion/styled": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/@mui/x-internals": {
+      "version": "8.10.2",
+      "resolved": "https://registry.npmjs.org/@mui/x-internals/-/x-internals-8.10.2.tgz",
+      "integrity": "sha512-dlC0BQRRBdiWtqn1yDppaHYRUjU3OuPWTxy0UtqxDaJjJf4pfR8ALr243nbxgJAFqvQyWPWyO4A6p9x9eJMJEQ==",
+      "license": "MIT",
+      "dependencies": {
+        "@babel/runtime": "^7.28.2",
+        "@mui/utils": "^7.3.1",
+        "reselect": "^5.1.1",
+        "use-sync-external-store": "^1.5.0"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/mui-org"
+      },
+      "peerDependencies": {
+        "react": "^17.0.0 || ^18.0.0 || ^19.0.0"
+      }
+    },
+    "node_modules/@mui/x-virtualizer": {
+      "version": "0.1.3",
+      "resolved": "https://registry.npmjs.org/@mui/x-virtualizer/-/x-virtualizer-0.1.3.tgz",
+      "integrity": "sha512-hD/hPoyFP6L/s/ewsni01xVHp2HfaDkrtNxgk8g87bJlZRZL6HbksaDMwkdHYHdTe/lm+9oe+zuA46NRM0eoIA==",
+      "license": "MIT",
+      "dependencies": {
+        "@babel/runtime": "^7.28.2",
+        "@mui/utils": "^7.3.1",
+        "@mui/x-internals": "8.10.2"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/mui-org"
+      },
+      "peerDependencies": {
+        "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
       }
     },
     "node_modules/@popperjs/core": {
@@ -8210,6 +8288,12 @@ module.exports = {
         "node": ">= 6"
       }
     },
+    "node_modules/reselect": {
+      "version": "5.1.1",
+      "resolved": "https://registry.npmjs.org/reselect/-/reselect-5.1.1.tgz",
+      "integrity": "sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==",
+      "license": "MIT"
+    },
     "node_modules/resolve": {
       "version": "1.22.10",
       "resolved": "https://registry.npmjs.org/resolve/-/resolve-1.22.10.tgz",
@@ -8581,6 +8665,15 @@ module.exports = {
         "node": ">= 0.8"
       }
     },
+    "node_modules/use-sync-external-store": {
+      "version": "1.5.0",
+      "resolved": "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.5.0.tgz",
+      "integrity": "sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==",
+      "license": "MIT",
+      "peerDependencies": {
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+      }
+    },
     "node_modules/util-deprecate": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz",
@@ -8750,6 +8843,7 @@ module.exports = {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.1",
+    "@mui/x-data-grid": "^8.10.2",
     "@supabase/supabase-js": "^2.55.0",
     "axios": "^1.7.2",
     "cors": "^2.8.5",
@@ -9014,8 +9108,10 @@ export default ContactSection;
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemButton, ListItemText, Divider, Chip } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
+import { AlertTriangle } from 'lucide-react';
 
 // Interfaces remain the same
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
@@ -9026,6 +9122,7 @@ export interface QuoteRequest {
   customer_name: string;
   problem_category: string;
   status: string;
+  is_emergency: boolean;
   answers: { question: string; answer: string }[];
   quote_attachments: {
     file_name: string;
@@ -9055,15 +9152,11 @@ const Dashboard: React.FC = () => {
       return;
     }
     try {
+      // ***************** THE FIX *****************
+      // Added quote_attachments(*) to the select query
       const { data, error: fetchError } = await supabase
         .from('requests')
-        .select(`
-          *,
-          user_profiles ( name, email, phone ),
-          quote_attachments ( file_name, mime_type ),
-          quotes ( * ),
-          request_notes ( * )
-        `)
+        .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -9079,20 +9172,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchAllRequests();
   }, [profile]);
-
-  const refreshRequestData = async (requestId: string) => {
+  
+  const refreshRequestData = async () => {
+    if (!selectedRequest) return;
     try {
+      // ***************** THE FIX *****************
+      // Also added quote_attachments(*) here for consistency
       const { data, error: fetchError } = await supabase
         .from('requests')
         .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
-        .eq('id', requestId)
+        .eq('id', selectedRequest.id)
         .single();
       
       if (fetchError) throw fetchError;
-
       if (data) {
         const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === requestId ? updatedRequest : r));
+        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
         setSelectedRequest(updatedRequest);
       }
     } catch (err) {
@@ -9100,9 +9195,12 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (req: QuoteRequest) => {
-    setSelectedRequest(req);
-    setIsModalOpen(true);
+  const handleRowClick = (params: any) => {
+    const fullRequestData = requests.find(r => r.id === params.id);
+    if (fullRequestData) {
+      setSelectedRequest(fullRequestData);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -9112,70 +9210,56 @@ const Dashboard: React.FC = () => {
 
   const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
     const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary',
-      viewed: 'info',
-      quoted: 'warning',
-      scheduled: 'success',
-      completed: 'default'
+      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
     };
     return colorMap[status] || 'default';
   };
-  
-  if (loading) { /* ... */ }
-  if (!profile || profile.role !== 'admin') { /* ... */ }
-  if (error) { /* ... */ }
+
+  const columns: GridColDef[] = [
+    { field: 'is_emergency', headerName: 'Urgency', width: 120,
+      renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
+    },
+    { field: 'problem_category', headerName: 'Request Type', width: 180, 
+      valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A'
+    },
+    { field: 'customer_name', headerName: 'Customer Name', width: 180,
+      valueGetter: (value, row) => row.user_profiles?.name || row.customer_name || 'N/A'
+    },
+    { field: 'created_at', headerName: 'Received', width: 180, type: 'dateTime', valueGetter: (value) => value ? new Date(value) : null },
+    { field: 'quote_amount', headerName: 'Quote Amount', width: 130, type: 'number',
+      valueGetter: (value, row) => row.quotes?.sort((a: Quote, b: Quote) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.quote_amount,
+      renderCell: (params) => params.value != null ? `$${params.value.toFixed(2)}` : '—'
+    },
+    { field: 'status', headerName: 'Status', width: 120,
+      renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )
+    },
+    { field: 'service_address', headerName: 'Address', flex: 1 },
+  ];
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+  if (!profile || profile.role !== 'admin') return <Box sx={{ p: 4 }}><Typography>Access Denied.</Typography></Box>;
+  if (error) return <Box sx={{ p: 4 }}><Typography color="error">{error}</Typography></Box>;
 
   return (
     <>
-      {/* --- NEW STYLING APPLIED HERE --- */}
       <Box sx={{ bgcolor: '#f4f6f8', minHeight: 'calc(100vh - 80px)', p: { xs: 2, md: 4 } }}>
-        <Box sx={{ maxWidth: '1000px', margin: 'auto' }}>
+        <Box sx={{ maxWidth: '1200px', margin: 'auto' }}>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
             Plumber's Command Center
           </Typography>
-          
-          {requests.length > 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {requests.map((req) => (
-                <Paper 
-                  key={req.id} 
-                  component={ListItemButton} // Makes the whole paper clickable
-                  onClick={() => handleOpenModal(req)}
-                  sx={{ 
-                    p: 2, 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    transition: 'box-shadow 0.3s',
-                    '&:hover': {
-                      boxShadow: 3, // Elevate on hover
-                    }
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
-                      {req.problem_category.replace(/_/g, " ")} - {req.customer_name || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Received: {new Date(req.created_at).toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={req.status} 
-                    color={getStatusChipColor(req.status)}
-                    size="small"
-                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
-                  />
-                </Paper>
-              ))}
-            </Box>
-          ) : (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary">
-                No new quote requests found.
-              </Typography>
-            </Paper>
-          )}
+          <Paper sx={{ height: 600, width: '100%' }}>
+            <DataGrid
+              rows={requests}
+              columns={columns}
+              onRowClick={handleRowClick}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+                sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] },
+              }}
+              pageSizeOptions={[10, 25, 50]}
+              sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }}
+            />
+          </Paper>
         </Box>
       </Box>
 
@@ -9184,7 +9268,7 @@ const Dashboard: React.FC = () => {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           request={selectedRequest}
-          onUpdateRequest={() => refreshRequestData(selectedRequest.id)}
+          onUpdateRequest={refreshRequestData}
         />
       )}
     </>
@@ -9203,7 +9287,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
-import { QuoteRequest } from './Dashboard'; // Re-use the interface from Dashboard
+import { QuoteRequest } from './Dashboard';
 
 const MyRequests: React.FC = () => {
   const { user } = useAuth();
@@ -9218,7 +9302,8 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // This is the key difference: we filter by the logged-in user's ID
+      // ***************** THE FIX *****************
+      // Added quote_attachments(*) to the select query
       const { data, error } = await supabase
         .from('requests')
         .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
@@ -9239,8 +9324,25 @@ const MyRequests: React.FC = () => {
   }, [user]);
 
   const refreshRequestData = async () => {
-    // A simple way to refresh is to just re-fetch all requests
-    await fetchUserRequests();
+    if (!selectedRequest) return;
+    try {
+      // ***************** THE FIX *****************
+      // Also added quote_attachments(*) here for consistency
+      const { data, error } = await supabase
+        .from('requests')
+        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .eq('id', selectedRequest.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const updatedRequest = data as QuoteRequest;
+        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
+        setSelectedRequest(updatedRequest);
+      }
+    } catch (err) {
+      console.error("Error refreshing user request data:", err);
+    }
   };
   
   const handleOpenModal = (req: QuoteRequest) => {
@@ -9255,22 +9357,12 @@ const MyRequests: React.FC = () => {
 
   const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
     const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary',
-      viewed: 'info',
-      quoted: 'warning',
-      scheduled: 'success',
-      completed: 'default'
+      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
     };
     return colorMap[status] || 'default';
   };
   
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
   return (
     <>
@@ -9282,29 +9374,29 @@ const MyRequests: React.FC = () => {
           
           {requests.length > 0 ? (
             <Box sx={{ maxWidth: '800px', margin: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {requests.map((req) => (
-                <Paper 
-                  key={req.id} 
-                  component={ListItemButton}
-                  onClick={() => handleOpenModal(req)}
-                  sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}
-                >
-                  <Box>
-                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
-                      {req.problem_category.replace(/_/g, " ")}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Submitted: {new Date(req.created_at).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={req.status} 
-                    color={getStatusChipColor(req.status)}
-                    size="small"
-                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
-                  />
-                </Paper>
-              ))}
+              {requests.map((req) => {
+                const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                return (
+                  <Paper key={req.id} component={ListItemButton} onClick={() => handleOpenModal(req)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}>
+                    <Box>
+                      <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
+                        {req.problem_category.replace(/_/g, " ")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Submitted: {new Date(req.created_at).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {mostRecentQuote && (
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                          ${mostRecentQuote.quote_amount.toFixed(2)}
+                        </Typography>
+                      )}
+                      <Chip label={req.status} color={getStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
+                    </Box>
+                  </Paper>
+                );
+              })}
             </Box>
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '800px', margin: 'auto' }}>
@@ -10080,7 +10172,6 @@ export default QuoteFormModal;
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../lib/apiClient';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
@@ -10109,7 +10200,6 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
   </Grid>
 );
 
-// Helper function for status chip color
 const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
   const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
     new: 'primary',
@@ -10139,7 +10229,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   }, [request]);
 
   useEffect(() => {
-    if (!request?.quote_attachments?.length) {
+    if (!isOpen || !request?.quote_attachments?.length) {
       setImageUrls({});
       return;
     }
@@ -10147,29 +10237,36 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     const fetchAttachments = async () => {
       setLoadingImages(true);
       const newImageUrls: { [key: string]: string } = {};
-      for (const att of request.quote_attachments) {
-        if (att.mime_type?.startsWith('image/')) {
-          try {
-            const response = await apiClient.get(`/requests/storage-object/${request.id}/${att.file_name}`, { responseType: 'blob' });
-            if (response.data && isMounted) {
-              newImageUrls[att.file_name] = URL.createObjectURL(response.data);
+      const filePaths = request.quote_attachments.map(att => `${request.id}/${att.file_name.replace(/\s/g, '_')}`);
+      
+      const { data: signedUrlsData, error } = await supabase.storage
+        .from('PlumbingPoCBucket')
+        .createSignedUrls(filePaths, 3600); // 1 hour expiry
+
+      if (error) {
+        console.error("Error creating signed URLs:", error);
+        setLoadingImages(false);
+        return;
+      }
+
+      if (signedUrlsData && isMounted) {
+        for (const item of signedUrlsData) {
+          if (item.signedUrl) {
+            const fileName = item.path.split('/').pop();
+            const originalFileName = request.quote_attachments.find(att => att.file_name.replace(/\s/g, '_') === fileName)?.file_name;
+            if (originalFileName) {
+              newImageUrls[originalFileName] = item.signedUrl;
             }
-          } catch (error) {
-            console.error(`Failed to fetch attachment blob:`, error);
           }
         }
-      }
-      if (isMounted) {
         setImageUrls(newImageUrls);
-        setLoadingImages(false);
       }
+      
+      setLoadingImages(false);
     };
     fetchAttachments();
-    return () => {
-      isMounted = false;
-      Object.values(imageUrls).forEach(URL.revokeObjectURL);
-    };
-  }, [request]);
+    return () => { isMounted = false; };
+  }, [request, isOpen]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!request) return;
@@ -10180,7 +10277,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       onUpdateRequest();
     } catch (error) {
       console.error("Failed to update status:", error);
-      setCurrentStatus(request.status);
+      setCurrentStatus(request.status); // Revert on error
     }
     setIsUpdating(false);
   };
@@ -10266,7 +10363,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Typography variant="overline" color="text.secondary">Attachments</Typography>
                 {loadingImages ? <CircularProgress size={24} sx={{ mt: 1 }} /> : (
                   <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {request.quote_attachments.map((att) => (<a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>{att.mime_type?.startsWith('image/') && imageUrls[att.file_name] ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}><FileTextIcon size={24} /><Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography></Box>}</a>))}
+                    {request.quote_attachments.map((att) => (
+                      <a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>
+                        {att.mime_type?.startsWith('image/') && imageUrls[att.file_name] 
+                          ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> 
+                          : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}>
+                              <FileTextIcon size={24} />
+                              <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography>
+                            </Box>
+                        }
+                      </a>
+                    ))}
                   </Box>
                 )}
               </Paper>
@@ -10307,9 +10414,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           </Box>
         </Box>
 
-        {/* --- THE FIX IS HERE --- */}
         <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography component="div" variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             Status: <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
           </Typography>
           
@@ -10317,7 +10423,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value as string)} disabled={isUpdating}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
@@ -10332,8 +10438,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           )}
         </Box>
       </Paper>
-
-      {/* This QuoteFormModal logic remains the same, but now respects the `editable` prop which is driven by `isAdmin` */}
+      
       <QuoteFormModal
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
@@ -10833,7 +10938,7 @@ import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
-import MyRequests from './components/MyRequests'; // <-- Import the new component
+import MyRequests from './components/MyRequests';
 import {
   Phone,
   Wrench,
@@ -10864,7 +10969,7 @@ const AppContent: React.FC = () => {
     if (!user) {
       setShowAuthModal(true);
     } else if (profileIncomplete) {
-      // Profile modal is shown automatically by the logic below
+      // Profile modal is shown automatically
     } else {
       setShowAgentModal(true);
     }

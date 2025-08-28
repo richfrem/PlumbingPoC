@@ -12,7 +12,7 @@ import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
-import MyRequests from './components/MyRequests'; // <-- Import the new component
+import MyRequests from './components/MyRequests';
 import {
   Phone,
   Wrench,
@@ -43,7 +43,7 @@ const AppContent: React.FC = () => {
     if (!user) {
       setShowAuthModal(true);
     } else if (profileIncomplete) {
-      // Profile modal is shown automatically by the logic below
+      // Profile modal is shown automatically
     } else {
       setShowAgentModal(true);
     }

@@ -12,6 +12,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.1",
+    "@mui/x-data-grid": "^8.10.2",
     "@supabase/supabase-js": "^2.55.0",
     "axios": "^1.7.2",
     "cors": "^2.8.5",
