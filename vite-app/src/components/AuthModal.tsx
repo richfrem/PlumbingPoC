@@ -9,6 +9,8 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = React.useState(false);
   const [name, setName] = React.useState('');
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -36,15 +38,35 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <form
           onSubmit={async e => {
             e.preventDefault();
+            setLoading(true);
+            setMessage(null);
             const email = (e.target as any).email.value;
             const password = (e.target as any).password.value;
-            if (isSignUp) {
-              const { data, error } = await supabase.auth.signUp({ email, password });
-              if (!error && data.user) {
-                await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
+            try {
+              if (isSignUp) {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) {
+                  setMessage(error.message || 'Sign up failed.');
+                } else if (data.user) {
+                  await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
+                  setMessage('Sign up successful! Please check your email and click the confirmation link before signing in.');
+                }
+              } else {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                  setMessage(error.message || 'Sign in failed.');
+                } else {
+                  setMessage('Sign in successful!');
+                  setTimeout(() => {
+                    setMessage(null);
+                    onClose();
+                  }, 1200);
+                }
               }
-            } else {
-              await supabase.auth.signInWithPassword({ email, password });
+            } catch (err: any) {
+              setMessage(err.message || 'An error occurred.');
+            } finally {
+              setLoading(false);
             }
           }}
         >
@@ -61,7 +83,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
           <input name="email" type="email" placeholder="Email" className="border px-4 py-2 rounded w-full mb-2" required />
           <input name="password" type="password" placeholder="Password" className="border px-4 py-2 rounded w-full mb-4" required />
-          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full">{isSignUp ? 'Sign Up with Email' : 'Sign In with Email'}</button>
+          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full" disabled={loading}>
+            {loading ? (isSignUp ? 'Signing Up...' : 'Signing In...') : (isSignUp ? 'Sign Up with Email' : 'Sign In with Email')}
+          </button>
+        {message && (
+          <div className="mt-2 text-center text-sm text-red-600">{message}</div>
+        )}
         </form>
         <div className="mt-4 text-center">
           {isSignUp ? (

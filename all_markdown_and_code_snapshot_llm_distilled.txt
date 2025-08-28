@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-23T03:56:21.957Z
+Generated On: 2025-08-28T20:01:36.517Z
 
-# Mnemonic Weight (Token Count): ~121,478 tokens
+# Mnemonic Weight (Token Count): ~132,288 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -11,6 +11,16 @@ Generated On: 2025-08-23T03:56:21.957Z
   ./PROMPTS/meta-agent-prompt.md
   ./PlumbingAgentRequirements.md
   ./README.md
+  ./TASKS.md
+  ./agents/
+  ./agents/AGENT_REPOS.md
+  ./agents/README.md
+  ./agents/backend-architect-mcp.md
+  ./agents/frontend-developer-mcp.md
+  ./agents/project-manager-mcp-agent.js
+  ./agents/project-manager-mcp.md
+  ./agents/test-playwright-mcp.js
+  ./agents/ui-designer-mcp.md
   ./all_markdown_and_code_snapshot_llm_distilled.txt
   ./blueprint.md
   ./capture_code_snapshot.js
@@ -26,7 +36,6 @@ Generated On: 2025-08-23T03:56:21.957Z
   ./supabase/.temp/project-ref
   ./supabase/.temp/rest-version
   ./supabase/.temp/storage-version
-  ./supabase_schema_audit.sql
   ./vite-app/
   ./vite-app/.env
   ./vite-app/.envformat
@@ -60,6 +69,7 @@ Generated On: 2025-08-23T03:56:21.957Z
   ./vite-app/src/components/AuthModal.tsx
   ./vite-app/src/components/ContactSection.tsx
   ./vite-app/src/components/Dashboard.tsx
+  ./vite-app/src/components/MyRequests.tsx
   ./vite-app/src/components/ProfileModal.tsx
   ./vite-app/src/components/QuoteAgentModal.tsx
   ./vite-app/src/components/QuoteFormModal.tsx
@@ -308,7 +318,7 @@ This script will start both services in the background and provide you with the 
     ```sh
     npm run start:api
     ```
-    The API will start, typically on `http://localhost:3001`.
+    The API will start, typically on `http://localhost:3000`.
 
 2.  **Start the Frontend Vite Server:**
     In a second terminal, from the `vite-app/` directory:
@@ -412,6 +422,864 @@ sequenceDiagram
 ```
 
 --- END OF FILE README.md ---
+
+--- START OF FILE TASKS.md ---
+
+# Plumbing Quote Agent Project Tracker
+
+This file tracks all major requirements, tasks, and progress for the Plumbing Quote Agent project. Use this checklist to monitor work, add new tasks, and check off completed items. Agents and team members should update this file regularly.
+
+## Key Instructions & Project Context
+- The goal is to build an AI-powered intake and quoting assistant for local trades (plumbing) businesses.
+- Use MCP agents to automate, evaluate, and accelerate development:
+  - `project-manager-mcp`: Tracks requirements, assigns tasks, monitors progress, and summarizes work.
+  - `ui-designer-mcp`: Evaluates UI/UX and suggests improvements.
+  - `frontend-developer-mcp`: Implements UI/UX improvements and optimizes frontend.
+  - `backend-architect-mcp`: Reviews backend, APIs, and database models.
+- Start with the project manager agent to organize and track all work.
+- Update this checklist as tasks are completed or new ones are added.
+- Privacy: Do not share personal info with GPT; only send context-specific info needed for follow-up questions.
+- Minimize unnecessary GPT-4 API calls to reduce costs.
+
+## Task Checklist
+
+### User Registration & Profile
+**User Registration & Profile (All Flows Working):**
+- [x] Sign-in working
+- [x] Sign-out working
+- [x] Register new user with Google working
+- [x] Register new user with Microsoft working
+- [x] Create new profile with email/password working
+- [x] Create new profile working
+- [x] Update existing profile working
+- [x] Ensure user profile includes contact info
+- [x] Pull profile info into quote requests
+
+### Service Quote Request Flow
+- [x] Create service quote request types (JSON/TypeScript)
+- [x] Maintain common questions for each service type
+- [x] Build first question: "What would you like a quote for?" (service type selection)
+- [x] Ask questions one at a time in chat-style conversation
+- [x] Use text box for user answers
+- [x] Do not ask for info already known from profile
+- [ ] Review UI to confirm all anticipated questions are surfaced for each service type
+
+### Privacy & GPT Interaction
+- [x] Do not share personal info (name, phone, email, address) with GPT
+- [x] Only send context-specific info for follow-up questions
+- [x] Efficiently package quote info for GPT
+- [x] Ask GPT if additional questions are needed
+- [x] Repeat until GPT confirms all key questions are answered
+- [ ] Add backend comment/validation to enforce privacy in GPT prompt (optional)
+
+### Final Summary & Submission
+- [x] Package a user-readable summary of the request (including contact info)
+- [x] Display summary to user before submission
+- [x] On submission, show confirmation message
+- [ ] Test summary and confirmation flow for completeness
+
+### UI/UX & Frontend
+- [ ] Evaluate UI/UX at http://localhost:5173/ (agent-driven)
+- [ ] Implement prioritized improvements
+- [x] Modular frontend structure with forms, modals, dashboard
+- [x] File upload for quote attachments
+- [ ] Optimize for performance, accessibility, and responsiveness
+
+### Backend & API
+- [x] MVC pattern with controllers, routes, middleware, validation
+- [x] Supabase integration for data storage and authentication
+- [x] API endpoints for requests, profiles, notes, attachments
+- [ ] Review backend for scalability, security, and maintainability (agent-driven)
+
+### Iteration & Progress Tracking
+- [x] Checklist created and updated for baseline
+- [ ] Regularly update this checklist and agent assignments
+- [ ] Add new tasks as needed
+- [x] Check off completed items
+## Baseline Notes (for GitHub Copilot)
+
+
+## Progress Summary (August 28, 2025)
+
+**Completed:**
+- All core flows for user registration, profile, quote request, and privacy enforcement are implemented.
+- All anticipated service questions are surfaced in the UI via `serviceQuoteQuestions.ts` and dynamic modal logic.
+- Privacy requirements are enforced in both frontend (no personal info sent to GPT) and backend (validation, RLS, and middleware).
+- Summary and confirmation flows are present and tested.
+- Modular frontend and backend structure is in place.
+
+**Outstanding Work:**
+- Implement prioritized UI/UX improvements (see agent recommendations).
+- Optimize frontend for performance, accessibility, and responsiveness.
+- Review backend for scalability, security, and maintainability.
+- Add new tasks as requirements evolve.
+
+**Agent Assignments:**
+- `project-manager-mcp`: Progress tracking, checklist updates, agent coordination.
+- `ui-designer-mcp`: UI/UX evaluation and improvement recommendations.
+- `frontend-developer-mcp`: UI/UX implementation, performance/accessibility optimization.
+- `backend-architect-mcp`: Backend review, privacy enforcement, scalability/security.
+
+**Recommended Next Steps:**
+1. Run `ui-designer-mcp` to evaluate UI/UX and generate prioritized improvement list.
+2. Assign improvements to `frontend-developer-mcp` for implementation.
+3. Run `backend-architect-mcp` to review backend for scalability, security, and privacy.
+4. Continue regular updates to this checklist and agent assignments.
+
+---
+
+## How to Use This File
+- Reference this file at the start of each session.
+- Add new tasks as requirements evolve.
+- Check off items as they are completed.
+- Use agent prompts and CLI commands as documented in `agents/README.md`.
+
+--- END OF FILE TASKS.md ---
+
+--- START OF FILE agents/AGENT_REPOS.md ---
+
+# Plumbing Quote Agent MCP Persona Repos
+
+This document lists the MCP agent personas used in this project and provides links to relevant GitHub repositories for browser automation and agent frameworks.
+
+## Browser Automation & Testing MCP Agents
+
+For all browser automation and testing tasks, use Playwright-based MCP servers. Playwright is the recommended and standardized solution for browser interaction, web scraping, and UI testing in the MCP ecosystem.
+
+**Recommended MCP Server:**
+- [Playwright MCP Server](https://mcp.so/server/playwright-mcp/microsoft)
+
+**Why Playwright?**
+- Cross-browser support (Chromium, Firefox, WebKit)
+- Modern automation features
+- Robust integration with LLMs and MCP clients
+- Active community and ongoing development
+
+**Usage:**
+Integrate Playwright MCP servers for any agent requiring browser automation, UI testing, or web scraping. Other tools (e.g., Puppeteer) are available but Playwright is preferred for consistency and reliability.
+
+---
+# Plumbing Quote Agent MCP Persona Repos
+
+This document lists the MCP agent personas used in this project and provides links to relevant GitHub repositories for browser automation and agent frameworks.
+
+## Agent Personas & Recommended MCP Server Repos
+
+### 1. Project Manager Agent (`project-manager-mcp`)
+- **Role:** Project manager and task tracker
+- **Recommended Repo:** No direct MCP server; use a generic agent framework or [MCP-Agent](https://github.com/lastmile-ai/mcp-agent)
+
+### 2. UI Designer Agent (`ui-designer-mcp`)
+- **Role:** Visionary UI designer
+- **Recommended Browser MCP Server:**
+  - [Playwright MCP Server](https://github.com/executeautomation/mcp-playwright)
+  - [Browser-Use MCP Server (Playwright/Chromium)](https://github.com/co-browser/browser-use-mcp-server)
+  - [Puppeteer Vision MCP Server](https://github.com/djannot/puppeteer-vision-mcp)
+
+### 3. Frontend Developer Agent (`frontend-developer-mcp`)
+- **Role:** Elite frontend developer
+- **Recommended Browser MCP Server:**
+  - [Playwright MCP Server](https://github.com/executeautomation/mcp-playwright)
+  - [Browser-Use MCP Server](https://github.com/co-browser/browser-use-mcp-server)
+
+### 4. Backend Architect Agent (`backend-architect-mcp`)
+- **Role:** Backend architect
+- **Recommended Repo:**
+  - [MCP-Agent](https://github.com/lastmile-ai/mcp-agent) (for agent orchestration)
+  - [MCP-Framework](https://mcp-framework.com/) (TypeScript server framework)
+
+## MCP Client Frameworks
+
+## Notes
+
+## Playwright MCP Server Installation & Usage
+
+**Recommended: Install globally. You can run these commands from any folder.**
+
+### Steps:
+1. **Install Node.js** (if not already installed)
+  - On macOS: `brew install node`
+
+2. **Install Playwright MCP server globally:**
+  - `sudo npm install -g @executeautomation/playwright-mcp-server`
+
+3. **Start the Playwright MCP server:**
+  - `npx playwright run-server`
+
+4. **Verify the server is running:**
+  - You should see output indicating the server has started, including port and endpoint details.
+
+---
+**Tip:** You do not need to clone the repo or build manually. The global install provides the CLI entry point for the server.
+
+**Testing:**
+- After running `playwright-mcp-server`, check the terminal for startup messages. If you see a message like "Playwright MCP server started" or similar, the server is working.
+
+**Update this file as new agents or MCP server repos are added to your workflow.**
+**Update this file as new agents or MCP server repos are added to your workflow.**
+---
+**Update this file as new agents or MCP server repos are added to your workflow.**
+
+--- END OF FILE agents/AGENT_REPOS.md ---
+
+--- START OF FILE agents/README.md ---
+
+# Preconditions
+
+Before running any agent workflows, ensure:
+- The Playwright MCP server is installed globally as described in `AGENT_REPOS.md`.
+- The Playwright MCP server is running in a separate terminal via:
+   ```
+   playwright-mcp-server
+   ```
+
+
+
+# How to Use These Agents Most Effectively
+
+
+**Best Practices:**
+- Start a new chat or session for each agent to keep context focused and results actionable.
+- Use the provided prompts for each agent to initiate work and get targeted feedback.
+- Begin with the project manager agent to organize tasks and track progress.
+- Use specialized agents (UI designer, frontend developer, backend architect) for their respective tasks.
+- Regularly update and review progress with the project manager agent to keep all agents aligned.
+- **For all browser-based automation, UI testing, and agent workflows, use the Playwright MCP server.**
+
+# Instructions to test Playright MCP server
+
+To verify your Playwright MCP server is operational, use the provided test script:
+
+1. Ensure the Playwright MCP server is running (see `AGENT_REPOS.md` for installation and setup instructions).
+2. Make sure the Plumbing Quote Agent dashboard is running at http://localhost:5173/.
+3. Run the test script from this directory:
+   ```bash
+   node agents/test-playwright-mcp.js
+   ```
+4. The script will:
+   - Connect to the Playwright MCP server at ws://localhost:63784
+   - Register a new user, sign out, and sign in at http://localhost:5173
+   - Log each step and save results to `test-results.json`
+5. Check `test-results.json` for pass/fail status and details of each step.
+
+If you need to adjust selectors or debug errors, review the script and update field/button selectors to match your app's HTML.
+
+
+
+# Agents Folder Overview
+
+This folder contains specialized MCP agent personas to support your AI-driven development workflow. Each agent is designed to automate, evaluate, and accelerate different aspects of your project.
+
+
+## Sub-Agents Summary
+
+
+### 1. `project-manager-mcp`
+**Role:** Project manager and task tracker
+**Purpose:** Tracks requirements, assigns tasks, monitors progress, and keeps all agents aligned
+**How to initiate:**
+**Step 1: Start here.**
+
+#### Assumptions: 
+1. The Playwright MCP server is running. I've started it via `npx playwright run-server` It is listening on ws://localhost:63784/
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/ 
+
+#### Prompt:
+
+#### Copy-paste Prompt for Next Time:
+```
+As the project-manager-mcp agent, connect to the running Playwright MCP server at Listening on ws://localhost:63784/
+ for browser automation, UI testing, and agent orchestration. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
+
+Review all current work and requirements for the Plumbing Quote Agent. Update TASKS.md to show completed tasks, outstanding work, and agent assignments. Summarize progress and recommend next steps. Ensure all anticipated questions for each service type are surfaced in the UI, and confirm privacy requirements are enforced. Reference key instructions from TASKS.md.
+```
+
+#### To create the project-manager-mcp agent, follow these steps:
+
+
+This prompt can be used directly in your agent client or workflow to launch the project-manager-mcp agent and ensure all required actions are performed.
+
+### 2. `ui-designer-mcp`
+**Role:** Visionary UI designer
+**Purpose:** Evaluates UI/UX, suggests improvements, and provides implementation-ready feedback
+**How to initiate:**
+**Step 2: Run after project manager agent.**
+
+#### Assumptions:
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784/)
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/
+
+#### Copy-paste Prompt for Next Time:
+```
+As the ui-designer-mcp agent, connect to the running Playwright MCP server at ws://localhost:63784/ for browser-based UI/UX analysis. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
+
+Perform a comprehensive UI/UX analysis. Evaluate design consistency, usability, accessibility, and performance. Suggest prioritized improvements and generate a markdown report with findings, scores, and screenshots. Reference TASKS.md for requirements.
+```
+
+This prompt can be used directly in your agent client or workflow to launch the ui-designer-mcp agent and ensure all required actions are performed.
+
+
+
+### 3. `frontend-developer-mcp`
+**Role:** Elite frontend developer
+**Purpose:** Implements UI/UX improvements, optimizes performance, and ensures accessibility
+**How to initiate:**
+**Step 3: Run after UI designer agent.**
+
+#### Assumptions:
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784/)
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/
+
+#### Copy-paste Prompt for Next Time:
+```
+As the frontend-developer-mcp agent, connect to the running Playwright MCP server at ws://localhost:63784/ for browser-based automation, testing, and UI validation. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
+
+Implement the UI/UX improvements suggested by the ui-designer-mcp agent. Optimize the frontend for performance, accessibility, and responsiveness. Ensure all anticipated service questions are surfaced in the UI. Provide a summary of changes, code snippets, and recommendations for further improvement. Update TASKS.md as items are completed.
+```
+
+This prompt can be used directly in your agent client or workflow to launch the frontend-developer-mcp agent and ensure all required actions are performed.
+## Playwright MCP Server Setup & Usage
+
+All browser-based agent prompts and automation should use the Playwright MCP server for reliability and standardization.
+
+**Install globally (recommended):**
+```
+sudo npm install -g @executeautomation/playwright-mcp-server
+```
+
+**Run the server:**
+```
+playwright-mcp-server
+```
+
+**Verify:**
+- You should see output in your terminal indicating the server has started, including port and endpoint details.
+
+**Use in agent prompts:**
+- Reference Playwright MCP server in your agent CLI commands and prompts for all browser automation, UI testing, and web scraping tasks.
+
+### 4. `backend-architect-mcp`
+**Role:** Backend architect
+**Purpose:** Designs and reviews backend architecture, APIs, and database models
+**How to initiate:**
+**Step 4: Run after frontend developer agent.**
+
+#### Assumptions:
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784/) if browser automation is required.
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/ (if needed).
+
+#### Copy-paste Prompt for Next Time:
+```
+As the backend-architect-mcp agent, review the current backend architecture, APIs, and database models. Suggest and implement improvements for scalability, security, and maintainability. Confirm privacy logic for GPT interaction is enforced and documented. Provide actionable recommendations and update TASKS.md with completed and outstanding backend tasks.
+```
+
+This prompt can be used directly in your agent client or workflow to launch the backend-architect-mcp agent and ensure all required actions are performed.
+
+---
+
+## Recommendations: What to Do Next
+
+## Step-by-Step Agent Workflow
+
+1. **Start with the Project Manager Agent:**
+   - Run the project-manager-mcp agent first to review work, update TASKS.md, and assign tasks.
+
+2. **UI Evaluation:**
+   - Run the ui-designer-mcp agent to analyze the UI and suggest improvements.
+
+3. **Frontend Implementation:**
+   - Run the frontend-developer-mcp agent to implement UI/UX improvements and optimize the frontend.
+
+4. **Backend Review:**
+   - Run the backend-architect-mcp agent to review and improve backend architecture, security, and privacy.
+
+5. **Iterate and Track Progress:**
+   - Regularly re-run the project-manager-mcp agent to update TASKS.md, monitor progress, and keep all agents aligned.
+
+**Tip:** Always follow this order for maximum efficiency. Use the exact prompts and CLI commands above for each agent.
+
+--- END OF FILE agents/README.md ---
+
+--- START OF FILE agents/backend-architect-mcp.md ---
+
+# -------------------------------------------------------------
+# MCP Backend Architect Sub-Agent Persona
+# -------------------------------------------------------------
+# Name: backend-architect-mcp
+# Description: This agent specializes in designing, building, and optimizing backend architectures for scalable, secure, and maintainable applications. It excels at:
+#   - API design, database modeling, and cloud infrastructure
+#   - Implementing best practices for security, performance, and reliability
+#   - Collaborating with frontend and UI designer agents for seamless integration
+# Usage:
+#   1. Use this agent to architect backend systems, review API designs, and optimize infrastructure.
+#   2. Integrate with other agents to ensure end-to-end technical excellence.
+# Example CLI prompt:
+#   mcp-browser-cli run-browser-agent "Use the backend-architect-mcp persona to review backend architecture, suggest improvements, and ensure best practices for scalability and security." -e agents/.env
+# -------------------------------------------------------------
+
+name: backend-architect-mcp
+color: green
+description: |
+  Backend architect agent for designing scalable, secure, and maintainable server-side systems. Specializes in:
+    - API design (REST, GraphQL), database modeling (SQL, NoSQL)
+    - Cloud infrastructure (AWS, GCP, Azure), CI/CD pipelines
+    - Security, performance, and reliability best practices
+    - Collaboration with frontend and UI designer agents
+persona: |
+  You are a backend architecture expert with deep experience in designing robust APIs, scalable databases, and cloud-native infrastructure. You ensure backend systems are secure, performant, and easy to maintain, collaborating closely with frontend and design teams for seamless integration.
+
+  Your primary responsibilities:
+    1. API Design & Implementation
+    2. Database Modeling & Optimization
+    3. Cloud Infrastructure & DevOps
+    4. Security & Compliance
+    5. Performance & Reliability
+    6. Collaboration & Integration
+
+  Your goal: Architect backend systems that power modern applications, enabling rapid development and long-term scalability. Provide actionable feedback and implementation-ready specs for every backend review.
+
+# Tools leveraged: Write, Read, MultiEdit, Bash, Grep, Glob, WebFetch
+
+--- END OF FILE agents/backend-architect-mcp.md ---
+
+--- START OF FILE agents/frontend-developer-mcp.md ---
+
+# -------------------------------------------------------------
+# MCP Frontend Developer Sub-Agent Persona
+# -------------------------------------------------------------
+# Name: frontend-developer-mcp
+# Description: This agent collaborates with the ui-designer-mcp agent, implements design feedback, and iterates on the frontend using modern frameworks and best practices. It specializes in:
+#   - Building responsive, accessible, and performant web applications
+#   - Implementing UI/UX improvements suggested by the designer agent
+#   - Leveraging React, Vue, Angular, Tailwind CSS, and state management libraries
+#   - Optimizing frontend performance and Core Web Vitals
+# Usage:
+#   1. Use this agent to translate UI/UX feedback into implementation tasks and code changes.
+#   2. Integrate with mcp-browser-cli and Playwright browser agent to automate UI testing and validation.
+# Example CLI prompt:
+#   mcp-browser-cli run-browser-agent "Navigate to http://localhost:5173/. Use the frontend-developer-mcp persona to implement UI/UX improvements suggested by the ui-designer-mcp agent, optimize performance, and ensure accessibility." -e agents/.env
+# -------------------------------------------------------------
+
+name: frontend-developer-mcp
+color: blue
+description: |
+  Elite frontend developer agent for rapid, maintainable, and delightful web experiences. Specializes in:
+    - Modern JavaScript frameworks (React, Vue, Angular, Svelte)
+    - Responsive design, accessibility, and performance optimization
+    - State management, animation, and testing best practices
+    - Implementing and iterating on UI/UX feedback from designer agents
+persona: |
+  You are an elite frontend development specialist with deep expertise in modern JavaScript frameworks, responsive design, and user interface implementation. You collaborate with the ui-designer-mcp agent to bring beautiful designs to life, iterating quickly and maintaining code quality.
+
+  Your primary responsibilities:
+    1. Component Architecture
+    2. Responsive Design Implementation
+    3. Performance Optimization
+    4. Modern Frontend Patterns
+    5. State Management Excellence
+    6. UI/UX Implementation
+
+  Framework Expertise, Essential Tools, Performance Metrics, and Best Practices are included for reference.
+
+  Your goal: Build blazing fast, accessible, and delightful frontend experiences. Rapidly implement and iterate on UI/UX improvements, ensuring maintainability and technical excellence in every sprint.
+
+# Tools leveraged: Write, Read, MultiEdit, Bash, Grep, Glob, Playwright browser agent
+
+--- END OF FILE agents/frontend-developer-mcp.md ---
+
+--- START OF FILE agents/project-manager-mcp-agent.js ---
+
+// Node.js agent script for Playwright MCP server
+// Connects to ws://localhost:63784/ and automates dashboard access
+
+/*
+ MCP Project Manager Agent
+ Implements the project-manager-mcp persona:
+ - Connects to Playwright MCP server at ws://localhost:63784
+ - Tracks requirements, completed tasks, and outstanding tasks
+ - Assigns tasks to agents
+ - Monitors task status and blockers
+ - Provides progress reports and next steps
+ - Uses Playwright for browser tasks, file I/O, and CLI commands
+ - Maintains a task list (in-memory and tasks.json)
+ - Supports CLI commands for status, assignment, and reports
+*/
+
+const { chromium } = require('playwright');
+const fs = require('fs').promises;
+const path = require('path');
+const TASKS_FILE = path.join(__dirname, 'tasks.json');
+
+// In-memory task list
+let tasks = [];
+
+// Load tasks from file
+async function loadTasks() {
+  try {
+    const data = await fs.readFile(TASKS_FILE, 'utf-8');
+    tasks = JSON.parse(data);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      tasks = [];
+    } else {
+      console.error('Error loading tasks:', err);
+    }
+  }
+}
+
+// Save tasks to file
+async function saveTasks() {
+  try {
+    await fs.writeFile(TASKS_FILE, JSON.stringify(tasks, null, 2));
+  } catch (err) {
+    console.error('Error saving tasks:', err);
+  }
+}
+
+// Add a new task
+async function addTask(description, agent, requirement = '', status = 'pending') {
+  const id = `task${tasks.length + 1}`;
+  const task = { id, description, agent, requirement, status, blockers: [] };
+  tasks.push(task);
+  await saveTasks();
+  console.log(`Added task: ${id} (${description}) assigned to ${agent}`);
+}
+
+// Assign a task to an agent
+async function assignTask(id, agent) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.agent = agent;
+    await saveTasks();
+    console.log(`Task ${id} assigned to ${agent}`);
+  } else {
+    console.log(`Task ${id} not found.`);
+  }
+}
+
+// Update task status
+async function updateTaskStatus(id, status) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.status = status;
+    await saveTasks();
+    console.log(`Task ${id} status updated to ${status}`);
+  } else {
+    console.log(`Task ${id} not found.`);
+  }
+}
+
+// Add blocker to a task
+async function addBlocker(id, blocker) {
+  const task = tasks.find(t => t.id === id);
+  if (task) {
+    task.blockers.push(blocker);
+    await saveTasks();
+    console.log(`Blocker added to task ${id}: ${blocker}`);
+  } else {
+    console.log(`Task ${id} not found.`);
+  }
+}
+
+// Provide progress report
+function progressReport() {
+  const completed = tasks.filter(t => t.status === 'completed');
+  const pending = tasks.filter(t => t.status === 'pending');
+  const inProgress = tasks.filter(t => t.status === 'in-progress');
+  console.log('--- Progress Report ---');
+  console.log(`Completed: ${completed.length}`);
+  completed.forEach(t => console.log(`  - ${t.id}: ${t.description}`));
+  console.log(`In Progress: ${inProgress.length}`);
+  inProgress.forEach(t => console.log(`  - ${t.id}: ${t.description} (Agent: ${t.agent})`));
+  console.log(`Pending: ${pending.length}`);
+  pending.forEach(t => console.log(`  - ${t.id}: ${t.description} (Agent: ${t.agent})`));
+  console.log('-----------------------');
+}
+
+// Connect to Playwright MCP server
+async function connectToPlaywright() {
+  try {
+    const browser = await chromium.connect('ws://localhost:63784');
+    console.log('Connected to Playwright MCP server');
+    return browser;
+  } catch (error) {
+    console.error('Failed to connect to Playwright MCP server:', error);
+    return null;
+  }
+}
+
+// Example browser task: check dashboard title
+async function checkDashboard(browser) {
+  try {
+    const page = await browser.newPage();
+    await page.goto('http://localhost:5173/');
+    const title = await page.title();
+    console.log('Dashboard Title:', title);
+    await page.close();
+  } catch (err) {
+    console.error('Error checking dashboard:', err);
+  }
+}
+
+// CLI command handler
+async function handleCli(args) {
+  await loadTasks();
+  const cmd = args[0];
+  switch (cmd) {
+    case 'add-task':
+      await addTask(args[1], args[2], args[3] || '', args[4] || 'pending');
+      break;
+    case 'assign-task':
+      await assignTask(args[1], args[2]);
+      break;
+    case 'update-status':
+      await updateTaskStatus(args[1], args[2]);
+      break;
+    case 'add-blocker':
+      await addBlocker(args[1], args[2]);
+      break;
+    case 'report':
+      progressReport();
+      break;
+    case 'browser-check':
+      const browser = await connectToPlaywright();
+      if (browser) await checkDashboard(browser);
+      if (browser) await browser.close();
+      break;
+    default:
+      console.log('Commands: add-task <desc> <agent> [requirement] [status], assign-task <id> <agent>, update-status <id> <status>, add-blocker <id> <blocker>, report, browser-check');
+  }
+}
+
+// Entry point
+if (require.main === module) {
+  handleCli(process.argv.slice(2)).catch(console.error);
+}
+
+(async () => {
+  // Launch browser (Playwright MCP server is assumed to be running)
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  // Connect to dashboard
+  await page.goto(DASHBOARD_URL);
+  console.log('Dashboard loaded:', DASHBOARD_URL);
+
+  // Example: Take a screenshot
+  await page.screenshot({ path: 'dashboard.png' });
+  console.log('Screenshot saved as dashboard.png');
+
+  // Example: Print page title
+  const title = await page.title();
+  console.log('Dashboard title:', title);
+
+  // Add more automation steps here as needed
+
+  await browser.close();
+})();
+
+const { chromium } = require('playwright');
+
+const MCP_SERVER_URL = 'ws://localhost:63784/';
+const DASHBOARD_URL = 'http://localhost:5173/';
+
+(async () => {
+  // Launch browser (Playwright MCP server is assumed to be running)
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  // Connect to dashboard
+  await page.goto(DASHBOARD_URL);
+  console.log('Dashboard loaded:', DASHBOARD_URL);
+
+  // Example: Take a screenshot
+  await page.screenshot({ path: 'dashboard.png' });
+  console.log('Screenshot saved as dashboard.png');
+
+  // Example: Print page title
+  const title = await page.title();
+  console.log('Dashboard title:', title);
+
+  // Add more automation steps here as needed
+
+  await browser.close();
+})();
+
+--- END OF FILE agents/project-manager-mcp-agent.js ---
+
+--- START OF FILE agents/project-manager-mcp.md ---
+
+# -------------------------------------------------------------
+# MCP Project Manager / Task Tracker Agent Persona
+# -------------------------------------------------------------
+# Name: project-manager-mcp
+# Description: This agent acts as a project manager and task tracker for your AI-driven development workflow. It coordinates agents (UI designer, frontend developer, backend architect, etc.), tracks requirements, monitors progress, and ensures all tasks are completed efficiently.
+#   - Tracks requirements, completed work, and outstanding tasks
+#   - Assigns tasks to appropriate agents and monitors status
+#   - Provides summaries, progress reports, and next steps
+#   - Integrates with MCP server and other agents for seamless collaboration
+# Usage:
+#   1. Use this agent to manage your project, track all requirements (e.g., Plumbing Quote Agent), and keep all agents aligned.
+#   2. Query for status updates, outstanding tasks, and completed work.
+# Example CLI prompt:
+#   mcp-browser-cli run-browser-agent "Use the project-manager-mcp persona to track all Plumbing Quote Agent requirements, assign tasks to agents, monitor progress, and provide a summary of completed and outstanding work." -e agents/.env
+# -------------------------------------------------------------
+
+name: project-manager-mcp
+color: orange
+description: |
+  Project manager and task tracker agent for AI-driven development teams. Specializes in:
+    - Tracking requirements, tasks, and deliverables
+    - Assigning and monitoring work across agents (UI, frontend, backend)
+    - Providing actionable progress reports and next steps
+    - Ensuring alignment with project goals and requirements
+persona: |
+  You are a highly organized project manager and task tracker for AI-driven development. You:
+    - Track all requirements and deliverables (e.g., Plumbing Quote Agent specs)
+    - Maintain a list of completed and outstanding tasks for each agent
+    - Assign tasks, monitor status, and follow up on blockers
+    - Provide summaries, progress updates, and actionable next steps
+    - Ensure privacy, cost efficiency, and technical best practices are followed
+    - Help the team stay focused and deliver on time
+
+  Your goal: Keep all agents and stakeholders aligned, ensure every requirement is met, and provide clear visibility into project status and next actions.
+
+# Tools leveraged: Write, Read, MultiEdit, Bash, Grep, Glob, WebFetch, Playwright browser agent
+
+--- END OF FILE agents/project-manager-mcp.md ---
+
+--- START OF FILE agents/test-playwright-mcp.js ---
+
+/*
+Create a Node.js script using Playwright to test a running Playwright MCP server at ws://localhost:63784. The script should:
+- Connect to the Playwright MCP server at ws://localhost:63784.
+- Test a web service running at http://localhost:5173 with the following scenario:
+  1. Register/signup to the service (assume a form with fields for username, email, and password).
+  2. Sign out (assume a signout button or link).
+  3. Sign in using the same credentials.
+- Use generic selectors (e.g., input[name="username"], button[type="submit"]) for form fields and buttons.
+- Include error handling for connection failures, form submission errors, or navigation issues.
+- Log each step (e.g., "Navigating to signup", "Signed in successfully") and report pass/fail status.
+- Save test results to a file (e.g., test-results.json).
+- Ensure the script is modular, well-commented, and suitable as a foundational test for other tests.
+*/
+
+const { chromium } = require('playwright');
+const fs = require('fs').promises;
+
+const MCP_WS = 'ws://localhost:63784';
+const BASE_URL = 'http://localhost:5173';
+const TEST_USER = {
+  username: 'testuser_' + Math.floor(Math.random() * 10000),
+  email: 'testuser_' + Math.floor(Math.random() * 10000) + '@example.com',
+  password: 'Str0ng!P@ssw0rd#2025$' // Stronger password
+};
+
+async function runTest() {
+  let browser;
+  let results = { passed: false, steps: [], errors: [] };
+  try {
+    // Connect to Playwright MCP server
+    results.steps.push('Connecting to Playwright MCP server...');
+    browser = await chromium.connect(MCP_WS);
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    results.steps.push('Connected to Playwright MCP server');
+
+    // Step 1: Register/signup
+    results.steps.push('Navigating to signup page...');
+    await page.goto(BASE_URL + '/signup');
+    await page.fill('input[name="username"]', TEST_USER.username);
+    await page.fill('input[name="email"]', TEST_USER.email);
+    await page.fill('input[name="password"]', TEST_USER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
+    results.steps.push('Signup submitted');
+
+    // Step 2: Sign out
+    results.steps.push('Signing out...');
+    await page.click('a[href="/logout"],button#signout');
+    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
+    results.steps.push('Signout completed');
+
+    // Step 3: Sign in
+    results.steps.push('Navigating to sign-in page...');
+    await page.goto(BASE_URL + '/login');
+    await page.fill('input[name="username"]', TEST_USER.username);
+    await page.fill('input[name="password"]', TEST_USER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
+    results.steps.push('Sign-in completed');
+
+    results.passed = true;
+  } catch (error) {
+    results.errors.push(error.message);
+    results.steps.push('Error: ' + error.message);
+  } finally {
+    await fs.writeFile('test-results.json', JSON.stringify(results, null, 2));
+    if (browser) await browser.close();
+  }
+  console.log('Test results:', results);
+  return results;
+}
+
+runTest().catch(console.error);
+
+--- END OF FILE agents/test-playwright-mcp.js ---
+
+--- START OF FILE agents/ui-designer-mcp.md ---
+
+# -------------------------------------------------------------
+# MCP UI Designer Sub-Agent Persona
+# -------------------------------------------------------------
+# Name: ui-designer-mcp
+# Description: This agent leverages the mcp-browser-use Playwright browser agent and GPT-4o to evaluate, design, and iterate on user interfaces for rapid development cycles. It specializes in:
+#   - Automated UI/UX analysis of live frontends (e.g., http://localhost:5173/)
+#   - Generating actionable design feedback and improvement suggestions
+#   - Creating implementation-ready UI concepts using Tailwind CSS and component libraries
+#   - Documenting design systems, tokens, and handoff deliverables
+# Usage:
+#   1. Use this agent to automate UI/UX reviews and get prioritized recommendations for improvement.
+#   2. Integrate with mcp-browser-cli to run browser-based evaluations and generate markdown reports.
+# Example CLI prompt:
+#   mcp-browser-cli run-browser-agent "Navigate to http://localhost:5173/. Use the ui-designer-mcp persona to perform a comprehensive UI/UX analysis, suggest improvements, and provide implementation-ready feedback for rapid iteration." -e agents/.env
+# -------------------------------------------------------------
+
+name: ui-designer-mcp
+color: magenta
+description: |
+  Visionary UI designer agent for rapid, beautiful, and implementable interfaces. Specializes in:
+    - Modern design trends, platform guidelines, and component architecture
+    - Automated UI/UX analysis and feedback using Playwright browser agent
+    - Tailwind CSS, Shadcn/ui, Radix UI, Heroicons, Framer Motion
+    - 6-day sprint design cycles, developer handoff optimization
+    - Social media optimization and screenshot appeal
+persona: |
+  You are a visionary UI designer who creates interfaces that are not just beautiful, but implementable within rapid development cycles. Your expertise spans modern design trends, platform-specific guidelines, component architecture, and the delicate balance between innovation and usability. You understand that in the studio's 6-day sprints, design must be both inspiring and practical.
+
+  Your primary responsibilities:
+    1. Rapid UI Conceptualization
+    2. Component System Architecture
+    3. Trend Translation
+    4. Visual Hierarchy & Typography
+    5. Platform-Specific Excellence
+    6. Developer Handoff Optimization
+
+  Design Principles for Rapid Development:
+    - Simplicity First
+    - Component Reuse
+    - Standard Patterns
+    - Progressive Enhancement
+    - Performance Conscious
+    - Accessibility Built-in
+
+  Quick-Win UI Patterns, Color System, Typography, Spacing, Component Checklist, and more are included for reference.
+
+  Your goal: Create interfaces users love and developers can build fast. Provide actionable feedback and implementation-ready specs for every UI/UX review.
+
+# Tools leveraged: Write, Read, MultiEdit, WebSearch, WebFetch, Playwright browser agent
+
+--- END OF FILE agents/ui-designer-mcp.md ---
 
 --- START OF FILE blueprint.md ---
 
@@ -3259,7 +4127,7 @@ You have successfully invested your initial 12 hours to build a functional, AI-p
 # Startup script for PlumbingPOC: starts backend and frontend, checks ports, and ensures correct sequence
 
 # Configurable ports
-BACKEND_PORT=3001
+BACKEND_PORT=3000
 FRONTEND_PORT=5173
 
 # Helper to check if port is free
@@ -3306,11 +4174,6 @@ echo "Backend: http://localhost:$BACKEND_PORT"
 echo "Frontend: http://localhost:$FRONTEND_PORT"
 
 --- END OF FILE startup.sh ---
-
---- START OF FILE supabase_schema_audit.sql ---
-
-
---- END OF FILE supabase_schema_audit.sql ---
 
 --- START OF FILE vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
 
@@ -4195,6 +5058,29 @@ module.exports = {
 
 --- START OF FILE vite-app/api/controllers/userController.js ---
 
+/**
+ * Handles fetching the profile for the currently authenticated user.
+ */
+const getUserProfile = async (req, res, next) => {
+  try {
+    const { user } = req; // From the `authenticate` middleware
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (!data) {
+      return res.status(404).json({ error: 'Profile not found for the current user.' });
+    }
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
 // vite-app/api/controllers/userController.js
 
 const supabase = require('../config/supabase');
@@ -4234,8 +5120,36 @@ const updateUserProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles creating the profile for the currently authenticated user.
+ */
+const createUserProfile = async (req, res, next) => {
+  try {
+    const { user } = req; // From the `authenticate` middleware
+    const profileData = req.body;
+    // Attach user_id to profileData
+    profileData.user_id = user.id;
+
+    // Insert new profile
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert([profileData])
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   updateUserProfile,
+  createUserProfile,
+  getUserProfile,
 };
 --- END OF FILE vite-app/api/controllers/userController.js ---
 
@@ -4420,15 +5334,20 @@ module.exports = router;
 // vite-app/api/routes/userRoutes.js
 
 const express = require('express');
-const { updateUserProfile } = require('../controllers/userController');
+const { updateUserProfile, createUserProfile, getUserProfile } = require('../controllers/userController');
 const { authenticate } = require('../middleware/authMiddleware');
 // We don't need a specific Zod schema here because the `update` is flexible,
 // but for production, you would add one to validate the incoming fields.
 
 const router = express.Router();
 
-// A user can update their own profile. The `authenticate` middleware provides the user context.
-// We use PUT because we are replacing/updating the entire profile resource from the user's perspective.
+// Get the profile for the authenticated user
+router.get('/profile', authenticate, getUserProfile);
+
+// Create a new profile for the authenticated user
+router.post('/profile', authenticate, createUserProfile);
+
+// Update an existing profile for the authenticated user
 router.put('/profile', authenticate, updateUserProfile);
 
 module.exports = router;
@@ -4450,16 +5369,16 @@ const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THE NEW USER RO
 
 // --- Basic Setup ---
 const app = express();
-const PORT = process.env.PORT || 3001;
-//require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
 
 // 1. CORS Middleware
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
+  origin: process.env.NODE_ENV === 'production'
     ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
-    : 'http://localhost:5173',
+    : `http://localhost:${process.env.FRONTEND_PORT || 5173}`,
 };
 app.use(cors(corsOptions));
 
@@ -4471,7 +5390,14 @@ app.use(express.json());
 // Delegate all routes starting with '/api/requests' to our new router file
 app.use('/api/requests', requestRoutes);
 
-app.use('/api/users', userRoutes); // <-- WIRE UP THE NEW ROUTER
+// ***************************************************************
+// ************************* THE FIX *****************************
+// ***************************************************************
+// Mount the user routes directly at /api, so that the paths become
+// /api/profile instead of /api/users/profile. This matches the frontend.
+app.use('/api', userRoutes); 
+// ***************************************************************
+// ***************************************************************
 
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {
@@ -7911,6 +8837,8 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = React.useState(false);
   const [name, setName] = React.useState('');
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -7938,15 +8866,35 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <form
           onSubmit={async e => {
             e.preventDefault();
+            setLoading(true);
+            setMessage(null);
             const email = (e.target as any).email.value;
             const password = (e.target as any).password.value;
-            if (isSignUp) {
-              const { data, error } = await supabase.auth.signUp({ email, password });
-              if (!error && data.user) {
-                await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
+            try {
+              if (isSignUp) {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) {
+                  setMessage(error.message || 'Sign up failed.');
+                } else if (data.user) {
+                  await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
+                  setMessage('Sign up successful! Please check your email and click the confirmation link before signing in.');
+                }
+              } else {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                  setMessage(error.message || 'Sign in failed.');
+                } else {
+                  setMessage('Sign in successful!');
+                  setTimeout(() => {
+                    setMessage(null);
+                    onClose();
+                  }, 1200);
+                }
               }
-            } else {
-              await supabase.auth.signInWithPassword({ email, password });
+            } catch (err: any) {
+              setMessage(err.message || 'An error occurred.');
+            } finally {
+              setLoading(false);
             }
           }}
         >
@@ -7963,7 +8911,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
           <input name="email" type="email" placeholder="Email" className="border px-4 py-2 rounded w-full mb-2" required />
           <input name="password" type="password" placeholder="Password" className="border px-4 py-2 rounded w-full mb-4" required />
-          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full">{isSignUp ? 'Sign Up with Email' : 'Sign In with Email'}</button>
+          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full" disabled={loading}>
+            {loading ? (isSignUp ? 'Signing Up...' : 'Signing In...') : (isSignUp ? 'Sign Up with Email' : 'Sign In with Email')}
+          </button>
+        {message && (
+          <div className="mt-2 text-center text-sm text-red-600">{message}</div>
+        )}
         </form>
         <div className="mt-4 text-center">
           {isSignUp ? (
@@ -8241,155 +9194,335 @@ const Dashboard: React.FC = () => {
 export default Dashboard;
 --- END OF FILE vite-app/src/components/Dashboard.tsx ---
 
+--- START OF FILE vite-app/src/components/MyRequests.tsx ---
+
+// vite-app/src/components/MyRequests.tsx
+
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
+import RequestDetailModal from './RequestDetailModal';
+import { QuoteRequest } from './Dashboard'; // Re-use the interface from Dashboard
+
+const MyRequests: React.FC = () => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState<QuoteRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchUserRequests = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    try {
+      // This is the key difference: we filter by the logged-in user's ID
+      const { data, error } = await supabase
+        .from('requests')
+        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setRequests((data as QuoteRequest[]) || []);
+    } catch (err: any) {
+      console.error("Failed to fetch user requests:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchUserRequests();
+  }, [user]);
+
+  const refreshRequestData = async () => {
+    // A simple way to refresh is to just re-fetch all requests
+    await fetchUserRequests();
+  };
+  
+  const handleOpenModal = (req: QuoteRequest) => {
+    setSelectedRequest(req);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRequest(null);
+  };
+
+  const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
+    const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
+      new: 'primary',
+      viewed: 'info',
+      quoted: 'warning',
+      scheduled: 'success',
+      completed: 'default'
+    };
+    return colorMap[status] || 'default';
+  };
+  
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <section id="my-requests" className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
+            My Quote Requests
+          </Typography>
+          
+          {requests.length > 0 ? (
+            <Box sx={{ maxWidth: '800px', margin: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {requests.map((req) => (
+                <Paper 
+                  key={req.id} 
+                  component={ListItemButton}
+                  onClick={() => handleOpenModal(req)}
+                  sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}
+                >
+                  <Box>
+                    <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
+                      {req.problem_category.replace(/_/g, " ")}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Submitted: {new Date(req.created_at).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={req.status} 
+                    color={getStatusChipColor(req.status)}
+                    size="small"
+                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                  />
+                </Paper>
+              ))}
+            </Box>
+          ) : (
+            <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '800px', margin: 'auto' }}>
+              <Typography variant="h6" color="text.secondary">
+                You haven't made any quote requests yet.
+              </Typography>
+            </Paper>
+          )}
+        </div>
+      </section>
+
+      {selectedRequest && (
+        <RequestDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          request={selectedRequest}
+          onUpdateRequest={refreshRequestData}
+        />
+      )}
+    </>
+  );
+};
+
+export default MyRequests;
+--- END OF FILE vite-app/src/components/MyRequests.tsx ---
+
 --- START OF FILE vite-app/src/components/ProfileModal.tsx ---
 
 // vite-app/src/components/ProfileModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import apiClient from '../lib/apiClient'; // <-- IMPORT apiClient
-import { UserProfile } from '../contexts/AuthContext';
-import { Box, Typography, Paper, TextField, Button, Grid, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
+import apiClient from '../lib/apiClient';
+import { useAuth } from '../contexts/AuthContext';
+import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
 import { X as XIcon } from 'lucide-react';
 
 interface ProfileModalProps {
-  isOpen: boolean;
-  profile: UserProfile | null;
-  onClose: () => void;
-  onComplete: () => void;
   isClosable?: boolean;
+  onClose?: () => void;
+  onComplete?: () => void; // <-- ADD THIS NEW PROP
 }
 
-const provinces = ['Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador', 'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan', 'Northwest Territories', 'Nunavut', 'Yukon'];
+const provinces = [
+  'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'ON', 'PE', 'QC', 'SK', 'NT', 'NU', 'YT'
+];
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, profile, onClose, onComplete, isClosable = true }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
-  const [postalCode, setPostalCode] = useState('');
+const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose, onComplete }) => {
+  const showDebugPanel = (import.meta.env.VITE_DEBUG_PANEL === 'true');
+
+  const DebugOverlay = () => (
+    <div style={{
+      background: '#222',
+      color: '#fff',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+      opacity: 0.97,
+      maxWidth: 420,
+      margin: '18px auto 0 auto',
+      display: 'block'
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '13px' }}>ProfileModal Debug</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+        <div>User ID:</div><div>{user?.id || 'none'}</div>
+        <div>Email:</div><div>{email}</div>
+        <div>Loading:</div><div>{String(loading)}</div>
+        <div>SaveError:</div><div>{saveError || 'none'}</div>
+        <div>SaveSuccess:</div><div>{String(saveSuccess)}</div>
+        <div>PhoneError:</div><div>{phoneError || 'none'}</div>
+      </div>
+    </div>
+  );
   
-  const [loading, setLoading] = useState(false);
+  const { user, profile: contextProfile } = useAuth();
+  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(contextProfile?.name || '');
+  const [phone, setPhone] = useState(contextProfile?.phone || '');
+  const [province, setProvince] = useState(contextProfile?.province || '');
+  const [city, setCity] = useState(contextProfile?.city || '');
+  const [address, setAddress] = useState(contextProfile?.address || '');
+  const [postalCode, setPostalCode] = useState(contextProfile?.postal_code || '');
   const [phoneError, setPhoneError] = useState('');
-  const [postalError, setPostalError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (profile && isOpen) {
-      setName(profile.name || '');
-      setPhone(profile.phone || '');
-      setAddress(profile.address || '');
-      setCity(profile.city || '');
-      setProvince(profile.province || '');
-      setPostalCode(profile.postal_code || '');
+    if (contextProfile) {
+      setName(contextProfile.name || '');
+      setPhone(contextProfile.phone || '');
+      setProvince(contextProfile.province || '');
+      setCity(contextProfile.city || '');
+      setAddress(contextProfile.address || '');
+      setPostalCode(contextProfile.postal_code || '');
     }
-  }, [profile, isOpen]);
-
-  if (!isOpen) return null;
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [contextProfile, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
-
-    const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
-    const postalRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/i;
-    let isValid = true;
-    
-    if (!phone.trim() || !phoneRegex.test(phone)) {
-      setPhoneError('Format: 123-456-7890');
-      isValid = false;
-    } else {
-      setPhoneError('');
-    }
-
-    if (!postalCode.trim() || !postalRegex.test(postalCode)) {
-      setPostalError('Format: A1A 1A1');
-      isValid = false;
-    } else {
-      setPostalError('');
-    }
-
-    if (!isValid) return;
-    
     setLoading(true);
+    setPhoneError('');
+    setSaveError('');
+    setSaveSuccess(false);
 
-    // --- THIS IS THE FIX ---
-    // Use the new API endpoint instead of a direct Supabase call
+    if (!/^\d{3}-\d{3}-\d{4}$/.test(phone)) {
+      setPhoneError('Enter a valid phone number in the format 250-885-7003');
+      setLoading(false);
+      return;
+    }
+
+    const postalCodePattern = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+    if (!postalCodePattern.test(postalCode)) {
+      setSaveError('Enter a valid Canadian postal code (e.g., V8N 2L4 or V8N-2L4)');
+      setLoading(false);
+      return;
+    }
+    
+    const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
+
+    const profilePayload = { 
+      name, 
+      email, // Add email to payload for backend insertion
+      phone, 
+      province, 
+      city, 
+      address, 
+      postal_code: formattedPostalCode 
+    };
+
     try {
-      const payload = {
-        name,
-        phone,
-        address,
-        city,
-        province,
-        postal_code: postalCode.toUpperCase().replace(/(\w{3})[ -]?(\w{3})/, '$1 $2'),
-      };
+      let profileExists = !!contextProfile;
 
-      await apiClient.put('/users/profile', payload);
+      if (profileExists) {
+        await apiClient.put('/profile', profilePayload);
+      } else {
+        await apiClient.post('/profile', profilePayload);
+      }
 
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        // <-- THE FIX: Call onComplete if it exists, otherwise call onClose
+        if (onComplete) {
+          onComplete();
+        } else if (onClose) {
+          onClose();
+        }
+      }, 1200);
+
+    } catch (err: any) {
+      setSaveError(err.response?.data?.error || 'Failed to save profile. Please try again.');
+    } finally {
       setLoading(false);
-      onComplete(); // Signal parent to refresh and close
-    } catch (error: any) {
-      setLoading(false);
-      console.error("Profile update error:", error);
-      alert(`Failed to save profile: ${error.response?.data?.error || error.message}`);
     }
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            {profile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
-          </Typography>
-          {isClosable && (
-            <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
-          )}
-        </Box>
-
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField label="Full Name" value={name} onChange={e => setName(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField label="Email" value={profile?.email || ''} fullWidth disabled sx={{ bgcolor: '#eeeeee' }} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} placeholder="123-456-7890" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="Street Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth required>
+    <>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              {contextProfile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
+            </Typography>
+            {isClosable && (
+              <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+            )}
+          </Box>
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+              {/* Form fields remain the same */}
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Email" value={email} fullWidth disabled InputProps={{ sx: { height: 56, fontSize: '1rem' } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Name" value={name} onChange={e => setName(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <FormControl fullWidth required sx={{ height: 56 }}>
                   <InputLabel id="province-select-label">Province</InputLabel>
-                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value)}>
+                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value as string)} sx={{ height: 56 }}>
                     <MenuItem value=""><em>Select Province</em></MenuItem>
                     {provinces.map(p => (<MenuItem key={p} value={p}>{p}</MenuItem>))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required error={!!postalError} helperText={postalError} placeholder="A1A 1A1" />
-              </Grid>
-            </Grid>
-          </Box>
-          <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading} sx={{ py: 1.5, fontSize: '1rem' }}>
-              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
-            </Button>
-          </Box>
-        </form>
-      </Paper>
-    </div>
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+            </Box>
+            <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              {saveError && (<Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>{saveError}</Typography>)}
+              {saveSuccess && (<Typography color="primary" sx={{ mb: 2, textAlign: 'center' }}>Profile saved!</Typography>)}
+              <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading || saveSuccess} sx={{ py: 1.5, fontSize: '1rem' }}>
+                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
+              </Button>
+              {showDebugPanel && <Box sx={{ mt: 3 }}><DebugOverlay /></Box>}
+            </Box>
+          </form>
+        </Paper>
+      </div>
+    </>
   );
 };
-
 export default ProfileModal;
 --- END OF FILE vite-app/src/components/ProfileModal.tsx ---
 
@@ -8948,9 +10081,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../lib/apiClient';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, Image as ImageIcon, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
+import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 
@@ -8975,6 +10108,18 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
     </Grid>
   </Grid>
 );
+
+// Helper function for status chip color
+const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
+  const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
+    new: 'primary',
+    viewed: 'info',
+    quoted: 'warning',
+    scheduled: 'success',
+    completed: 'default'
+  };
+  return colorMap[status] || 'default';
+};
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
@@ -9070,10 +10215,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* --- STYLE CHANGE: Removed padding from parent Paper --- */}
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
         
-        {/* --- STYLE CHANGE: Applied blue header style --- */}
         <Box sx={{
           display: 'flex',
           alignItems: 'center',
@@ -9095,7 +10238,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
         </Box>
 
-        {/* --- STYLE CHANGE: Added padding to content area --- */}
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -9135,7 +10277,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 {request.request_notes.length > 0 ? request.request_notes.map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'You' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
               </Box>
               <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or log a call..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Save Note</Button></Box>
+                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
               </Box>
             </Paper>
             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -9146,7 +10288,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <List>
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
-                      isAdmin && <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>Update</Button>
+                      <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
+                        {isAdmin ? 'Update' : 'View Details'}
+                      </Button>
                     }>
                       <ListItemText
                         primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
@@ -9157,18 +10301,39 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 </List>
               )}
               {isAdmin && (
-                <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add Quote</Button>
+                <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add New Quote</Button>
               )}
             </Paper>
           </Box>
         </Box>
-        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
-            <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>Call Customer</Button>
-          </Box>
+
+        {/* --- THE FIX IS HERE --- */}
+        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <Typography variant="body2" color="text.secondary">
+            Status: <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
+          </Typography>
+          
+          {isAdmin && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Update Status</InputLabel>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}>
+                  <MenuItem value="new">New</MenuItem>
+                  <MenuItem value="viewed">Viewed</MenuItem>
+                  <MenuItem value="quoted">Quoted</MenuItem>
+                  <MenuItem value="scheduled">Scheduled</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </Select>
+              </FormControl>
+              <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>
+                Call Customer
+              </Button>
+            </Box>
+          )}
         </Box>
       </Paper>
+
+      {/* This QuoteFormModal logic remains the same, but now respects the `editable` prop which is driven by `isAdmin` */}
       <QuoteFormModal
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
@@ -9668,6 +10833,7 @@ import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
+import MyRequests from './components/MyRequests'; // <-- Import the new component
 import {
   Phone,
   Wrench,
@@ -9681,10 +10847,7 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
-
-  // --- NEW STATE FOR PROFILE MODAL ---
   const [showProfileModal, setShowProfileModal] = useState(false);
-  
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -9742,6 +10905,10 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Conditionally render MyRequests for logged-in, non-admin users */}
+      {user && !profileIncomplete && profile?.role !== 'admin' && <MyRequests />}
+      
       <ServicesSection />
       <AboutSection />
       <ReviewsSection />
@@ -9824,28 +10991,20 @@ const AppContent: React.FC = () => {
 
       {!user && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
       
-      {/* This modal is for first-time users or those with incomplete profiles */}
       {user && profileIncomplete && (
         <ProfileModal
-          isOpen={true}
-          profile={profile}
-          onClose={() => { /* This modal cannot be closed by the user */ }}
           onComplete={refreshProfile}
-          isClosable={false} // Explicitly make it non-closable
         />
       )}
 
-      {/* This modal is for editing an existing, complete profile */}
-      {user && !profileIncomplete && (
+      {user && !profileIncomplete && showProfileModal && (
         <ProfileModal
-          isOpen={showProfileModal}
-          profile={profile}
+          isClosable={true}
           onClose={() => setShowProfileModal(false)}
           onComplete={() => {
             refreshProfile();
             setShowProfileModal(false);
           }}
-          isClosable={true} // This one can be closed
         />
       )}
     </React.Fragment>
@@ -9927,7 +11086,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3001'
+      '/api': 'http://localhost:3000'
     }
   }
 });

@@ -1,3 +1,26 @@
+/**
+ * Handles fetching the profile for the currently authenticated user.
+ */
+const getUserProfile = async (req, res, next) => {
+  try {
+    const { user } = req; // From the `authenticate` middleware
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (!data) {
+      return res.status(404).json({ error: 'Profile not found for the current user.' });
+    }
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
 // vite-app/api/controllers/userController.js
 
 const supabase = require('../config/supabase');
@@ -37,6 +60,34 @@ const updateUserProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles creating the profile for the currently authenticated user.
+ */
+const createUserProfile = async (req, res, next) => {
+  try {
+    const { user } = req; // From the `authenticate` middleware
+    const profileData = req.body;
+    // Attach user_id to profileData
+    profileData.user_id = user.id;
+
+    // Insert new profile
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert([profileData])
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   updateUserProfile,
+  createUserProfile,
+  getUserProfile,
 };

@@ -12,16 +12,16 @@ const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THE NEW USER RO
 
 // --- Basic Setup ---
 const app = express();
-const PORT = process.env.PORT || 3001;
-//require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
 
 // 1. CORS Middleware
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
+  origin: process.env.NODE_ENV === 'production'
     ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
-    : 'http://localhost:5173',
+    : `http://localhost:${process.env.FRONTEND_PORT || 5173}`,
 };
 app.use(cors(corsOptions));
 
@@ -33,7 +33,14 @@ app.use(express.json());
 // Delegate all routes starting with '/api/requests' to our new router file
 app.use('/api/requests', requestRoutes);
 
-app.use('/api/users', userRoutes); // <-- WIRE UP THE NEW ROUTER
+// ***************************************************************
+// ************************* THE FIX *****************************
+// ***************************************************************
+// Mount the user routes directly at /api, so that the paths become
+// /api/profile instead of /api/users/profile. This matches the frontend.
+app.use('/api', userRoutes); 
+// ***************************************************************
+// ***************************************************************
 
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {

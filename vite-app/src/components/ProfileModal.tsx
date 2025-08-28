@@ -1,148 +1,191 @@
 // vite-app/src/components/ProfileModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import apiClient from '../lib/apiClient'; // <-- IMPORT apiClient
-import { UserProfile } from '../contexts/AuthContext';
-import { Box, Typography, Paper, TextField, Button, Grid, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
+import apiClient from '../lib/apiClient';
+import { useAuth } from '../contexts/AuthContext';
+import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
 import { X as XIcon } from 'lucide-react';
 
 interface ProfileModalProps {
-  isOpen: boolean;
-  profile: UserProfile | null;
-  onClose: () => void;
-  onComplete: () => void;
   isClosable?: boolean;
+  onClose?: () => void;
+  onComplete?: () => void; // <-- ADD THIS NEW PROP
 }
 
-const provinces = ['Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador', 'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan', 'Northwest Territories', 'Nunavut', 'Yukon'];
+const provinces = [
+  'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'ON', 'PE', 'QC', 'SK', 'NT', 'NU', 'YT'
+];
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, profile, onClose, onComplete, isClosable = true }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
-  const [postalCode, setPostalCode] = useState('');
+const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose, onComplete }) => {
+  const showDebugPanel = (import.meta.env.VITE_DEBUG_PANEL === 'true');
+
+  const DebugOverlay = () => (
+    <div style={{
+      background: '#222',
+      color: '#fff',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+      opacity: 0.97,
+      maxWidth: 420,
+      margin: '18px auto 0 auto',
+      display: 'block'
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '13px' }}>ProfileModal Debug</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+        <div>User ID:</div><div>{user?.id || 'none'}</div>
+        <div>Email:</div><div>{email}</div>
+        <div>Loading:</div><div>{String(loading)}</div>
+        <div>SaveError:</div><div>{saveError || 'none'}</div>
+        <div>SaveSuccess:</div><div>{String(saveSuccess)}</div>
+        <div>PhoneError:</div><div>{phoneError || 'none'}</div>
+      </div>
+    </div>
+  );
   
-  const [loading, setLoading] = useState(false);
+  const { user, profile: contextProfile } = useAuth();
+  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(contextProfile?.name || '');
+  const [phone, setPhone] = useState(contextProfile?.phone || '');
+  const [province, setProvince] = useState(contextProfile?.province || '');
+  const [city, setCity] = useState(contextProfile?.city || '');
+  const [address, setAddress] = useState(contextProfile?.address || '');
+  const [postalCode, setPostalCode] = useState(contextProfile?.postal_code || '');
   const [phoneError, setPhoneError] = useState('');
-  const [postalError, setPostalError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (profile && isOpen) {
-      setName(profile.name || '');
-      setPhone(profile.phone || '');
-      setAddress(profile.address || '');
-      setCity(profile.city || '');
-      setProvince(profile.province || '');
-      setPostalCode(profile.postal_code || '');
+    if (contextProfile) {
+      setName(contextProfile.name || '');
+      setPhone(contextProfile.phone || '');
+      setProvince(contextProfile.province || '');
+      setCity(contextProfile.city || '');
+      setAddress(contextProfile.address || '');
+      setPostalCode(contextProfile.postal_code || '');
     }
-  }, [profile, isOpen]);
-
-  if (!isOpen) return null;
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [contextProfile, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
-
-    const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
-    const postalRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/i;
-    let isValid = true;
-    
-    if (!phone.trim() || !phoneRegex.test(phone)) {
-      setPhoneError('Format: 123-456-7890');
-      isValid = false;
-    } else {
-      setPhoneError('');
-    }
-
-    if (!postalCode.trim() || !postalRegex.test(postalCode)) {
-      setPostalError('Format: A1A 1A1');
-      isValid = false;
-    } else {
-      setPostalError('');
-    }
-
-    if (!isValid) return;
-    
     setLoading(true);
+    setPhoneError('');
+    setSaveError('');
+    setSaveSuccess(false);
 
-    // --- THIS IS THE FIX ---
-    // Use the new API endpoint instead of a direct Supabase call
+    if (!/^\d{3}-\d{3}-\d{4}$/.test(phone)) {
+      setPhoneError('Enter a valid phone number in the format 250-885-7003');
+      setLoading(false);
+      return;
+    }
+
+    const postalCodePattern = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+    if (!postalCodePattern.test(postalCode)) {
+      setSaveError('Enter a valid Canadian postal code (e.g., V8N 2L4 or V8N-2L4)');
+      setLoading(false);
+      return;
+    }
+    
+    const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
+
+    const profilePayload = { 
+      name, 
+      email, // Add email to payload for backend insertion
+      phone, 
+      province, 
+      city, 
+      address, 
+      postal_code: formattedPostalCode 
+    };
+
     try {
-      const payload = {
-        name,
-        phone,
-        address,
-        city,
-        province,
-        postal_code: postalCode.toUpperCase().replace(/(\w{3})[ -]?(\w{3})/, '$1 $2'),
-      };
+      let profileExists = !!contextProfile;
 
-      await apiClient.put('/users/profile', payload);
+      if (profileExists) {
+        await apiClient.put('/profile', profilePayload);
+      } else {
+        await apiClient.post('/profile', profilePayload);
+      }
 
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        // <-- THE FIX: Call onComplete if it exists, otherwise call onClose
+        if (onComplete) {
+          onComplete();
+        } else if (onClose) {
+          onClose();
+        }
+      }, 1200);
+
+    } catch (err: any) {
+      setSaveError(err.response?.data?.error || 'Failed to save profile. Please try again.');
+    } finally {
       setLoading(false);
-      onComplete(); // Signal parent to refresh and close
-    } catch (error: any) {
-      setLoading(false);
-      console.error("Profile update error:", error);
-      alert(`Failed to save profile: ${error.response?.data?.error || error.message}`);
     }
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            {profile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
-          </Typography>
-          {isClosable && (
-            <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
-          )}
-        </Box>
-
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField label="Full Name" value={name} onChange={e => setName(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField label="Email" value={profile?.email || ''} fullWidth disabled sx={{ bgcolor: '#eeeeee' }} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} placeholder="123-456-7890" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="Street Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth required>
+    <>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              {contextProfile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
+            </Typography>
+            {isClosable && (
+              <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+            )}
+          </Box>
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+              {/* Form fields remain the same */}
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Email" value={email} fullWidth disabled InputProps={{ sx: { height: 56, fontSize: '1rem' } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Name" value={name} onChange={e => setName(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <FormControl fullWidth required sx={{ height: 56 }}>
                   <InputLabel id="province-select-label">Province</InputLabel>
-                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value)}>
+                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value as string)} sx={{ height: 56 }}>
                     <MenuItem value=""><em>Select Province</em></MenuItem>
                     {provinces.map(p => (<MenuItem key={p} value={p}>{p}</MenuItem>))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required error={!!postalError} helperText={postalError} placeholder="A1A 1A1" />
-              </Grid>
-            </Grid>
-          </Box>
-          <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading} sx={{ py: 1.5, fontSize: '1rem' }}>
-              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
-            </Button>
-          </Box>
-        </form>
-      </Paper>
-    </div>
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
+              </Box>
+            </Box>
+            <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              {saveError && (<Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>{saveError}</Typography>)}
+              {saveSuccess && (<Typography color="primary" sx={{ mb: 2, textAlign: 'center' }}>Profile saved!</Typography>)}
+              <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading || saveSuccess} sx={{ py: 1.5, fontSize: '1rem' }}>
+                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
+              </Button>
+              {showDebugPanel && <Box sx={{ mt: 3 }}><DebugOverlay /></Box>}
+            </Box>
+          </form>
+        </Paper>
+      </div>
+    </>
   );
 };
-
 export default ProfileModal;

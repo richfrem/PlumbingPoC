@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../lib/apiClient';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, Image as ImageIcon, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
+import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 
@@ -31,6 +31,18 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
     </Grid>
   </Grid>
 );
+
+// Helper function for status chip color
+const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
+  const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
+    new: 'primary',
+    viewed: 'info',
+    quoted: 'warning',
+    scheduled: 'success',
+    completed: 'default'
+  };
+  return colorMap[status] || 'default';
+};
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
@@ -126,10 +138,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* --- STYLE CHANGE: Removed padding from parent Paper --- */}
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
         
-        {/* --- STYLE CHANGE: Applied blue header style --- */}
         <Box sx={{
           display: 'flex',
           alignItems: 'center',
@@ -151,7 +161,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
         </Box>
 
-        {/* --- STYLE CHANGE: Added padding to content area --- */}
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -191,7 +200,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 {request.request_notes.length > 0 ? request.request_notes.map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'You' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
               </Box>
               <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or log a call..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Save Note</Button></Box>
+                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
               </Box>
             </Paper>
             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -202,7 +211,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <List>
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
-                      isAdmin && <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>Update</Button>
+                      <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
+                        {isAdmin ? 'Update' : 'View Details'}
+                      </Button>
                     }>
                       <ListItemText
                         primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
@@ -213,18 +224,39 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 </List>
               )}
               {isAdmin && (
-                <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add Quote</Button>
+                <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add New Quote</Button>
               )}
             </Paper>
           </Box>
         </Box>
-        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}><InputLabel>Update Status</InputLabel><Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}><MenuItem value="new">New</MenuItem><MenuItem value="viewed">Viewed</MenuItem><MenuItem value="quoted">Quoted</MenuItem><MenuItem value="scheduled">Scheduled</MenuItem><MenuItem value="completed">Completed</MenuItem></Select></FormControl>
-            <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>Call Customer</Button>
-          </Box>
+
+        {/* --- THE FIX IS HERE --- */}
+        <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <Typography variant="body2" color="text.secondary">
+            Status: <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
+          </Typography>
+          
+          {isAdmin && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Update Status</InputLabel>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value)} disabled={isUpdating}>
+                  <MenuItem value="new">New</MenuItem>
+                  <MenuItem value="viewed">Viewed</MenuItem>
+                  <MenuItem value="quoted">Quoted</MenuItem>
+                  <MenuItem value="scheduled">Scheduled</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </Select>
+              </FormControl>
+              <Button variant="outlined" component="a" href={`tel:${request.user_profiles?.phone}`} disabled={!request.user_profiles?.phone} startIcon={<Phone />}>
+                Call Customer
+              </Button>
+            </Box>
+          )}
         </Box>
       </Paper>
+
+      {/* This QuoteFormModal logic remains the same, but now respects the `editable` prop which is driven by `isAdmin` */}
       <QuoteFormModal
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}

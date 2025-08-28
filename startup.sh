@@ -2,7 +2,7 @@
 # Startup script for PlumbingPOC: starts backend and frontend, checks ports, and ensures correct sequence
 
 # Configurable ports
-BACKEND_PORT=3001
+BACKEND_PORT=3000
 FRONTEND_PORT=5173
 
 # Helper to check if port is free

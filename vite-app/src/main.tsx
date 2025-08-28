@@ -12,6 +12,7 @@ import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
+import MyRequests from './components/MyRequests'; // <-- Import the new component
 import {
   Phone,
   Wrench,
@@ -25,10 +26,7 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
-
-  // --- NEW STATE FOR PROFILE MODAL ---
   const [showProfileModal, setShowProfileModal] = useState(false);
-  
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -86,6 +84,10 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Conditionally render MyRequests for logged-in, non-admin users */}
+      {user && !profileIncomplete && profile?.role !== 'admin' && <MyRequests />}
+      
       <ServicesSection />
       <AboutSection />
       <ReviewsSection />
@@ -168,28 +170,20 @@ const AppContent: React.FC = () => {
 
       {!user && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
       
-      {/* This modal is for first-time users or those with incomplete profiles */}
       {user && profileIncomplete && (
         <ProfileModal
-          isOpen={true}
-          profile={profile}
-          onClose={() => { /* This modal cannot be closed by the user */ }}
           onComplete={refreshProfile}
-          isClosable={false} // Explicitly make it non-closable
         />
       )}
 
-      {/* This modal is for editing an existing, complete profile */}
-      {user && !profileIncomplete && (
+      {user && !profileIncomplete && showProfileModal && (
         <ProfileModal
-          isOpen={showProfileModal}
-          profile={profile}
+          isClosable={true}
           onClose={() => setShowProfileModal(false)}
           onComplete={() => {
             refreshProfile();
             setShowProfileModal(false);
           }}
-          isClosable={true} // This one can be closed
         />
       )}
     </React.Fragment>
