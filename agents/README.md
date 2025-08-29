@@ -7,10 +7,7 @@ Before running any agent workflows, ensure:
    playwright-mcp-server
    ```
 
-
-
 # How to Use These Agents Most Effectively
-
 
 **Best Practices:**
 - Start a new chat or session for each agent to keep context focused and results actionable.
