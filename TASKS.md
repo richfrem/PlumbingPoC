@@ -52,7 +52,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [ ] Test summary and confirmation flow for completeness
 
 ### UI/UX & Frontend
-- [ ] Evaluate UI/UX at http://your-local-frontend-url/ (agent-driven)
+- [ ] Update the frontend to use the deployed backend URL (http://your-local-frontend-url or https://plumbingpoc.netlify.app/)
 - [ ] Implement prioritized improvements
 - [x] Modular frontend structure with forms, modals, dashboard
 - [x] File upload for quote attachments

@@ -30,7 +30,7 @@ export const uploadAttachments = async (requestId: string, files: File[], quoteI
     formData.append('quote_id', quoteId);
   }
   files.forEach(file => {
-    formData.append('attachments', file);
+    formData.append('attachment', file);
   });
 
   return apiClient.post('/requests/attachments', formData, {

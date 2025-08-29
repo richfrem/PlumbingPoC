@@ -148,7 +148,10 @@ const uploadAttachment = async (req, res, next) => {
           upsert: true // Allow overwriting files with the same name in the same location
         });
       
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
 
       const attachmentRecord = { 
         request_id,

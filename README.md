@@ -64,6 +64,21 @@ The repository is organized for clarity and professional development standards.
 3.  **Set Up Environment Variables:**
     Navigate to the `vite-app/` directory, create a copy of `.env.example` named `.env`, and fill in your Supabase and OpenAI API keys.
 
+        ### Netlify Deployment & Environment Variables
+        - Netlify does **not** automatically use your local `.env` files for builds. You must manually add all required environment variables in the Netlify dashboard under "Site settings > Environment variables".
+        - For frontend (Vite/React), all variables must be prefixed with `VITE_` (e.g., `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+        - For backend (Node/Express), use non-prefixed variables (e.g., `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`).
+        - **Supabase anon keys are not secrets**: The `VITE_SUPABASE_ANON_KEY` is designed to be public and is required for client-side Supabase usage. Netlify's secrets scanning may flag it, but you can safely ignore this warning. You do not need to treat it as a secret.
+        - The Netlify config file (`netlify.toml`) is ignored for secrets scanning if you do not use the `[secrets]` section or related settings. Instead, manage all secrets and public variables in the Netlify dashboard.
+        - If you see build failures due to secrets scanning, ensure your public keys (like `VITE_SUPABASE_ANON_KEY`) are not marked as secrets, or add them to the omit list if needed.
+
+        ### Netlify Production Domain & Supabase Settings
+        - Your production domain is: `https://plumbingpoc.netlify.app`
+        - In your Supabase project settings, set:
+            - **Site URL:** `https://plumbingpoc.netlify.app`
+            - **Redirect URLs:** `https://plumbingpoc.netlify.app/*`
+        - This ensures authentication and redirects work correctly in production. You can confirm the app is running and sign-in works at this domain.
+
 4.  **Install Dependencies:**
     ```sh
     cd vite-app
