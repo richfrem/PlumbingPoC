@@ -1,12 +1,10 @@
 # netlify.toml (v3 - Root Configuration)
 
 [build]
-  # Build command now includes the path to the vite app
+  base = "." # Explicitly set base to the root of the repository
   command = "npm run build"
-  # Publish directory is now a direct path from the root
   publish = "vite-app/dist/"
-  # Functions directory is also a direct path from the root
-  functions = "netlify/functions/" # <-- We need to move the netlify folder
+  functions = "netlify/functions/"
 
 [[redirects]]
   from = "/api/*"
