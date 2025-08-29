@@ -83,11 +83,11 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [ ] Configure Resend domain verification (manual step for user)
 
 ### Deployment
-- [ ] Setup hosting for the POC on Netlify
+- [x] Setup hosting for the POC on Netlify
 - [ ] Create a Netlify Scheduled Function for automated follow-ups
 - [ ] Move the follow-up email logic from the Express controller to the new Netlify function
 - [ ] Remove the old /api/follow-up route and controller
-- [ ] Publish the POC to Netlify
+- [x] Publish the POC to Netlify
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline
