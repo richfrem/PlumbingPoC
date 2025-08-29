@@ -3,7 +3,7 @@
 # -------------------------------------------------------------
 # Name: ui-designer-mcp
 # Description: This agent leverages the mcp-browser-use Playwright browser agent and GPT-4o to evaluate, design, and iterate on user interfaces for rapid development cycles. It specializes in:
-#   - Automated UI/UX analysis of live frontends (e.g., {{FRONTEND_BASE_URL}})
+#   - Automated UI/UX analysis of live frontends (e.g., http://localhost:5173/)
 #   - Generating actionable design feedback and improvement suggestions
 #   - Creating implementation-ready UI concepts using Tailwind CSS and component libraries
 #   - Documenting design systems, tokens, and handoff deliverables
@@ -11,7 +11,7 @@
 #   1. Use this agent to automate UI/UX reviews and get prioritized recommendations for improvement.
 #   2. Integrate with mcp-browser-cli to run browser-based evaluations and generate markdown reports.
 # Example CLI prompt:
-#   mcp-browser-cli run-browser-agent "Navigate to {{FRONTEND_BASE_URL}}. Use the ui-designer-mcp persona to perform a comprehensive UI/UX analysis, suggest improvements, and provide implementation-ready feedback for rapid iteration." -e agents/.env
+#   mcp-browser-cli run-browser-agent "Navigate to http://localhost:5173/. Use the ui-designer-mcp persona to perform a comprehensive UI/UX analysis, suggest improvements, and provide implementation-ready feedback for rapid iteration." -e agents/.env
 # -------------------------------------------------------------
 
 name: ui-designer-mcp

@@ -11,7 +11,7 @@
 #   1. Use this agent to translate UI/UX feedback into implementation tasks and code changes.
 #   2. Integrate with mcp-browser-cli and Playwright browser agent to automate UI testing and validation.
 # Example CLI prompt:
-#   mcp-browser-cli run-browser-agent "Navigate to {{FRONTEND_BASE_URL}}. Use the frontend-developer-mcp persona to implement UI/UX improvements suggested by the ui-designer-mcp agent, optimize performance, and ensure accessibility." -e agents/.env
+#   mcp-browser-cli run-browser-agent "Navigate to http://localhost:5173/. Use the frontend-developer-mcp persona to implement UI/UX improvements suggested by the ui-designer-mcp agent, optimize performance, and ensure accessibility." -e agents/.env
 # -------------------------------------------------------------
 
 name: frontend-developer-mcp

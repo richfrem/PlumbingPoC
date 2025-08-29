@@ -89,17 +89,17 @@ This script will start both services in the background and provide you with the 
     ```sh
     npm run start:api
     ```
-    The API will start, typically on `{{BACKEND_BASE_URL}}`.
+    The API will start, typically on `http://localhost:3000/`.
 
 2.  **Start the Frontend Vite Server:**
     In a second terminal, from the `vite-app/` directory:
     ```sh
     npm run dev
     ```
-    The frontend will start, typically on `{{FRONTEND_BASE_URL}}`.
+    The frontend will start, typically on `http://localhost:5173/`.
 
 3.  **Access the App:**
-    Open your browser and navigate to `{{FRONTEND_BASE_URL}}`.
+    Open your browser and navigate to `http://localhost:5173/`.
 
 ---
 

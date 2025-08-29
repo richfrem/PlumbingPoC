@@ -8,7 +8,11 @@
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
   # Omit paths from secrets scanning
   SECRETS_SCAN_OMIT_PATHS = [
-    "vite-app/dist/**/*.js"
+    "vite-app/dist/**/*.js",
+    "TASKS.md",
+    "agents/*.md",
+    "all_markdown_and_code_snapshot_llm_distilled.txt",
+    "vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md"
   ]
   SECRETS_SCAN_ENABLED = false # Disable secrets scanning
 

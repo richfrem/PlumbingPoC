@@ -22,14 +22,14 @@ Before running any agent workflows, ensure:
 To verify your Playwright MCP server is operational, use the provided test script:
 
 1. Ensure the Playwright MCP server is running (see `AGENT_REPOS.md` for installation and setup instructions).
-2. Make sure the Plumbing Quote Agent dashboard is running at {{FRONTEND_BASE_URL}}.
+2. Make sure the Plumbing Quote Agent dashboard is running at http://localhost:5173/.
 3. Run the test script from this directory:
    ```bash
    node agents/test-playwright-mcp.js
    ```
 4. The script will:
-   - Connect to the Playwright MCP server at {{PLAYWRIGHT_MCP_SERVER_URL}}
-   - Register a new user, sign out, and sign in at {{FRONTEND_BASE_URL}}
+   - Connect to the Playwright MCP server at ws://localhost:63784
+   - Register a new user, sign out, and sign in at http://localhost:5173/
    - Log each step and save results to `test-results.json`
 5. Check `test-results.json` for pass/fail status and details of each step.
 
@@ -52,15 +52,15 @@ This folder contains specialized MCP agent personas to support your AI-driven de
 **Step 1: Start here.**
 
 #### Assumptions: 
-1. The Playwright MCP server is running. I've started it via `npx playwright run-server` It is listening on {{PLAYWRIGHT_MCP_SERVER_URL}}
-2. The Plumbing Quote Agent dashboard is running at {{FRONTEND_BASE_URL}} 
+1. The Playwright MCP server is running. I've started it via `npx playwright run-server` It is listening on ws://localhost:63784
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/ 
 
 #### Prompt:
 
 #### Copy-paste Prompt for Next Time:
 ```
-As the project-manager-mcp agent, connect to the running Playwright MCP server at Listening on {{PLAYWRIGHT_MCP_SERVER_URL}}
- for browser automation, UI testing, and agent orchestration. Target the Plumbing Quote Agent dashboard at {{FRONTEND_BASE_URL}}.
+As the project-manager-mcp agent, connect to the running Playwright MCP server at Listening on ws://localhost:63784
+ for browser automation, UI testing, and agent orchestration. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
 
 Review all current work and requirements for the Plumbing Quote Agent. Update TASKS.md to show completed tasks, outstanding work, and agent assignments. Summarize progress and recommend next steps. Ensure all anticipated questions for each service type are surfaced in the UI, and confirm privacy requirements are enforced. Reference key instructions from TASKS.md.
 ```
@@ -77,12 +77,12 @@ This prompt can be used directly in your agent client or workflow to launch the 
 **Step 2: Run after project manager agent.**
 
 #### Assumptions:
-1. The Playwright MCP server should be running. (e.g., {{PLAYWRIGHT_MCP_SERVER_URL}})
-2. The Plumbing Quote Agent dashboard is running at {{FRONTEND_BASE_URL}}
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784)
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/
 
 #### Copy-paste Prompt for Next Time:
 ```
-As the ui-designer-mcp agent, connect to the running Playwright MCP server at {{PLAYWRIGHT_MCP_SERVER_URL}} for browser-based UI/UX analysis. Target the Plumbing Quote Agent dashboard at {{FRONTEND_BASE_URL}}.
+As the ui-designer-mcp agent, connect to the running Playwright MCP server at ws://localhost:63784 for browser-based UI/UX analysis. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
 
 Perform a comprehensive UI/UX analysis. Evaluate design consistency, usability, accessibility, and performance. Suggest prioritized improvements and generate a markdown report with findings, scores, and screenshots. Reference TASKS.md for requirements.
 ```
@@ -98,12 +98,12 @@ This prompt can be used directly in your agent client or workflow to launch the 
 **Step 3: Run after UI designer agent.**
 
 #### Assumptions:
-1. The Playwright MCP server should be running. (e.g., {{PLAYWRIGHT_MCP_SERVER_URL}})
-2. The Plumbing Quote Agent dashboard is running at {{FRONTEND_BASE_URL}}
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784)
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/
 
 #### Copy-paste Prompt for Next Time:
 ```
-As the frontend-developer-mcp agent, connect to the running Playwright MCP server at {{PLAYWRIGHT_MCP_SERVER_URL}} for browser-based automation, testing, and UI validation. Target the Plumbing Quote Agent dashboard at {{FRONTEND_BASE_URL}}.
+As the frontend-developer-mcp agent, connect to the running Playwright MCP server at ws://localhost:63784 for browser-based automation, testing, and UI validation. Target the Plumbing Quote Agent dashboard at http://localhost:5173/.
 
 Implement the UI/UX improvements suggested by the ui-designer-mcp agent. Optimize the frontend for performance, accessibility, and responsiveness. Ensure all anticipated service questions are surfaced in the UI. Provide a summary of changes, code snippets, and recommendations for further improvement. Update TASKS.md as items are completed.
 ```
@@ -136,8 +136,8 @@ playwright-mcp-server
 **Step 4: Run after frontend developer agent.**
 
 #### Assumptions:
-1. The Playwright MCP server should be running. (e.g., {{PLAYWRIGHT_MCP_SERVER_URL}}) if browser automation is required.
-2. The Plumbing Quote Agent dashboard is running at {{FRONTEND_BASE_URL}} (if needed).
+1. The Playwright MCP server should be running. (e.g., ws://localhost:63784) if browser automation is required.
+2. The Plumbing Quote Agent dashboard is running at http://localhost:5173/ (if needed).
 
 #### Copy-paste Prompt for Next Time:
 ```

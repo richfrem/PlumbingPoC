@@ -206,10 +206,10 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 ### 3. Authentication Provider Configuration
 
 #### 3a. Updating URLs
-- Site URL: `https://your-site-name.netlify.app/` (production) or `{{FRONTEND_BASE_URL}}` (local)
+- Site URL: `https://your-site-name.netlify.app/` (production) or `http://localhost:5173/` (local)
 - Add Redirect URLs:
   - `https://your-site-name.netlify.app/*`
-  - `{{FRONTEND_BASE_URL}}*`
+  - `http://localhost:5173/*`
 - Save changes in Supabase dashboard under Authentication → URL Configuration.
 
 #### 3b. Adding Authentication Providers
@@ -225,8 +225,8 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 4. Add Authorized redirect URI:
    - `https://<your-supabase-project>.supabase.co/auth/v1/callback`
 5. (Optional) Add Authorized JavaScript origins for local development:
-   - `{{BACKEND_BASE_URL}}`
-   - `{{FRONTEND_BASE_URL}}`
+   - `http://localhost:3000/`
+   - `http://localhost:5173/`
 6. Save and copy the Client ID and Client Secret.
 7. Enter these values in Supabase dashboard under Authentication → Providers → Google.
 8. Ensure the following scopes are enabled in Google:
