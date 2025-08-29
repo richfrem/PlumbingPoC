@@ -1,10 +1,10 @@
 // Node.js agent script for Playwright MCP server
-// Connects to ws://localhost:63784/ and automates dashboard access
+// Connects to {{PLAYWRIGHT_MCP_SERVER_URL}}/ and automates dashboard access
 
 /*
  MCP Project Manager Agent
  Implements the project-manager-mcp persona:
- - Connects to Playwright MCP server at ws://localhost:63784
+ - Connects to Playwright MCP server at {{PLAYWRIGHT_MCP_SERVER_URL}}
  - Tracks requirements, completed tasks, and outstanding tasks
  - Assigns tasks to agents
  - Monitors task status and blockers
@@ -109,7 +109,7 @@ function progressReport() {
 // Connect to Playwright MCP server
 async function connectToPlaywright() {
   try {
-    const browser = await chromium.connect('ws://localhost:63784');
+    const browser = await chromium.connect('{{PLAYWRIGHT_MCP_SERVER_URL}}');
     console.log('Connected to Playwright MCP server');
     return browser;
   } catch (error) {
