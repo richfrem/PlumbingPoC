@@ -5,6 +5,7 @@
   command = "npm run build"
   publish = "vite-app/dist/"
   functions = "netlify/functions/"
+  environment = { NPM_FLAGS = "--legacy-peer-deps" } # Add this line
 
 [[redirects]]
   from = "/api/*"
