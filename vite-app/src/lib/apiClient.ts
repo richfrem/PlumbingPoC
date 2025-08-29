@@ -23,4 +23,19 @@ apiClient.interceptors.request.use(
   }
 );
 
+export const uploadAttachments = async (requestId: string, files: File[], quoteId?: string) => {
+  const formData = new FormData();
+  formData.append('request_id', requestId);
+  if (quoteId) {
+    formData.append('quote_id', quoteId);
+  }
+  files.forEach(file => {
+    formData.append('attachments', file);
+  });
+
+  return apiClient.post('/requests/attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export default apiClient;

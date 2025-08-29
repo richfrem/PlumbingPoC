@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T00:56:04.289Z
+Generated On: 2025-08-29T02:24:38.725Z
 
-# Mnemonic Weight (Token Count): ~134,431 tokens
+# Mnemonic Weight (Token Count): ~135,349 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -66,6 +66,7 @@ Generated On: 2025-08-29T00:56:04.289Z
   ./vite-app/src/
   ./vite-app/src/components/
   ./vite-app/src/components/AboutSection.tsx
+  ./vite-app/src/components/AttachmentSection.tsx
   ./vite-app/src/components/AuthModal.tsx
   ./vite-app/src/components/ContactSection.tsx
   ./vite-app/src/components/Dashboard.tsx
@@ -4881,7 +4882,7 @@ const submitQuoteRequest = async (req, res, next) => {
  */
 const uploadAttachment = async (req, res, next) => {
   try {
-    const { request_id, quote_id } = req.body;
+    const { request_id, quote_id } = req.body; // quote_id is optional
     const files = req.files;
 
     if (!files || files.length === 0) {
@@ -4890,7 +4891,7 @@ const uploadAttachment = async (req, res, next) => {
     if (!request_id) {
       return res.status(400).json({ error: 'request_id is required.' });
     }
-    
+
     // Security check: User must be an admin OR own the request associated with the upload.
     const { data: requestOwner, error: ownerError } = await supabase
       .from('requests')
@@ -4899,7 +4900,6 @@ const uploadAttachment = async (req, res, next) => {
       .single();
       
     if (ownerError) {
-        // This handles cases where the request_id is invalid
         return res.status(404).json({ error: 'Request not found.' });
     }
 
@@ -4910,11 +4910,22 @@ const uploadAttachment = async (req, res, next) => {
     }
 
     const uploadPromises = files.map(async (file) => {
-      const filePath = `${request_id}/${Date.now()}_${file.originalname.replace(/\s/g, '_')}`;
+      const sanitizedFileName = file.originalname.replace(/\s/g, '_');
+      
+      // Standardize the path
+      const pathSegments = ['public', request_id];
+      if (quote_id) {
+        pathSegments.push(quote_id);
+      }
+      pathSegments.push(sanitizedFileName);
+      const filePath = pathSegments.join('/');
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('PlumbingPoCBucket')
-        .upload(filePath, file.buffer, { contentType: file.mimetype });
+        .upload(filePath, file.buffer, { 
+          contentType: file.mimetype, 
+          upsert: true // Allow overwriting files with the same name in the same location
+        });
       
       if (uploadError) throw uploadError;
 
@@ -4923,7 +4934,8 @@ const uploadAttachment = async (req, res, next) => {
         quote_id: quote_id || null,
         file_name: file.originalname, 
         mime_type: file.mimetype,
-        file_url: uploadData.path
+        // Store the consistent, predictable path. The name file_url is kept for schema consistency.
+        file_url: filePath 
       };
 
       return attachmentRecord;
@@ -5057,6 +5069,9 @@ const updateQuote = async (req, res, next) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
+    // Also update the parent request's status to ensure consistency
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+
     res.status(200).json(data);
   } catch (err) {
     next(err);
@@ -5073,6 +5088,7 @@ module.exports = {
   getRequestById,
   updateQuote,
 };
+
 --- END OF FILE vite-app/api/controllers/requestController.js ---
 
 --- START OF FILE vite-app/api/controllers/userController.js ---
@@ -8928,6 +8944,148 @@ export default AboutSection;
 
 --- END OF FILE vite-app/src/components/AboutSection.tsx ---
 
+--- START OF FILE vite-app/src/components/AttachmentSection.tsx ---
+
+// vite-app/src/components/AttachmentSection.tsx
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { uploadAttachments } from '../lib/apiClient';
+import { Box, Typography, Paper, Button, CircularProgress, Alert } from '@mui/material';
+import { FileText as FileTextIcon, Paperclip } from 'lucide-react';
+
+interface Attachment {
+  id: string;
+  file_name: string;
+  file_url: string;
+  mime_type: string;
+  quote_id?: string;
+}
+
+interface AttachmentSectionProps {
+  requestId: string;
+  quoteId?: string;
+  attachments: Attachment[];
+  editable: boolean;
+  onUpdate: () => void;
+}
+
+const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteId, attachments, editable, onUpdate }) => {
+  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!attachments || attachments.length === 0) {
+      setImageUrls({});
+      return;
+    }
+    let isMounted = true;
+    const fetchAttachments = async () => {
+      setLoadingImages(true);
+      const filePaths = attachments.map(att => {
+        try {
+          if (att.file_url.startsWith('http')) {
+            const url = new URL(att.file_url);
+            const pathSegments = url.pathname.split('/');
+            const bucketIndex = pathSegments.indexOf('PlumbingPoCBucket');
+            if (bucketIndex !== -1) {
+              return pathSegments.slice(bucketIndex + 1).join('/');
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing file_url:', e);
+        }
+        return att.file_url;
+      });
+
+      const { data: signedUrlsData, error } = await supabase.storage
+        .from('PlumbingPoCBucket')
+        .createSignedUrls(filePaths, 3600);
+
+      if (error) {
+        console.error("Error creating signed URLs:", error);
+        setLoadingImages(false);
+        return;
+      }
+
+      if (signedUrlsData && isMounted) {
+        const newImageUrls: { [key: string]: string } = {};
+        signedUrlsData.forEach((item, index) => {
+          if (item.signedUrl) {
+            const attachment = attachments[index];
+            newImageUrls[attachment.id] = item.signedUrl;
+          }
+        });
+        setImageUrls(newImageUrls);
+      }
+      setLoadingImages(false);
+    };
+
+    fetchAttachments();
+    return () => { isMounted = false; };
+  }, [attachments]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setUploadError(null);
+    try {
+      await uploadAttachments(requestId, Array.from(files), quoteId);
+      onUpdate(); // Trigger a refresh in the parent component
+    } catch (err: any) {
+      setUploadError(err?.response?.data?.error || err.message || 'Failed to upload files.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Typography variant="overline" color="text.secondary">Attachments</Typography>
+      {loadingImages ? (
+        <CircularProgress size={24} sx={{ mt: 1 }} />
+      ) : (
+        <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {attachments.map((att) => (
+            <a href={imageUrls[att.id]} target="_blank" rel="noopener noreferrer" key={att.id} title={att.file_name}>
+              {att.mime_type?.startsWith('image/') && imageUrls[att.id] ? (
+                <img src={imageUrls[att.id]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
+              ) : (
+                <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}>
+                  <FileTextIcon size={24} />
+                  <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography>
+                </Box>
+              )}
+            </a>
+          ))}
+        </Box>
+      )}
+      {attachments.length === 0 && !loadingImages && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No attachments yet.</Typography>
+      )}
+      
+      {editable && (
+        <Box sx={{ mt: 2 }}>
+          <Button component="label" startIcon={<Paperclip />} disabled={uploading}>
+            {uploading ? 'Uploading...' : 'Add Attachment'}
+            <input type="file" hidden multiple onChange={handleFileUpload} />
+          </Button>
+          {uploading && <CircularProgress size={20} sx={{ ml: 2 }} />}
+        </Box>
+      )}
+      {uploadError && <Alert severity="error" sx={{ mt: 2 }}>{uploadError}</Alert>}
+    </Paper>
+  );
+};
+
+export default AttachmentSection;
+
+--- END OF FILE vite-app/src/components/AttachmentSection.tsx ---
+
 --- START OF FILE vite-app/src/components/AuthModal.tsx ---
 
 import React from 'react';
@@ -9969,7 +10127,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, Paperclip } from 'lucide-react';
-import apiClient from '../lib/apiClient';
+import apiClient, { uploadAttachments } from '../lib/apiClient';
+import AttachmentSection from './AttachmentSection';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
@@ -10057,6 +10216,10 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     onClose();
   };
 
+  const handleRefresh = () => {
+    onClose(true); // This signals the parent to refresh
+  }
+
   const jobType = request?.problem_category || 'N/A';
   const GST_RATE = 0.05;
   const PST_RATE = 0.07;
@@ -10100,21 +10263,13 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       }
       
       if (newAttachments.length > 0 && savedQuote?.id) {
-        const formData = new FormData();
-        formData.append('request_id', requestId!);
-        formData.append('quote_id', savedQuote.id);
-        newAttachments.forEach(file => {
-          formData.append('attachments', file);
-        });
-        await apiClient.post('/requests/attachments', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await uploadAttachments(requestId!, newAttachments, savedQuote.id);
       }
 
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-        onClose(true);
+        handleRefresh();
       }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
@@ -10122,6 +10277,8 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       setSaving(false);
     }
   };
+
+  const quoteAttachments = request?.quote_attachments?.filter((att: any) => att.quote_id === quote?.id) || [];
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -10161,19 +10318,32 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           <Divider sx={{ my: 2 }} />
           <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
           <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
-            {editable && 
+
+          {/* New Attachment Section */}
+          {quote && quote.id ? (
+            <AttachmentSection 
+              requestId={requestId!}
+              quoteId={quote.id}
+              attachments={quoteAttachments}
+              editable={editable}
+              onUpdate={handleRefresh}
+            />
+          ) : (
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
               <Button component="label" startIcon={<Paperclip />}>
                 Add Quote Attachments
                 <input type="file" hidden multiple onChange={e => setNewAttachments(Array.from(e.target.files || []))} />
               </Button>
-            }
-            {newAttachments.length > 0 && (
-                <Box sx={{ my: 1 }}>
-                    <Typography variant="caption">New files to upload:</Typography>
-                    {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
-                </Box>
-            )}
+              {newAttachments.length > 0 && (
+                  <Box sx={{ my: 1 }}>
+                      <Typography variant="caption">New files to upload:</Typography>
+                      {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
+                  </Box>
+              )}
+            </Box>
+          )}
+
           <Divider sx={{ my: 2 }} />
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="body2" color="text.secondary">Subtotal: ${ (laborTotal + materialTotal).toFixed(2) }</Typography>
@@ -10206,11 +10376,13 @@ export default QuoteFormModal;
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
+import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
+import AttachmentSection from './AttachmentSection';
+import apiClient from '../lib/apiClient';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -10247,8 +10419,6 @@ const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 's
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
-  const [loadingImages, setLoadingImages] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
   const [isUpdating, setIsUpdating] = useState(false);
   const [newNote, setNewNote] = useState("");
@@ -10262,58 +10432,19 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request]);
 
-  useEffect(() => {
-    if (!isOpen || !request?.quote_attachments?.length) {
-      setImageUrls({});
-      return;
-    }
-    let isMounted = true;
-    const fetchAttachments = async () => {
-      setLoadingImages(true);
-      const newImageUrls: { [key: string]: string } = {};
-      const filePaths = request.quote_attachments.map(att => `${request.id}/${att.file_name.replace(/\s/g, '_')}`);
-      
-      const { data: signedUrlsData, error } = await supabase.storage
-        .from('PlumbingPoCBucket')
-        .createSignedUrls(filePaths, 3600); // 1 hour expiry
-
-      if (error) {
-        console.error("Error creating signed URLs:", error);
-        setLoadingImages(false);
-        return;
-      }
-
-      if (signedUrlsData && isMounted) {
-        for (const item of signedUrlsData) {
-          if (item.signedUrl) {
-            const fileName = item.path.split('/').pop();
-            const originalFileName = request.quote_attachments.find(att => att.file_name.replace(/\s/g, '_') === fileName)?.file_name;
-            if (originalFileName) {
-              newImageUrls[originalFileName] = item.signedUrl;
-            }
-          }
-        }
-        setImageUrls(newImageUrls);
-      }
-      
-      setLoadingImages(false);
-    };
-    fetchAttachments();
-    return () => { isMounted = false; };
-  }, [request, isOpen]);
-
   const handleStatusChange = async (newStatus: string) => {
-    if (!request) return;
+    if (!request || newStatus === currentStatus) return;
     setIsUpdating(true);
-    setCurrentStatus(newStatus);
     try {
-      await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
-      onUpdateRequest();
+      const { error } = await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
+      if (error) throw error;
+      onUpdateRequest(); // Refresh data from parent
     } catch (error) {
       console.error("Failed to update status:", error);
-      setCurrentStatus(request.status); // Revert on error
+      // No need to revert local state as it's driven by props
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleAddNote = async () => {
@@ -10392,26 +10523,14 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 </Grid>
               </Box>
             </Paper>
-            {request.quote_attachments.length > 0 && (
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="overline" color="text.secondary">Attachments</Typography>
-                {loadingImages ? <CircularProgress size={24} sx={{ mt: 1 }} /> : (
-                  <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {request.quote_attachments.map((att) => (
-                      <a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>
-                        {att.mime_type?.startsWith('image/') && imageUrls[att.file_name] 
-                          ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> 
-                          : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}>
-                              <FileTextIcon size={24} />
-                              <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography>
-                            </Box>
-                        }
-                      </a>
-                    ))}
-                  </Box>
-                )}
-              </Paper>
-            )}
+            
+            <AttachmentSection 
+              requestId={request.id}
+              attachments={request.quote_attachments}
+              editable={isAdmin}
+              onUpdate={onUpdateRequest}
+            />
+
             <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16} /> Communication Log</Typography>
               <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
@@ -10434,7 +10553,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Button>
                     }>
                       <ListItemText
-                        primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
+                        primary={`Quote #${idx + 1} - ${quote.quote_amount}`}
                         secondary={`Status: ${quote.status || 'N/A'} | Created: ${quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}`}
                       />
                     </ListItem>
@@ -10790,6 +10909,21 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+export const uploadAttachments = async (requestId: string, files: File[], quoteId?: string) => {
+  const formData = new FormData();
+  formData.append('request_id', requestId);
+  if (quoteId) {
+    formData.append('quote_id', quoteId);
+  }
+  files.forEach(file => {
+    formData.append('attachments', file);
+  });
+
+  return apiClient.post('/requests/attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 
 export default apiClient;
 --- END OF FILE vite-app/src/lib/apiClient.ts ---

@@ -99,7 +99,7 @@ const submitQuoteRequest = async (req, res, next) => {
  */
 const uploadAttachment = async (req, res, next) => {
   try {
-    const { request_id, quote_id } = req.body;
+    const { request_id, quote_id } = req.body; // quote_id is optional
     const files = req.files;
 
     if (!files || files.length === 0) {
@@ -108,7 +108,7 @@ const uploadAttachment = async (req, res, next) => {
     if (!request_id) {
       return res.status(400).json({ error: 'request_id is required.' });
     }
-    
+
     // Security check: User must be an admin OR own the request associated with the upload.
     const { data: requestOwner, error: ownerError } = await supabase
       .from('requests')
@@ -117,7 +117,6 @@ const uploadAttachment = async (req, res, next) => {
       .single();
       
     if (ownerError) {
-        // This handles cases where the request_id is invalid
         return res.status(404).json({ error: 'Request not found.' });
     }
 
@@ -128,11 +127,22 @@ const uploadAttachment = async (req, res, next) => {
     }
 
     const uploadPromises = files.map(async (file) => {
-      const filePath = `${request_id}/${Date.now()}_${file.originalname.replace(/\s/g, '_')}`;
+      const sanitizedFileName = file.originalname.replace(/\s/g, '_');
+      
+      // Standardize the path
+      const pathSegments = ['public', request_id];
+      if (quote_id) {
+        pathSegments.push(quote_id);
+      }
+      pathSegments.push(sanitizedFileName);
+      const filePath = pathSegments.join('/');
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('PlumbingPoCBucket')
-        .upload(filePath, file.buffer, { contentType: file.mimetype });
+        .upload(filePath, file.buffer, { 
+          contentType: file.mimetype, 
+          upsert: true // Allow overwriting files with the same name in the same location
+        });
       
       if (uploadError) throw uploadError;
 
@@ -141,7 +151,8 @@ const uploadAttachment = async (req, res, next) => {
         quote_id: quote_id || null,
         file_name: file.originalname, 
         mime_type: file.mimetype,
-        file_url: uploadData.path
+        // Store the consistent, predictable path. The name file_url is kept for schema consistency.
+        file_url: filePath 
       };
 
       return attachmentRecord;
@@ -274,6 +285,9 @@ const updateQuote = async (req, res, next) => {
 
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
+
+    // Also update the parent request's status to ensure consistency
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
 
     res.status(200).json(data);
   } catch (err) {

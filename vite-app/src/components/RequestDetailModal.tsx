@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, CircularProgress, Chip } from '@mui/material';
+import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, FileText as FileTextIcon, AlertTriangle } from 'lucide-react';
+import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
+import AttachmentSection from './AttachmentSection';
+import apiClient from '../lib/apiClient';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -44,8 +46,6 @@ const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 's
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
-  const [loadingImages, setLoadingImages] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
   const [isUpdating, setIsUpdating] = useState(false);
   const [newNote, setNewNote] = useState("");
@@ -59,58 +59,19 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request]);
 
-  useEffect(() => {
-    if (!isOpen || !request?.quote_attachments?.length) {
-      setImageUrls({});
-      return;
-    }
-    let isMounted = true;
-    const fetchAttachments = async () => {
-      setLoadingImages(true);
-      const newImageUrls: { [key: string]: string } = {};
-      const filePaths = request.quote_attachments.map(att => `${request.id}/${att.file_name.replace(/\s/g, '_')}`);
-      
-      const { data: signedUrlsData, error } = await supabase.storage
-        .from('PlumbingPoCBucket')
-        .createSignedUrls(filePaths, 3600); // 1 hour expiry
-
-      if (error) {
-        console.error("Error creating signed URLs:", error);
-        setLoadingImages(false);
-        return;
-      }
-
-      if (signedUrlsData && isMounted) {
-        for (const item of signedUrlsData) {
-          if (item.signedUrl) {
-            const fileName = item.path.split('/').pop();
-            const originalFileName = request.quote_attachments.find(att => att.file_name.replace(/\s/g, '_') === fileName)?.file_name;
-            if (originalFileName) {
-              newImageUrls[originalFileName] = item.signedUrl;
-            }
-          }
-        }
-        setImageUrls(newImageUrls);
-      }
-      
-      setLoadingImages(false);
-    };
-    fetchAttachments();
-    return () => { isMounted = false; };
-  }, [request, isOpen]);
-
   const handleStatusChange = async (newStatus: string) => {
-    if (!request) return;
+    if (!request || newStatus === currentStatus) return;
     setIsUpdating(true);
-    setCurrentStatus(newStatus);
     try {
-      await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
-      onUpdateRequest();
+      const { error } = await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
+      if (error) throw error;
+      onUpdateRequest(); // Refresh data from parent
     } catch (error) {
       console.error("Failed to update status:", error);
-      setCurrentStatus(request.status); // Revert on error
+      // No need to revert local state as it's driven by props
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleAddNote = async () => {
@@ -189,26 +150,14 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 </Grid>
               </Box>
             </Paper>
-            {request.quote_attachments.length > 0 && (
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="overline" color="text.secondary">Attachments</Typography>
-                {loadingImages ? <CircularProgress size={24} sx={{ mt: 1 }} /> : (
-                  <Box sx={{ mt: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {request.quote_attachments.map((att) => (
-                      <a href={imageUrls[att.file_name]} target="_blank" rel="noopener noreferrer" key={att.file_name} title={att.file_name}>
-                        {att.mime_type?.startsWith('image/') && imageUrls[att.file_name] 
-                          ? <img src={imageUrls[att.file_name]} alt={att.file_name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} /> 
-                          : <Box sx={{ width: 100, height: 100, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.200' }}>
-                              <FileTextIcon size={24} />
-                              <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>{att.file_name}</Typography>
-                            </Box>
-                        }
-                      </a>
-                    ))}
-                  </Box>
-                )}
-              </Paper>
-            )}
+            
+            <AttachmentSection 
+              requestId={request.id}
+              attachments={request.quote_attachments}
+              editable={isAdmin}
+              onUpdate={onUpdateRequest}
+            />
+
             <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16} /> Communication Log</Typography>
               <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
@@ -231,7 +180,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Button>
                     }>
                       <ListItemText
-                        primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
+                        primary={`Quote #${idx + 1} - ${quote.quote_amount}`}
                         secondary={`Status: ${quote.status || 'N/A'} | Created: ${quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}`}
                       />
                     </ListItem>

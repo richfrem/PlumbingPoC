@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, Paperclip } from 'lucide-react';
-import apiClient from '../lib/apiClient';
+import apiClient, { uploadAttachments } from '../lib/apiClient';
+import AttachmentSection from './AttachmentSection';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
@@ -92,6 +93,10 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     onClose();
   };
 
+  const handleRefresh = () => {
+    onClose(true); // This signals the parent to refresh
+  }
+
   const jobType = request?.problem_category || 'N/A';
   const GST_RATE = 0.05;
   const PST_RATE = 0.07;
@@ -135,21 +140,13 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       }
       
       if (newAttachments.length > 0 && savedQuote?.id) {
-        const formData = new FormData();
-        formData.append('request_id', requestId!);
-        formData.append('quote_id', savedQuote.id);
-        newAttachments.forEach(file => {
-          formData.append('attachments', file);
-        });
-        await apiClient.post('/requests/attachments', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await uploadAttachments(requestId!, newAttachments, savedQuote.id);
       }
 
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-        onClose(true);
+        handleRefresh();
       }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
@@ -157,6 +154,8 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       setSaving(false);
     }
   };
+
+  const quoteAttachments = request?.quote_attachments?.filter((att: any) => att.quote_id === quote?.id) || [];
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -196,19 +195,32 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           <Divider sx={{ my: 2 }} />
           <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
           <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
-            {editable && 
+
+          {/* New Attachment Section */}
+          {quote && quote.id ? (
+            <AttachmentSection 
+              requestId={requestId!}
+              quoteId={quote.id}
+              attachments={quoteAttachments}
+              editable={editable}
+              onUpdate={handleRefresh}
+            />
+          ) : (
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
               <Button component="label" startIcon={<Paperclip />}>
                 Add Quote Attachments
                 <input type="file" hidden multiple onChange={e => setNewAttachments(Array.from(e.target.files || []))} />
               </Button>
-            }
-            {newAttachments.length > 0 && (
-                <Box sx={{ my: 1 }}>
-                    <Typography variant="caption">New files to upload:</Typography>
-                    {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
-                </Box>
-            )}
+              {newAttachments.length > 0 && (
+                  <Box sx={{ my: 1 }}>
+                      <Typography variant="caption">New files to upload:</Typography>
+                      {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
+                  </Box>
+              )}
+            </Box>
+          )}
+
           <Divider sx={{ my: 2 }} />
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="body2" color="text.secondary">Subtotal: ${ (laborTotal + materialTotal).toFixed(2) }</Typography>
