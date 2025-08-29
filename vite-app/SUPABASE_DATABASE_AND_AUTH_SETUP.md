@@ -206,10 +206,10 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 ### 3. Authentication Provider Configuration
 
 #### 3a. Updating URLs
-- Site URL: `https://your-site-name.netlify.app/` (production) or `http://localhost:5173` (local)
+- Site URL: `https://your-site-name.netlify.app/` (production) or `{{FRONTEND_BASE_URL}}` (local)
 - Add Redirect URLs:
   - `https://your-site-name.netlify.app/*`
-  - `http://localhost:5173/*`
+  - `{{FRONTEND_BASE_URL}}*`
 - Save changes in Supabase dashboard under Authentication → URL Configuration.
 
 #### 3b. Adding Authentication Providers
@@ -225,8 +225,8 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 4. Add Authorized redirect URI:
    - `https://<your-supabase-project>.supabase.co/auth/v1/callback`
 5. (Optional) Add Authorized JavaScript origins for local development:
-   - `http://localhost:3000`
-   - `http://localhost:5173`
+   - `{{BACKEND_BASE_URL}}`
+   - `{{FRONTEND_BASE_URL}}`
 6. Save and copy the Client ID and Client Secret.
 7. Enter these values in Supabase dashboard under Authentication → Providers → Google.
 8. Ensure the following scopes are enabled in Google:
@@ -235,7 +235,7 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
    - `openid`
 9. Save changes in both Supabase and Google Cloud Console.
 
-URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqdq67a31go02r6p945p.apps.googleusercontent.com?project=plumbingpoc
+URL:  https://console.cloud.google.com/
 
 
 ##### Azure Entra App Registration (Microsoft Entra Admin Center)
@@ -263,7 +263,7 @@ URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqd
 7. Enter Azure Client ID and Client Secret in Supabase dashboard under Authentication → Providers → Azure.
 8. Save changes in both Supabase and Azure portal.
 
-URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/d9c00059-056f-4ab3-93c6-ea7009c00f23/isMSAApp~/false
+URL:  https://entra.microsoft.com
 
 ### 4. Troubleshooting
 - **Infinite Recursion Error:** If you see an "infinite recursion" error, use the `is_admin()` function pattern described in this document. This `SECURITY DEFINER` function is the standard way to break recursion loops in RLS policies.

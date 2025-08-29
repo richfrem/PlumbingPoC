@@ -6,7 +6,8 @@
     "dev": "vite vite-app",
     "build": "vite build vite-app",
     "preview": "vite preview vite-app",
-    "start:api": "node vite-app/api/server.js"
+    "start:api": "node vite-app/api/server.js",
+    "prebuild": "node scripts/preprocess-md.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

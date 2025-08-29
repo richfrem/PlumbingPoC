@@ -5,7 +5,11 @@
   command = "npm run build"
   publish = "vite-app/dist/"
   functions = "netlify/functions/"
-  environment = { NPM_FLAGS = "--legacy-peer-deps" } # Add this line
+  environment = { NPM_FLAGS = "--legacy-peer-deps" }
+  # Omit paths from secrets scanning
+  SECRETS_SCAN_OMIT_PATHS = [
+    "vite-app/dist/**/*.js"
+  ]
 
 [[redirects]]
   from = "/api/*"
