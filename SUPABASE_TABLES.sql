@@ -27,6 +27,7 @@ USING (
 ALTER TABLE public.requests
 ADD COLUMN last_follow_up_sent_at TIMESTAMPTZ;
 
--- Add scheduled_start_date column to requests table
+-- Add triage_summary and priority_score columns to requests table
 ALTER TABLE public.requests
-ADD COLUMN scheduled_start_date TIMESTAMPTZ;
+ADD COLUMN triage_summary TEXT,
+ADD COLUMN priority_score INTEGER;

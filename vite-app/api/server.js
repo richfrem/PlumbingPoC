@@ -1,27 +1,24 @@
-// server.js (v2.1 - Refactored for Scalability with MVC Pattern)
-/*
-This is the new, streamlined main server file. Its only job is to configure 
-the application, load the necessary middleware, and delegate routing to the 
-dedicated route files.
-*/
+// server.js (v2.4 - Final version for Netlify)
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const requestRoutes = require('./routes/requestRoutes'); // <-- Import the new router
-const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THE NEW USER ROUTER
+const requestRoutes = require('./routes/requestRoutes');
+const userRoutes = require('./routes/userRoutes');
+const followUpRoutes = require('./routes/followUpRoutes');
+const triageRoutes = require('./routes/triageRoutes');
 
 // --- Basic Setup ---
 const app = express();
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+// Load .env file from the 'vite-app' directory
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
 
 // 1. CORS Middleware
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
-    : `http://localhost:${process.env.FRONTEND_PORT || 5173}`,
+  // Use Netlify's URL in production, or your local .env variable for development
+  origin: process.env.URL || process.env.FRONTEND_BASE_URL,
 };
 app.use(cors(corsOptions));
 
@@ -29,18 +26,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- API Routing ---
-
-// Delegate all routes starting with '/api/requests' to our new router file
 app.use('/api/requests', requestRoutes);
-
-// ***************************************************************
-// ************************* THE FIX *****************************
-// ***************************************************************
-// Mount the user routes directly at /api, so that the paths become
-// /api/profile instead of /api/users/profile. This matches the frontend.
-app.use('/api', userRoutes); 
-// ***************************************************************
-// ***************************************************************
+app.use('/api/follow-up', followUpRoutes);
+app.use('/api/triage', triageRoutes);
+app.use('/api', userRoutes);
 
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {
@@ -48,7 +37,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // --- Centralized Error Handler ---
-// This should be the LAST piece of middleware.
 app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR HANDLER]', err);
   res.status(500).json({
@@ -57,7 +45,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- Server Start ---
-app.listen(PORT, () => {
-  console.log(`API server v2.1 running on http://localhost:${PORT}`);
-});
+// --- Server Start & Export ---
+
+// Export the app for serverless environments
+module.exports = app;
+
+// Start the server only if the file is run directly (for local development)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`API server running on ${process.env.BACKEND_BASE_URL || `http://localhost:${PORT}`}`);
+  });
+}

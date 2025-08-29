@@ -334,11 +334,11 @@ const acceptQuote = async (req, res, next) => {
 const updateRequestStatus = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    const { status } = req.body;
+    const { status, scheduled_start_date } = req.body;
 
     const { data, error } = await supabase
       .from('requests')
-      .update({ status })
+      .update({ status, scheduled_start_date })
       .eq('id', requestId)
       .select()
       .single();

@@ -38,6 +38,8 @@ export interface QuoteRequest {
   quotes: Quote[];
   request_notes: RequestNote[];
   scheduled_start_date: string | null;
+  triage_summary: string | null;
+  priority_score: number | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -132,6 +134,8 @@ const Dashboard: React.FC = () => {
   const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
 
   const columns: GridColDef[] = [
+    { field: 'priority_score', headerName: 'Priority', width: 100, type: 'number' },
+    { field: 'triage_summary', headerName: 'Triage Summary', flex: 1 },
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
     },
@@ -144,7 +148,7 @@ const Dashboard: React.FC = () => {
     { field: 'created_at', headerName: 'Received', width: 180, type: 'dateTime', valueGetter: (value) => value ? new Date(value) : null },
     { field: 'quote_amount', headerName: 'Quote Amount', width: 130, type: 'number',
       valueGetter: (value, row) => row.quotes?.sort((a: Quote, b: Quote) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.quote_amount,
-      renderCell: (params) => params.value != null ? `$${params.value.toFixed(2)}` : '—'
+      renderCell: (params) => params.value != null ? `${params.value.toFixed(2)}` : '—'
     },
     { field: 'status', headerName: 'Status', width: 120,
       renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getRequestStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )

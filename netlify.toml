@@ -1,0 +1,19 @@
+# netlify.toml
+
+# Base build settings
+[build]
+  # This is the directory where your package.json for the frontend is located.
+  base    = "vite-app/"
+  # This is the command to build your Vite frontend.
+  command = "npm run build"
+  # This is the directory where Vite outputs the built static files.
+  publish = "vite-app/dist"
+  # This is the directory where we will put our serverless function for the API.
+  functions = "vite-app/netlify/functions"
+
+# This rule rewrites all requests from /api/* to our serverless function.
+# It's the magic that makes your API work in production.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

@@ -17,6 +17,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') }); // Load .env from vite-app
 const TASKS_FILE = path.join(__dirname, 'tasks.json');
 
 // In-memory task list
@@ -121,7 +122,7 @@ async function connectToPlaywright() {
 async function checkDashboard(browser) {
   try {
     const page = await browser.newPage();
-    await page.goto('http://localhost:5173/');
+    await page.goto(process.env.FRONTEND_BASE_URL);
     const title = await page.title();
     console.log('Dashboard Title:', title);
     await page.close();
@@ -164,52 +165,3 @@ async function handleCli(args) {
 if (require.main === module) {
   handleCli(process.argv.slice(2)).catch(console.error);
 }
-
-(async () => {
-  // Launch browser (Playwright MCP server is assumed to be running)
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-
-  // Connect to dashboard
-  await page.goto(DASHBOARD_URL);
-  console.log('Dashboard loaded:', DASHBOARD_URL);
-
-  // Example: Take a screenshot
-  await page.screenshot({ path: 'dashboard.png' });
-  console.log('Screenshot saved as dashboard.png');
-
-  // Example: Print page title
-  const title = await page.title();
-  console.log('Dashboard title:', title);
-
-  // Add more automation steps here as needed
-
-  await browser.close();
-})();
-
-const { chromium } = require('playwright');
-
-const MCP_SERVER_URL = 'ws://localhost:63784/';
-const DASHBOARD_URL = 'http://localhost:5173/';
-
-(async () => {
-  // Launch browser (Playwright MCP server is assumed to be running)
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-
-  // Connect to dashboard
-  await page.goto(DASHBOARD_URL);
-  console.log('Dashboard loaded:', DASHBOARD_URL);
-
-  // Example: Take a screenshot
-  await page.screenshot({ path: 'dashboard.png' });
-  console.log('Screenshot saved as dashboard.png');
-
-  // Example: Print page title
-  const title = await page.title();
-  console.log('Dashboard title:', title);
-
-  // Add more automation steps here as needed
-
-  await browser.close();
-})();

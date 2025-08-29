@@ -1,16 +1,19 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T07:51:58.250Z
+Generated On: 2025-08-29T16:28:49.679Z
 
-# Mnemonic Weight (Token Count): ~139,290 tokens
+# Mnemonic Weight (Token Count): ~144,228 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
   ./.gitignore
   ./PROMPTS/
   ./PROMPTS/meta-agent-prompt.md
-  ./PlumbingAgentRequirements.md
   ./README.md
+  ./RequirementsAndGoals/
+  ./RequirementsAndGoals/PlumbingAgentRequirements.md
+  ./RequirementsAndGoals/consulting_launch_blueprint.md
+  ./SUPABASE_TABLES.sql
   ./TASKS.md
   ./agents/
   ./agents/AGENT_REPOS.md
@@ -24,6 +27,7 @@ Generated On: 2025-08-29T07:51:58.250Z
   ./all_markdown_and_code_snapshot_llm_distilled.txt
   ./blueprint.md
   ./capture_code_snapshot.js
+  ./netlify.toml
   ./package-lock.json
   ./package.json
   ./startup.sh
@@ -36,6 +40,7 @@ Generated On: 2025-08-29T07:51:58.250Z
   ./supabase/.temp/project-ref
   ./supabase/.temp/rest-version
   ./supabase/.temp/storage-version
+  ./supabase/functions/
   ./vite-app/
   ./vite-app/.env
   ./vite-app/.envformat
@@ -47,13 +52,17 @@ Generated On: 2025-08-29T07:51:58.250Z
   ./vite-app/api/config/
   ./vite-app/api/config/supabase.js
   ./vite-app/api/controllers/
+  ./vite-app/api/controllers/followUpController.js
   ./vite-app/api/controllers/requestController.js
+  ./vite-app/api/controllers/triageController.js
   ./vite-app/api/controllers/userController.js
   ./vite-app/api/middleware/
   ./vite-app/api/middleware/authMiddleware.js
   ./vite-app/api/middleware/validationMiddleware.js
   ./vite-app/api/routes/
+  ./vite-app/api/routes/followUpRoutes.js
   ./vite-app/api/routes/requestRoutes.js
+  ./vite-app/api/routes/triageRoutes.js
   ./vite-app/api/routes/userRoutes.js
   ./vite-app/api/server.js
   ./vite-app/api/services/
@@ -61,6 +70,9 @@ Generated On: 2025-08-29T07:51:58.250Z
   ./vite-app/api/validation/
   ./vite-app/api/validation/schemas.js
   ./vite-app/index.html
+  ./vite-app/netlify/
+  ./vite-app/netlify/functions/
+  ./vite-app/netlify/functions/api.js
   ./vite-app/package-lock.json
   ./vite-app/package.json
   ./vite-app/public/
@@ -181,54 +193,6 @@ The final JSON should be rich with qualified data:
 - Responsive grid layouts for all screen sizes
 
 --- END OF FILE PROMPTS/meta-agent-prompt.md ---
-
---- START OF FILE PlumbingAgentRequirements.md ---
-
-# Plumbing Quote Agent Requirements
-
-## 1. User Registration & Profile
-- Users must register and be signed in to request a quote.
-- The agent pulls contact info from the user profile to complete the quote request.
-- A profile with contact info is required.
-
-## 2. Efficient Questioning & Cost Reduction
-- The agent reduces chattiness with GPT-4 to minimize API costs.
-- Common questions are anticipated and built into the app.
-- The first question is: "What would you like a quote for?" (user selects from a list of service types).
-
-## 3. Service Quote Request Types & Common Questions
-- Maintain a separate JSON/TypeScript file of service quote request types (e.g., bathroom reno, perimeter drains, water heater install, etc.).
-- For each type, maintain a list of common anticipated questions. Example for bathroom reno:
-  - What specific fixtures does the homeowner plan to use, or would they like options/recommendations?
-  - Are there any special requirements or features the homeowner is interested in, such as water-saving or smart fixtures?
-  - Is there an existing blueprint or design plan to follow for the renovation?
-  - Will any additional renovations be happening simultaneously that might affect the plumbing work?
-  - Are there any known issues with the existing plumbing that might complicate the renovation process?
-- Maintain similar common questions for other service types.
-
-## 4. Conversational Flow
-- Ask all questions one at a time in a chat-style conversation.
-- Use a text box at the bottom for user answers.
-
-## 5. Profile Data Usage
-- Pull user profile information into the quote request.
-- Do not ask for information already known.
-
-## 6. Privacy & GPT Interaction
-- Do not share personal information (name, phone, email, address) with GPT.
-- Only send context-specific info needed for follow-up questions.
-
-## 7. Packaging & Submitting the Quote
-- Package the quote for GPT with all answers and known info, formatted efficiently.
-- Ask GPT if additional questions are required for the current context.
-- If GPT returns more questions, ask them in the same conversational style (user is unaware they are talking to GPT).
-- Repeat until GPT confirms all key questions are answered.
-
-## 8. Final Summary & Submission
-- Package a summary of the request in a user-readable format, including contact info.
-- Display the summary to the user before submission.
-- On submission, show: "Submitting request for quote. We will get back to you with a quote soon. Thank you very much."
---- END OF FILE PlumbingAgentRequirements.md ---
 
 --- START OF FILE README.md ---
 
@@ -428,6 +392,188 @@ sequenceDiagram
 
 --- END OF FILE README.md ---
 
+--- START OF FILE RequirementsAndGoals/PlumbingAgentRequirements.md ---
+
+# Plumbing Quote Agent Requirements
+
+## 1. User Registration & Profile
+- Users must register and be signed in to request a quote.
+- The agent pulls contact info from the user profile to complete the quote request.
+- A profile with contact info is required.
+
+## 2. Efficient Questioning & Cost Reduction
+- The agent reduces chattiness with GPT-4 to minimize API costs.
+- Common questions are anticipated and built into the app.
+- The first question is: "What would you like a quote for?" (user selects from a list of service types).
+
+## 3. Service Quote Request Types & Common Questions
+- Maintain a separate JSON/TypeScript file of service quote request types (e.g., bathroom reno, perimeter drains, water heater install, etc.).
+- For each type, maintain a list of common anticipated questions. Example for bathroom reno:
+  - What specific fixtures does the homeowner plan to use, or would they like options/recommendations?
+  - Are there any special requirements or features the homeowner is interested in, such as water-saving or smart fixtures?
+  - Is there an existing blueprint or design plan to follow for the renovation?
+  - Will any additional renovations be happening simultaneously that might affect the plumbing work?
+  - Are there any known issues with the existing plumbing that might complicate the renovation process?
+- Maintain similar common questions for other service types.
+
+## 4. Conversational Flow
+- Ask all questions one at a time in a chat-style conversation.
+- Use a text box at the bottom for user answers.
+
+## 5. Profile Data Usage
+- Pull user profile information into the quote request.
+- Do not ask for information already known.
+
+## 6. Privacy & GPT Interaction
+- Do not share personal information (name, phone, email, address) with GPT.
+- Only send context-specific info needed for follow-up questions.
+
+## 7. Packaging & Submitting the Quote
+- Package the quote for GPT with all answers and known info, formatted efficiently.
+- Ask GPT if additional questions are required for the current context.
+- If GPT returns more questions, ask them in the same conversational style (user is unaware they are talking to GPT).
+- Repeat until GPT confirms all key questions are answered.
+
+## 8. Final Summary & Submission
+- Package a summary of the request in a user-readable format, including contact info.
+- Display the summary to the user before submission.
+- On submission, show: "Submitting request for quote. We will get back to you with a quote soon. Thank you very much."
+--- END OF FILE RequirementsAndGoals/PlumbingAgentRequirements.md ---
+
+--- START OF FILE RequirementsAndGoals/consulting_launch_blueprint.md ---
+
+# 72-Hour Consulting Launch: Mission Blueprint
+**Version:** 5.0 (Advanced Asset)
+**Codename:** Operation Overmatch
+**Objective:** Secure a high-value barter agreement by demonstrating an overwhelmingly superior tech solution to a local tradesperson in Victoria, B.C.
+
+---
+
+## I. Mission Profile & Strategy
+
+*   **Primary Target:** Owner-operated local trades & home service businesses.
+*   **Core Pain Point:** Wasting billable hours on phone calls with unqualified leads and losing jobs due to slow quoting times.
+*   **Your Solution (The Weapon):** A fully functional Proof of Concept of an **AI-Powered Intelligent Lead Qualifier**. This is not a demo; it is a working application with a database backend and file upload capabilities that automates the most painful part of their sales process.
+*   **Acquisition Tactic (Shock & Awe):**
+    1.  Lead with your most impressive asset to immediately establish yourself as a high-tier expert.
+    2.  Demonstrate undeniable value by showing how your AI assistant saves time, improves lead quality, and helps them win more jobs.
+    3.  Frame the barter offer as a unique, one-time opportunity for them to acquire a game-changing piece of technology that none of their competitors have.
+*   **Authority Signal:** A 90-second "wow factor" video demo of your working application.
+
+---
+
+## II. Execution Plan: 48-Hour Tactical Breakdown
+
+### **Day 1: FORGE A SUPERIOR WEAPON (12 Hours) — ✅ COMPLETED**
+
+You have successfully invested your initial 12 hours to build a functional, AI-powered intake application. This exceeds the original objective and gives us a decisive advantage.
+
+---
+
+### **Day 2: PACKAGE THE ASSET & HUNT (12 Hours)**
+
+**Objective:** Package your advanced POC into a compelling sales weapon and deploy it.
+
+*   **Hours 1-4: Package the Asset**
+    *   `[ ]` **Record the "Wow" Demo (90 Seconds):** Use Loom or OBS Studio. This must be a smooth, professional recording.
+        *   *Shot 1:* Show the professional landing page. Click "Request a Quote."
+        *   *Shot 2:* Show the "Emergency?" question. Click "No."
+        *   *Shot 3:* Show the category selection. Click a category.
+        *   *Shot 4:* Show the AI asking the initial generic questions. Answer them quickly.
+        *   *Shot 5:* Show the "Thinking..." message.
+        *   *Shot 6:* The "money shot" – show the new, intelligent follow-up questions appearing one by one. Answer them.
+        *   *Shot 7:* Show the final, clean summary view with all questions and answers.
+        *   *Shot 8:* Show the file upload input.
+    *   `[ ]` **Host the Video:** Upload to YouTube/Vimeo as an "unlisted" link.
+    *   `[ ]` **Build the One-Page Showcase:** Use Carrd/Tilda.
+        *   **Headline:** "Stop Wasting Time on Bad Leads. Get a 24/7 AI Assistant For Your Business."
+        *   **Video:** Embed your 90-second demo video.
+        *   **Description:** "I build intelligent assistants that qualify your customers automatically, collect all the job details, and hand you a ready-to-quote lead. This saves you hours on the phone and helps you win more jobs."
+        *   **The Offer:** "I'm currently looking to trade my services (custom AI assistant development) for home services (plumbing, electrical, etc.) in the Victoria area. Interested in a 15-minute chat?"
+        *   **Contact:** Your name and email.
+
+*   **Hours 5-12: Build Target List & Execute Outreach**
+    *   `[ ]` Create a Google Sheet to track outreach.
+    *   `[ ]` Compile a list of **50** local, owner-operated trades businesses. Prioritize finding the owner's direct name and email.
+    *   `[ ]` Send personalized emails one-by-one to all 50 targets.
+    *   `[ ]` **Use the Upgraded Email Script:**
+        > **Subject:** An AI assistant for [Business Name]?
+        >
+        > Hi **[Contact Person Name]**,
+        >
+        > My name is [Your Name], a local tech consultant in Victoria. I specialize in building AI assistants for trades businesses that automatically qualify your leads 24/7.
+        >
+        > Instead of a generic contact form, imagine an assistant that asks all the right questions before you even pick up the phone. I made a 90-second video showing exactly how it works:
+        >
+        > **[Link to your one-page site]**
+        >
+        > Here’s the unique part: I'm looking to get some work done on my home (**[mention 1-2 specific services you want]**) and I'm interested in bartering my services for a project of similar value.
+        >
+        > Would you be open to a 15-minute chat to see if this could be a fit?
+        >
+        > Thanks,
+        > [Your Name]
+    *   `[ ]` Track all sends in your Google Sheet.
+
+---
+
+### **Day 3: ENGAGE, CLOSE, & UPSELL (12 Hours)**
+
+**Objective:** Convert interest into a high-value agreement by demonstrating overwhelming value.
+
+*   **Hours 1-4: Follow-up & Response Management**
+    *   `[ ]` Send a polite follow-up email to all non-responders.
+    *   `[ ]` For positive replies, respond immediately to schedule a 15-minute call.
+
+*   **Hours 5-12: Conduct Discovery Calls & Close**
+    *   `[ ]` Get on the phone/Zoom with interested prospects.
+    *   `[ ]` **Follow the Upgraded Call Script:**
+        1.  **Rapport (2 mins):** "Thanks for your interest. I was impressed by your work on [mention a project from their site]. How often do you find yourself spending time on the phone with customers who aren't quite sure what they need?"
+        2.  **Diagnose Pain (5 mins):** Let them talk about the frustration of unqualified leads, missed calls, and writing quotes after hours.
+        3.  **Present Solution - "Shock & Awe" (3 mins):** "That's the exact problem I built this to solve." Share your screen and play your 90-second demo video. Let it sink in. "This assistant works for you 24/7, making sure that every lead that hits your inbox is perfectly detailed and ready for you to quote."
+        4.  **The Upsell - Introduce the "Internal Dashboard":** "What I've just shown you is the 'front door' that qualifies your customers. As part of our project, we would also build the **internal dashboard** for you—a simple command center on your phone or computer to track the status of every single one of these high-quality leads." (This is where you re-introduce the original "Rapid Quote & Client Tracker" idea as an *additional* part of the package).
+        5.  **Frame the Barter (3 mins):** "A complete, custom end-to-end system like this—the AI assistant plus the internal dashboard—is a project I would typically scope at $5,000-$8,000. What would be the approximate value for the **[their service]** work I need done? If the values are in the same ballpark, a direct trade could be a huge win for both of us."
+        6.  **Pivot to Cash (if needed):** "If a trade doesn't work, I could offer a 'Pilot Program' package to build out the core system for a one-time fee of $2,500."
+        7.  **Close the Deal:** "Excellent. I will draft a simple agreement outlining the full scope—the AI assistant and the internal dashboard, in exchange for the completed home service—and send it over this afternoon."
+--- END OF FILE RequirementsAndGoals/consulting_launch_blueprint.md ---
+
+--- START OF FILE SUPABASE_TABLES.sql ---
+
+-- 1. Drop the helper function if you created it.
+DROP FUNCTION IF EXISTS get_my_claim(TEXT);
+
+-- 2. Drop the separate SELECT policies just in case they are still around.
+DROP POLICY IF EXISTS "Allow individual users to view their own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow admins to view all profiles" ON public.user_profiles;
+
+-- 3. **CRITICAL FIX:** Drop the consolidated policy IF IT EXISTS before creating it.
+DROP POLICY IF EXISTS "Enable read access for users and admins" ON public.user_profiles;
+
+-- 4. Create the ONE consolidated SELECT policy that handles both cases.
+CREATE POLICY "Enable read access for users and admins"
+ON public.user_profiles
+FOR SELECT
+TO authenticated
+USING (
+  -- CASE 1: The logged-in user is requesting their OWN profile.
+  (auth.uid() = user_id)
+  
+  OR
+  
+  -- CASE 2: The logged-in user is an admin.
+  ((auth.jwt() -> 'raw_user_meta_data' ->> 'role') = 'admin')
+);
+
+-- Add last_follow_up_sent_at column to requests table
+ALTER TABLE public.requests
+ADD COLUMN last_follow_up_sent_at TIMESTAMPTZ;
+
+-- Add triage_summary and priority_score columns to requests table
+ALTER TABLE public.requests
+ADD COLUMN triage_summary TEXT,
+ADD COLUMN priority_score INTEGER;
+--- END OF FILE SUPABASE_TABLES.sql ---
+
 --- START OF FILE TASKS.md ---
 
 # Plumbing Quote Agent Project Tracker
@@ -458,7 +604,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Create new profile working
 - [x] Update existing profile working
 - [x] Ensure user profile includes contact info
-- [x] Pull profile info into quote requests
+- [x] Pull profile info into quote requests (Admins can now see all user profiles)
 
 ### Service Quote Request Flow
 - [x] Create service quote request types (JSON/TypeScript)
@@ -491,6 +637,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Display quote status as colored chip in quote list (RequestDetailModal)
 - [x] Display quote status as colored chip in QuoteFormModal header
 - [x] Ensure status chip colors are consistent across all components
+- [ ] Create a Kanban board view for the dashboard
 - [ ] Optimize for performance, accessibility, and responsiveness
 
 ### Backend & API
@@ -507,8 +654,18 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Implement email notifications for new notes in communication log
 - [x] Add RESEND_ENABLED feature flag for email sending
 - [x] Include link to request in notification emails
+- [x] Correct RLS policies for `user_profiles` to allow admin access
+- [ ] Implement automated follow-up emails for quoted requests
+- [ ] Add AI-powered triage summary and priority score to requests
 - [ ] Review backend for scalability, security, and maintainability (agent-driven)
 - [ ] Configure Resend domain verification (manual step for user)
+
+### Deployment
+- [ ] Setup hosting for the POC on Netlify
+- [ ] Create a Netlify Scheduled Function for automated follow-ups
+- [ ] Move the follow-up email logic from the Express controller to the new Netlify function
+- [ ] Remove the old /api/follow-up route and controller
+- [ ] Publish the POC to Netlify
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline
@@ -519,7 +676,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 ## Baseline Notes (for GitHub Copilot)
 
 
-## Progress Summary (August 28, 2025)
+## Progress Summary (August 29, 2025)
 
 **Completed:**
 - All core flows for user registration, profile, quote request, and privacy enforcement are implemented.
@@ -531,12 +688,21 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - **New:** Robust status management for requests and quotes, including an "Accepted" status, automatic status updates, and quote locking.
 - **New:** Full email notification system for key events (request submission, status changes, quote additions, new notes) with a feature flag and direct links.
 - **New:** Dashboard now correctly filters requests for regular users.
+- **New:** Corrected RLS policies to ensure admins can view all user profiles, resolving a critical data access issue.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).
 - Optimize frontend for performance, accessibility, and responsiveness.
 - Review backend for scalability, security, and maintainability.
 - Configure Resend domain verification (manual step for user).
+- Implement automated follow-up emails.
+- Implement AI-powered triage and priority scoring.
+- Create a Kanban board view for the dashboard.
+- Setup hosting for the POC on Netlify.
+- Create a Netlify Scheduled Function for automated follow-ups.
+- Move the follow-up email logic from the Express controller to the new Netlify function.
+- Remove the old /api/follow-up route and controller.
+- Publish the POC to Netlify.
 - Add new tasks as requirements evolve.
 
 **Agent Assignments:**
@@ -932,6 +1098,7 @@ persona: |
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') }); // Load .env from vite-app
 const TASKS_FILE = path.join(__dirname, 'tasks.json');
 
 // In-memory task list
@@ -1036,7 +1203,7 @@ async function connectToPlaywright() {
 async function checkDashboard(browser) {
   try {
     const page = await browser.newPage();
-    await page.goto('http://localhost:5173/');
+    await page.goto(process.env.FRONTEND_BASE_URL);
     const title = await page.title();
     console.log('Dashboard Title:', title);
     await page.close();
@@ -1079,56 +1246,6 @@ async function handleCli(args) {
 if (require.main === module) {
   handleCli(process.argv.slice(2)).catch(console.error);
 }
-
-(async () => {
-  // Launch browser (Playwright MCP server is assumed to be running)
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-
-  // Connect to dashboard
-  await page.goto(DASHBOARD_URL);
-  console.log('Dashboard loaded:', DASHBOARD_URL);
-
-  // Example: Take a screenshot
-  await page.screenshot({ path: 'dashboard.png' });
-  console.log('Screenshot saved as dashboard.png');
-
-  // Example: Print page title
-  const title = await page.title();
-  console.log('Dashboard title:', title);
-
-  // Add more automation steps here as needed
-
-  await browser.close();
-})();
-
-const { chromium } = require('playwright');
-
-const MCP_SERVER_URL = 'ws://localhost:63784/';
-const DASHBOARD_URL = 'http://localhost:5173/';
-
-(async () => {
-  // Launch browser (Playwright MCP server is assumed to be running)
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-
-  // Connect to dashboard
-  await page.goto(DASHBOARD_URL);
-  console.log('Dashboard loaded:', DASHBOARD_URL);
-
-  // Example: Take a screenshot
-  await page.screenshot({ path: 'dashboard.png' });
-  console.log('Screenshot saved as dashboard.png');
-
-  // Example: Print page title
-  const title = await page.title();
-  console.log('Dashboard title:', title);
-
-  // Add more automation steps here as needed
-
-  await browser.close();
-})();
-
 --- END OF FILE agents/project-manager-mcp-agent.js ---
 
 --- START OF FILE agents/project-manager-mcp.md ---
@@ -1190,9 +1307,11 @@ Create a Node.js script using Playwright to test a running Playwright MCP server
 
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') });
 
 const MCP_WS = 'ws://localhost:63784';
-const BASE_URL = 'http://localhost:5173';
+const BASE_URL = process.env.FRONTEND_BASE_URL;
 const TEST_USER = {
   username: 'testuser_' + Math.floor(Math.random() * 10000),
   email: 'testuser_' + Math.floor(Math.random() * 10000) + '@example.com',
@@ -1248,7 +1367,6 @@ async function runTest() {
 }
 
 runTest().catch(console.error);
-
 --- END OF FILE agents/test-playwright-mcp.js ---
 
 --- START OF FILE agents/ui-designer-mcp.md ---
@@ -4201,15 +4319,9 @@ echo "Frontend: http://localhost:$FRONTEND_PORT"
 
 --- START OF FILE vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
 
-You're right. The documentation had fallen out of sync with our superior `is_admin()` function-based approach. It's crucial to update it to reflect the current, correct, and final RLS strategy.
+# Supabase Database and Auth Setup information
 
-I have updated the entire `SUPABASE_DATABASE_AND_AUTH_SETUP.md` file. The JWT-syncing sections have been removed and replaced with explanations of the `is_admin()` function. The Master SQL Script now contains the definitive, idempotent script we just created.
-
-This updated file is now the accurate source of truth for your database setup.
-
----
-
-# Table of Contents
+## Table of Contents
 
 1.  [Supabase Database Configuration](#1-supabase-database-configuration)
     -   [Table Schema Overview](#1a-table-schema-overview)
@@ -4222,76 +4334,101 @@ This updated file is now the accurate source of truth for your database setup.
 
 ---
 
-# Supabase & Authentication Provider Setup Reference
+
+## Supabase & Authentication Provider Setup Reference
 
 This document provides a comprehensive reference for the project's Supabase database schema, security policies, and authentication provider setup.
 
-## 1. Supabase Database Configuration
+### 1. Supabase Database Configuration
 
-### 1a. Table Schema Overview
+#### 1a. Table Schema Overview
 
 The database is composed of several related tables to manage users, requests, quotes, and communications.
 
 -   **user_profiles**
     -   Stores public-facing user data, linked one-to-one with `auth.users`.
-    -   `id` (uuid, primary key)
+    -   `id` (uuid, primary key, default: gen_random_uuid())
     -   `user_id` (uuid, **unique**, references `auth.users.id`)
-    -   `role` (text, e.g., 'admin', 'customer')
-    -   `name`, `email`, `phone`, `address`, `city`, `province`, `postal_code` (text)
-    -   `created_at` (timestamptz)
+    -   `name` (text)
+    -   `email` (text)
+    -   `phone` (text)
+    -   `created_at` (timestamptz, default: now())
+    -   `address` (text)
+    -   `city` (text)
+    -   `postal_code` (text)
+    -   `province` (text)
+    -   `role` (text, not nullable, default: 'user')
 
 -   **requests**
     -   The core table for initial customer quote requests.
-    -   `id` (uuid, primary key)
-    -   `user_id` (uuid, references `user_profiles.user_id`)
-    -   `customer_name`, `service_address`, `contact_info`, `problem_category`, etc. (text)
+    -   `id` (uuid, primary key, default: gen_random_uuid())
+    -   `created_at` (timestamptz, default: now())
     -   `is_emergency` (boolean)
+    -   `customer_name` (text)
+    -   `service_address` (text)
+    -   `contact_info` (text)
+    -   `problem_category` (text)
+    -   `problem_description` (text)
+    -   `property_type` (text)
+    -   `is_homeowner` (boolean)
+    -   `preferred_timing` (text)
+    -   `additional_notes` (text)
     -   `answers` (jsonb)
-    -   `status` (text, e.g., 'new', 'viewed', 'quoted')
-    -   `created_at` (timestamptz)
+    -   `status` (text)
+    -   `user_id` (uuid, references `user_profiles.user_id`)
+    -   `updated_at` (timestamptz)
+    -   `scheduled_start_date` (timestamptz)
+    -   `last_follow_up_sent_at` (timestamptz)
+    -   `triage_summary` (text)
+    -   `priority_score` (integer)
+    -   `scheduled_start_date` (timestamptz)
 
 -   **quote_attachments**
     -   Stores records of files uploaded for a specific request.
-    -   `id` (uuid, primary key)
+    -   `id` (uuid, primary key, default: gen_random_uuid())
     -   `request_id` (uuid, references `requests.id`)
+    -   `file_url` (text, not nullable)
     -   `file_name` (text)
     -   `mime_type` (text)
-    -   `file_url` (text, public URL from storage)
-    -   `created_at` (timestamptz)
+    -   `uploaded_at` (timestamptz, default: now())
+    -   `quote_id` (uuid, references `quotes.id`)
 
 -   **quotes**
     -   Stores formal quotes generated by an admin for a request.
     -   `id` (uuid, primary key, default: gen_random_uuid())
-    -   `user_id` (uuid, nullable)
-    -   `request_id` (uuid, nullable)
-    -   `quote_amount` (numeric, nullable)
-    -   `good_until` (date, nullable)
-    -   `tax_details` (jsonb, nullable)
-    -   `updated_at` (timestamptz, default: now(), nullable)
-    -   `created_at` (timestamptz, default: now(), nullable)
-    -   `labor_items` (jsonb, nullable)
-    -   `material_items` (jsonb, nullable)
-    -   `status` (text, nullable)
-    -   `details` (text, nullable)
-    -   `notes` (text, nullable)
+    -   `user_id` (uuid)
+    -   `request_id` (uuid)
+    -   `quote_amount` (numeric)
+    -   `status` (text)
+    -   `created_at` (timestamptz, default: now())
+    -   `labor_items` (jsonb)
+    -   `material_items` (jsonb)
+    -   `notes` (text)
+    -   `good_until` (date)
+    -   `tax_details` (jsonb)
+    -   `updated_at` (timestamptz, default: now())
+    -   `details` (text)
 
 -   **request_notes**
     -   A log of all communication between the customer and admin regarding a request.
-    -   `id` (uuid, primary key)
-    -   `request_id` (uuid, references `requests.id`)
-    -   `user_id` (uuid, references `auth.users.id`)
-    -   `author_role` (text, 'admin' or 'customer')
-    -   `note` (text)
-    -   `created_at` (timestamptz)
+    -   `id` (uuid, primary key, default: gen_random_uuid())
+    -   `request_id` (uuid, not nullable, references `requests.id`)
+    -   `user_id` (uuid, not nullable, references `auth.users.id`)
+    -   `author_role` (text, not nullable)
+    -   `note` (text, not nullable)
+    -   `created_at` (timestamptz, default: now())
 
 -   **invoices**
     -   Stores invoice data linked to an accepted quote.
-    -   `id` (uuid, primary key)
-    -   `quote_id` (uuid, references `quotes.id`)
+    -   `id` (uuid, primary key, default: gen_random_uuid())
     -   `user_id` (uuid)
-    -   `amount_due` (numeric), `due_date` (timestamptz), `status` (text)
+    -   `quote_id` (uuid, references `quotes.id`)
+    -   `amount_due` (numeric)
+    -   `due_date` (timestamptz)
+    -   `status` (text)
+    -   `created_at` (timestamptz, default: now())
 
-### 1b. Admin Role Check Function (`is_admin`)
+#### 1b. Admin Role Check Function (`is_admin`)
 
 To reliably check for administrative privileges within Row Level Security policies without causing infinite recursion, we use a `SECURITY DEFINER` function. This is the standard, most robust method.
 
@@ -4299,7 +4436,7 @@ To reliably check for administrative privileges within Row Level Security polici
     -   Returns `true` if the currently authenticated user has the role of 'admin' in their `user_profiles` record, and `false` otherwise.
     -   `SECURITY DEFINER` allows it to query `user_profiles` safely from within an RLS policy on that same table, breaking the recursion loop. All RLS policies that require admin checks now call this function.
 
-### 1c. Storage Bucket: PlumbingPoCBucket
+#### 1c. Storage Bucket: PlumbingPoCBucket
 
 -   **Purpose:** Securely stores all user-uploaded files (images, PDFs) related to quote requests.
 -   **Access:** This bucket is **NOT** public. All access is controlled by Storage Policies.
@@ -4319,13 +4456,13 @@ To reliably check for administrative privileges within Row Level Security polici
     USING ( is_admin() );
     ```
 
-### 1d. Row Level Security (RLS) Policies
+#### 1d. Row Level Security (RLS) Policies
 
 RLS is **ENABLED** on all public tables. The security model is straightforward:
 -   **Regular users** can perform actions (create, read, update, delete) only on records they own (where `auth.uid() = user_id`).
 -   **Admins** (as determined by the `is_admin()` function) have unrestricted access to all records in all tables.
 
-## 2. Master SQL Setup Script
+### 2. Master SQL Setup Script
 
 This single, idempotent script can be run in the Supabase SQL Editor to create the `is_admin` helper function and apply all current, correct security policies for every table.
 
@@ -4389,22 +4526,22 @@ CREATE POLICY "Enable all actions for admins" ON public.invoices FOR ALL USING (
 CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING (auth.uid() = user_id);
 ```
 
-## 3. Authentication Provider Configuration
+### 3. Authentication Provider Configuration
 
-### 3a. Updating URLs
+#### 3a. Updating URLs
 - Set Site URL for local development: `http://localhost:3000` or `http://localhost:5173/`
 - Add Redirect URLs:
   - `http://localhost:3000/*`
   - `http://localhost:5173/`
 - Save changes in Supabase dashboard under Authentication → URL Configuration.
 
-### 3b. Adding Authentication Providers
+#### 3b. Adding Authentication Providers
 - Go to Supabase dashboard → Authentication → Providers
 - Enable and configure each provider (Google, Azure)
 
-### 3c. Configuring Applications for OAuth
+#### 3c. Configuring Applications for OAuth
 
-#### Google OAuth2 Client Setup (Google Cloud Console)
+##### Google OAuth2 Client Setup (Google Cloud Console)
 1. Go to Google Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID.
 2. Choose "Web application" as the application type.
 3. Set the name (e.g., PlumbingPoCClient).
@@ -4424,7 +4561,7 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqdq67a31go02r6p945p.apps.googleusercontent.com?project=plumbingpoc
 
 
-#### Azure Entra App Registration (Microsoft Entra Admin Center)
+##### Azure Entra App Registration (Microsoft Entra Admin Center)
 1. Register a new app in Microsoft Entra admin center.
 2. Set the Redirect URI:
    - Platform: Web
@@ -4451,29 +4588,29 @@ URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqd
 
 URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/d9c00059-056f-4ab3-93c6-ea7009c00f23/isMSAApp~/false
 
-## 4. Troubleshooting
+### 4. Troubleshooting
 - **Infinite Recursion Error:** If you see an "infinite recursion" error, use the `is_admin()` function pattern described in this document. This `SECURITY DEFINER` function is the standard way to break recursion loops in RLS policies.
 - **Admin Can't See All Data:** If an admin can't see all records in a table, it means the `SELECT` policy for that table is missing the `OR is_admin()` condition.
-- **After Updating Policies:** Unlike JWT-based checks, policies using the `is_admin()` function do **not** require you to log out and back in. A simple page refresh is sufficient.
+- **After Updating Policies:** Policies using the `is_admin()` function do **not** require you to log out and back in. A simple page refresh is sufficient.
 - **OAuth Issues:** Ensure permissions are granted/consented, client secrets are valid, and redirect URIs are identical in both the provider's dashboard and Supabase.
 
 ---
 
-## 5. Supabase information
+### 5. Supabase information
 
-### supabase cli
+#### supabase cli
 -- npx supabase login
 -- npx supabase link
 
-### install supabase on macos
+#### install supabase on macos
 brew install supabase/tap/supabase
 supabase --version
 
-### supabase database dump
+## supabase database dump
 export PGPASSWORD='YOUR_PASSWORD'
 pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
 
-### Query 1: Table & Column Schema
+#### Query 1: Table & Column Schema
 SELECT 
     c.table_schema,
     c.table_name,
@@ -4506,7 +4643,7 @@ ORDER BY
     p.tablename,
     p.policyname;
 
-### Query 3: Storage Buckets & Policies
+#### Query 3: Storage Buckets & Policies
 
 SELECT 
     id,
@@ -4518,6 +4655,28 @@ SELECT
 FROM 
     storage.buckets;
 
+
+## Query to get all table definitions
+
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM
+    pg_indexes
+WHERE
+    schemaname = 'public'
+    AND tablename IN (
+        'invoices',
+        'quote_attachments',
+        'quotes',
+        'request_notes',
+        'requests',
+        'user_profiles'
+    )
+ORDER BY
+    tablename,
+    indexname;
 
 _Last updated: August 21, 2025_
 --- END OF FILE vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
@@ -4565,6 +4724,14 @@ USING (
   -- CASE 2: The logged-in user is an admin.
   ((auth.jwt() -> 'raw_user_meta_data' ->> 'role') = 'admin')
 );
+
+-- Add last_follow_up_sent_at column to requests table
+ALTER TABLE public.requests
+ADD COLUMN last_follow_up_sent_at TIMESTAMPTZ;
+
+-- Add scheduled_start_date column to requests table
+ALTER TABLE public.requests
+ADD COLUMN scheduled_start_date TIMESTAMPTZ;
 --- END OF FILE vite-app/SUPABASE_TABLES.sql ---
 
 --- START OF FILE vite-app/api/README.md ---
@@ -4819,6 +4986,59 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 module.exports = supabase;
 --- END OF FILE vite-app/api/config/supabase.js ---
+
+--- START OF FILE vite-app/api/controllers/followUpController.js ---
+
+// vite-app/api/controllers/followUpController.js
+
+const { supabase } = require('../config/supabase');
+const { sendFollowUpEmail } = require('../services/emailService');
+
+const sendFollowUpEmails = async (req, res) => {
+  try {
+    // 1. Fetch all requests with 'quoted' status
+    const { data: requests, error: requestsError } = await supabase
+      .from('requests')
+      .select('*, user_profiles(*)')
+      .eq('status', 'quoted');
+
+    if (requestsError) throw requestsError;
+
+    // 2. Filter requests that need a follow-up
+    const requestsToFollowUp = requests.filter(request => {
+      if (!request.last_follow_up_sent_at) {
+        return true; // Send if never sent before
+      }
+
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      const lastSent = new Date(request.last_follow_up_sent_at);
+
+      return lastSent < threeDaysAgo;
+    });
+
+    // 3. Send follow-up emails
+    for (const request of requestsToFollowUp) {
+      await sendFollowUpEmail(request);
+
+      // 4. Update the last_follow_up_sent_at timestamp
+      await supabase
+        .from('requests')
+        .update({ last_follow_up_sent_at: new Date() })
+        .eq('id', request.id);
+    }
+
+    res.status(200).json({ message: `Follow-up emails sent to ${requestsToFollowUp.length} customers.` });
+  } catch (error) {
+    console.error('Error sending follow-up emails:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+module.exports = { sendFollowUpEmails };
+
+--- END OF FILE vite-app/api/controllers/followUpController.js ---
 
 --- START OF FILE vite-app/api/controllers/requestController.js ---
 
@@ -5158,11 +5378,11 @@ const acceptQuote = async (req, res, next) => {
 const updateRequestStatus = async (req, res, next) => {
   try {
     const { requestId } = req.params;
-    const { status } = req.body;
+    const { status, scheduled_start_date } = req.body;
 
     const { data, error } = await supabase
       .from('requests')
-      .update({ status })
+      .update({ status, scheduled_start_date })
       .eq('id', requestId)
       .select()
       .single();
@@ -5191,7 +5411,89 @@ module.exports = {
   acceptQuote,
   updateRequestStatus,
 };
+
 --- END OF FILE vite-app/api/controllers/requestController.js ---
+
+--- START OF FILE vite-app/api/controllers/triageController.js ---
+
+// vite-app/api/controllers/triageController.js
+
+const {supabase} = require('../config/supabase');
+const {
+  OpenAI
+} = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const triageRequest = async (req, res) => {
+  const {requestId} = req.params;
+
+  try {
+    // 1. Fetch the request details
+    const {data: request, error: requestError} = await supabase
+      .from('requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (requestError) throw requestError;
+
+    // 2. Prepare the prompt for GPT-4
+    const prompt = `
+      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary and a priority score (1-10).
+
+      Problem Category: ${request.problem_category}
+      Answers:
+      ${request.answers.map(a => `- ${a.question}: ${a.answer}`).join('\n')}
+
+      Based on the information provided, please return a JSON object with two keys:
+      - "triage_summary": A one-sentence summary of the request, highlighting urgency and potential job value.
+      - "priority_score": An integer from 1 to 10, where 10 is the highest priority.
+    `;
+
+    // 3. Call the OpenAI API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      response_format: {
+        type: 'json_object'
+      },
+    });
+
+    const {triage_summary, priority_score} = JSON.parse(response.choices[0].message.content);
+
+    // 4. Update the request in the database
+    const {error: updateError} = await supabase
+      .from('requests')
+      .update({
+        triage_summary,
+        priority_score
+      })
+      .eq('id', requestId);
+
+    if (updateError) throw updateError;
+
+    res.status(200).json({
+      message: 'Triage complete.',
+      triage_summary,
+      priority_score
+    });
+  } catch (error) {
+    console.error('Error during triage:', error);
+    res.status(500).json({
+      message: 'Internal Server Error'
+    });
+  }
+};
+
+module.exports = {triageRequest};
+
+--- END OF FILE vite-app/api/controllers/triageController.js ---
 
 --- START OF FILE vite-app/api/controllers/userController.js ---
 
@@ -5403,6 +5705,24 @@ module.exports = {
 };
 --- END OF FILE vite-app/api/middleware/validationMiddleware.js ---
 
+--- START OF FILE vite-app/api/routes/followUpRoutes.js ---
+
+// vite-app/api/routes/followUpRoutes.js
+
+const express = require('express');
+const router = express.Router();
+const { sendFollowUpEmails } = require('../controllers/followUpController');
+const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
+
+// @route   POST /api/follow-up/send
+// @desc    Send follow-up emails to customers with quoted requests
+// @access  Admin
+router.post('/send', authMiddleware, adminMiddleware, sendFollowUpEmails);
+
+module.exports = router;
+
+--- END OF FILE vite-app/api/routes/followUpRoutes.js ---
+
 --- START OF FILE vite-app/api/routes/requestRoutes.js ---
 
 // vite-app/api/routes/requestRoutes.js
@@ -5458,6 +5778,24 @@ router.get('/:requestId', authenticate, getRequestById);
 module.exports = router;
 --- END OF FILE vite-app/api/routes/requestRoutes.js ---
 
+--- START OF FILE vite-app/api/routes/triageRoutes.js ---
+
+// vite-app/api/routes/triageRoutes.js
+
+const express = require('express');
+const router = express.Router();
+const { triageRequest } = require('../controllers/triageController');
+const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
+
+// @route   POST /api/triage/:requestId
+// @desc    Perform AI-powered triage on a request
+// @access  Admin
+router.post('/:requestId', authMiddleware, adminMiddleware, triageRequest);
+
+module.exports = router;
+
+--- END OF FILE vite-app/api/routes/triageRoutes.js ---
+
 --- START OF FILE vite-app/api/routes/userRoutes.js ---
 
 // vite-app/api/routes/userRoutes.js
@@ -5484,30 +5822,27 @@ module.exports = router;
 
 --- START OF FILE vite-app/api/server.js ---
 
-// server.js (v2.1 - Refactored for Scalability with MVC Pattern)
-/*
-This is the new, streamlined main server file. Its only job is to configure 
-the application, load the necessary middleware, and delegate routing to the 
-dedicated route files.
-*/
+// server.js (v2.4 - Final version for Netlify)
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const requestRoutes = require('./routes/requestRoutes'); // <-- Import the new router
-const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THE NEW USER ROUTER
+const requestRoutes = require('./routes/requestRoutes');
+const userRoutes = require('./routes/userRoutes');
+const followUpRoutes = require('./routes/followUpRoutes');
+const triageRoutes = require('./routes/triageRoutes');
 
 // --- Basic Setup ---
 const app = express();
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+// Load .env file from the 'vite-app' directory
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
 
 // 1. CORS Middleware
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://your-frontend-domain.com' // TODO: Replace with your actual frontend URL
-    : `http://localhost:${process.env.FRONTEND_PORT || 5173}`,
+  // Use Netlify's URL in production, or your local .env variable for development
+  origin: process.env.URL || process.env.FRONTEND_BASE_URL,
 };
 app.use(cors(corsOptions));
 
@@ -5515,18 +5850,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- API Routing ---
-
-// Delegate all routes starting with '/api/requests' to our new router file
 app.use('/api/requests', requestRoutes);
-
-// ***************************************************************
-// ************************* THE FIX *****************************
-// ***************************************************************
-// Mount the user routes directly at /api, so that the paths become
-// /api/profile instead of /api/users/profile. This matches the frontend.
-app.use('/api', userRoutes); 
-// ***************************************************************
-// ***************************************************************
+app.use('/api/follow-up', followUpRoutes);
+app.use('/api/triage', triageRoutes);
+app.use('/api', userRoutes);
 
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {
@@ -5534,7 +5861,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // --- Centralized Error Handler ---
-// This should be the LAST piece of middleware.
 app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR HANDLER]', err);
   res.status(500).json({
@@ -5543,10 +5869,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- Server Start ---
-app.listen(PORT, () => {
-  console.log(`API server v2.1 running on http://localhost:${PORT}`);
-});
+// --- Server Start & Export ---
+
+// Export the app for serverless environments
+module.exports = app;
+
+// Start the server only if the file is run directly (for local development)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`API server running on ${process.env.BACKEND_BASE_URL || `http://localhost:${PORT}`}`);
+  });
+}
 --- END OF FILE vite-app/api/server.js ---
 
 --- START OF FILE vite-app/api/services/emailService.js ---
@@ -5558,7 +5891,7 @@ const { Resend } = require('resend');
 // IMPORTANT: This assumes RESEND_API_KEY, BASE_URL, RESEND_ENABLED, and RESEND_FROM_EMAIL are loaded into your environment variables.
 // You may need to install and configure dotenv if you haven't already.
 const resend = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5173'; // Fallback for development
+const BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173'; // Fallback for development
 const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true'; // Convert to boolean
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboarding@resend.dev>'; // Configurable from address
 
@@ -5611,7 +5944,67 @@ const sendRequestSubmittedEmail = (request) => {
 
   const requestUrl = getRequestUrl(request.id);
   const subject = `Your request has been received!`;
-  const html = `<h1>Thank you for your request!</h1><p>We have received your request for "${request.problem_category.replace(/_/g, ' ')}" and will be in touch shortly.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+  // vite-app/api/services/emailService.js
+
+const { Resend } = require('resend');
+
+// IMPORTANT: This assumes RESEND_API_KEY, BASE_URL, RESEND_ENABLED, and RESEND_FROM_EMAIL are loaded into your environment variables.
+// You may need to install and configure dotenv if you haven't already.
+const resend = new Resend(process.env.RESEND_API_KEY);
+const BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173'; // Fallback for development
+const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true'; // Convert to boolean
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboarding@resend.dev>'; // Configurable from address
+
+/**
+ * A generic email sending function.
+ * NOTE: You must configure a verified domain with Resend to send emails to arbitrary recipients.
+ * For testing with an unverified domain, the 'to' address must be your verified Resend account email.
+ */
+const sendEmail = async ({ to, subject, html }) => {
+  if (!RESEND_ENABLED) {
+    console.log('Resend is disabled. Email not sent.');
+    return { data: { message: 'Resend disabled' } };
+  }
+
+  try {
+    console.log(`Attempting to send email to: ${to}`);
+    const { data, error } = await resend.emails.send({
+      from: RESEND_FROM_EMAIL, // Use configurable from address
+      to,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error('Resend Error:', error);
+      return { error };
+    }
+
+    console.log('Email sent successfully:', data);
+    return { data };
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    return { error };
+  }
+};
+
+const getRecipientEmail = (request) => {
+  // In a real app, you would have more robust logic to get the customer's email.
+  // This is a simplified example.
+  return request?.user_profiles?.email;
+}
+
+const getRequestUrl = (requestId) => {
+  return `${BASE_URL}/requests/${requestId}`; // Assuming frontend route is /requests/:id
+}
+
+const sendRequestSubmittedEmail = (request) => {
+  const recipientEmail = getRecipientEmail(request);
+  if (!recipientEmail) return;
+
+  const requestUrl = getRequestUrl(request.id);
+  const subject = `Your request has been received!`;
+  const html = `<h1>Thank you for your request!</h1><p>We have received your request for "${request.problem_category.replace(/_/g, ' '_)}" and will be in touch shortly.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
   
   return sendEmail({ to: recipientEmail, subject, html });
 };
@@ -5633,7 +6026,51 @@ const sendQuoteAddedEmail = (request, quote) => {
 
     const requestUrl = getRequestUrl(request.id);
     const subject = `You have a new quote for your request`;
-    const html = `<p>A new quote for <strong>$${quote.quote_amount.toFixed(2)}</strong> has been added to your request. Please log in to your portal to view the details.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+    const html = `<p>A new quote for <strong>${quote.quote_amount.toFixed(2)}</strong> has been added to your request. Please log in to your portal to view the details.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+
+    return sendEmail({ to: recipientEmail, subject, html });
+};
+
+const sendFollowUpEmail = (request) => {
+  const recipientEmail = getRecipientEmail(request);
+  if (!recipientEmail) return;
+
+  const requestUrl = getRequestUrl(request.id);
+  const subject = `Following up on your quote for ${request.problem_category.replace(/_/g, ' ')}`;
+  const html = `<p>Hi ${request.user_profiles?.name || 'there'},</p><p>Just wanted to follow up on the quote we sent you for your recent request. Please let us know if you have any questions or if you'd like to move forward.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+
+  return sendEmail({ to: recipientEmail, subject, html });
+};
+
+
+module.exports = {
+  sendRequestSubmittedEmail,
+  sendStatusUpdateEmail,
+  sendQuoteAddedEmail,
+  sendFollowUpEmail,
+};
+  
+  return sendEmail({ to: recipientEmail, subject, html });
+};
+
+const sendStatusUpdateEmail = (request) => {
+  const recipientEmail = getRecipientEmail(request);
+  if (!recipientEmail) return;
+
+  const requestUrl = getRequestUrl(request.id);
+  const subject = `Update on your request`;
+  const html = `<p>The status of your request has been updated to: <strong>${request.status}</strong>.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+
+  return sendEmail({ to: recipientEmail, subject, html });
+};
+
+const sendQuoteAddedEmail = (request, quote) => {
+    const recipientEmail = getRecipientEmail(request);
+    if (!recipientEmail) return;
+
+    const requestUrl = getRequestUrl(request.id);
+    const subject = `You have a new quote for your request`;
+    const html = `<p>A new quote for <strong>${quote.quote_amount.toFixed(2)}</strong> has been added to your request. Please log in to your portal to view the details.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
 
     return sendEmail({ to: recipientEmail, subject, html });
 };
@@ -5752,6 +6189,19 @@ module.exports = {
 
 --- END OF FILE vite-app/index.html ---
 
+--- START OF FILE vite-app/netlify/functions/api.js ---
+
+// vite-app/netlify/functions/api.js
+
+const serverless = require('serverless-http');
+// This line imports the Express app you just refactored.
+const app = require('../../api/server');
+
+// This wraps your Express app for Netlify and exports it as a handler.
+module.exports.handler = serverless(app);
+
+--- END OF FILE vite-app/netlify/functions/api.js ---
+
 --- START OF FILE vite-app/package-lock.json ---
 
 {
@@ -5777,6 +6227,7 @@ module.exports = {
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "resend": "^6.0.1",
+        "serverless-http": "^3.2.0",
         "zod": "^4.0.17"
       },
       "devDependencies": {
@@ -8709,6 +9160,15 @@ module.exports = {
         "node": ">= 0.8.0"
       }
     },
+    "node_modules/serverless-http": {
+      "version": "3.2.0",
+      "resolved": "https://registry.npmjs.org/serverless-http/-/serverless-http-3.2.0.tgz",
+      "integrity": "sha512-QvSyZXljRLIGqwcJ4xsKJXwkZnAVkse1OajepxfjkBXV0BMvRS5R546Z4kCBI8IygDzkQY0foNPC/rnipaE9pQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=12.0"
+      }
+    },
     "node_modules/setprototypeof": {
       "version": "1.2.0",
       "resolved": "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.2.0.tgz",
@@ -9101,6 +9561,7 @@ module.exports = {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.0.1",
+    "serverless-http": "^3.2.0",
     "zod": "^4.0.17"
   },
   "devDependencies": {
@@ -9635,6 +10096,8 @@ export interface QuoteRequest {
   quotes: Quote[];
   request_notes: RequestNote[];
   scheduled_start_date: string | null;
+  triage_summary: string | null;
+  priority_score: number | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -9729,6 +10192,8 @@ const Dashboard: React.FC = () => {
   const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
 
   const columns: GridColDef[] = [
+    { field: 'priority_score', headerName: 'Priority', width: 100, type: 'number' },
+    { field: 'triage_summary', headerName: 'Triage Summary', flex: 1 },
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
     },
@@ -9741,7 +10206,7 @@ const Dashboard: React.FC = () => {
     { field: 'created_at', headerName: 'Received', width: 180, type: 'dateTime', valueGetter: (value) => value ? new Date(value) : null },
     { field: 'quote_amount', headerName: 'Quote Amount', width: 130, type: 'number',
       valueGetter: (value, row) => row.quotes?.sort((a: Quote, b: Quote) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.quote_amount,
-      renderCell: (params) => params.value != null ? `$${params.value.toFixed(2)}` : '—'
+      renderCell: (params) => params.value != null ? `${params.value.toFixed(2)}` : '—'
     },
     { field: 'status', headerName: 'Status', width: 120,
       renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getRequestStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )
@@ -11784,10 +12249,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3000'
+      '/api': process.env.BACKEND_BASE_URL.replace(/\/$/, '')
     }
   }
 });
-
 --- END OF FILE vite-app/vite.config.js ---
 

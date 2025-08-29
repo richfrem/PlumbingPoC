@@ -26,7 +26,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Create new profile working
 - [x] Update existing profile working
 - [x] Ensure user profile includes contact info
-- [x] Pull profile info into quote requests
+- [x] Pull profile info into quote requests (Admins can now see all user profiles)
 
 ### Service Quote Request Flow
 - [x] Create service quote request types (JSON/TypeScript)
@@ -59,6 +59,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Display quote status as colored chip in quote list (RequestDetailModal)
 - [x] Display quote status as colored chip in QuoteFormModal header
 - [x] Ensure status chip colors are consistent across all components
+- [ ] Create a Kanban board view for the dashboard
 - [ ] Optimize for performance, accessibility, and responsiveness
 
 ### Backend & API
@@ -75,8 +76,18 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Implement email notifications for new notes in communication log
 - [x] Add RESEND_ENABLED feature flag for email sending
 - [x] Include link to request in notification emails
+- [x] Correct RLS policies for `user_profiles` to allow admin access
+- [ ] Implement automated follow-up emails for quoted requests
+- [ ] Add AI-powered triage summary and priority score to requests
 - [ ] Review backend for scalability, security, and maintainability (agent-driven)
 - [ ] Configure Resend domain verification (manual step for user)
+
+### Deployment
+- [ ] Setup hosting for the POC on Netlify
+- [ ] Create a Netlify Scheduled Function for automated follow-ups
+- [ ] Move the follow-up email logic from the Express controller to the new Netlify function
+- [ ] Remove the old /api/follow-up route and controller
+- [ ] Publish the POC to Netlify
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline
@@ -87,7 +98,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 ## Baseline Notes (for GitHub Copilot)
 
 
-## Progress Summary (August 28, 2025)
+## Progress Summary (August 29, 2025)
 
 **Completed:**
 - All core flows for user registration, profile, quote request, and privacy enforcement are implemented.
@@ -99,12 +110,21 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - **New:** Robust status management for requests and quotes, including an "Accepted" status, automatic status updates, and quote locking.
 - **New:** Full email notification system for key events (request submission, status changes, quote additions, new notes) with a feature flag and direct links.
 - **New:** Dashboard now correctly filters requests for regular users.
+- **New:** Corrected RLS policies to ensure admins can view all user profiles, resolving a critical data access issue.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).
 - Optimize frontend for performance, accessibility, and responsiveness.
 - Review backend for scalability, security, and maintainability.
 - Configure Resend domain verification (manual step for user).
+- Implement automated follow-up emails.
+- Implement AI-powered triage and priority scoring.
+- Create a Kanban board view for the dashboard.
+- Setup hosting for the POC on Netlify.
+- Create a Netlify Scheduled Function for automated follow-ups.
+- Move the follow-up email logic from the Express controller to the new Netlify function.
+- Remove the old /api/follow-up route and controller.
+- Publish the POC to Netlify.
 - Add new tasks as requirements evolve.
 
 **Agent Assignments:**
