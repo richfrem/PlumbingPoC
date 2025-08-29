@@ -2,7 +2,7 @@
 
 [build]
   base = "." # Explicitly set base to the root of the repository
-  command = "npm run build"
+  command = "node scripts/preprocess-md.js && npm run build" # Updated command
   publish = "vite-app/dist/"
   functions = "netlify/functions/"
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
