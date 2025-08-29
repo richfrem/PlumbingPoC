@@ -15,6 +15,7 @@
     "vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md"
   ]
   SECRETS_SCAN_ENABLED = false # Disable secrets scanning
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = false # Disable smart detection
 
 [[redirects]]
   from = "/api/*"
