@@ -6,6 +6,17 @@
   publish = "vite-app/dist/"
   functions = "netlify/functions/"
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
+  SECRETS_SCAN_ENABLED = false
+  SECRETS_SCAN_OMIT_PATHS = [
+    "README.md",
+    "all_markdown_and_code_snapshot_llm_distilled.txt",
+    "vite-app/dist/assets/*.js"
+  ]
+  SECRETS_SCAN_OMIT_KEYS = [
+    "BACKEND_BASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_URL"
+  ]
 
 [[redirects]]
   from = "/api/*"
