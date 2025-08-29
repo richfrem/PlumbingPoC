@@ -1,4 +1,4 @@
-// This is the complete, final version of QuoteFormModal.tsx
+// vite-app/src/components/QuoteFormModal.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
@@ -8,7 +8,7 @@ import apiClient from '../lib/apiClient';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
-  onClose: (updated?: boolean) => void; // Allow passing a flag to indicate an update happened
+  onClose: (updated?: boolean) => void;
   quote?: any;
   editable: boolean;
   request?: any;
@@ -29,13 +29,14 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('pending');
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setNewAttachments([]); // Reset on open
       if (quote) {
         let detailsObj: any = {};
         if (quote.details) {
@@ -124,19 +125,31 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         }),
       };
 
+      let savedQuote;
       if (quote && quote.id) {
-        // --- THIS IS THE FIX ---
-        // Call the new PUT endpoint for updates
-        await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload);
+        const { data } = await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload);
+        savedQuote = data;
       } else {
-        // Call the POST endpoint for creating new quotes
-        await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        const { data } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        savedQuote = data;
       }
       
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId!);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => {
+          formData.append('attachments', file);
+        });
+        await apiClient.post('/requests/attachments', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-        onClose(true); // Close modal on success and signal that an update occurred
+        onClose(true);
       }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
@@ -184,7 +197,18 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
           <Divider sx={{ my: 2 }} />
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
-          {editable && <Button component="label" startIcon={<Paperclip />}>Upload File <input type="file" hidden multiple onChange={e => setAttachments(Array.from(e.target.files || []))} /></Button>}
+            {editable && 
+              <Button component="label" startIcon={<Paperclip />}>
+                Add Quote Attachments
+                <input type="file" hidden multiple onChange={e => setNewAttachments(Array.from(e.target.files || []))} />
+              </Button>
+            }
+            {newAttachments.length > 0 && (
+                <Box sx={{ my: 1 }}>
+                    <Typography variant="caption">New files to upload:</Typography>
+                    {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
+                </Box>
+            )}
           <Divider sx={{ my: 2 }} />
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="body2" color="text.secondary">Subtotal: ${ (laborTotal + materialTotal).toFixed(2) }</Typography>

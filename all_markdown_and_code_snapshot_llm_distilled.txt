@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-28T21:37:04.415Z
+Generated On: 2025-08-29T00:56:04.289Z
 
-# Mnemonic Weight (Token Count): ~134,258 tokens
+# Mnemonic Weight (Token Count): ~134,431 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -4781,20 +4781,19 @@ module.exports = supabase;
 --- START OF FILE vite-app/api/controllers/requestController.js ---
 
 // vite-app/api/controllers/requestController.js
-
 const path = require('path');
 const axios = require('axios');
 const supabase = require('../config/supabase');
 
 /**
- * Handles fetching a request by ID, including user profile info.
+ * Handles fetching a request by ID, including user profile info and all related tables.
  */
 const getRequestById = async (req, res, next) => {
   try {
     const { requestId } = req.params;
     const { data: request, error } = await supabase
       .from('requests')
-      .select(`*, user_profiles!requests_user_id_fkey(*)`)
+      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
       .eq('id', requestId)
       .single();
     if (error || !request) {
@@ -4857,10 +4856,15 @@ const submitQuoteRequest = async (req, res, next) => {
       customer_name: contactInfo.name || null,
       service_address: `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
       contact_info: contactInfo.email || contactInfo.phone || null,
-      problem_category: category, is_emergency: isEmergency === true, property_type: property_type || null,
-      is_homeowner: is_homeowner === 'Yes', problem_description: problem_description || null,
-      preferred_timing: preferred_timing || null, additional_notes: additional_notes || null,
-      answers: clarifyingAnswers, status: 'new',
+      problem_category: category,
+      is_emergency: isEmergency === true,
+      property_type: property_type || null,
+      is_homeowner: is_homeowner === 'Yes',
+      problem_description: problem_description || null,
+      preferred_timing: preferred_timing || null,
+      additional_notes: additional_notes || null,
+      answers: clarifyingAnswers,
+      status: 'new',
     };
     
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
@@ -4873,47 +4877,68 @@ const submitQuoteRequest = async (req, res, next) => {
 };
 
 /**
- * Handles uploading a file attachment and linking it to a request.
- * This version is for a PRIVATE bucket and generates a signed URL.
+ * Handles uploading file attachments and linking them to a request and/or a quote.
  */
 const uploadAttachment = async (req, res, next) => {
   try {
-    const { request_id } = req.body;
-    const file = req.file;
+    const { request_id, quote_id } = req.body;
+    const files = req.files;
 
-    if (!file) return res.status(400).json({ error: 'No file uploaded.' });
-    if (!request_id) return res.status(400).json({ error: 'request_id is required.' });
-
-    const { data: requestOwner, error: ownerError } = await supabase.from('requests').select('user_id').eq('id', request_id).single();
-    if (ownerError) throw ownerError;
-    if (!requestOwner || requestOwner.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this quote request.' });
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+    if (!request_id) {
+      return res.status(400).json({ error: 'request_id is required.' });
     }
     
-    const filePath = `${request_id}/${file.originalname.replace(/\s/g, '_')}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('PlumbingPoCBucket')
-      .upload(filePath, file.buffer, { contentType: file.mimetype });
-    if (uploadError) throw uploadError;
+    // Security check: User must be an admin OR own the request associated with the upload.
+    const { data: requestOwner, error: ownerError } = await supabase
+      .from('requests')
+      .select('user_id')
+      .eq('id', request_id)
+      .single();
+      
+    if (ownerError) {
+        // This handles cases where the request_id is invalid
+        return res.status(404).json({ error: 'Request not found.' });
+    }
 
-    // Since the bucket is now private, we must generate a temporary signed URL.
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('PlumbingPoCBucket')
-      .createSignedUrl(uploadData.path, 3600); // Expires in 1 hour
-    
-    if (signedUrlError) throw signedUrlError;
+    const { data: profile } = await supabase.from('user_profiles').select('role').eq('user_id', req.user.id).single();
 
-    const attachmentRecord = { 
-      request_id, 
-      file_name: file.originalname, 
-      mime_type: file.mimetype,
-      file_url: signedUrlData.signedUrl // Store the signed URL
-    };
+    if (profile?.role !== 'admin' && requestOwner.user_id !== req.user.id) {
+        return res.status(403).json({ error: 'Forbidden: You do not have permission to upload files for this request.' });
+    }
 
-    const { error: insertError } = await supabase.from('quote_attachments').insert(attachmentRecord);
+    const uploadPromises = files.map(async (file) => {
+      const filePath = `${request_id}/${Date.now()}_${file.originalname.replace(/\s/g, '_')}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('PlumbingPoCBucket')
+        .upload(filePath, file.buffer, { contentType: file.mimetype });
+      
+      if (uploadError) throw uploadError;
+
+      const attachmentRecord = { 
+        request_id,
+        quote_id: quote_id || null,
+        file_name: file.originalname, 
+        mime_type: file.mimetype,
+        file_url: uploadData.path
+      };
+
+      return attachmentRecord;
+    });
+
+    const attachmentRecords = await Promise.all(uploadPromises);
+
+    const { data: insertedAttachments, error: insertError } = await supabase
+      .from('quote_attachments')
+      .insert(attachmentRecords)
+      .select();
+
     if (insertError) throw insertError;
 
-    res.status(200).json({ message: 'Attachment uploaded successfully.', attachment: attachmentRecord });
+    res.status(200).json({ message: 'Attachments uploaded successfully.', attachments: insertedAttachments });
   
   } catch (err) {
     next(err);
@@ -4922,7 +4947,6 @@ const uploadAttachment = async (req, res, next) => {
 
 /**
  * Handles retrieving a file from Supabase storage.
- * The server uses its admin key to bypass RLS and download the file directly.
  */
 const getStorageObject = async (req, res, next) => {
   try {
@@ -4930,7 +4954,6 @@ const getStorageObject = async (req, res, next) => {
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
     
     if (error) {
-      // The error here is likely from the storage RLS policies we set up
       console.error('Supabase storage download error:', error.message);
       return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
@@ -5276,7 +5299,7 @@ const {
   addRequestNote,
   createQuoteForRequest,
   getRequestById,
-  updateQuote, // <-- IMPORTED
+  updateQuote,
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
@@ -5285,7 +5308,7 @@ const {
   submitQuoteSchema,
   addNoteSchema,
   createQuoteSchema,
-  updateQuoteSchema, // <-- IMPORTED
+  updateQuoteSchema,
   getObjectSchema,
 } = require('../validation/schemas');
 
@@ -5294,33 +5317,20 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // --- Core Quote Intake Routes ---
 
-// Get AI follow-up questions
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
-
-// Submit the final, completed quote request form
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
 
-// Upload a file attachment for a request
-router.post('/attachments', authenticate, upload.single('attachment'), uploadAttachment);
+// Changed from `upload.single('attachment')` to `upload.array('attachments', 10)`
+// This allows up to 10 files to be uploaded under the 'attachments' field name.
+router.post('/attachments', authenticate, upload.array('attachments', 10), uploadAttachment);
 
-// Get a storage object (for admins to view attachments)
-router.get('/storage-object/*', authenticate, isAdmin, validate(getObjectSchema), getStorageObject);
-
+router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---
-
-// Add a note to a specific request
 router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
-
-// Create a formal quote for a request (admin only)
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
-
-// [NEW] Update an existing formal quote for a request (admin only)
 router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
-
-// Get request details by ID (for quote modal)
 router.get('/:requestId', authenticate, getRequestById);
-
 
 module.exports = router;
 --- END OF FILE vite-app/api/routes/requestRoutes.js ---
@@ -9953,7 +9963,7 @@ export default QuoteAgentModal;
 
 --- START OF FILE vite-app/src/components/QuoteFormModal.tsx ---
 
-// This is the complete, final version of QuoteFormModal.tsx
+// vite-app/src/components/QuoteFormModal.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
@@ -9963,7 +9973,7 @@ import apiClient from '../lib/apiClient';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
-  onClose: (updated?: boolean) => void; // Allow passing a flag to indicate an update happened
+  onClose: (updated?: boolean) => void;
   quote?: any;
   editable: boolean;
   request?: any;
@@ -9984,13 +9994,14 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('pending');
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setNewAttachments([]); // Reset on open
       if (quote) {
         let detailsObj: any = {};
         if (quote.details) {
@@ -10079,19 +10090,31 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         }),
       };
 
+      let savedQuote;
       if (quote && quote.id) {
-        // --- THIS IS THE FIX ---
-        // Call the new PUT endpoint for updates
-        await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload);
+        const { data } = await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload);
+        savedQuote = data;
       } else {
-        // Call the POST endpoint for creating new quotes
-        await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        const { data } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        savedQuote = data;
       }
       
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId!);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => {
+          formData.append('attachments', file);
+        });
+        await apiClient.post('/requests/attachments', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-        onClose(true); // Close modal on success and signal that an update occurred
+        onClose(true);
       }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
@@ -10139,7 +10162,18 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
           <Divider sx={{ my: 2 }} />
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Attachments</Typography>
-          {editable && <Button component="label" startIcon={<Paperclip />}>Upload File <input type="file" hidden multiple onChange={e => setAttachments(Array.from(e.target.files || []))} /></Button>}
+            {editable && 
+              <Button component="label" startIcon={<Paperclip />}>
+                Add Quote Attachments
+                <input type="file" hidden multiple onChange={e => setNewAttachments(Array.from(e.target.files || []))} />
+              </Button>
+            }
+            {newAttachments.length > 0 && (
+                <Box sx={{ my: 1 }}>
+                    <Typography variant="caption">New files to upload:</Typography>
+                    {newAttachments.map(file => <Typography key={file.name} variant="body2" sx={{ pl: 2 }}>- {file.name}</Typography>)}
+                </Box>
+            )}
           <Divider sx={{ my: 2 }} />
           <Box sx={{ textAlign: 'right' }}>
             <Typography variant="body2" color="text.secondary">Subtotal: ${ (laborTotal + materialTotal).toFixed(2) }</Typography>

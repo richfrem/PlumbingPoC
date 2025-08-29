@@ -1,18 +1,17 @@
 // vite-app/api/controllers/requestController.js
-
 const path = require('path');
 const axios = require('axios');
 const supabase = require('../config/supabase');
 
 /**
- * Handles fetching a request by ID, including user profile info.
+ * Handles fetching a request by ID, including user profile info and all related tables.
  */
 const getRequestById = async (req, res, next) => {
   try {
     const { requestId } = req.params;
     const { data: request, error } = await supabase
       .from('requests')
-      .select(`*, user_profiles!requests_user_id_fkey(*)`)
+      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
       .eq('id', requestId)
       .single();
     if (error || !request) {
@@ -75,10 +74,15 @@ const submitQuoteRequest = async (req, res, next) => {
       customer_name: contactInfo.name || null,
       service_address: `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
       contact_info: contactInfo.email || contactInfo.phone || null,
-      problem_category: category, is_emergency: isEmergency === true, property_type: property_type || null,
-      is_homeowner: is_homeowner === 'Yes', problem_description: problem_description || null,
-      preferred_timing: preferred_timing || null, additional_notes: additional_notes || null,
-      answers: clarifyingAnswers, status: 'new',
+      problem_category: category,
+      is_emergency: isEmergency === true,
+      property_type: property_type || null,
+      is_homeowner: is_homeowner === 'Yes',
+      problem_description: problem_description || null,
+      preferred_timing: preferred_timing || null,
+      additional_notes: additional_notes || null,
+      answers: clarifyingAnswers,
+      status: 'new',
     };
     
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
@@ -91,47 +95,68 @@ const submitQuoteRequest = async (req, res, next) => {
 };
 
 /**
- * Handles uploading a file attachment and linking it to a request.
- * This version is for a PRIVATE bucket and generates a signed URL.
+ * Handles uploading file attachments and linking them to a request and/or a quote.
  */
 const uploadAttachment = async (req, res, next) => {
   try {
-    const { request_id } = req.body;
-    const file = req.file;
+    const { request_id, quote_id } = req.body;
+    const files = req.files;
 
-    if (!file) return res.status(400).json({ error: 'No file uploaded.' });
-    if (!request_id) return res.status(400).json({ error: 'request_id is required.' });
-
-    const { data: requestOwner, error: ownerError } = await supabase.from('requests').select('user_id').eq('id', request_id).single();
-    if (ownerError) throw ownerError;
-    if (!requestOwner || requestOwner.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this quote request.' });
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+    if (!request_id) {
+      return res.status(400).json({ error: 'request_id is required.' });
     }
     
-    const filePath = `${request_id}/${file.originalname.replace(/\s/g, '_')}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('PlumbingPoCBucket')
-      .upload(filePath, file.buffer, { contentType: file.mimetype });
-    if (uploadError) throw uploadError;
+    // Security check: User must be an admin OR own the request associated with the upload.
+    const { data: requestOwner, error: ownerError } = await supabase
+      .from('requests')
+      .select('user_id')
+      .eq('id', request_id)
+      .single();
+      
+    if (ownerError) {
+        // This handles cases where the request_id is invalid
+        return res.status(404).json({ error: 'Request not found.' });
+    }
 
-    // Since the bucket is now private, we must generate a temporary signed URL.
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('PlumbingPoCBucket')
-      .createSignedUrl(uploadData.path, 3600); // Expires in 1 hour
-    
-    if (signedUrlError) throw signedUrlError;
+    const { data: profile } = await supabase.from('user_profiles').select('role').eq('user_id', req.user.id).single();
 
-    const attachmentRecord = { 
-      request_id, 
-      file_name: file.originalname, 
-      mime_type: file.mimetype,
-      file_url: signedUrlData.signedUrl // Store the signed URL
-    };
+    if (profile?.role !== 'admin' && requestOwner.user_id !== req.user.id) {
+        return res.status(403).json({ error: 'Forbidden: You do not have permission to upload files for this request.' });
+    }
 
-    const { error: insertError } = await supabase.from('quote_attachments').insert(attachmentRecord);
+    const uploadPromises = files.map(async (file) => {
+      const filePath = `${request_id}/${Date.now()}_${file.originalname.replace(/\s/g, '_')}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('PlumbingPoCBucket')
+        .upload(filePath, file.buffer, { contentType: file.mimetype });
+      
+      if (uploadError) throw uploadError;
+
+      const attachmentRecord = { 
+        request_id,
+        quote_id: quote_id || null,
+        file_name: file.originalname, 
+        mime_type: file.mimetype,
+        file_url: uploadData.path
+      };
+
+      return attachmentRecord;
+    });
+
+    const attachmentRecords = await Promise.all(uploadPromises);
+
+    const { data: insertedAttachments, error: insertError } = await supabase
+      .from('quote_attachments')
+      .insert(attachmentRecords)
+      .select();
+
     if (insertError) throw insertError;
 
-    res.status(200).json({ message: 'Attachment uploaded successfully.', attachment: attachmentRecord });
+    res.status(200).json({ message: 'Attachments uploaded successfully.', attachments: insertedAttachments });
   
   } catch (err) {
     next(err);
@@ -140,7 +165,6 @@ const uploadAttachment = async (req, res, next) => {
 
 /**
  * Handles retrieving a file from Supabase storage.
- * The server uses its admin key to bypass RLS and download the file directly.
  */
 const getStorageObject = async (req, res, next) => {
   try {
@@ -148,7 +172,6 @@ const getStorageObject = async (req, res, next) => {
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
     
     if (error) {
-      // The error here is likely from the storage RLS policies we set up
       console.error('Supabase storage download error:', error.message);
       return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
