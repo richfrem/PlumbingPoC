@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T19:05:04.081Z
+Generated On: 2025-08-29T19:12:29.346Z
 
-# Mnemonic Weight (Token Count): ~161,543 tokens
+# Mnemonic Weight (Token Count): ~161,544 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -286,7 +286,7 @@ This script will start both services in the background and provide you with the 
     ```sh
     npm run start:api
     ```
-    The API will start, typically on `http://localhost:3000/`.
+    The API will start, typically on `http://your-local-backend-url/`.
 
 2.  **Start the Frontend Vite Server:**
     In a second terminal, from the `vite-app/` directory:
