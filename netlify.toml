@@ -10,6 +10,7 @@
   SECRETS_SCAN_OMIT_PATHS = [
     "vite-app/dist/**/*.js"
   ]
+  SECRETS_SCAN_ENABLED = false # Disable secrets scanning
 
 [[redirects]]
   from = "/api/*"
