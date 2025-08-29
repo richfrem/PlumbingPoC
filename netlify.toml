@@ -12,11 +12,7 @@
     "all_markdown_and_code_snapshot_llm_distilled.txt",
     "vite-app/dist/assets/*.js"
   ]
-  SECRETS_SCAN_OMIT_KEYS = [
-    "VITE_BACKEND_BASE_URL",
-    "VITE_SUPABASE_ANON_KEY",
-    "VITE_SUPABASE_URL"
-  ]
+
 
 [[redirects]]
   from = "/api/*"
