@@ -1,9 +1,18 @@
+You're right. The documentation had fallen out of sync with our superior `is_admin()` function-based approach. It's crucial to update it to reflect the current, correct, and final RLS strategy.
+
+I have updated the entire `SUPABASE_DATABASE_AND_AUTH_SETUP.md` file. The JWT-syncing sections have been removed and replaced with explanations of the `is_admin()` function. The Master SQL Script now contains the definitive, idempotent script we just created.
+
+This updated file is now the accurate source of truth for your database setup.
+
+---
+
 # Table of Contents
 
 1.  [Supabase Database Configuration](#1-supabase-database-configuration)
     -   [Table Schema Overview](#1a-table-schema-overview)
-    -   [Storage Bucket: PlumbingPoCBucket](#1b-storage-bucket-plumbingpocbucket)
-    -   [Row Level Security (RLS) Policies](#1c-row-level-security-rls-policies)
+    -   [Admin Role Check Function (`is_admin`)](#1b-admin-role-check-function-is_admin)
+    -   [Storage Bucket: PlumbingPoCBucket](#1c-storage-bucket-plumbingpocbucket)
+    -   [Row Level Security (RLS) Policies](#1d-row-level-security-rls-policies)
 2.  [Master SQL Setup Script](#2-master-sql-setup-script)
 3.  [Authentication Provider Configuration](#3-authentication-provider-configuration)
 4.  [Helpful CLI Commands & Queries](#4-helpful-cli-commands--queries)
@@ -79,7 +88,15 @@ The database is composed of several related tables to manage users, requests, qu
     -   `user_id` (uuid)
     -   `amount_due` (numeric), `due_date` (timestamptz), `status` (text)
 
-### 1b. Storage Bucket: PlumbingPoCBucket
+### 1b. Admin Role Check Function (`is_admin`)
+
+To reliably check for administrative privileges within Row Level Security policies without causing infinite recursion, we use a `SECURITY DEFINER` function. This is the standard, most robust method.
+
+-   **Function:** `public.is_admin()`
+    -   Returns `true` if the currently authenticated user has the role of 'admin' in their `user_profiles` record, and `false` otherwise.
+    -   `SECURITY DEFINER` allows it to query `user_profiles` safely from within an RLS policy on that same table, breaking the recursion loop. All RLS policies that require admin checks now call this function.
+
+### 1c. Storage Bucket: PlumbingPoCBucket
 
 -   **Purpose:** Securely stores all user-uploaded files (images, PDFs) related to quote requests.
 -   **Access:** This bucket is **NOT** public. All access is controlled by Storage Policies.
@@ -91,103 +108,83 @@ The database is composed of several related tables to manage users, requests, qu
     TO authenticated
     WITH CHECK ( bucket_id = 'PlumbingPoCBucket' );
 
-    -- Allows an ADMIN to view/download ANY file for the dashboard.
+    -- Allows an ADMIN to view/download ANY file.
+    -- This now uses our robust is_admin() function.
     CREATE POLICY "Allow admin read access"
     ON storage.objects FOR SELECT
     TO authenticated
-    USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
+    USING ( is_admin() );
     ```
 
-### 1c. Row Level Security (RLS) Policies
+### 1d. Row Level Security (RLS) Policies
 
-RLS is **ENABLED** on all public tables to ensure users can only access their own data.
-
--   **user_profiles:**
-    -   Users can view, update, and insert their own profile only.
--   **requests:**
-    -   Admins have full access.
-    -   Users can perform all actions on their own requests only.
--   **quote_attachments:**
-    -   Admins and the request owner can view attachments.
-    -   Only the request owner can insert new attachments.
--   **quotes:**
-    -   Admins have full access.
-    -   Users can only view quotes linked to their `user_id`.
--   **request_notes:**
-    -   Admins have full access.
-    -   Users can view and create notes on their own requests.
--   **invoices:**
-    -   Admins have full access.
-    -   Users can only view invoices linked to their `user_id`.
+RLS is **ENABLED** on all public tables. The security model is straightforward:
+-   **Regular users** can perform actions (create, read, update, delete) only on records they own (where `auth.uid() = user_id`).
+-   **Admins** (as determined by the `is_admin()` function) have unrestricted access to all records in all tables.
 
 ## 2. Master SQL Setup Script
 
-This single, idempotent script can be run in the Supabase SQL Editor to create all tables, establish relationships, and apply all security policies from a fresh project.
+This single, idempotent script can be run in the Supabase SQL Editor to create the `is_admin` helper function and apply all current, correct security policies for every table.
 
 ```sql
--- ========= Create Tables (if they don't exist) =========
-CREATE TABLE IF NOT EXISTS public.quotes (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  request_id uuid NOT NULL REFERENCES public.requests(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  quote_amount numeric(10, 2), details text, status text DEFAULT 'draft' NOT NULL, created_at timestamptz DEFAULT now()
-);
+-- ========= Part 1: Create the definitive is_admin() helper function =========
+-- This function is the single source of truth for checking admin status.
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN (
+    SELECT EXISTS (
+      SELECT 1 FROM public.user_profiles
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TABLE IF NOT EXISTS public.request_notes (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  request_id uuid NOT NULL REFERENCES public.requests(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  author_role text NOT NULL, note text NOT NULL, created_at timestamptz DEFAULT now()
-);
 
--- ========= Add Constraints (if they don't exist) =========
-ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_user_id_key UNIQUE (user_id);
-ALTER TABLE public.requests ADD CONSTRAINT requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(user_id);
+-- ========= Part 2: RLS Enablement and Policy Setup for All Tables =========
 
--- ========= Enable RLS on All Tables =========
+-- Table: user_profiles
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quote_attachments ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'user_profiles') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.user_profiles;'; END LOOP; END $$;
+CREATE POLICY "Enable read for users and admins" ON public.user_profiles FOR SELECT USING ((auth.uid() = user_id) OR (is_admin()));
+CREATE POLICY "Enable insert for own profile" ON public.user_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable update for users and admins" ON public.user_profiles FOR UPDATE USING ((auth.uid() = user_id) OR (is_admin()));
+CREATE POLICY "Enable delete for admins" ON public.user_profiles FOR DELETE USING (is_admin());
+
+-- Table: requests
+ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'requests') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.requests;'; END LOOP; END $$;
+CREATE POLICY "Enable read for users and admins" ON public.requests FOR SELECT USING ((auth.uid() = user_id) OR (is_admin()));
+CREATE POLICY "Enable insert for own request" ON public.requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable update for users and admins" ON public.requests FOR UPDATE USING ((auth.uid() = user_id) OR (is_admin()));
+CREATE POLICY "Enable delete for admins" ON public.requests FOR DELETE USING (is_admin());
+
+-- Table: quotes
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'quotes') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.quotes;'; END LOOP; END $$;
+CREATE POLICY "Enable all actions for admins" ON public.quotes FOR ALL USING (is_admin());
+CREATE POLICY "Enable read for own quotes" ON public.quotes FOR SELECT USING (auth.uid() = user_id);
+
+-- Table: quote_attachments
+ALTER TABLE public.quote_attachments ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'quote_attachments') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.quote_attachments;'; END LOOP; END $$;
+CREATE POLICY "Enable read for admins and owners" ON public.quote_attachments FOR SELECT USING ((is_admin()) OR (auth.uid() = (SELECT user_id FROM requests WHERE id = request_id)));
+CREATE POLICY "Enable insert for owners" ON public.quote_attachments FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM requests WHERE id = request_id));
+CREATE POLICY "Enable delete for admins" ON public.quote_attachments FOR DELETE USING (is_admin());
+
+-- Table: request_notes
 ALTER TABLE public.request_notes ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'request_notes') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.request_notes;'; END LOOP; END $$;
+CREATE POLICY "Enable all actions for admins" ON public.request_notes FOR ALL USING (is_admin());
+CREATE POLICY "Enable all actions for request owners" ON public.request_notes FOR ALL USING (auth.uid() = (SELECT user_id FROM requests WHERE id = request_id));
+
+-- Table: invoices
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
-
--- ========= RLS Policies for user_profiles =========
-DROP POLICY IF EXISTS "Users can view their own profile" ON public.user_profiles;
-CREATE POLICY "Users can view their own profile" ON public.user_profiles FOR SELECT TO authenticated USING ( auth.uid() = user_id );
-
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.user_profiles;
-CREATE POLICY "Users can update their own profile" ON public.user_profiles FOR UPDATE TO authenticated USING ( auth.uid() = user_id ) WITH CHECK ( auth.uid() = user_id );
-
--- ========= RLS Policies for quote_attachments =========
-DROP POLICY IF EXISTS "Allow authenticated insert for attachments" ON public.quote_attachments;
-CREATE POLICY "Allow authenticated insert for attachments" ON public.quote_attachments FOR INSERT TO authenticated WITH CHECK ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
-
-DROP POLICY IF EXISTS "Admins and owners can view attachments" ON public.quote_attachments;
-CREATE POLICY "Admins and owners can view attachments" ON public.quote_attachments FOR SELECT TO authenticated USING ( ((SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin') OR (auth.uid() = (SELECT user_id FROM requests WHERE id = request_id)) );
-
--- ========= RLS Policies for quotes =========
-DROP POLICY IF EXISTS "Admins have full access to quotes" ON public.quotes;
-CREATE POLICY "Admins have full access to quotes" ON public.quotes FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
-
-DROP POLICY IF EXISTS "Users can view their own quotes" ON public.quotes;
-CREATE POLICY "Users can view their own quotes" ON public.quotes FOR SELECT TO authenticated USING ( auth.uid() = user_id );
-
--- ========= RLS Policies for request_notes =========
-DROP POLICY IF EXISTS "Admins have full access to request notes" ON public.request_notes;
-CREATE POLICY "Admins have full access to request notes" ON public.request_notes FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
-
-DROP POLICY IF EXISTS "Users can view notes on their own requests" ON public.request_notes;
-CREATE POLICY "Users can view notes on their own requests" ON public.request_notes FOR SELECT TO authenticated USING ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
-
-DROP POLICY IF EXISTS "Users can create notes on their own requests" ON public.request_notes;
-CREATE POLICY "Users can create notes on their own requests" ON public.request_notes FOR INSERT TO authenticated WITH CHECK ( auth.uid() = (SELECT user_id FROM requests WHERE id = request_id) );
-
--- ========= RLS Policies for invoices =========
-DROP POLICY IF EXISTS "Admins have full access to invoices" ON public.invoices;
-CREATE POLICY "Admins have full access to invoices" ON public.invoices FOR ALL TO authenticated USING ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' ) WITH CHECK ( (SELECT role FROM public.user_profiles WHERE user_id = auth.uid()) = 'admin' );
-
-DROP POLICY IF EXISTS "Users can view their own invoices" ON public.invoices;
-CREATE POLICY "Users can view their own invoices" ON public.invoices FOR SELECT TO authenticated USING ( auth.uid() = user_id );
+DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'invoices') LOOP EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.invoices;'; END LOOP; END $$;
+CREATE POLICY "Enable all actions for admins" ON public.invoices FOR ALL USING (is_admin());
+CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING (auth.uid() = user_id);
+```
 
 ## 3. Authentication Provider Configuration
 
@@ -252,11 +249,10 @@ URL:  https://console.cloud.google.com/auth/clients/287129746720-a0thtekpior3iqd
 URL:  https://entra.microsoft.com/?culture=en-us&country=us#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/d9c00059-056f-4ab3-93c6-ea7009c00f23/isMSAApp~/false
 
 ## 4. Troubleshooting
-- Ensure all permissions are granted and consented.
-- Make sure the client secret is valid and matches Supabase.
-- Confirm the redirect URI is identical in both provider and Supabase.
-- For Google, ensure `email` scope is enabled.
-- For Microsoft, ensure `openid`, `email`, and `profile` scopes are enabled.
+- **Infinite Recursion Error:** If you see an "infinite recursion" error, use the `is_admin()` function pattern described in this document. This `SECURITY DEFINER` function is the standard way to break recursion loops in RLS policies.
+- **Admin Can't See All Data:** If an admin can't see all records in a table, it means the `SELECT` policy for that table is missing the `OR is_admin()` condition.
+- **After Updating Policies:** Unlike JWT-based checks, policies using the `is_admin()` function do **not** require you to log out and back in. A simple page refresh is sufficient.
+- **OAuth Issues:** Ensure permissions are granted/consented, client secrets are valid, and redirect URIs are identical in both the provider's dashboard and Supabase.
 
 ---
 

@@ -11,6 +11,7 @@ import QuoteFormModal from './QuoteFormModal';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../lib/apiClient';
 import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../lib/statusColors';
+import CustomerInfoSection from './CustomerInfoSection';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -42,10 +43,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
   const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
+  const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
 
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
+      setScheduledStartDate(request.scheduled_start_date || '');
     }
   }, [request]);
 
@@ -132,15 +135,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid item xs={12} sm={6}><Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography><Typography variant="body1">{request.user_profiles?.name || 'N/A'}</Typography></Grid>
-                <Grid item xs={12} sm={6}><Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Phone</Typography><Button component="a" href={`tel:${request.user_profiles?.phone}`} size="small" sx={{ p: 0, justifyContent: 'flex-start' }}>{request.user_profiles?.phone}</Button></Grid>
-                <Grid item xs={12} sm={6}><Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography><Button component="a" href={`mailto:${request.user_profiles?.email}`} size="small" sx={{ p: 0, justifyContent: 'flex-start', textTransform: 'none' }}>{request.user_profiles?.email}</Button></Grid>
-                <Grid item xs={12} sm={6}><Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography><Button component="a" href={`https://maps.google.com/?q=${encodeURIComponent(request.service_address)}`} target="_blank" size="small" sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}>{request.service_address}</Button></Grid>
-              </Grid>
-            </Paper>
+            <CustomerInfoSection
+              request={request}
+              isAdmin={isAdmin}
+              isDateEditable={!isReadOnly}
+              scheduledStartDate={scheduledStartDate}
+              setScheduledStartDate={setScheduledStartDate}
+              currentStatus={currentStatus}
+              setCurrentStatus={setCurrentStatus}
+              isUpdating={isUpdating}
+            />
             <Paper variant="outlined">
               <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
                 <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>

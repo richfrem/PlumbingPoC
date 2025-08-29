@@ -12,6 +12,7 @@ const {
   getRequestById,
   updateQuote,
   acceptQuote,
+  updateRequestStatus,
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
@@ -22,6 +23,7 @@ const {
   createQuoteSchema,
   updateQuoteSchema,
   getObjectSchema,
+  updateStatusSchema,
 } = require('../validation/schemas');
 
 const router = express.Router();
@@ -40,6 +42,7 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 
 // --- Client Portal & Admin Routes ---
 router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
+router.patch('/:requestId/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
 router.post('/:requestId/quotes/:quoteId/accept', authenticate, isAdmin, acceptQuote);

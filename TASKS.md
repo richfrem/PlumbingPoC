@@ -1,6 +1,6 @@
 # Plumbing Quote Agent Project Tracker
 
-This file tracks all major requirements, tasks, and progress for the Plumbing Quote Agent project. Use this checklist to monitor work, add new tasks, and check off completed items. Agents and team members should update this file regularly.
+This file tracks all major requirements, tasks, and progress for the Plumbing Quote Agent project. Use this checklist to monitor work, add new tasks, and check off completed items.
 
 ## Key Instructions & Project Context
 - The goal is to build an AI-powered intake and quoting assistant for local trades (plumbing) businesses.
@@ -56,19 +56,34 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [ ] Implement prioritized improvements
 - [x] Modular frontend structure with forms, modals, dashboard
 - [x] File upload for quote attachments
+- [x] Display quote status as colored chip in quote list (RequestDetailModal)
+- [x] Display quote status as colored chip in QuoteFormModal header
+- [x] Ensure status chip colors are consistent across all components
 - [ ] Optimize for performance, accessibility, and responsiveness
 
 ### Backend & API
 - [x] MVC pattern with controllers, routes, middleware, validation
 - [x] Supabase integration for data storage and authentication
 - [x] API endpoints for requests, profiles, notes, attachments
+- [x] Filter dashboard requests by user_id for regular users
+- [x] Add 'Accepted' status to request workflow
+- [x] Implement 'Accept Quote' functionality (marks specific quote as accepted, others as rejected, updates request status)
+- [x] Make quotes read-only after request status is 'Accepted', 'Scheduled', or 'Completed'
+- [x] Implement email notifications for request submission
+- [x] Implement email notifications for status updates
+- [x] Implement email notifications for quote additions
+- [x] Implement email notifications for new notes in communication log
+- [x] Add RESEND_ENABLED feature flag for email sending
+- [x] Include link to request in notification emails
 - [ ] Review backend for scalability, security, and maintainability (agent-driven)
+- [ ] Configure Resend domain verification (manual step for user)
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline
 - [ ] Regularly update this checklist and agent assignments
 - [ ] Add new tasks as needed
 - [x] Check off completed items
+
 ## Baseline Notes (for GitHub Copilot)
 
 
@@ -80,11 +95,16 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - Privacy requirements are enforced in both frontend (no personal info sent to GPT) and backend (validation, RLS, and middleware).
 - Summary and confirmation flows are present and tested.
 - Modular frontend and backend structure is in place.
+- **New:** Comprehensive attachment management, including display, upload, and a reusable component.
+- **New:** Robust status management for requests and quotes, including an "Accepted" status, automatic status updates, and quote locking.
+- **New:** Full email notification system for key events (request submission, status changes, quote additions, new notes) with a feature flag and direct links.
+- **New:** Dashboard now correctly filters requests for regular users.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).
 - Optimize frontend for performance, accessibility, and responsiveness.
 - Review backend for scalability, security, and maintainability.
+- Configure Resend domain verification (manual step for user).
 - Add new tasks as requirements evolve.
 
 **Agent Assignments:**

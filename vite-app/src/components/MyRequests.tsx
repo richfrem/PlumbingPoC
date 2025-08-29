@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from './Dashboard';
+import { getRequestStatusChipColor } from '../lib/statusColors';
 
 const MyRequests: React.FC = () => {
   const { user } = useAuth();
@@ -20,11 +21,16 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // ***************** THE FIX *****************
-      // Added quote_attachments(*) to the select query
+      // THE FIX: Use an explicit inner join for robustness.
       const { data, error } = await supabase
         .from('requests')
-        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .select(`
+          *, 
+          user_profiles!inner(*), 
+          quote_attachments(*), 
+          quotes(*), 
+          request_notes(*)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -44,17 +50,17 @@ const MyRequests: React.FC = () => {
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // ***************** THE FIX *****************
-      // Also added quote_attachments(*) here for consistency
+      // ALSO FIX IT HERE for consistency when refreshing a single request.
       const { data, error } = await supabase
         .from('requests')
-        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('id', selectedRequest.id)
         .single();
 
       if (error) throw error;
       if (data) {
         const updatedRequest = data as QuoteRequest;
+        // Update the specific request in the list and also the selected request for the modal
         setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
         setSelectedRequest(updatedRequest);
       }
@@ -73,13 +79,6 @@ const MyRequests: React.FC = () => {
     setSelectedRequest(null);
   };
 
-  const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
-    const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
-    };
-    return colorMap[status] || 'default';
-  };
-  
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
   return (
@@ -110,7 +109,7 @@ const MyRequests: React.FC = () => {
                           ${mostRecentQuote.quote_amount.toFixed(2)}
                         </Typography>
                       )}
-                      <Chip label={req.status} color={getStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
+                      <Chip label={req.status} color={getRequestStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
                     </Box>
                   </Paper>
                 );

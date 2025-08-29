@@ -2,6 +2,7 @@
 const path = require('path');
 const axios = require('axios');
 const supabase = require('../config/supabase');
+const emailService = require('../services/emailService');
 
 /**
  * Handles fetching a request by ID, including user profile info and all related tables.
@@ -87,6 +88,9 @@ const submitQuoteRequest = async (req, res, next) => {
     
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
+
+    // Send email notification
+    await emailService.sendRequestSubmittedEmail(data);
     
     res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
   } catch (err) {
@@ -240,7 +244,7 @@ const createQuoteForRequest = async (req, res, next) => {
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
-      .select('user_id')
+      .select('user_id, contact_info') // Fetch contact_info for email
       .eq('id', requestId)
       .single();
     if (requestError) throw requestError;
@@ -253,12 +257,15 @@ const createQuoteForRequest = async (req, res, next) => {
       status: 'sent',
     };
 
-    const { data, error } = await supabase.from('quotes').insert(quoteData).select().single();
+    const { data: newQuote, error } = await supabase.from('quotes').insert(quoteData).select().single();
     if (error) throw error;
     
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
 
-    res.status(201).json(data);
+    // Send email notification
+    await emailService.sendQuoteAddedEmail(requestData, newQuote);
+
+    res.status(201).json(newQuote);
   } catch (err) {
     next(err);
   }
@@ -309,7 +316,40 @@ const acceptQuote = async (req, res, next) => {
 
     if (error) throw error;
 
+    // Send email notification
+    const { data: requestData } = await supabase.from('requests').select('*').eq('id', requestId).single();
+    if (requestData) {
+      await emailService.sendStatusUpdateEmail(requestData);
+    }
+
     res.status(200).json({ message: 'Quote accepted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Handles an admin updating the status of a request.
+ */
+const updateRequestStatus = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const { status } = req.body;
+
+    const { data, error } = await supabase
+      .from('requests')
+      .update({ status })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Request not found.' });
+
+    // Send email notification
+    await emailService.sendStatusUpdateEmail(data);
+
+    res.status(200).json(data);
   } catch (err) {
     next(err);
   }
@@ -325,4 +365,5 @@ module.exports = {
   getRequestById,
   updateQuote,
   acceptQuote,
+  updateRequestStatus,
 };

@@ -31,10 +31,13 @@ export interface QuoteRequest {
     name: string;
     email: string;
     phone: string;
+    // Allow for other potential profile fields
+    [key: string]: any; 
   } | null;
   service_address: string;
   quotes: Quote[];
   request_notes: RequestNote[];
+  scheduled_start_date: string | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -44,22 +47,44 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
   const fetchAllRequests = async () => {
-    if (!profile || profile.role !== 'admin') {
+    if (!profile) {
       setLoading(false);
       return;
     }
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('requests')
-        .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
+        // THE FIX: Use an explicit inner join to robustly fetch the user profile.
+        .select(`
+          *, 
+          user_profiles!inner(name, email, phone), 
+          quote_attachments(*), 
+          quotes(*), 
+          request_notes(*), 
+          scheduled_start_date
+        `)
         .order('created_at', { ascending: false });
+
+      // Non-admin users can only see their own requests.
+      if (profile.role !== 'admin') {
+        // Use user_id from the profile object for filtering.
+        query = query.eq('user_id', profile.user_id);
+      }
+
+      // Apply status filter if not 'all'.
+      if (activeFilterStatus !== 'all') {
+        query = query.eq('status', activeFilterStatus);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
       setRequests((data as QuoteRequest[]) || []);
     } catch (err: any) {
-      setError("Failed to fetch quote requests.");
+      setError("Failed to fetch quote requests. Please check permissions or network.");
       console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
@@ -68,14 +93,15 @@ const Dashboard: React.FC = () => {
   
   useEffect(() => {
     fetchAllRequests();
-  }, [profile]);
+  }, [profile, activeFilterStatus]);
   
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
       const { data, error: fetchError } = await supabase
         .from('requests')
-        .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        // ALSO FIX IT HERE for consistency when refreshing a single request.
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*), scheduled_start_date`)
         .eq('id', selectedRequest.id)
         .single();
       
@@ -103,6 +129,8 @@ const Dashboard: React.FC = () => {
     setSelectedRequest(null);
   };
 
+  const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
+
   const columns: GridColDef[] = [
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
@@ -125,7 +153,7 @@ const Dashboard: React.FC = () => {
   ];
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
-  if (!profile || profile.role !== 'admin') return <Box sx={{ p: 4 }}><Typography>Access Denied.</Typography></Box>;
+  if (!profile || profile.role !== 'admin') return <Box sx={{ p: 4 }}><Typography>Access Denied. You must be an administrator to view this page.</Typography></Box>;
   if (error) return <Box sx={{ p: 4 }}><Typography color="error">{error}</Typography></Box>;
 
   return (
@@ -135,6 +163,21 @@ const Dashboard: React.FC = () => {
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
             Plumber's Command Center
           </Typography>
+
+          {/* Status Filter Chips */}
+          <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {allStatuses.map(status => (
+              <Chip
+                key={status}
+                label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                onClick={() => setActiveFilterStatus(status)}
+                color={status === 'all' ? 'default' : getRequestStatusChipColor(status)}
+                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            ))}
+          </Box>
+
           <Paper sx={{ height: 600, width: '100%' }}>
             <DataGrid
               rows={requests}
