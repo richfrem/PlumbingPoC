@@ -6,7 +6,7 @@ const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL;
 
 const filesToProcess = [
   'TASKS.md',
-  'agents/README.md',
+  'agents/README2.md', // Updated from README.md
   'agents/frontend-developer-mcp.md',
   'agents/ui-designer-mcp.md',
   'vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md',
