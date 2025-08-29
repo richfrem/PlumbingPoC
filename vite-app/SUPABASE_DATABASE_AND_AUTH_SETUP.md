@@ -13,7 +13,6 @@
 
 ---
 
-
 ## Supabase & Authentication Provider Setup Reference
 
 This document provides a comprehensive reference for the project's Supabase database schema, security policies, and authentication provider setup.
@@ -60,7 +59,6 @@ The database is composed of several related tables to manage users, requests, qu
     -   `last_follow_up_sent_at` (timestamptz)
     -   `triage_summary` (text)
     -   `priority_score` (integer)
-    -   `scheduled_start_date` (timestamptz)
 
 -   **quote_attachments**
     -   Stores records of files uploaded for a specific request.
@@ -208,10 +206,10 @@ CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING
 ### 3. Authentication Provider Configuration
 
 #### 3a. Updating URLs
-- Set Site URL for local development: `http://localhost:3000` or `http://localhost:5173/`
+- Site URL: `https://your-site-name.netlify.app/` (production) or `http://localhost:5173` (local)
 - Add Redirect URLs:
-  - `http://localhost:3000/*`
-  - `http://localhost:5173/`
+  - `https://your-site-name.netlify.app/*`
+  - `http://localhost:5173/*`
 - Save changes in Supabase dashboard under Authentication → URL Configuration.
 
 #### 3b. Adding Authentication Providers
@@ -301,6 +299,7 @@ FROM
     information_schema.columns c
 WHERE 
     c.table_schema = 'public'
+    AND c.table_name IN ('invoices', 'quote_attachments', 'quotes', 'request_notes', 'requests', 'user_profiles')
 ORDER BY 
     c.table_name, 
     c.ordinal_position;
@@ -323,7 +322,6 @@ ORDER BY
     p.policyname;
 
 #### Query 3: Storage Buckets & Policies
-
 SELECT 
     id,
     name,
@@ -334,9 +332,7 @@ SELECT
 FROM 
     storage.buckets;
 
-
-## Query to get all table definitions
-
+#### Query 4: Indexes
 SELECT
     tablename,
     indexname,
@@ -345,16 +341,10 @@ FROM
     pg_indexes
 WHERE
     schemaname = 'public'
-    AND tablename IN (
-        'invoices',
-        'quote_attachments',
-        'quotes',
-        'request_notes',
-        'requests',
-        'user_profiles'
-    )
+    AND tablename IN ('invoices', 'quote_attachments', 'quotes', 'request_notes', 'requests', 'user_profiles')
 ORDER BY
     tablename,
     indexname;
+
 
 _Last updated: August 21, 2025_
