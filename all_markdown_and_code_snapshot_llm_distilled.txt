@@ -1,6 +1,6 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T17:44:49.476Z
+Generated On: 2025-08-29T17:51:18.893Z
 
 # Mnemonic Weight (Token Count): ~144,394 tokens
 
@@ -4327,7 +4327,6 @@ filesToProcess.forEach(filePath => {
 });
 
 console.log('Markdown pre-processing complete.');
-
 --- END OF FILE scripts/preprocess-md.js ---
 
 --- START OF FILE startup.sh ---
