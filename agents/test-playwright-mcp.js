@@ -15,10 +15,10 @@ Create a Node.js script using Playwright to test a running Playwright MCP server
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-const MCP_WS = 'process.env.PLAYWRIGHT_MCP_SERVER_URL';
-const BASE_URL = process.env.FRONTEND_BASE_URL;
+const MCP_WS = process.env.VITE_PLAYWRIGHT_MCP_SERVER_URL;
+const BASE_URL = process.env.VITE_FRONTEND_BASE_URL;
 const TEST_USER = {
   username: 'testuser_' + Math.floor(Math.random() * 10000),
   email: 'testuser_' + Math.floor(Math.random() * 10000) + '@example.com',

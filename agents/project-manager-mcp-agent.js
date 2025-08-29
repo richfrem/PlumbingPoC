@@ -17,7 +17,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') }); // Load .env from vite-app
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); // Load .env from vite-app
 const TASKS_FILE = path.join(__dirname, 'tasks.json');
 
 // In-memory task list
@@ -122,7 +122,7 @@ async function connectToPlaywright() {
 async function checkDashboard(browser) {
   try {
     const page = await browser.newPage();
-    await page.goto(process.env.FRONTEND_BASE_URL);
+    await page.goto(process.env.VITE_FRONTEND_BASE_URL);
     const title = await page.title();
     console.log('Dashboard Title:', title);
     await page.close();

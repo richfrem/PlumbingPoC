@@ -9,8 +9,8 @@ const triageRoutes = require('./routes/triageRoutes');
 
 // --- Basic Setup ---
 const app = express();
-// Load .env file from the 'vite-app' directory
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+// Load .env file from the 'project root' directory
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
@@ -18,7 +18,7 @@ const PORT = process.env.BACKEND_PORT || 3000;
 // 1. CORS Middleware
 const corsOptions = {
   // Use Netlify's URL in production, or your local .env variable for development
-  origin: process.env.URL || process.env.FRONTEND_BASE_URL,
+  origin: process.env.VITE_FRONTEND_BASE_URL,
 };
 app.use(cors(corsOptions));
 
@@ -53,6 +53,6 @@ module.exports = app;
 // Start the server only if the file is run directly (for local development)
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`API server running on ${process.env.BACKEND_BASE_URL || `http://localhost:${PORT}`}`);
+    console.log(`API server running on ${process.env.VITE_BACKEND_BASE_URL || `http://localhost:${process.env.BACKEND_PORT}`}`);
   });
 }

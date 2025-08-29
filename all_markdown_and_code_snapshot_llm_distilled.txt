@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T19:12:29.346Z
+Generated On: 2025-08-29T20:16:43.628Z
 
-# Mnemonic Weight (Token Count): ~161,544 tokens
+# Mnemonic Weight (Token Count): ~161,559 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -1094,7 +1094,7 @@ persona: |
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') }); // Load .env from vite-app
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); // Load .env from vite-app
 const TASKS_FILE = path.join(__dirname, 'tasks.json');
 
 // In-memory task list
@@ -1199,7 +1199,7 @@ async function connectToPlaywright() {
 async function checkDashboard(browser) {
   try {
     const page = await browser.newPage();
-    await page.goto(process.env.FRONTEND_BASE_URL);
+    await page.goto(process.env.VITE_FRONTEND_BASE_URL);
     const title = await page.title();
     console.log('Dashboard Title:', title);
     await page.close();
@@ -1304,10 +1304,10 @@ Create a Node.js script using Playwright to test a running Playwright MCP server
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-const MCP_WS = 'process.env.PLAYWRIGHT_MCP_SERVER_URL';
-const BASE_URL = process.env.FRONTEND_BASE_URL;
+const MCP_WS = process.env.VITE_PLAYWRIGHT_MCP_SERVER_URL;
+const BASE_URL = process.env.VITE_FRONTEND_BASE_URL;
 const TEST_USER = {
   username: 'testuser_' + Math.floor(Math.random() * 10000),
   email: 'testuser_' + Math.floor(Math.random() * 10000) + '@example.com',
@@ -6102,7 +6102,7 @@ sequenceDiagram
 const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables immediately
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -6548,7 +6548,7 @@ module.exports = {
 
 // vite-app/api/controllers/triageController.js
 
-const {supabase} = require('../config/supabase');
+const supabase = require('../config/supabase');
 const {
   OpenAI
 } = require('openai');
@@ -6914,13 +6914,15 @@ module.exports = router;
 
 const express = require('express');
 const router = express.Router();
-const { triageRequest } = require('../controllers/triageController');
-const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
+const controller = require('../controllers/triageController');
+console.log('triageController export:', controller);
+const { triageRequest } = controller;
+const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 
 // @route   POST /api/triage/:requestId
 // @desc    Perform AI-powered triage on a request
 // @access  Admin
-router.post('/:requestId', authMiddleware, adminMiddleware, triageRequest);
+router.post('/:requestId', authenticate, isAdmin, triageRequest);
 
 module.exports = router;
 
@@ -6963,8 +6965,8 @@ const triageRoutes = require('./routes/triageRoutes');
 
 // --- Basic Setup ---
 const app = express();
-// Load .env file from the 'vite-app' directory
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+// Load .env file from the 'project root' directory
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const PORT = process.env.BACKEND_PORT || 3000;
 
 // --- Core Middleware ---
@@ -6972,7 +6974,7 @@ const PORT = process.env.BACKEND_PORT || 3000;
 // 1. CORS Middleware
 const corsOptions = {
   // Use Netlify's URL in production, or your local .env variable for development
-  origin: process.env.URL || process.env.FRONTEND_BASE_URL,
+  origin: process.env.VITE_FRONTEND_BASE_URL,
 };
 app.use(cors(corsOptions));
 
@@ -7007,7 +7009,7 @@ module.exports = app;
 // Start the server only if the file is run directly (for local development)
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`API server running on ${process.env.BACKEND_BASE_URL || `http://localhost:${PORT}`}`);
+    console.log(`API server running on ${process.env.VITE_BACKEND_BASE_URL || `http://localhost:${process.env.BACKEND_PORT}`}`);
   });
 }
 --- END OF FILE vite-app/api/server.js ---
@@ -7021,7 +7023,7 @@ const { Resend } = require('resend');
 // IMPORTANT: This assumes RESEND_API_KEY, BASE_URL, RESEND_ENABLED, and RESEND_FROM_EMAIL are loaded into your environment variables.
 // You may need to install and configure dotenv if you haven't already.
 const resend = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.FRONTEND_BASE_URL || 'http://process.env.BACKEND_BASE_URL'; // Fallback for development
+const BASE_URL = process.env.VITE_BACKEND_BASE_URL || 'http://process.env.BACKEND_BASE_URL'; // Fallback for development
 const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true'; // Convert to boolean
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboarding@resend.dev>'; // Configurable from address
 
@@ -13241,7 +13243,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/api': env.BACKEND_BASE_URL.replace(/\/$/, '') // Use env.BACKEND_BASE_URL
+        '/api': env.VITE_BACKEND_BASE_URL.replace(/\/$/, '') // Use env.VITE_BACKEND_BASE_URL
       }
     }
   };

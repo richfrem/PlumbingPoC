@@ -13,9 +13,9 @@
     "vite-app/dist/assets/*.js"
   ]
   SECRETS_SCAN_OMIT_KEYS = [
-    "BACKEND_BASE_URL",
-    "SUPABASE_ANON_KEY",
-    "SUPABASE_URL"
+    "VITE_BACKEND_BASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_SUPABASE_URL"
   ]
 
 [[redirects]]

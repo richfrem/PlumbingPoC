@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        '/api': env.BACKEND_BASE_URL.replace(/\/$/, '') // Use env.BACKEND_BASE_URL
+        '/api': env.VITE_BACKEND_BASE_URL.replace(/\/$/, '') // Use env.VITE_BACKEND_BASE_URL
       }
     }
   };

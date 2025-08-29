@@ -2,7 +2,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables immediately
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

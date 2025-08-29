@@ -5,7 +5,7 @@ const { Resend } = require('resend');
 // IMPORTANT: This assumes RESEND_API_KEY, BASE_URL, RESEND_ENABLED, and RESEND_FROM_EMAIL are loaded into your environment variables.
 // You may need to install and configure dotenv if you haven't already.
 const resend = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.FRONTEND_BASE_URL || 'http://process.env.BACKEND_BASE_URL'; // Fallback for development
+const BASE_URL = process.env.VITE_BACKEND_BASE_URL || 'http://process.env.BACKEND_BASE_URL'; // Fallback for development
 const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true'; // Convert to boolean
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboarding@resend.dev>'; // Configurable from address
 
