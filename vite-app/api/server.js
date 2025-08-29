@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const requestRoutes = require('./routes/requestRoutes');
 const userRoutes = require('./routes/userRoutes');
-const followUpRoutes = require('./routes/followUpRoutes');
+// const followUpRoutes = require('./routes/followUpRoutes');
 const triageRoutes = require('./routes/triageRoutes');
 
 // --- Basic Setup ---
@@ -27,7 +27,7 @@ app.use(express.json());
 
 // --- API Routing ---
 app.use('/api/requests', requestRoutes);
-app.use('/api/follow-up', followUpRoutes);
+// app.use('/api/follow-up', followUpRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api', userRoutes);
 

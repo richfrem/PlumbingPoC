@@ -6,8 +6,7 @@
     "dev": "vite vite-app",
     "build": "vite build vite-app",
     "preview": "vite preview vite-app",
-    "start:api": "node vite-app/api/server.js",
-    "prebuild": "node scripts/preprocess-md.js"
+    "start:api": "node vite-app/api/server.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -20,6 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "gpt-tokenizer": "^3.0.1",
     "multer": "^2.0.2",
     "openai": "^4.28.0",
     "react": "^18.3.1",

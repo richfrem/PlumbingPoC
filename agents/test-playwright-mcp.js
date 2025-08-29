@@ -1,7 +1,7 @@
 /*
-Create a Node.js script using Playwright to test a running Playwright MCP server at ws://localhost:63784. The script should:
-- Connect to the Playwright MCP server at ws://localhost:63784.
-- Test a web service running at http://localhost:5173 with the following scenario:
+Create a Node.js script using Playwright to test a running Playwright MCP server at ws://your-local-playwright-server/. The script should:
+- Connect to the Playwright MCP server at ws://your-local-playwright-server/.
+- Test a web service running at http://your-local-frontend-url with the following scenario:
   1. Register/signup to the service (assume a form with fields for username, email, and password).
   2. Sign out (assume a signout button or link).
   3. Sign in using the same credentials.
@@ -17,7 +17,7 @@ const fs = require('fs').promises;
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../vite-app/.env') });
 
-const MCP_WS = 'ws://localhost:63784';
+const MCP_WS = 'process.env.PLAYWRIGHT_MCP_SERVER_URL';
 const BASE_URL = process.env.FRONTEND_BASE_URL;
 const TEST_USER = {
   username: 'testuser_' + Math.floor(Math.random() * 10000),

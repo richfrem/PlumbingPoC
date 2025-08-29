@@ -96,10 +96,10 @@ This script will start both services in the background and provide you with the 
     ```sh
     npm run dev
     ```
-    The frontend will start, typically on `http://localhost:5173/`.
+    The frontend will start, typically on `http://your-local-frontend-url/`.
 
 3.  **Access the App:**
-    Open your browser and navigate to `http://localhost:5173/`.
+    Open your browser and navigate to `http://your-local-frontend-url/`.
 
 ---
 
