@@ -1,24 +1,17 @@
-# netlify.toml (v2 - Corrected Paths)
+# netlify.toml (v3 - Root Configuration)
 
 [build]
-  # The base directory where the build command is run
-  base    = "vite-app/"
-  # The build command for the Vite frontend
+  # Build command now includes the path to the vite app
   command = "npm run build"
-  # The directory where the built frontend files are located,
-  # relative to the `base` directory.
-  publish = "dist/"
-  # The directory for serverless functions,
-  # relative to the `base` directory.
-  functions = "netlify/functions/"
+  # Publish directory is now a direct path from the root
+  publish = "vite-app/dist/"
+  # Functions directory is also a direct path from the root
+  functions = "netlify/functions/" # <-- We need to move the netlify folder
 
-# Redirect API calls to the serverless function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
 [secrets]
-  # Add the keys of environment variables that are safe to be exposed.
-  # These are typically keys prefixed with VITE_ for frontend use.
   omit_keys = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]
