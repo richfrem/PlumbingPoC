@@ -1,11 +1,12 @@
 // vite-app/src/components/QuoteFormModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Divider, IconButton, InputAdornment, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { X as XIcon, Paperclip } from 'lucide-react';
 import apiClient, { uploadAttachments } from '../lib/apiClient';
 import AttachmentSection from './AttachmentSection';
+import { getQuoteStatusChipColor } from '../lib/statusColors';
 
 interface QuoteFormModalProps {
   isOpen: boolean;
@@ -54,13 +55,13 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setMaterialItems(detailsObj.material_items?.length > 0 ? detailsObj.material_items : [{ description: '', price: '' }]);
         setNotes(detailsObj.notes || '');
         setGoodUntil(detailsObj.good_until || '');
-        setStatus(detailsObj.status || 'pending');
+        setStatus(quote.status || 'pending'); // Use quote status
       } else {
         setLaborItems([{ description: '', price: '' }]);
         setMaterialItems([{ description: '', price: '' }]);
         setNotes('');
         setGoodUntil('');
-        setStatus('pending');
+        setStatus('sent'); // Default for new quotes
       }
     }
   }, [quote, isOpen]);
@@ -126,7 +127,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
           notes,
           good_until: goodUntil,
           tax_details: taxDetails,
-          status,
+          status, // Save the quote's own status
         }),
       };
 
@@ -229,15 +230,26 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
             <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>Total: ${totalPrice.toFixed(2)}</Typography>
           </Box>
         </Box>
-        {editable && (
-          <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
-            {saveError && <Typography color="error" sx={{ mb: 1, textAlign: 'center' }}>{saveError}</Typography>}
-            {saveSuccess && <Typography color="success.main" sx={{ mb: 1, textAlign: 'center' }}>Quote saved successfully!</Typography>}
-            <Button variant="contained" color="primary" fullWidth onClick={handleSaveQuote} disabled={saving || saveSuccess}>
-              {saving ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
-            </Button>
+        <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            {quote?.status && (
+              <Chip
+                label={`Status: ${quote.status}`}
+                color={getQuoteStatusChipColor(quote.status)}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            )}
           </Box>
-        )}
+          {editable && (
+            <Box>
+              {saveError && <Typography color="error" sx={{ mb: 1, textAlign: 'center' }}>{saveError}</Typography>}
+              {saveSuccess && <Typography color="success.main" sx={{ mb: 1, textAlign: 'center' }}>Quote saved successfully!</Typography>}
+              <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={saving || saveSuccess}>
+                {saving ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Paper>
     </div>
   );

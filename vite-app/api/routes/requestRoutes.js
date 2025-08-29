@@ -11,6 +11,7 @@ const {
   createQuoteForRequest,
   getRequestById,
   updateQuote,
+  acceptQuote,
 } = require('../controllers/requestController');
 const { authenticate, isAdmin } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
@@ -41,6 +42,7 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.post('/:requestId/quotes/:quoteId/accept', authenticate, isAdmin, acceptQuote);
 router.get('/:requestId', authenticate, getRequestById);
 
 module.exports = router;

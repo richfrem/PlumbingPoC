@@ -10,6 +10,7 @@ import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../lib/apiClient';
+import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../lib/statusColors';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -32,17 +33,6 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
     </Grid>
   </Grid>
 );
-
-const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
-  const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-    new: 'primary',
-    viewed: 'info',
-    quoted: 'warning',
-    scheduled: 'success',
-    completed: 'default'
-  };
-  return colorMap[status] || 'default';
-};
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
@@ -68,7 +58,19 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       onUpdateRequest(); // Refresh data from parent
     } catch (error) {
       console.error("Failed to update status:", error);
-      // No need to revert local state as it's driven by props
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleAcceptQuote = async (quoteId: string) => {
+    if (!request) return;
+    setIsUpdating(true);
+    try {
+      await apiClient.post(`/requests/${request.id}/quotes/${quoteId}/accept`);
+      onUpdateRequest();
+    } catch (error) {
+      console.error("Failed to accept quote:", error);
     } finally {
       setIsUpdating(false);
     }
@@ -99,6 +101,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
+  const isReadOnly = ['accepted', 'scheduled', 'completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
 
@@ -154,7 +157,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <AttachmentSection 
               requestId={request.id}
               attachments={request.quote_attachments}
-              editable={isAdmin}
+              editable={isAdmin && !isReadOnly}
               onUpdate={onUpdateRequest}
             />
 
@@ -175,19 +178,38 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <List>
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
-                      <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
-                        {isAdmin ? 'Update' : 'View Details'}
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {isAdmin && !isReadOnly && quote.status !== 'accepted' && (
+                          <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
+                            Accept
+                          </Button>
+                        )}
+                        <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
+                          {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
+                        </Button>
+                      </Box>
                     }>
                       <ListItemText
                         primary={`Quote #${idx + 1} - ${quote.quote_amount}`}
-                        secondary={`Status: ${quote.status || 'N/A'} | Created: ${quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}`}
+                        secondary={
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Chip
+                              label={quote.status || 'N/A'}
+                              color={getQuoteStatusChipColor(quote.status)}
+                              size="small"
+                              sx={{ textTransform: 'capitalize' }}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              | Created: {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}
+                            </Typography>
+                          </Box>
+                        }
                       />
                     </ListItem>
                   ))}
                 </List>
               )}
-              {isAdmin && (
+              {isAdmin && !isReadOnly && (
                 <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add New Quote</Button>
               )}
             </Paper>
@@ -196,17 +218,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ p: { xs: 2, md: 3 }, borderTop: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <Typography component="div" variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            Status: <Chip label={currentStatus} color={getStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
+            Status: <Chip label={currentStatus} color={getRequestStatusChipColor(currentStatus)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}/>
           </Typography>
           
           {isAdmin && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value as string)} disabled={isUpdating}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value as string)} disabled={isUpdating || isReadOnly}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
+                  <MenuItem value="accepted">Accepted</MenuItem>
                   <MenuItem value="scheduled">Scheduled</MenuItem>
                   <MenuItem value="completed">Completed</MenuItem>
                 </Select>
@@ -223,7 +246,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
         quote={quoteModalMode === 'update' && selectedQuoteIdx !== null ? request.quotes[selectedQuoteIdx] : undefined}
-        editable={isAdmin}
+        editable={isAdmin && !isReadOnly}
         requestId={request.id}
         request={request}
       />

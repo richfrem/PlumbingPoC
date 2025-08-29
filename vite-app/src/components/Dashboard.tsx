@@ -7,6 +7,7 @@ import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
 import { AlertTriangle } from 'lucide-react';
+import { getRequestStatusChipColor } from '../lib/statusColors';
 
 // Interfaces remain the same
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
@@ -20,8 +21,11 @@ export interface QuoteRequest {
   is_emergency: boolean;
   answers: { question: string; answer: string }[];
   quote_attachments: {
+    id: string;
     file_name: string;
-    mime_type: string | null;
+    file_url: string;
+    mime_type: string;
+    quote_id?: string;
   }[];
   user_profiles: {
     name: string;
@@ -47,8 +51,6 @@ const Dashboard: React.FC = () => {
       return;
     }
     try {
-      // ***************** THE FIX *****************
-      // Added quote_attachments(*) to the select query
       const { data, error: fetchError } = await supabase
         .from('requests')
         .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
@@ -71,8 +73,6 @@ const Dashboard: React.FC = () => {
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // ***************** THE FIX *****************
-      // Also added quote_attachments(*) here for consistency
       const { data, error: fetchError } = await supabase
         .from('requests')
         .select(`*, user_profiles(*), quote_attachments(*), quotes(*), request_notes(*)`)
@@ -95,19 +95,12 @@ const Dashboard: React.FC = () => {
     if (fullRequestData) {
       setSelectedRequest(fullRequestData);
       setIsModalOpen(true);
-    }
+    } 
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
-  };
-
-  const getStatusChipColor = (status: string): 'primary' | 'info' | 'warning' | 'success' | 'default' => {
-    const colorMap: { [key: string]: 'primary' | 'info' | 'warning' | 'success' | 'default' } = {
-      new: 'primary', viewed: 'info', quoted: 'warning', scheduled: 'success', completed: 'default'
-    };
-    return colorMap[status] || 'default';
   };
 
   const columns: GridColDef[] = [
@@ -126,7 +119,7 @@ const Dashboard: React.FC = () => {
       renderCell: (params) => params.value != null ? `$${params.value.toFixed(2)}` : '—'
     },
     { field: 'status', headerName: 'Status', width: 120,
-      renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )
+      renderCell: (params) => ( <Chip label={params.value || 'N/A'} color={getRequestStatusChipColor(params.value)} size="small" sx={{ textTransform: 'capitalize' }}/> )
     },
     { field: 'service_address', headerName: 'Address', flex: 1 },
   ];

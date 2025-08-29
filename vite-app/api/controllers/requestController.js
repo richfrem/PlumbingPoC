@@ -295,6 +295,26 @@ const updateQuote = async (req, res, next) => {
   }
 };
 
+/**
+ * Handles accepting a specific quote, which also updates the parent request status.
+ */
+const acceptQuote = async (req, res, next) => {
+  try {
+    const { requestId, quoteId } = req.params;
+
+    const { error } = await supabase.rpc('accept_quote_and_update_request', {
+      p_request_id: requestId,
+      p_quote_id: quoteId,
+    });
+
+    if (error) throw error;
+
+    res.status(200).json({ message: 'Quote accepted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getGptFollowUp,
   submitQuoteRequest,
@@ -304,4 +324,5 @@ module.exports = {
   createQuoteForRequest,
   getRequestById,
   updateQuote,
+  acceptQuote,
 };
