@@ -174,7 +174,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
             />
-            {request.triage_summary && (
+            {isAdmin && request.triage_summary && (
               <Paper variant="outlined">
                 <Box sx={{ p: 2, borderLeft: 4, borderColor: 'info.main', bgcolor: '#e3f2fd' }}>
                   <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Triage Summary</Typography>
