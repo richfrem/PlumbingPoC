@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-30T01:39:41.250Z
+Generated On: 2025-08-30T02:10:20.816Z
 
-# Mnemonic Weight (Token Count): ~163,802 tokens
+# Mnemonic Weight (Token Count): ~163,988 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -11074,8 +11074,8 @@ interface CustomerInfoSectionProps {
   request: any; // Full request object which should include user_profiles
   isAdmin: boolean;
   isDateEditable?: boolean;
-  scheduledStartDate?: string;
-  setScheduledStartDate?: (date: string) => void;
+  scheduledStartDate?: string | null; // Changed to allow null
+  setScheduledStartDate?: (date: string | null) => void; // Changed to allow null
   currentStatus?: string;
   setCurrentStatus?: (status: string) => void;
   isUpdating?: boolean;
@@ -11084,6 +11084,8 @@ interface CustomerInfoSectionProps {
   setGoodUntil?: (date: string) => void;
   loadingRequest?: boolean;
   errorRequest?: string | null;
+  onSaveScheduledDate?: () => Promise<void>; // New prop
+  scheduledDateChanged?: boolean; // New prop
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -11098,10 +11100,9 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   editable,
   goodUntil,
   setGoodUntil,
+  onSaveScheduledDate, // Destructure new prop
+  scheduledDateChanged, // Destructure new prop
 }) => {
-  // REMOVED: The useEffect hook and local state for customerProfile are gone.
-  // We will now use the nested `user_profiles` object directly from the `request` prop.
-
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles; // Use the nested object directly.
 
@@ -11109,7 +11110,6 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
-        {/* CHANGED: Use `customerProfile` derived from the prop, not local state */}
         <Grid item xs={12} sm={6}>
           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography>
           <Typography variant="body1">{customerProfile?.name || 'N/A'}</Typography>
@@ -11129,22 +11129,33 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
 
         {isRequestDetail && isAdmin && (
           <Grid item xs={12} sm={6}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
-            <TextField
-              type="date"
-              value={scheduledStartDate}
-              onChange={(e) => {
-                if (setScheduledStartDate) setScheduledStartDate(e.target.value);
-                if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
-                  setCurrentStatus('scheduled');
-                }
-              }}
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              disabled={isUpdating || !(isDateEditable)}
-              sx={{ mt: 0.5 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+              <TextField
+                label="Scheduled Work Start"
+                type="date"
+                value={scheduledStartDate || ''}
+                onChange={(e) => {
+                  if (setScheduledStartDate) setScheduledStartDate(e.target.value);
+                }}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                disabled={isUpdating || !(isDateEditable)}
+                sx={{ mt: 0.5 }}
+              />
+              {isDateEditable && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={onSaveScheduledDate}
+                  disabled={!scheduledDateChanged || isUpdating}
+                  sx={{ whiteSpace: 'nowrap', height: '40px' }} // Adjust height to align with TextField
+                >
+                  Save
+                </Button>
+              )}
+            </Box>
           </Grid>
         )}
 
@@ -12358,19 +12369,42 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
+  const [scheduledStartDate, setScheduledStartDate] = useState<string | null>(null);
+  const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [newNote, setNewNote] = useState("");
-  const [showQuoteForm, setShowQuoteForm] = useState(false);
-  const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
-  const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
-  const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
-  const [isTriaging, setIsTriaging] = useState(false);
+
+  const handleSaveScheduledDate = async () => {
+    if (!request?.id || !scheduledStartDate) return;
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('requests')
+        .update({
+          scheduled_start_date: scheduledStartDate,
+          status: 'scheduled',
+        })
+        .eq('id', request.id);
+
+      if (error) {
+        throw error;
+      }
+
+      onUpdateRequest(); // Refresh data after successful update
+      setScheduledDateChanged(false); // Reset after saving
+    } catch (error) {
+      console.error('Error saving scheduled date:', error);
+      // Optionally, show a user-friendly error message
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
-      setScheduledStartDate(request.scheduled_start_date || '');
+      setScheduledStartDate(request.scheduled_start_date || null);
+      setScheduledDateChanged(false); // Reset when request or scheduledStartDate changes externally
     }
   }, [request]);
 
@@ -12488,12 +12522,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <CustomerInfoSection
               request={request}
               isAdmin={isAdmin}
-              isDateEditable={!isReadOnly}
+              isDateEditable={isAdmin && request.status === 'accepted'}
               scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={setScheduledStartDate}
+              setScheduledStartDate={(date) => {
+                setScheduledStartDate(date);
+                setScheduledDateChanged(true);
+              }}
               currentStatus={currentStatus}
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
+              onSaveScheduledDate={handleSaveScheduledDate}
+              scheduledDateChanged={scheduledDateChanged}
             />
             {isAdmin && request.triage_summary && (
               <Paper variant="outlined">

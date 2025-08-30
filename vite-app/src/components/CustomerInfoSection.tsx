@@ -8,8 +8,8 @@ interface CustomerInfoSectionProps {
   request: any; // Full request object which should include user_profiles
   isAdmin: boolean;
   isDateEditable?: boolean;
-  scheduledStartDate?: string;
-  setScheduledStartDate?: (date: string) => void;
+  scheduledStartDate?: string | null; // Changed to allow null
+  setScheduledStartDate?: (date: string | null) => void; // Changed to allow null
   currentStatus?: string;
   setCurrentStatus?: (status: string) => void;
   isUpdating?: boolean;
@@ -18,6 +18,8 @@ interface CustomerInfoSectionProps {
   setGoodUntil?: (date: string) => void;
   loadingRequest?: boolean;
   errorRequest?: string | null;
+  onSaveScheduledDate?: () => Promise<void>; // New prop
+  scheduledDateChanged?: boolean; // New prop
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -32,10 +34,9 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   editable,
   goodUntil,
   setGoodUntil,
+  onSaveScheduledDate, // Destructure new prop
+  scheduledDateChanged, // Destructure new prop
 }) => {
-  // REMOVED: The useEffect hook and local state for customerProfile are gone.
-  // We will now use the nested `user_profiles` object directly from the `request` prop.
-
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles; // Use the nested object directly.
 
@@ -43,7 +44,6 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
-        {/* CHANGED: Use `customerProfile` derived from the prop, not local state */}
         <Grid item xs={12} sm={6}>
           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography>
           <Typography variant="body1">{customerProfile?.name || 'N/A'}</Typography>
@@ -63,22 +63,33 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
 
         {isRequestDetail && isAdmin && (
           <Grid item xs={12} sm={6}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
-            <TextField
-              type="date"
-              value={scheduledStartDate}
-              onChange={(e) => {
-                if (setScheduledStartDate) setScheduledStartDate(e.target.value);
-                if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
-                  setCurrentStatus('scheduled');
-                }
-              }}
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              disabled={isUpdating || !(isDateEditable)}
-              sx={{ mt: 0.5 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+              <TextField
+                label="Scheduled Work Start"
+                type="date"
+                value={scheduledStartDate || ''}
+                onChange={(e) => {
+                  if (setScheduledStartDate) setScheduledStartDate(e.target.value);
+                }}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                disabled={isUpdating || !(isDateEditable)}
+                sx={{ mt: 0.5 }}
+              />
+              {isDateEditable && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={onSaveScheduledDate}
+                  disabled={!scheduledDateChanged || isUpdating}
+                  sx={{ whiteSpace: 'nowrap', height: '40px' }} // Adjust height to align with TextField
+                >
+                  Save
+                </Button>
+              )}
+            </Box>
           </Grid>
         )}
 

@@ -37,19 +37,42 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
+  const [scheduledStartDate, setScheduledStartDate] = useState<string | null>(null);
+  const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [newNote, setNewNote] = useState("");
-  const [showQuoteForm, setShowQuoteForm] = useState(false);
-  const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
-  const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
-  const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
-  const [isTriaging, setIsTriaging] = useState(false);
+
+  const handleSaveScheduledDate = async () => {
+    if (!request?.id || !scheduledStartDate) return;
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('requests')
+        .update({
+          scheduled_start_date: scheduledStartDate,
+          status: 'scheduled',
+        })
+        .eq('id', request.id);
+
+      if (error) {
+        throw error;
+      }
+
+      onUpdateRequest(); // Refresh data after successful update
+      setScheduledDateChanged(false); // Reset after saving
+    } catch (error) {
+      console.error('Error saving scheduled date:', error);
+      // Optionally, show a user-friendly error message
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
-      setScheduledStartDate(request.scheduled_start_date || '');
+      setScheduledStartDate(request.scheduled_start_date || null);
+      setScheduledDateChanged(false); // Reset when request or scheduledStartDate changes externally
     }
   }, [request]);
 
@@ -167,12 +190,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <CustomerInfoSection
               request={request}
               isAdmin={isAdmin}
-              isDateEditable={!isReadOnly}
+              isDateEditable={isAdmin && request.status === 'accepted'}
               scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={setScheduledStartDate}
+              setScheduledStartDate={(date) => {
+                setScheduledStartDate(date);
+                setScheduledDateChanged(true);
+              }}
               currentStatus={currentStatus}
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
+              onSaveScheduledDate={handleSaveScheduledDate}
+              scheduledDateChanged={scheduledDateChanged}
             />
             {isAdmin && request.triage_summary && (
               <Paper variant="outlined">
