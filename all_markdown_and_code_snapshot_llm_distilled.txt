@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-30T03:09:35.162Z
+Generated On: 2025-08-30T17:22:15.296Z
 
-# Mnemonic Weight (Token Count): ~164,060 tokens
+# Mnemonic Weight (Token Count): ~165,773 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -19,10 +19,17 @@ Generated On: 2025-08-30T03:09:35.162Z
   ./agents/AGENT_REPOS.md
   ./agents/README2.md
   ./agents/backend-architect-mcp.md
+  ./agents/browserAuth.js
+  ./agents/frontend-developer-mcp-agent.js
   ./agents/frontend-developer-mcp.md
-  ./agents/project-manager-mcp-agent.js
   ./agents/project-manager-mcp.md
-  ./agents/test-playwright-mcp.js
+  ./agents/screenshots/
+  ./agents/screenshots/after-user-menu-click.png
+  ./agents/screenshots/before-user-menu-full.png
+  ./agents/screenshots/login-modal-debug.png
+  ./agents/screenshots/login-success-debug.png
+  ./agents/screenshots/logout-failure-debug.png
+  ./agents/ui-designer-mcp-agent.js
   ./agents/ui-designer-mcp.md
   ./all_markdown_and_code_snapshot_llm_distilled.txt
   ./blueprint.md
@@ -1030,6 +1037,85 @@ This prompt can be used directly in your agent client or workflow to launch the 
 
 **Tip:** Always follow this order for maximum efficiency. Use the exact prompts and CLI commands above for each agent.
 
+## UI Designer and Frontend Developer Workflow
+
+This workflow demonstrates how the UI Designer and Frontend Developer agents can collaborate to improve the application's UI.
+
+**Step 1: Run the UI Designer Agent**
+
+The UI Designer agent logs in to the application, analyzes the UI, and captures a screenshot for review.
+
+```bash
+node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>
+```
+
+This will save a screenshot named `dashboard-analysis.png` in the `agents/screenshots` directory. In a real-world scenario, the agent would also generate a markdown file with detailed feedback.
+
+**Step 2: Handoff to the Frontend Developer Agent**
+
+The output of the UI Designer agent (the screenshot and a feedback file) serves as the input for the Frontend Developer agent. This file-based handoff is how the agents communicate.
+
+**Step 3: Run the Frontend Developer Agent**
+
+The Frontend Developer agent reads the feedback from the UI Designer agent and implements the suggested changes in the code.
+
+*(Note: The following command is a conceptual example. The `frontend-developer-mcp-agent.js` would need to be extended to read a feedback file and modify the code.)*
+
+```bash
+node agents/frontend-developer-mcp-agent.js implement-feedback --feedback-file agents/feedback/ui-feedback.md
+```
+
+**Step 4: Code Updates**
+
+The Frontend Developer agent uses its tools (`read_file`, `replace`, `write_file`) to modify the application's source code (e.g., the React components in `vite-app/src/components`).
+
+### Agent Collaboration Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ui-designer-mcp-agent.js
+    participant "Application UI (Browser)"
+    participant "File System"
+    participant frontend-developer-mcp-agent.js
+    participant "Source Code"
+
+    User->>ui-designer-mcp-agent.js: Run analyze-ui command
+    ui-designer-mcp-agent.js->>"Application UI (Browser)": Login and navigate
+    ui-designer-mcp-agent.js->>"Application UI (Browser)": Take screenshot
+    ui-designer-mcp-agent.js->>"File System": Save screenshot and feedback.md
+    User->>frontend-developer-mcp-agent.js: Run implement-feedback command
+    frontend-developer-mcp-agent.js->>"File System": Read feedback.md
+    frontend-developer-mcp-agent.js->>"Source Code": Read relevant source code files
+    frontend-developer-mcp-agent.js->>"Source Code": Modify source code using tools (replace, write_file)
+    frontend-developer-mcp-agent.js->>User: Report results
+```
+
+## MCP Agent Automation Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant frontend-developer-mcp-agent.js
+    participant Playwright Library
+    participant Chrome/Chromium (Remote Debugging)
+
+    User->>frontend-developer-mcp-agent.js: Run agent script (node ...)
+    frontend-developer-mcp-agent.js->>Playwright Library: Use Playwright API (connectOverCDP)
+    Playwright Library->>Chrome/Chromium: Connect via WebSocket (CDP URL)
+    Chrome/Chromium-->>Playwright Library: Accept automation commands
+    Playwright Library-->>frontend-developer-mcp-agent.js: Automate browser (login, UI actions)
+    frontend-developer-mcp-agent.js-->>User: Report results (success/failure)
+```
+
+### Explanation
+- **Playwright Library**: Node.js package used by your agent script for browser automation.
+- **Chrome/Chromium (Remote Debugging)**: Browser started in remote-debugging mode, exposes a WebSocket endpoint.
+- **frontend-developer-mcp-agent.js**: Agent script that uses Playwright to automate browser tasks.
+- **User**: Runs the agent and receives results.
+
+You do not need to run a Playwright server for MCP agent automation. The agent script uses Playwright to connect directly to the browser.
+
 --- END OF FILE agents/README2.md ---
 
 --- START OF FILE agents/backend-architect-mcp.md ---
@@ -1073,6 +1159,193 @@ persona: |
 # Tools leveraged: Write, Read, MultiEdit, Bash, Grep, Glob, WebFetch
 
 --- END OF FILE agents/backend-architect-mcp.md ---
+
+--- START OF FILE agents/browserAuth.js ---
+
+/**
+ * ======================================================
+ * FUNCTION: clickSignInButton
+ * PURPOSE:  Click the 'Sign In' button in the navigation bar by its text.
+ * PARAMETERS:
+ * @param {import('playwright').Page} page - Playwright page instance
+ * @returns {Promise<void>}
+ * ======================================================
+ */
+async function clickSignInButton(page) {
+  // Robustly click the "Sign In" button in the navbar
+  try {
+    await page.waitForSelector('role=button[name="Sign In"]', { timeout: 5000 });
+    await page.getByRole('button', { name: /sign in/i }).click();
+  } catch (err) {
+    throw new Error('Could not find or click the Sign In button');
+  }
+}
+/**
+ * ======================================================
+ * FUNCTION: signOut
+ * PURPOSE:  Automate logout and report success.
+ * PARAMETERS: 
+ * @param {import('playwright').Browser} browser - Playwright browser instance
+ * @param {string} baseUrl - Base URL of the frontend
+ * @param {object} [options] - Optional selectors and paths
+ * @returns {Promise<boolean>} - Resolves true if logout successful, false otherwise
+ * ======================================================
+*/
+async function signOut(browser, baseUrl, options = {}) {
+  const page = options.page;
+  if (!page) {
+    console.error("signOut requires a page object in options.");
+    return false;
+  }
+  const loginSelector = 'role=button[name="Sign In"]'; // Wait for the sign in button to appear
+
+  // Take a full-page screenshot before any clicks for debugging
+  console.log('Taking screenshot before user menu click...');
+  await page.screenshot({ path: 'agents/screenshots/before-user-menu-full.png', fullPage: true });
+  console.log('Screenshot saved as agents/screenshots/before-user-menu-full.png');
+  let success = false;
+  try {
+    // 1. Click on user menu using a more robust selector
+    console.log('Attempting to click user menu button...');
+    const userMenuButtonSelector = 'button:has(svg.lucide-chevron-down)';
+    try {
+      await page.waitForSelector(userMenuButtonSelector, { timeout: 5000 });
+      await page.click(userMenuButtonSelector);
+      console.log('User menu button click succeeded.');
+    } catch (menuErr) {
+      console.log('User menu click failed, taking user-menu-click-failure screenshot...');
+      await page.screenshot({ path: 'agents/screenshots/user-menu-click-failure.png' });
+      console.log('Screenshot saved as agents/screenshots/user-menu-click-failure.png');
+      console.error(menuErr);
+      throw new Error('Failed to click user menu button. Screenshot saved.');
+    }
+    // 2. Wait for the dropdown to appear
+    console.log('Waiting for sign out button to appear...');
+    const signOutButtonSelector = 'button:has-text("Sign Out")';
+    await page.waitForSelector(signOutButtonSelector, { timeout: 2000 });
+
+    // 3. Take screenshot
+    console.log('Taking after-user-menu-click screenshot...');
+    await page.screenshot({ path: 'agents/screenshots/after-user-menu-click.png' });
+    console.log('Screenshot saved as agents/screenshots/after-user-menu-click.png');
+    // 4. Click on sign out
+    console.log('Attempting to click "Sign Out" button...');
+    await page.click(signOutButtonSelector);
+    console.log('Clicked "Sign Out" button, waiting for login page...');
+    await page.waitForSelector(loginSelector, { timeout: 5000 });
+    console.log('Logout successful');
+    success = true;
+  } catch (err) {
+    console.log('Logout failed');
+    await page.screenshot({ path: 'agents/screenshots/logout-failure-debug.png' });
+    console.log('Screenshot saved as agents/screenshots/logout-failure-debug.png');
+    console.error(err);
+  }
+  return success;
+}
+// browserAuth.js
+// Shared Playwright email/password login utility for MCP agents
+
+/**
+ * ======================================================
+ * FUNCTION: signInEmailPassword
+ * PURPOSE:  Automate email/password login and report success.
+ * PARAMETERS:
+ * @param {import('playwright').Browser} browser - Playwright browser instance
+ * @param {string} baseUrl - Base URL of the frontend (e.g., https://plumbingpoc.netlify.app)
+ * @param {string} email - User email
+ * @param {string} password - User password
+ * @param {object} [options] - Optional selectors and paths
+ * @returns {Promise<object>} - Resolves an object with success status and page object
+ * ======================================================
+ */
+async function signInEmailPassword(browser, baseUrl, email, password, options = {}) {
+  const page = await browser.newPage();
+  const loginPath = options.loginPath || '/';
+  const emailSelector = options.emailSelector || 'input[type="email"]';
+  const passwordSelector = options.passwordSelector || 'input[type="password"]';
+  const successSelector = options.successSelector || 'text=My Quote Requests'; // Adjusted for reliable login verification
+
+  await page.goto(baseUrl + loginPath);
+  // Click "Sign In" button to open modal
+  console.log('Attempting to click Sign In button...');
+  await clickSignInButton(page);
+  // Wait for modal to appear
+  console.log('Waiting for email input to appear...');
+  await page.waitForSelector(emailSelector, { timeout: 10000 });
+  // Take screenshot after modal appears
+  await page.screenshot({ path: 'agents/screenshots/login-modal-debug.png' });
+  console.log('Filling email and password...');
+  await page.fill(emailSelector, email);
+  await page.fill(passwordSelector, password);
+  console.log('Clicking "Sign In with Email" button...');
+  await page.getByRole('button', { name: /sign in with email/i }).click();
+
+  let success = false;
+  try {
+    console.log('Waiting for dashboard or success indicator...');
+    await page.waitForSelector(successSelector, { timeout: 10000 });
+    console.log('Login successful for', email);
+    await page.screenshot({ path: 'agents/screenshots/login-success-debug.png' });
+    console.log('Screenshot saved as agents/screenshots/login-success-debug.png');
+    success = true;
+  } catch (err) {
+    console.log('Login failed for', email);
+    await page.screenshot({ path: 'agents/screenshots/login-failure-debug.png' });
+    console.log('Screenshot saved as agents/screenshots/login-failure-debug.png');
+  }
+  return { success, page };
+}
+
+module.exports = { signInEmailPassword, signOut, clickSignInButton };
+--- END OF FILE agents/browserAuth.js ---
+
+--- START OF FILE agents/frontend-developer-mcp-agent.js ---
+
+// MCP Frontend Developer Agent
+// PRECONDITIONS: 
+// close all chrome instances. 
+// Start Chrome or Chromium in remote-debugging mode:
+// For Chrome:
+//   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
+// For Chromium:
+//   chromium --remote-debugging-port=9222
+// Usage: node agents/frontend-developer-mcp-agent.js login-logout-test <email> <password>
+const { chromium } = require('playwright');
+const { signInEmailPassword, signOut } = require('./browserAuth');
+require('dotenv').config();
+
+const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
+const successSelector = 'text=My Quote Requests';
+
+async function loginLogoutTest(email, password) {
+  const browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
+  console.log('Connected to Playwright MCP server');
+  const { success: loginSuccess, page } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
+  if (loginSuccess) {
+    console.log('Login test: SUCCESS');
+    const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });
+    if (logoutSuccess) {
+      console.log('Logout test: SUCCESS');
+    } else {
+      console.log('Logout test: FAILED');
+    }
+  } else {
+    console.log('Login test: FAILED');
+  }
+  if (page) await page.close();
+  await browser.close();
+}
+
+// CLI handler
+const [,, command, email, password] = process.argv;
+if (command === 'login-logout-test' && email && password) {
+  loginLogoutTest(email, password);
+} else {
+  console.log('Usage: node agents/frontend-developer-mcp-agent.js login-logout-test <email> <password>');
+}
+
+--- END OF FILE agents/frontend-developer-mcp-agent.js ---
 
 --- START OF FILE agents/frontend-developer-mcp.md ---
 
@@ -1119,177 +1392,6 @@ persona: |
 
 --- END OF FILE agents/frontend-developer-mcp.md ---
 
---- START OF FILE agents/project-manager-mcp-agent.js ---
-
-// Node.js agent script for Playwright MCP server
-// Connects to ws://your-local-playwright-server// and automates dashboard access
-
-/*
- MCP Project Manager Agent
- Implements the project-manager-mcp persona:
- - Connects to Playwright MCP server at ws://your-local-playwright-server/
- - Tracks requirements, completed tasks, and outstanding tasks
- - Assigns tasks to agents
- - Monitors task status and blockers
- - Provides progress reports and next steps
- - Uses Playwright for browser tasks, file I/O, and CLI commands
- - Maintains a task list (in-memory and tasks.json)
- - Supports CLI commands for status, assignment, and reports
-*/
-
-const { chromium } = require('playwright');
-const fs = require('fs').promises;
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); // Load .env from vite-app
-const TASKS_FILE = path.join(__dirname, 'tasks.json');
-
-// In-memory task list
-let tasks = [];
-
-// Load tasks from file
-async function loadTasks() {
-  try {
-    const data = await fs.readFile(TASKS_FILE, 'utf-8');
-    tasks = JSON.parse(data);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      tasks = [];
-    } else {
-      console.error('Error loading tasks:', err);
-    }
-  }
-}
-
-// Save tasks to file
-async function saveTasks() {
-  try {
-    await fs.writeFile(TASKS_FILE, JSON.stringify(tasks, null, 2));
-  } catch (err) {
-    console.error('Error saving tasks:', err);
-  }
-}
-
-// Add a new task
-async function addTask(description, agent, requirement = '', status = 'pending') {
-  const id = `task${tasks.length + 1}`;
-  const task = { id, description, agent, requirement, status, blockers: [] };
-  tasks.push(task);
-  await saveTasks();
-  console.log(`Added task: ${id} (${description}) assigned to ${agent}`);
-}
-
-// Assign a task to an agent
-async function assignTask(id, agent) {
-  const task = tasks.find(t => t.id === id);
-  if (task) {
-    task.agent = agent;
-    await saveTasks();
-    console.log(`Task ${id} assigned to ${agent}`);
-  } else {
-    console.log(`Task ${id} not found.`);
-  }
-}
-
-// Update task status
-async function updateTaskStatus(id, status) {
-  const task = tasks.find(t => t.id === id);
-  if (task) {
-    task.status = status;
-    await saveTasks();
-    console.log(`Task ${id} status updated to ${status}`);
-  } else {
-    console.log(`Task ${id} not found.`);
-  }
-}
-
-// Add blocker to a task
-async function addBlocker(id, blocker) {
-  const task = tasks.find(t => t.id === id);
-  if (task) {
-    task.blockers.push(blocker);
-    await saveTasks();
-    console.log(`Blocker added to task ${id}: ${blocker}`);
-  } else {
-    console.log(`Task ${id} not found.`);
-  }
-}
-
-// Provide progress report
-function progressReport() {
-  const completed = tasks.filter(t => t.status === 'completed');
-  const pending = tasks.filter(t => t.status === 'pending');
-  const inProgress = tasks.filter(t => t.status === 'in-progress');
-  console.log('--- Progress Report ---');
-  console.log(`Completed: ${completed.length}`);
-  completed.forEach(t => console.log(`  - ${t.id}: ${t.description}`));
-  console.log(`In Progress: ${inProgress.length}`);
-  inProgress.forEach(t => console.log(`  - ${t.id}: ${t.description} (Agent: ${t.agent})`));
-  console.log(`Pending: ${pending.length}`);
-  pending.forEach(t => console.log(`  - ${t.id}: ${t.description} (Agent: ${t.agent})`));
-  console.log('-----------------------');
-}
-
-// Connect to Playwright MCP server
-async function connectToPlaywright() {
-  try {
-    const browser = await chromium.connect('{{PLAYWRIGHT_MCP_SERVER_URL}}');
-    console.log('Connected to Playwright MCP server');
-    return browser;
-  } catch (error) {
-    console.error('Failed to connect to Playwright MCP server:', error);
-    return null;
-  }
-}
-
-// Example browser task: check dashboard title
-async function checkDashboard(browser) {
-  try {
-    const page = await browser.newPage();
-    await page.goto(process.env.VITE_FRONTEND_BASE_URL);
-    const title = await page.title();
-    console.log('Dashboard Title:', title);
-    await page.close();
-  } catch (err) {
-    console.error('Error checking dashboard:', err);
-  }
-}
-
-// CLI command handler
-async function handleCli(args) {
-  await loadTasks();
-  const cmd = args[0];
-  switch (cmd) {
-    case 'add-task':
-      await addTask(args[1], args[2], args[3] || '', args[4] || 'pending');
-      break;
-    case 'assign-task':
-      await assignTask(args[1], args[2]);
-      break;
-    case 'update-status':
-      await updateTaskStatus(args[1], args[2]);
-      break;
-    case 'add-blocker':
-      await addBlocker(args[1], args[2]);
-      break;
-    case 'report':
-      progressReport();
-      break;
-    case 'browser-check':
-      const browser = await connectToPlaywright();
-      if (browser) await checkDashboard(browser);
-      if (browser) await browser.close();
-      break;
-    default:
-      console.log('Commands: add-task <desc> <agent> [requirement] [status], assign-task <id> <agent>, update-status <id> <status>, add-blocker <id> <blocker>, report, browser-check');
-  }
-}
-
-// Entry point
-if (require.main === module) {
-  handleCli(process.argv.slice(2)).catch(console.error);
-}
---- END OF FILE agents/project-manager-mcp-agent.js ---
-
 --- START OF FILE agents/project-manager-mcp.md ---
 
 # -------------------------------------------------------------
@@ -1331,85 +1433,57 @@ persona: |
 
 --- END OF FILE agents/project-manager-mcp.md ---
 
---- START OF FILE agents/test-playwright-mcp.js ---
+--- START OF FILE agents/ui-designer-mcp-agent.js ---
 
-/*
-Create a Node.js script using Playwright to test a running Playwright MCP server at ws://your-local-playwright-server/. The script should:
-- Connect to the Playwright MCP server at ws://your-local-playwright-server/.
-- Test a web service running at http://your-local-frontend-url with the following scenario:
-  1. Register/signup to the service (assume a form with fields for username, email, and password).
-  2. Sign out (assume a signout button or link).
-  3. Sign in using the same credentials.
-- Use generic selectors (e.g., input[name="username"], button[type="submit"]) for form fields and buttons.
-- Include error handling for connection failures, form submission errors, or navigation issues.
-- Log each step (e.g., "Navigating to signup", "Signed in successfully") and report pass/fail status.
-- Save test results to a file (e.g., test-results.json).
-- Ensure the script is modular, well-commented, and suitable as a foundational test for other tests.
-*/
-
+// MCP UI Designer Agent
+// PRECONDITIONS: 
+// close all chrome instances. 
+// Start Chrome or Chromium in remote-debugging mode:
+// For Chrome:
+//   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
+// For Chromium:
+//   chromium --remote-debugging-port=9222
+// Usage: node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>
 const { chromium } = require('playwright');
-const fs = require('fs').promises;
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { signInEmailPassword, signOut } = require('./browserAuth');
+require('dotenv').config();
 
-const MCP_WS = process.env.VITE_PLAYWRIGHT_MCP_SERVER_URL;
-const BASE_URL = process.env.VITE_FRONTEND_BASE_URL;
-const TEST_USER = {
-  username: 'testuser_' + Math.floor(Math.random() * 10000),
-  email: 'testuser_' + Math.floor(Math.random() * 10000) + '@example.com',
-  password: 'Str0ng!P@ssw0rd#2025$' // Stronger password
-};
+const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
 
-async function runTest() {
-  let browser;
-  let results = { passed: false, steps: [], errors: [] };
-  try {
-    // Connect to Playwright MCP server
-    results.steps.push('Connecting to Playwright MCP server...');
-    browser = await chromium.connect(MCP_WS);
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    results.steps.push('Connected to Playwright MCP server');
+async function analyzeUI(email, password) {
+  const browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
+  console.log('Connected to Playwright MCP server');
+  const { success: loginSuccess, page } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
+  if (loginSuccess) {
+    console.log('Login successful. Analyzing UI...');
+    // In a real scenario, you would add more advanced UI analysis here.
+    // For now, we'll just take a screenshot of the dashboard.
+    await page.screenshot({ path: 'agents/screenshots/dashboard-analysis.png', fullPage: true });
+    console.log('Dashboard screenshot saved as agents/screenshots/dashboard-analysis.png');
 
-    // Step 1: Register/signup
-    results.steps.push('Navigating to signup page...');
-    await page.goto(BASE_URL + '/signup');
-    await page.fill('input[name="username"]', TEST_USER.username);
-    await page.fill('input[name="email"]', TEST_USER.email);
-    await page.fill('input[name="password"]', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
-    results.steps.push('Signup submitted');
+    // The agent can now generate a report based on the analysis.
+    // For this example, we'll just log a message.
+    console.log('UI analysis complete. Feedback can be generated from the screenshot.');
 
-    // Step 2: Sign out
-    results.steps.push('Signing out...');
-    await page.click('a[href="/logout"],button#signout');
-    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
-    results.steps.push('Signout completed');
+    // The agent doesn't log out immediately, allowing for further interaction if needed.
+    // You can add a signOut call here or in a separate function if you want to log out.
 
-    // Step 3: Sign in
-    results.steps.push('Navigating to sign-in page...');
-    await page.goto(BASE_URL + '/login');
-    await page.fill('input[name="username"]', TEST_USER.username);
-    await page.fill('input[name="password"]', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForNavigation({ timeout: 5000 }).catch(() => {});
-    results.steps.push('Sign-in completed');
-
-    results.passed = true;
-  } catch (error) {
-    results.errors.push(error.message);
-    results.steps.push('Error: ' + error.message);
-  } finally {
-    await fs.writeFile('test-results.json', JSON.stringify(results, null, 2));
-    if (browser) await browser.close();
+  } else {
+    console.log('Login failed. Cannot analyze UI.');
   }
-  console.log('Test results:', results);
-  return results;
+  if (page) await page.close();
+  await browser.close();
 }
 
-runTest().catch(console.error);
---- END OF FILE agents/test-playwright-mcp.js ---
+// CLI handler
+const [,, command, email, password] = process.argv;
+if (command === 'analyze-ui' && email && password) {
+  analyzeUI(email, password);
+} else {
+  console.log('Usage: node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>');
+}
+
+--- END OF FILE agents/ui-designer-mcp-agent.js ---
 
 --- START OF FILE agents/ui-designer-mcp.md ---
 
@@ -1600,6 +1674,7 @@ module.exports.handler = serverless(app);
         "gpt-tokenizer": "^3.0.1",
         "multer": "^2.0.2",
         "openai": "^4.28.0",
+        "playwright": "^1.55.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "resend": "^6.0.1",
@@ -4619,6 +4694,50 @@ module.exports.handler = serverless(app);
       "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
       "license": "ISC"
     },
+    "node_modules/playwright": {
+      "version": "1.55.0",
+      "resolved": "https://registry.npmjs.org/playwright/-/playwright-1.55.0.tgz",
+      "integrity": "sha512-sdCWStblvV1YU909Xqx0DhOjPZE4/5lJsIS84IfN9dAZfcl/CIZ5O8l3o0j7hPMjDvqoTF8ZUcc+i/GL5erstA==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "playwright-core": "1.55.0"
+      },
+      "bin": {
+        "playwright": "cli.js"
+      },
+      "engines": {
+        "node": ">=18"
+      },
+      "optionalDependencies": {
+        "fsevents": "2.3.2"
+      }
+    },
+    "node_modules/playwright-core": {
+      "version": "1.55.0",
+      "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.55.0.tgz",
+      "integrity": "sha512-GvZs4vU3U5ro2nZpeiwyb0zuFaqb9sUiAJuyrWpcGouD8y9/HLgGbNRjIph7zU9D3hnPaisMl9zG9CgFi/biIg==",
+      "license": "Apache-2.0",
+      "bin": {
+        "playwright-core": "cli.js"
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/playwright/node_modules/fsevents": {
+      "version": "2.3.2",
+      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
+      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+      "hasInstallScript": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "darwin"
+      ],
+      "engines": {
+        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+      }
+    },
     "node_modules/postcss": {
       "version": "8.5.6",
       "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.6.tgz",
@@ -5434,6 +5553,7 @@ module.exports.handler = serverless(app);
     "gpt-tokenizer": "^3.0.1",
     "multer": "^2.0.2",
     "openai": "^4.28.0",
+    "playwright": "^1.55.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.0.1",
@@ -5447,6 +5567,7 @@ module.exports.handler = serverless(app);
     "typescript": "^5.9.2"
   }
 }
+
 --- END OF FILE package.json ---
 
 --- START OF FILE startup.sh ---

@@ -168,3 +168,82 @@ This prompt can be used directly in your agent client or workflow to launch the 
    - Regularly re-run the project-manager-mcp agent to update TASKS.md, monitor progress, and keep all agents aligned.
 
 **Tip:** Always follow this order for maximum efficiency. Use the exact prompts and CLI commands above for each agent.
+
+## UI Designer and Frontend Developer Workflow
+
+This workflow demonstrates how the UI Designer and Frontend Developer agents can collaborate to improve the application's UI.
+
+**Step 1: Run the UI Designer Agent**
+
+The UI Designer agent logs in to the application, analyzes the UI, and captures a screenshot for review.
+
+```bash
+node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>
+```
+
+This will save a screenshot named `dashboard-analysis.png` in the `agents/screenshots` directory. In a real-world scenario, the agent would also generate a markdown file with detailed feedback.
+
+**Step 2: Handoff to the Frontend Developer Agent**
+
+The output of the UI Designer agent (the screenshot and a feedback file) serves as the input for the Frontend Developer agent. This file-based handoff is how the agents communicate.
+
+**Step 3: Run the Frontend Developer Agent**
+
+The Frontend Developer agent reads the feedback from the UI Designer agent and implements the suggested changes in the code.
+
+*(Note: The following command is a conceptual example. The `frontend-developer-mcp-agent.js` would need to be extended to read a feedback file and modify the code.)*
+
+```bash
+node agents/frontend-developer-mcp-agent.js implement-feedback --feedback-file agents/feedback/ui-feedback.md
+```
+
+**Step 4: Code Updates**
+
+The Frontend Developer agent uses its tools (`read_file`, `replace`, `write_file`) to modify the application's source code (e.g., the React components in `vite-app/src/components`).
+
+### Agent Collaboration Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ui-designer-mcp-agent.js
+    participant "Application UI (Browser)"
+    participant "File System"
+    participant frontend-developer-mcp-agent.js
+    participant "Source Code"
+
+    User->>ui-designer-mcp-agent.js: Run analyze-ui command
+    ui-designer-mcp-agent.js->>"Application UI (Browser)": Login and navigate
+    ui-designer-mcp-agent.js->>"Application UI (Browser)": Take screenshot
+    ui-designer-mcp-agent.js->>"File System": Save screenshot and feedback.md
+    User->>frontend-developer-mcp-agent.js: Run implement-feedback command
+    frontend-developer-mcp-agent.js->>"File System": Read feedback.md
+    frontend-developer-mcp-agent.js->>"Source Code": Read relevant source code files
+    frontend-developer-mcp-agent.js->>"Source Code": Modify source code using tools (replace, write_file)
+    frontend-developer-mcp-agent.js->>User: Report results
+```
+
+## MCP Agent Automation Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant frontend-developer-mcp-agent.js
+    participant Playwright Library
+    participant Chrome/Chromium (Remote Debugging)
+
+    User->>frontend-developer-mcp-agent.js: Run agent script (node ...)
+    frontend-developer-mcp-agent.js->>Playwright Library: Use Playwright API (connectOverCDP)
+    Playwright Library->>Chrome/Chromium: Connect via WebSocket (CDP URL)
+    Chrome/Chromium-->>Playwright Library: Accept automation commands
+    Playwright Library-->>frontend-developer-mcp-agent.js: Automate browser (login, UI actions)
+    frontend-developer-mcp-agent.js-->>User: Report results (success/failure)
+```
+
+### Explanation
+- **Playwright Library**: Node.js package used by your agent script for browser automation.
+- **Chrome/Chromium (Remote Debugging)**: Browser started in remote-debugging mode, exposes a WebSocket endpoint.
+- **frontend-developer-mcp-agent.js**: Agent script that uses Playwright to automate browser tasks.
+- **User**: Runs the agent and receives results.
+
+You do not need to run a Playwright server for MCP agent automation. The agent script uses Playwright to connect directly to the browser.
