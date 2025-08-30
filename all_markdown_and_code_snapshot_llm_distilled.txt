@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-29T21:48:39.180Z
+Generated On: 2025-08-30T01:07:19.955Z
 
-# Mnemonic Weight (Token Count): ~161,979 tokens
+# Mnemonic Weight (Token Count): ~163,806 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -45,6 +45,8 @@ Generated On: 2025-08-29T21:48:39.180Z
   ./supabase/.temp/rest-version
   ./supabase/.temp/storage-version
   ./supabase/functions/
+  ./supabase/migrations/
+  ./supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql
   ./vite-app/
   ./vite-app/.env
   ./vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md
@@ -404,6 +406,35 @@ sequenceDiagram
     Frontend->>Customer: Displays the conversation log
 ```
 
+### 3. The AI-Powered Triage Process
+
+After a new service request is submitted, the system automatically initiates an AI-powered triage process. This leverages OpenAI's powerful language models to analyze the request details, summarize the problem, and assign a priority score.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Backend API
+    participant Supabase
+    participant OpenAI API
+
+    Admin->>Backend API: POST /api/triage/:requestId (triggers triage)
+    activate Backend API
+    
+    Backend API->>Supabase: Fetch request details (problem_category, answers)
+    Supabase-->>Backend API: Returns request data
+    
+    Backend API->>OpenAI API: Send prompt with request details to GPT-4
+    activate OpenAI API
+    OpenAI API-->>Backend API: Returns JSON: { triage_summary, priority_score }
+    deactivate OpenAI API
+    
+    Backend API->>Supabase: Update 'requests' table with triage_summary and priority_score
+    Supabase-->>Backend API: Confirms update
+    
+    Backend API-->>Admin: Returns success message with triage results
+    deactivate Backend API
+```
+
 --- END OF FILE README.md ---
 
 --- START OF FILE RequirementsAndGoals/PlumbingAgentRequirements.md ---
@@ -675,11 +706,11 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [ ] Configure Resend domain verification (manual step for user)
 
 ### Deployment
-- [ ] Setup hosting for the POC on Netlify
+- [x] Setup hosting for the POC on Netlify
 - [ ] Create a Netlify Scheduled Function for automated follow-ups
 - [ ] Move the follow-up email logic from the Express controller to the new Netlify function
 - [ ] Remove the old /api/follow-up route and controller
-- [ ] Publish the POC to Netlify
+- [x] Publish the POC to Netlify
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline
@@ -5472,6 +5503,12 @@ echo "Frontend: http://localhost:$FRONTEND_PORT"
 
 --- END OF FILE startup.sh ---
 
+--- START OF FILE supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql ---
+
+ALTER TABLE requests
+ADD COLUMN profitability_score INTEGER;
+--- END OF FILE supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql ---
+
 --- START OF FILE vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
 
 # Supabase Database and Auth Setup information
@@ -5964,7 +6001,48 @@ Defines "data contracts" using zod. Each schema in `schemas.js` clearly defines 
 
 This clean separation makes the system robust and predictable.
 
+## API Testing and Troubleshooting with cURL and JWT
+
+When developing or debugging API endpoints that require authentication, `cURL` is an invaluable tool. Here's how to use it effectively with JWT tokens:
+
+### 1. Getting Your JWT Token from the Browser
+
+To interact with authenticated endpoints, you'll need a valid JWT token. You can obtain this from your browser's developer tools after a successful login:
+
+1. Open your browser's developer tools (usually F12 or Cmd+Option+I).
+2. Go to the 'Network' tab.
+3. Perform an action in your application that triggers an authenticated API request (e.g., logging in, fetching user data).
+4. Find the relevant API request in the Network tab.
+5. In the request details, look for the 'Headers' section.
+6. Locate the `Authorization` header. The value will typically be in the format `Bearer <YOUR_JWT_TOKEN>`. Copy the `<YOUR_JWT_TOKEN>` part.
+
+### 2. Constructing and Executing the cURL Command
+
+Once you have your token, you can construct a `cURL` command to test authenticated endpoints. Remember to replace placeholders with your actual data.
+
+```bash
+curl -X <HTTP_METHOD> \
+     http://localhost:3000/api/<YOUR_ENDPOINT> \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
+     -d '{"key": "value"}' # Only for POST/PUT requests with a body
+```
+
+**Important:** When executing in your terminal, ensure the entire `cURL` command is on a **single line** to avoid shell parsing errors.
+
+### 3. Troubleshooting JWT Tokens with jwt.io
+
+If you encounter "Unauthorized: Invalid token" errors, your JWT might be expired or malformed. `jwt.io` is an excellent online tool for inspecting JWTs:
+
+1. Go to [jwt.io](https://jwt.io/).
+2. Paste your full JWT token into the 'Encoded' section on the left.
+3. **Expected Result:** You will likely see a message like "a-string-secret-at-least-256-bits-long" in the "Signature Verified" section. This is normal and expected, as `jwt.io` does not have access to your Supabase project's secret key to verify the token's signature. The important part is to inspect the payload.
+4. The 'Payload' section on the right will decode the token, showing its claims (data).
+5. **Check the `exp` (expiration) claim:** This is a Unix timestamp. If the current time is past this timestamp, your token has expired, and you'll need to generate a new one.
+6. **Inspect other claims:** Ensure that claims like `role` (e.g., `admin`) and `email` match your expectations for the user.
+
 ## Mermaid diagrams
+
 
 ### relationship diagram
 ```mermaid
@@ -6590,20 +6668,23 @@ const triageRequest = async (req, res) => {
 
     // 2. Prepare the prompt for GPT-4
     const prompt = `
-      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary and a priority score (1-10).
+      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary, a priority score (1-10), and a profitability score (1-10).
 
       Problem Category: ${request.problem_category}
       Answers:
       ${request.answers.map(a => `- ${a.question}: ${a.answer}`).join('\n')}
 
-      Based on the information provided, please return a JSON object with two keys:
+      Based on the information provided, please return a JSON object with five keys:
       - "triage_summary": A one-sentence summary of the request, highlighting urgency and potential job value.
       - "priority_score": An integer from 1 to 10, where 10 is the highest priority.
+      - "priority_explanation": A one-sentence explanation for the priority score.
+      - "profitability_score": An integer from 1 to 10, where 10 is the highest profitability. Consider factors like potential job size, complexity, and likelihood of customer conversion.
+      - "profitability_explanation": A one-sentence explanation for the profitability score.
     `;
 
     // 3. Call the OpenAI API
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4-1106-preview',
       messages: [{
         role: 'user',
         content: prompt
@@ -6613,14 +6694,17 @@ const triageRequest = async (req, res) => {
       },
     });
 
-    const {triage_summary, priority_score} = JSON.parse(response.choices[0].message.content);
+    const {triage_summary, priority_score, priority_explanation, profitability_score, profitability_explanation} = JSON.parse(response.choices[0].message.content);
 
     // 4. Update the request in the database
     const {error: updateError} = await supabase
       .from('requests')
       .update({
         triage_summary,
-        priority_score
+        priority_score,
+        priority_explanation,
+        profitability_score,
+        profitability_explanation
       })
       .eq('id', requestId);
 
@@ -6629,7 +6713,10 @@ const triageRequest = async (req, res) => {
     res.status(200).json({
       message: 'Triage complete.',
       triage_summary,
-      priority_score
+      priority_score,
+      priority_explanation,
+      profitability_score,
+      profitability_explanation
     });
   } catch (error) {
     console.error('Error during triage:', error);
@@ -6747,8 +6834,18 @@ module.exports = {
 This file isolates all authentication and authorization logic. It's clean, 
 reusable, and easy to update if your permission rules change.
 */
-// /middleware/authMiddleware.js
-const supabase = require('../config/supabase'); // <-- THE FIX
+const { createClient } = require('@supabase/supabase-js');
+// Load environment variables immediately
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Create a Supabase client specifically for authentication using the Anon Key
+const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+
+// The main Supabase client (using Service Role Key) is still imported for other operations if needed
+const supabase = require('../config/supabase'); // This client is initialized with SUPABASE_SERVICE_ROLE_KEY
 
 /**
  * Middleware to verify a user's JWT token from the Authorization header.
@@ -6762,7 +6859,9 @@ const authenticate = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // This function uses the supabaseAuth client (initialized with SUPABASE_ANON_KEY)
+    // for token validation. This is the correct and secure way to validate user tokens.
+    const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
     if (error || !user) {
       throw new Error('Unauthorized: Invalid token.');
     }
@@ -6784,6 +6883,9 @@ const isAdmin = async (req, res, next) => {
   }
 
   try {
+    // This function uses the main supabase client (initialized with SUPABASE_SERVICE_ROLE_KEY)
+    // to fetch the user's profile and check their role. This might be intended to bypass RLS
+    // if necessary for role checking, as it has elevated privileges.
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('role')
@@ -11105,6 +11207,9 @@ export interface QuoteRequest {
   scheduled_start_date: string | null;
   triage_summary: string | null;
   priority_score: number | null;
+  priority_explanation: string | null;
+  profitability_score: number | null;
+  profitability_explanation: string | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -12260,6 +12365,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
   const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
   const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
+  const [isTriaging, setIsTriaging] = useState(false);
 
   useEffect(() => {
     if (request) {
@@ -12317,6 +12423,20 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   };
 
+  const handleTriageRequest = async () => {
+    if (!request) return;
+    setIsTriaging(true);
+    try {
+      await apiClient.post(`/triage/${request.id}`);
+      onUpdateRequest(); // Refresh data to show triage results
+    } catch (error) {
+      console.error("Failed to triage request:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsTriaging(false);
+    }
+  };
+
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
@@ -12346,7 +12466,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}
             </Typography>
           </Box>
-          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isAdmin && !request.triage_summary && (
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={handleTriageRequest}
+                disabled={isTriaging}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {isTriaging ? 'Triaging...' : 'Triage Request'}
+              </Button>
+            )}
+            <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+          </Box>
         </Box>
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
@@ -12361,6 +12495,24 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
             />
+            {request.triage_summary && (
+              <Paper variant="outlined">
+                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'info.main', bgcolor: '#e3f2fd' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Triage Summary</Typography>
+                  <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
+                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
+                  {request.priority_explanation && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>
+                  )}
+                  {request.profitability_score != null && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>
+                  )}
+                  {request.profitability_explanation && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>
+                  )}
+                </Box>
+              </Paper>
+            )}
             <Paper variant="outlined">
               <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
                 <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>

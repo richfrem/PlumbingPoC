@@ -44,6 +44,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
   const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
   const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
+  const [isTriaging, setIsTriaging] = useState(false);
 
   useEffect(() => {
     if (request) {
@@ -101,6 +102,20 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   };
 
+  const handleTriageRequest = async () => {
+    if (!request) return;
+    setIsTriaging(true);
+    try {
+      await apiClient.post(`/triage/${request.id}`);
+      onUpdateRequest(); // Refresh data to show triage results
+    } catch (error) {
+      console.error("Failed to triage request:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      setIsTriaging(false);
+    }
+  };
+
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
@@ -130,7 +145,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               ID: {request.id} | Received: {new Date(request.created_at).toLocaleString()}
             </Typography>
           </Box>
-          <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isAdmin && !request.triage_summary && (
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                onClick={handleTriageRequest}
+                disabled={isTriaging}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {isTriaging ? 'Triaging...' : 'Triage Request'}
+              </Button>
+            )}
+            <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
+          </Box>
         </Box>
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
@@ -145,6 +174,24 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
             />
+            {request.triage_summary && (
+              <Paper variant="outlined">
+                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'info.main', bgcolor: '#e3f2fd' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Triage Summary</Typography>
+                  <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
+                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
+                  {request.priority_explanation && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>
+                  )}
+                  {request.profitability_score != null && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>
+                  )}
+                  {request.profitability_explanation && (
+                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>
+                  )}
+                </Box>
+              </Paper>
+            )}
             <Paper variant="outlined">
               <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
                 <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>

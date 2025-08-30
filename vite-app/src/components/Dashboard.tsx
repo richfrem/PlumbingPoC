@@ -40,6 +40,9 @@ export interface QuoteRequest {
   scheduled_start_date: string | null;
   triage_summary: string | null;
   priority_score: number | null;
+  priority_explanation: string | null;
+  profitability_score: number | null;
+  profitability_explanation: string | null;
 }
 
 const Dashboard: React.FC = () => {

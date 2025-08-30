@@ -3,8 +3,18 @@
 This file isolates all authentication and authorization logic. It's clean, 
 reusable, and easy to update if your permission rules change.
 */
-// /middleware/authMiddleware.js
-const supabase = require('../config/supabase'); // <-- THE FIX
+const { createClient } = require('@supabase/supabase-js');
+// Load environment variables immediately
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Create a Supabase client specifically for authentication using the Anon Key
+const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+
+// The main Supabase client (using Service Role Key) is still imported for other operations if needed
+const supabase = require('../config/supabase'); // This client is initialized with SUPABASE_SERVICE_ROLE_KEY
 
 /**
  * Middleware to verify a user's JWT token from the Authorization header.
@@ -18,7 +28,9 @@ const authenticate = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // This function uses the supabaseAuth client (initialized with SUPABASE_ANON_KEY)
+    // for token validation. This is the correct and secure way to validate user tokens.
+    const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
     if (error || !user) {
       throw new Error('Unauthorized: Invalid token.');
     }
@@ -40,6 +52,9 @@ const isAdmin = async (req, res, next) => {
   }
 
   try {
+    // This function uses the main supabase client (initialized with SUPABASE_SERVICE_ROLE_KEY)
+    // to fetch the user's profile and check their role. This might be intended to bypass RLS
+    // if necessary for role checking, as it has elevated privileges.
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('role')

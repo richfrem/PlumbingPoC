@@ -24,20 +24,23 @@ const triageRequest = async (req, res) => {
 
     // 2. Prepare the prompt for GPT-4
     const prompt = `
-      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary and a priority score (1-10).
+      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary, a priority score (1-10), and a profitability score (1-10).
 
       Problem Category: ${request.problem_category}
       Answers:
       ${request.answers.map(a => `- ${a.question}: ${a.answer}`).join('\n')}
 
-      Based on the information provided, please return a JSON object with two keys:
+      Based on the information provided, please return a JSON object with five keys:
       - "triage_summary": A one-sentence summary of the request, highlighting urgency and potential job value.
       - "priority_score": An integer from 1 to 10, where 10 is the highest priority.
+      - "priority_explanation": A one-sentence explanation for the priority score.
+      - "profitability_score": An integer from 1 to 10, where 10 is the highest profitability. Consider factors like potential job size, complexity, and likelihood of customer conversion.
+      - "profitability_explanation": A one-sentence explanation for the profitability score.
     `;
 
     // 3. Call the OpenAI API
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4-1106-preview',
       messages: [{
         role: 'user',
         content: prompt
@@ -47,14 +50,17 @@ const triageRequest = async (req, res) => {
       },
     });
 
-    const {triage_summary, priority_score} = JSON.parse(response.choices[0].message.content);
+    const {triage_summary, priority_score, priority_explanation, profitability_score, profitability_explanation} = JSON.parse(response.choices[0].message.content);
 
     // 4. Update the request in the database
     const {error: updateError} = await supabase
       .from('requests')
       .update({
         triage_summary,
-        priority_score
+        priority_score,
+        priority_explanation,
+        profitability_score,
+        profitability_explanation
       })
       .eq('id', requestId);
 
@@ -63,7 +69,10 @@ const triageRequest = async (req, res) => {
     res.status(200).json({
       message: 'Triage complete.',
       triage_summary,
-      priority_score
+      priority_score,
+      priority_explanation,
+      profitability_score,
+      profitability_explanation
     });
   } catch (error) {
     console.error('Error during triage:', error);

@@ -206,3 +206,32 @@ sequenceDiagram
     Backend API-->>Frontend: Sends data to client view
     Frontend->>Customer: Displays the conversation log
 ```
+
+### 3. The AI-Powered Triage Process
+
+After a new service request is submitted, the system automatically initiates an AI-powered triage process. This leverages OpenAI's powerful language models to analyze the request details, summarize the problem, and assign a priority score.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Backend API
+    participant Supabase
+    participant OpenAI API
+
+    Admin->>Backend API: POST /api/triage/:requestId (triggers triage)
+    activate Backend API
+    
+    Backend API->>Supabase: Fetch request details (problem_category, answers)
+    Supabase-->>Backend API: Returns request data
+    
+    Backend API->>OpenAI API: Send prompt with request details to GPT-4
+    activate OpenAI API
+    OpenAI API-->>Backend API: Returns JSON: { triage_summary, priority_score }
+    deactivate OpenAI API
+    
+    Backend API->>Supabase: Update 'requests' table with triage_summary and priority_score
+    Supabase-->>Backend API: Confirms update
+    
+    Backend API-->>Admin: Returns success message with triage results
+    deactivate Backend API
+```
