@@ -1,7 +1,6 @@
 // vite-app/src/components/RequestDetailModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
@@ -23,14 +22,10 @@ interface RequestDetailModalProps {
 const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
   <Grid container spacing={1} sx={{ mb: 1 }}>
     <Grid item xs={12} sm={5}>
-      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-        {question}
-      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>{question}</Typography>
     </Grid>
     <Grid item xs={12} sm={7}>
-      <Typography variant="body1">
-        {answer || 'N/A'}
-      </Typography>
+      <Typography variant="body1">{answer || 'N/A'}</Typography>
     </Grid>
   </Grid>
 );
@@ -77,7 +72,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     await handleStatusUpdate('scheduled', scheduledStartDate);
     setScheduledDateChanged(false);
   };
-
+  
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
     setIsUpdating(true);
@@ -178,7 +173,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <CustomerInfoSection
               request={request}
               isAdmin={isAdmin}
-              isDateEditable={isAdmin && request.status === 'accepted'}
+              isDateEditable={true} 
               scheduledStartDate={scheduledStartDate}
               setScheduledStartDate={(date) => {
                 setScheduledStartDate(date);
@@ -190,6 +185,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               onSaveScheduledDate={handleSaveScheduledDate}
               scheduledDateChanged={scheduledDateChanged}
             />
+            
             {isAdmin && request.triage_summary && (
               <Paper variant="outlined">
                 <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
@@ -202,6 +198,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 </Box>
               </Paper>
             )}
+
             <Paper variant="outlined">
               <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
                 <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>
@@ -231,6 +228,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
               </Box>
             </Paper>
+
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><FilePlus size={16} /> Quotes</Typography>
               {request.quotes.length === 0 ? (
@@ -240,13 +238,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {request.status !== 'accepted' && quote.status !== 'accepted' && (
+                        {request.status !== 'accepted' && request.status !== 'scheduled' && request.status !== 'completed' && quote.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>
                         )}
                         <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
-                          {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
+                          {isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status) ? 'Update' : 'View Details'}
                         </Button>
                       </Box>
                     }>
@@ -270,7 +268,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   ))}
                 </List>
               )}
-              {isAdmin && !isReadOnly && (
+              {isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status) && (
                 <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add New Quote</Button>
               )}
             </Paper>
@@ -307,7 +305,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
         quote={quoteModalMode === 'update' && selectedQuoteIdx !== null ? request.quotes[selectedQuoteIdx] : undefined}
-        editable={isAdmin && !isReadOnly}
+        editable={isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status)}
         requestId={request.id}
         request={request}
       />

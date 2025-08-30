@@ -5,21 +5,19 @@ import { Box, Typography, Paper, TextField, Button, Grid } from '@mui/material';
 import { User } from 'lucide-react';
 
 interface CustomerInfoSectionProps {
-  request: any; // Full request object which should include user_profiles
+  request: any;
   isAdmin: boolean;
   isDateEditable?: boolean;
-  scheduledStartDate?: string | null; // Changed to allow null
-  setScheduledStartDate?: (date: string | null) => void; // Changed to allow null
+  scheduledStartDate?: string | null; // Allow null
+  setScheduledStartDate?: (date: string) => void;
   currentStatus?: string;
   setCurrentStatus?: (status: string) => void;
   isUpdating?: boolean;
-  editable?: boolean;
-  goodUntil?: string;
-  setGoodUntil?: (date: string) => void;
-  loadingRequest?: boolean;
-  errorRequest?: string | null;
-  onSaveScheduledDate?: () => Promise<void>; // New prop
-  scheduledDateChanged?: boolean; // New prop
+  editable?: boolean; // For QuoteFormModal
+  goodUntil?: string; // For QuoteFormModal
+  setGoodUntil?: (date: string) => void; // For QuoteFormModal
+  onSaveScheduledDate?: () => void; // Add this prop
+  scheduledDateChanged?: boolean; // Add this prop
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -34,11 +32,14 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   editable,
   goodUntil,
   setGoodUntil,
-  onSaveScheduledDate, // Destructure new prop
-  scheduledDateChanged, // Destructure new prop
+  onSaveScheduledDate, // Destructure the new prop
+  scheduledDateChanged, // Destructure the new prop
 }) => {
   const isRequestDetail = setScheduledStartDate !== undefined;
-  const customerProfile = request?.user_profiles; // Use the nested object directly.
+  const customerProfile = request?.user_profiles;
+
+  // Only show the scheduling section if the status is 'accepted' or 'scheduled'
+  const canShowScheduling = isAdmin && isRequestDetail && (currentStatus === 'accepted' || currentStatus === 'scheduled');
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -56,43 +57,46 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography>
           <Button component="a" href={`mailto:${customerProfile?.email}`} size="small" sx={{ p: 0, justifyContent: 'flex-start', textTransform: 'none' }}>{customerProfile?.email || 'N/A'}</Button>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography>
-          <Button component="a" href={`https://maps.google.com/?q=${encodeURIComponent(request?.service_address)}`} target="_blank" size="small" sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}>{request?.service_address || 'N/A'}</Button>
-        </Grid>
-
-        {isRequestDetail && isAdmin && (
+        
+        {/* Conditional rendering for the date input */}
+        {canShowScheduling ? (
           <Grid item xs={12} sm={6}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
               <TextField
-                label="Scheduled Work Start"
                 type="date"
-                value={scheduledStartDate || ''}
+                value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
                 onChange={(e) => {
                   if (setScheduledStartDate) setScheduledStartDate(e.target.value);
+                  if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
+                    setCurrentStatus('scheduled');
+                  }
                 }}
                 fullWidth
                 size="small"
                 InputLabelProps={{ shrink: true }}
-                disabled={isUpdating || !(isDateEditable)}
-                sx={{ mt: 0.5 }}
+                disabled={isUpdating}
               />
-              {isDateEditable && (
+              {scheduledDateChanged && (
                 <Button
-                  variant="contained"
-                  color="primary"
                   size="small"
+                  variant="contained"
                   onClick={onSaveScheduledDate}
-                  disabled={!scheduledDateChanged || isUpdating}
-                  sx={{ whiteSpace: 'nowrap', height: '40px' }} // Adjust height to align with TextField
+                  disabled={isUpdating}
                 >
-                  Save
+                  Save Date
                 </Button>
               )}
             </Box>
           </Grid>
+        ) : (
+             <Grid item xs={12} sm={6}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography>
+                <Button component="a" href={`https://maps.google.com/?q=${encodeURIComponent(request?.service_address)}`} target="_blank" size="small" sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}>{request?.service_address || 'N/A'}</Button>
+             </Grid>
         )}
 
+        {/* This is for the QuoteFormModal, which doesn't show the scheduled date */}
         {!isRequestDetail && (
           <Grid item xs={12} sm={6}>
             <Box>
