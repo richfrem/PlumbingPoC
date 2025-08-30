@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle } from 'lucide-react';
+import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle, Zap } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 import AttachmentSection from './AttachmentSection';
@@ -37,57 +37,45 @@ const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, 
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  const [scheduledStartDate, setScheduledStartDate] = useState<string | null>(null);
+  const [currentStatus, setCurrentStatus] = useState(request?.status || 'new');
+  const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleSaveScheduledDate = async () => {
-    if (!request?.id || !scheduledStartDate) return;
-
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('requests')
-        .update({
-          scheduled_start_date: scheduledStartDate,
-          status: 'scheduled',
-        })
-        .eq('id', request.id);
-
-      if (error) {
-        throw error;
-      }
-
-      onUpdateRequest(); // Refresh data after successful update
-      setScheduledDateChanged(false); // Reset after saving
-    } catch (error) {
-      console.error('Error saving scheduled date:', error);
-      // Optionally, show a user-friendly error message
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  const [newNote, setNewNote] = useState("");
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
+  const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
+  const [isTriaging, setIsTriaging] = useState(false);
 
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
-      setScheduledStartDate(request.scheduled_start_date || null);
-      setScheduledDateChanged(false); // Reset when request or scheduledStartDate changes externally
+      setScheduledStartDate(request.scheduled_start_date || '');
+      setScheduledDateChanged(false);
     }
   }, [request]);
 
-  const handleStatusChange = async (newStatus: string) => {
-    if (!request || newStatus === currentStatus) return;
+  const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
+    if (!request) return;
     setIsUpdating(true);
     try {
-      const { error } = await supabase.from('requests').update({ status: newStatus }).eq('id', request.id);
-      if (error) throw error;
-      onUpdateRequest(); // Refresh data from parent
+      const payload: { status: string; scheduled_start_date?: string | null } = { status: newStatus };
+      if (date !== undefined) {
+        payload.scheduled_start_date = date;
+      }
+      await apiClient.patch(`/requests/${request.id}/status`, payload);
+      onUpdateRequest();
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleSaveScheduledDate = async () => {
+    if (!request || !scheduledStartDate) return;
+    await handleStatusUpdate('scheduled', scheduledStartDate);
+    setScheduledDateChanged(false);
   };
 
   const handleAcceptQuote = async (quoteId: string) => {
@@ -130,10 +118,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     setIsTriaging(true);
     try {
       await apiClient.post(`/triage/${request.id}`);
-      onUpdateRequest(); // Refresh data to show triage results
+      onUpdateRequest();
     } catch (error) {
       console.error("Failed to triage request:", error);
-      // Optionally, show an error message to the user
     } finally {
       setIsTriaging(false);
     }
@@ -142,7 +129,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
-  const isReadOnly = ['accepted', 'scheduled', 'completed'].includes(request.status);
+  const isReadOnly = ['scheduled', 'completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
 
@@ -177,8 +164,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 onClick={handleTriageRequest}
                 disabled={isTriaging}
                 sx={{ whiteSpace: 'nowrap' }}
+                startIcon={<Zap />}
               >
-                {isTriaging ? 'Triaging...' : 'Triage Request'}
+                {isTriaging ? 'Triaging...' : 'AI Triage'}
               </Button>
             )}
             <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
@@ -204,19 +192,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             />
             {isAdmin && request.triage_summary && (
               <Paper variant="outlined">
-                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'info.main', bgcolor: '#e3f2fd' }}>
-                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Triage Summary</Typography>
+                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Zap size={16} /> AI Triage Summary</Typography>
                   <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
                   <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
-                  {request.priority_explanation && (
-                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>
-                  )}
-                  {request.profitability_score != null && (
-                    <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>
-                  )}
-                  {request.profitability_explanation && (
-                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>
-                  )}
+                  {request.priority_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>)}
+                  {request.profitability_score != null && (<Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>)}
+                  {request.profitability_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>)}
                 </Box>
               </Paper>
             )}
@@ -236,7 +218,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <AttachmentSection 
               requestId={request.id}
               attachments={request.quote_attachments}
-              editable={isAdmin && !isReadOnly}
+              editable={!isReadOnly}
               onUpdate={onUpdateRequest}
             />
 
@@ -258,7 +240,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {!isReadOnly && quote.status !== 'accepted' && (
+                        {request.status !== 'accepted' && quote.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>
@@ -269,7 +251,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Box>
                     }>
                       <ListItemText
-                        primary={`Quote #${idx + 1} - ${quote.quote_amount}`}
+                        primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
                         secondary={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                             <Chip
@@ -304,7 +286,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusChange(e.target.value as string)} disabled={isUpdating || isReadOnly}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusUpdate(e.target.value as string)} disabled={isUpdating || request.status === 'completed'}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
