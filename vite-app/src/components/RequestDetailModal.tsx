@@ -230,7 +230,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {isAdmin && !isReadOnly && quote.status !== 'accepted' && (
+                        {!isReadOnly && quote.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>

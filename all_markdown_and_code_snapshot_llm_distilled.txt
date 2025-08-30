@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-30T01:35:14.313Z
+Generated On: 2025-08-30T01:39:41.250Z
 
-# Mnemonic Weight (Token Count): ~163,806 tokens
+# Mnemonic Weight (Token Count): ~163,802 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -12551,7 +12551,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {isAdmin && !isReadOnly && quote.status !== 'accepted' && (
+                        {!isReadOnly && quote.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>
