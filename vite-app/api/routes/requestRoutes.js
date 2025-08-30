@@ -45,7 +45,7 @@ router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addReque
 router.patch('/:requestId/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
-router.post('/:requestId/quotes/:quoteId/accept', authenticate, isAdmin, acceptQuote);
+router.post('/:requestId/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:requestId', authenticate, getRequestById);
 
 module.exports = router;
