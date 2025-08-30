@@ -22,12 +22,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
           <User className="w-4 h-4 text-white" />
         </div>
         <div className="text-left hidden sm:block">
-          <div className="text-sm font-medium text-white">
-            {profile?.name || 'User'}
-          </div>
-          <div className="text-xs text-gray-400">
-            {user.email}
-          </div>
+          <span className="text-sm font-medium text-white">Dashboard</span>
         </div>
         <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-08-30T17:22:15.296Z
+Generated On: 2025-08-30T22:13:22.467Z
 
-# Mnemonic Weight (Token Count): ~165,773 tokens
+# Mnemonic Weight (Token Count): ~173,519 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -18,17 +18,33 @@ Generated On: 2025-08-30T17:22:15.296Z
   ./agents/
   ./agents/AGENT_REPOS.md
   ./agents/README2.md
+  ./agents/backend-architect-mcp-agent.js
   ./agents/backend-architect-mcp.md
   ./agents/browserAuth.js
+  ./agents/feedback/
+  ./agents/feedback/archive/
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-13-29.101Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-24-09.859Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-28-32.043Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-43-35.608Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-48-12.876Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T20-50-58.626Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T21-11-18.780Z.json
+  ./agents/feedback/archive/ui-feedback-2025-08-30T21-37-59.686Z.json
   ./agents/frontend-developer-mcp-agent.js
   ./agents/frontend-developer-mcp.md
+  ./agents/project-manager-mcp-agent.js
   ./agents/project-manager-mcp.md
+  ./agents/projectFileManifest.js
   ./agents/screenshots/
   ./agents/screenshots/after-user-menu-click.png
   ./agents/screenshots/before-user-menu-full.png
+  ./agents/screenshots/dashboard-analysis.png
+  ./agents/screenshots/login-failure-debug.png
   ./agents/screenshots/login-modal-debug.png
   ./agents/screenshots/login-success-debug.png
   ./agents/screenshots/logout-failure-debug.png
+  ./agents/screenshots/quote-agent-modal-analysis.png
   ./agents/ui-designer-mcp-agent.js
   ./agents/ui-designer-mcp.md
   ./all_markdown_and_code_snapshot_llm_distilled.txt
@@ -866,257 +882,323 @@ This document lists the MCP agent personas used in this project and provides lin
 
 --- START OF FILE agents/README2.md ---
 
-# Preconditions
+# AI Agent-Driven Development Workflow
 
-Before running any agent workflows, ensure:
-- The Playwright MCP server is installed globally as described in `AGENT_REPOS.md`.
-- The Playwright MCP server is running in a separate terminal via:
-   ```
-   playwright-mcp-server
-   ```
+This document provides a comprehensive guide to setting up and running the AI agent-driven development workflow for the PlumbingPOC project. The workflow leverages a multi-agent system to automate UI/UX analysis, code implementation, and task management in a state-aware loop.
 
-# How to Use These Agents Most Effectively
+## 1. Prerequisites
 
-**Best Practices:**
-- Start a new chat or session for each agent to keep context focused and results actionable.
-- Use the provided prompts for each agent to initiate work and get targeted feedback.
-- Begin with the project manager agent to organize tasks and track progress.
-- Use specialized agents (UI designer, frontend developer, backend architect) for their respective tasks.
-- Regularly update and review progress with the project manager agent to keep all agents aligned.
-- **For all browser-based automation, UI testing, and agent workflows, use the Playwright MCP server.**
+Before you begin, ensure you have the following:
+*   **Node.js** (v18 or higher recommended).
+*   **npm** (comes with Node.js).
+*   A running instance of the **PlumbingPOC web application**.
 
-# Instructions to test Playright MCP server
+## 2. One-Time Setup
 
-To verify your Playwright MCP server is operational, use the provided test script:
+These steps only need to be performed once to prepare your environment.
 
-1. Ensure the Playwright MCP server is running (see `AGENT_REPOS.md` for installation and setup instructions).
-2. Make sure the Plumbing Quote Agent dashboard is running at http://your-local-frontend-url/.
-3. Run the test script from this directory:
-   ```bash
-   node agents/test-playwright-mcp.js
-   ```
-4. The script will:
-   - Connect to the Playwright MCP server at ws://your-local-playwright-server/
-   - Register a new user, sign out, and sign in at http://your-local-frontend-url/
-   - Log each step and save results to `test-results.json`
-5. Check `test-results.json` for pass/fail status and details of each step.
+### Step 1: Install Node.js Dependencies
 
-If you need to adjust selectors or debug errors, review the script and update field/button selectors to match your app's HTML.
+Install all necessary Node.js packages by running the following command from the **project root directory** (`PlumbingPOC/`):
 
-
-
-# Agents Folder Overview
-
-This folder contains specialized MCP agent personas to support your AI-driven development workflow. Each agent is designed to automate, evaluate, and accelerate different aspects of your project.
-
-
-## Sub-Agents Summary
-
-
-### 1. `project-manager-mcp`
-**Role:** Project manager and task tracker
-**Purpose:** Tracks requirements, assigns tasks, monitors progress, and keeps all agents aligned
-**How to initiate:**
-**Step 1: Start here.**
-
-#### Assumptions: 
-1. The Playwright MCP server is running. I've started it via `npx playwright run-server` It is listening on ws://your-local-playwright-server/
-2. The Plumbing Quote Agent dashboard is running at http://your-local-frontend-url/ 
-
-#### Prompt:
-
-#### Copy-paste Prompt for Next Time:
-```
-As the project-manager-mcp agent, connect to the running Playwright MCP server at Listening on ws://your-local-playwright-server/
- for browser automation, UI testing, and agent orchestration. Target the Plumbing Quote Agent dashboard at http://your-local-frontend-url/.
-
-Review all current work and requirements for the Plumbing Quote Agent. Update TASKS.md to show completed tasks, outstanding work, and agent assignments. Summarize progress and recommend next steps. Ensure all anticipated questions for each service type are surfaced in the UI, and confirm privacy requirements are enforced. Reference key instructions from TASKS.md.
+```bash
+npm install playwright @google/generative-ai --legacy-peer-deps dotenv
 ```
 
-#### To create the project-manager-mcp agent, follow these steps:
+This command installs:
+*   `playwright`: For browser automation.
+*   `@google/generative-ai`: For integrating with the Gemini API.
+*   `dotenv`: For loading environment variables from the `.env` file.
 
+### Step 2: Configure Environment Variables
 
-This prompt can be used directly in your agent client or workflow to launch the project-manager-mcp agent and ensure all required actions are performed.
+The agents require API keys and URLs to function.
 
-### 2. `ui-designer-mcp`
-**Role:** Visionary UI designer
-**Purpose:** Evaluates UI/UX, suggests improvements, and provides implementation-ready feedback
-**How to initiate:**
-**Step 2: Run after project manager agent.**
+1.  Create a file named `.env` in the **project root directory**.
+2.  Copy and paste the following content into the `.env` file, replacing the placeholder values with your actual keys and URLs.
 
-#### Assumptions:
-1. The Playwright MCP server should be running. (e.g., ws://your-local-playwright-server/)
-2. The Plumbing Quote Agent dashboard is running at http://your-local-frontend-url/
+    ```
+    # Your Gemini API Key from Google AI Studio
+    GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
-#### Copy-paste Prompt for Next Time:
+    # The full URL where your local Vite/React app is running
+    VITE_FRONTEND_BASE_URL=http://localhost:5173
+
+    # The WebSocket endpoint for the Playwright server (default)
+    PLAYWRIGHT_SERVER_URL=http://localhost:49982/
+    ```
+
+### Step 3: Run the Playwright Server
+
+For the agents to control a browser, the Playwright server must be running. Open a **separate, dedicated terminal** and run the following command. Leave this terminal running in the background.
+
+```bash
+npx playwright run-server
 ```
-As the ui-designer-mcp agent, connect to the running Playwright MCP server at ws://your-local-playwright-server/ for browser-based UI/UX analysis. Target the Plumbing Quote Agent dashboard at http://your-local-frontend-url/.
+*Note: This uses the official, built-in Playwright server, which is simpler and more reliable than third-party alternatives.*
 
-Perform a comprehensive UI/UX analysis. Evaluate design consistency, usability, accessibility, and performance. Suggest prioritized improvements and generate a markdown report with findings, scores, and screenshots. Reference TASKS.md for requirements.
+### Step 4:  run the chrome as a host for testing
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
 ```
-
-This prompt can be used directly in your agent client or workflow to launch the ui-designer-mcp agent and ensure all required actions are performed.
-
-
-
-### 3. `frontend-developer-mcp`
-**Role:** Elite frontend developer
-**Purpose:** Implements UI/UX improvements, optimizes performance, and ensures accessibility
-**How to initiate:**
-**Step 3: Run after UI designer agent.**
-
-#### Assumptions:
-1. The Playwright MCP server should be running. (e.g., ws://your-local-playwright-server/)
-2. The Plumbing Quote Agent dashboard is running at http://your-local-frontend-url/
-
-#### Copy-paste Prompt for Next Time:
-```
-As the frontend-developer-mcp agent, connect to the running Playwright MCP server at ws://your-local-playwright-server/ for browser-based automation, testing, and UI validation. Target the Plumbing Quote Agent dashboard at http://your-local-frontend-url/.
-
-Implement the UI/UX improvements suggested by the ui-designer-mcp agent. Optimize the frontend for performance, accessibility, and responsiveness. Ensure all anticipated service questions are surfaced in the UI. Provide a summary of changes, code snippets, and recommendations for further improvement. Update TASKS.md as items are completed.
-```
-
-This prompt can be used directly in your agent client or workflow to launch the frontend-developer-mcp agent and ensure all required actions are performed.
-## Playwright MCP Server Setup & Usage
-
-All browser-based agent prompts and automation should use the Playwright MCP server for reliability and standardization.
-
-**Install globally (recommended):**
-```
-sudo npm install -g @executeautomation/playwright-mcp-server
-```
-
-**Run the server:**
-```
-playwright-mcp-server
-```
-
-**Verify:**
-- You should see output in your terminal indicating the server has started, including port and endpoint details.
-
-**Use in agent prompts:**
-- Reference Playwright MCP server in your agent CLI commands and prompts for all browser automation, UI testing, and web scraping tasks.
-
-### 4. `backend-architect-mcp`
-**Role:** Backend architect
-**Purpose:** Designs and reviews backend architecture, APIs, and database models
-**How to initiate:**
-**Step 4: Run after frontend developer agent.**
-
-#### Assumptions:
-1. The Playwright MCP server should be running. (e.g., ws://your-local-playwright-server/) if browser automation is required.
-2. The Plumbing Quote Agent dashboard is running at http://your-local-frontend-url/ (if needed).
-
-#### Copy-paste Prompt for Next Time:
-```
-As the backend-architect-mcp agent, review the current backend architecture, APIs, and database models. Suggest and implement improvements for scalability, security, and maintainability. Confirm privacy logic for GPT interaction is enforced and documented. Provide actionable recommendations and update TASKS.md with completed and outstanding backend tasks.
-```
-
-This prompt can be used directly in your agent client or workflow to launch the backend-architect-mcp agent and ensure all required actions are performed.
 
 ---
 
-## Recommendations: What to Do Next
+## 3. The End-to-End AI Workflow
 
-## Step-by-Step Agent Workflow
+This is the main, orchestrated workflow that uses the Project Manager agent to automate the entire UI improvement lifecycle.
 
-1. **Start with the Project Manager Agent:**
-   - Run the project-manager-mcp agent first to review work, update TASKS.md, and assign tasks.
+### How It Works: The State-Aware Feedback Loop
 
-2. **UI Evaluation:**
-   - Run the ui-designer-mcp agent to analyze the UI and suggest improvements.
+This workflow is designed to prevent duplicate work and create a clear audit trail.
 
-3. **Frontend Implementation:**
-   - Run the frontend-developer-mcp agent to implement UI/UX improvements and optimize the frontend.
+1.  **Task Generation:** The `project-manager-mcp-agent` first calls the `ui-designer-mcp-agent`. The designer analyzes the UI and creates a `ui-feedback.json` file with a `status` of `"pending"`.
+2.  **Task Assignment:** The Project Manager reads the pending feedback and formally assigns the implementation task.
+3.  **Implementation & State Update:** The `frontend-developer-mcp-agent` is called. It checks the file's status. Since it's `"pending"`, it implements the code change and then updates the `ui-feedback.json` file's `status` to `"implemented"`.
+4.  **Verification & Archiving:** The Project Manager agent takes over again, verifies the status is now `"implemented"`, and archives the completed feedback file to a `feedback/archive/` directory with a timestamp. This "closes the ticket" and prepares the system for the next run.
 
-4. **Backend Review:**
-   - Run the backend-architect-mcp agent to review and improve backend architecture, security, and privacy.
+### Running the Workflow
 
-5. **Iterate and Track Progress:**
-   - Regularly re-run the project-manager-mcp agent to update TASKS.md, monitor progress, and keep all agents aligned.
+To run the entire automated workflow, execute the following command from the **project root directory**. Replace `<email>` and `<password>` with valid login credentials for your application.
 
-**Tip:** Always follow this order for maximum efficiency. Use the exact prompts and CLI commands above for each agent.
+```bash
+node agents/project-manager-mcp-agent.js run-workflow <email> <password>
+```
 
-## UI Designer and Frontend Developer Workflow
+---
 
-This workflow demonstrates how the UI Designer and Frontend Developer agents can collaborate to improve the application's UI.
+## 4. Standalone Agent Commands (for Testing & Debugging)
 
-**Step 1: Run the UI Designer Agent**
+You can also run the agents individually. **Note:** Always run these commands from the `PlumbingPOC/` root directory.
 
-The UI Designer agent logs in to the application, analyzes the UI, and captures a screenshot for review.
+### UI Designer Agent
+
+Generates a new `ui-feedback.json` file.
 
 ```bash
 node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>
 ```
 
-This will save a screenshot named `dashboard-analysis.png` in the `agents/screenshots` directory. In a real-world scenario, the agent would also generate a markdown file with detailed feedback.
+### Frontend Developer Agent
 
-**Step 2: Handoff to the Frontend Developer Agent**
-
-The output of the UI Designer agent (the screenshot and a feedback file) serves as the input for the Frontend Developer agent. This file-based handoff is how the agents communicate.
-
-**Step 3: Run the Frontend Developer Agent**
-
-The Frontend Developer agent reads the feedback from the UI Designer agent and implements the suggested changes in the code.
-
-*(Note: The following command is a conceptual example. The `frontend-developer-mcp-agent.js` would need to be extended to read a feedback file and modify the code.)*
+Implements the feedback from an existing `ui-feedback.json` file.
 
 ```bash
-node agents/frontend-developer-mcp-agent.js implement-feedback --feedback-file agents/feedback/ui-feedback.md
+node agents/frontend-developer-mcp-agent.js implement-feedback --feedback-file agents/feedback/ui-feedback.json
 ```
 
-**Step 4: Code Updates**
+### Backend Architect Agent
 
-The Frontend Developer agent uses its tools (`read_file`, `replace`, `write_file`) to modify the application's source code (e.g., the React components in `vite-app/src/components`).
+Performs a high-level review of your actual backend code.
 
-### Agent Collaboration Diagram
+```bash
+node agents/backend-architect-mcp-agent.js review-backend
+```
+
+---
+
+## 5. How It Works: Technical Diagrams
+
+### High-Level Workflow Orchestration
+
+This diagram illustrates the new, state-aware workflow managed by the Project Manager agent.
 
 ```mermaid
 sequenceDiagram
     participant User
+    participant project-manager-mcp-agent.js
     participant ui-designer-mcp-agent.js
-    participant "Application UI (Browser)"
-    participant "File System"
     participant frontend-developer-mcp-agent.js
-    participant "Source Code"
+    participant "File System (feedback.json)"
 
-    User->>ui-designer-mcp-agent.js: Run analyze-ui command
-    ui-designer-mcp-agent.js->>"Application UI (Browser)": Login and navigate
-    ui-designer-mcp-agent.js->>"Application UI (Browser)": Take screenshot
-    ui-designer-mcp-agent.js->>"File System": Save screenshot and feedback.md
-    User->>frontend-developer-mcp-agent.js: Run implement-feedback command
-    frontend-developer-mcp-agent.js->>"File System": Read feedback.md
-    frontend-developer-mcp-agent.js->>"Source Code": Read relevant source code files
-    frontend-developer-mcp-agent.js->>"Source Code": Modify source code using tools (replace, write_file)
-    frontend-developer-mcp-agent.js->>User: Report results
-```
+    User->>project-manager-mcp-agent.js: Run workflow command
+    project-manager-mcp-agent.js->>ui-designer-mcp-agent.js: 1. Analyze UI
+    ui-designer-mcp-agent.js->>"File System (feedback.json)": 2. Create feedback (status: pending)
+    
+    project-manager-mcp-agent.js->>"File System (feedback.json)": 3. Read & verify status is 'pending'
+    project-manager-mcp-agent.js->>frontend-developer-mcp-agent.js: 4. Implement feedback
+    
+    frontend-developer-mcp-agent.js->>"File System (feedback.json)": 5. Read feedback & implement change
+    frontend-developer-mcp-agent.js->>"File System (feedback.json)": 6. Update status to 'implemented'
+    
+    project-manager-mcp-agent.js->>"File System (feedback.json)": 7. Verify status is 'implemented' & archive file
+    project-manager-mcp-agent.js->>User: 8. Report completion```
 
-## MCP Agent Automation Flow
+### Technical: Playwright Connection
+
+This diagram shows how the agent scripts connect to and control the browser via the Playwright server.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant frontend-developer-mcp-agent.js
+    participant Agent Script (e.g., ui-designer-mcp-agent.js)
     participant Playwright Library
-    participant Chrome/Chromium (Remote Debugging)
+    participant Playwright Server (npx playwright run-server)
+    participant Browser (Chrome/Chromium)
 
-    User->>frontend-developer-mcp-agent.js: Run agent script (node ...)
-    frontend-developer-mcp-agent.js->>Playwright Library: Use Playwright API (connectOverCDP)
-    Playwright Library->>Chrome/Chromium: Connect via WebSocket (CDP URL)
-    Chrome/Chromium-->>Playwright Library: Accept automation commands
-    Playwright Library-->>frontend-developer-mcp-agent.js: Automate browser (login, UI actions)
-    frontend-developer-mcp-agent.js-->>User: Report results (success/failure)
+    Agent Script->>Playwright Library: Use chromium.connectOverCDP()
+    Playwright Library->>Playwright Server: Connect via WebSocket (CDP URL)
+    Playwright Server->>Browser: Establishes and manages control session
+    Browser-->>Playwright Server: Ready for automation
+    Playwright Server-->>Playwright Library: Connection successful
+    Playwright Library-->>Agent Script: Returns 'browser' object for automation
+    Agent Script->>Agent Script: Executes automation steps (login, screenshot, etc.)
 ```
-
-### Explanation
-- **Playwright Library**: Node.js package used by your agent script for browser automation.
-- **Chrome/Chromium (Remote Debugging)**: Browser started in remote-debugging mode, exposes a WebSocket endpoint.
-- **frontend-developer-mcp-agent.js**: Agent script that uses Playwright to automate browser tasks.
-- **User**: Runs the agent and receives results.
-
-You do not need to run a Playwright server for MCP agent automation. The agent script uses Playwright to connect directly to the browser.
-
 --- END OF FILE agents/README2.md ---
+
+--- START OF FILE agents/backend-architect-mcp-agent.js ---
+
+/**
+ * =====================================================================================
+ * AGENT NAME: Backend Architect MCP Agent
+ * FILE:       agents/backend-architect-mcp-agent.js
+ * =====================================================================================
+ *
+ * @description
+ * This script acts as an autonomous Backend Architect agent. It reviews the project's
+ * database schema and API routes, identifies a potential improvement, and generates
+ * a structured feedback file with a specific, actionable code change. It is guided
+ * by a manifest of valid files to prevent hallucinations.
+ *
+ * @usage
+ * This script is intended to be run from inside the 'agents/' directory.
+ *
+ * COMMAND:
+ * node backend-architect-mcp-agent.js review-backend
+ *
+ * =====================================================================================
+ */
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fs = require('fs');
+const path = require('path');
+const { editableFileManifest } = require('./projectFileManifest.ts'); // <-- IMPORT THE MANIFEST
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+/**
+ * ======================================================
+ * FUNCTION: reviewBackend
+ * PURPOSE:  Loads persona and backend files, sends them to Gemini for an
+ *           expert review, and generates a JSON feedback file with a proposed change.
+ * ======================================================
+ */
+async function reviewBackend() {
+  console.log('============================================');
+  console.log('🚀 STARTING BACKEND ARCHITECTURE REVIEW');
+  console.log('============================================');
+
+  try {
+    const projectRoot = path.resolve(__dirname, '..');
+    const dbSchemaPath = path.join(projectRoot, 'SUPABASE_TABLES.sql');
+    const apiRoutesDir = path.join(projectRoot, 'vite-app', 'api', 'routes');
+
+    if (!fs.existsSync(dbSchemaPath) || !fs.existsSync(apiRoutesDir)) {
+      console.error(`Error: Could not find required backend files.`);
+      console.error(`Checked for: ${dbSchemaPath}`);
+      console.error(`Checked for: ${apiRoutesDir}`);
+      return;
+    }
+
+    const dbSchemaContent = fs.readFileSync(dbSchemaPath, 'utf8');
+    
+    const routeFiles = fs.readdirSync(apiRoutesDir).filter(f => f.endsWith('.js'));
+    let apiRoutesContent = '';
+    for (const file of routeFiles) {
+      const content = fs.readFileSync(path.join(apiRoutesDir, file), 'utf8');
+      apiRoutesContent += `\n\n--- START OF FILE ${file} ---\n\n${content}\n\n--- END OF FILE ${file} ---`;
+    }
+    
+    console.log('✅ Successfully loaded database schema and API routes.');
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    console.log('Successfully initialized Gemini 2.5 Pro model.');
+    
+    const personaFilePath = path.join(__dirname, 'backend-architect-mcp.md');
+    const personaContent = fs.readFileSync(personaFilePath, 'utf8');
+    console.log('Successfully loaded Backend Architect persona.');
+
+    const prompt = `
+      ${personaContent}
+
+      ---------------------------
+      CONTEXT: VALID FILE PATHS
+      ---------------------------
+      Here is a complete list of all the files you are allowed to modify. You MUST choose a file path from this list.
+      \`\`\`json
+      ${JSON.stringify(editableFileManifest, null, 2)}
+      \`\`\`
+
+      ---------------------------
+      YOUR CURRENT TASK
+      ---------------------------
+      As the Backend Architect, you are to review the provided database schema and API routes. Your goal is to identify one specific, high-impact improvement related to scalability, security, or best practices and propose a single-line code change to implement it.
+
+      **Database Schema (SUPABASE_TABLES.sql):**
+      \`\`\`sql
+      ${dbSchemaContent}
+      \`\`\`
+
+      **API Route Definitions (from vite-app/api/routes/):**
+      \`\`\`javascript
+      ${apiRoutesContent}
+      \`\`\`
+
+      **Instructions:**
+      Your response MUST be a single JSON object with the following structure. The 'file_path' you choose MUST exist in the list of valid files provided above.
+      {
+        "status": "pending",
+        "analysis": "A detailed, expert-level explanation of the architectural issue or improvement you identified. Explain the problem and how your proposed change will solve it, referencing your core principles (e.g., security, performance, scalability).",
+        "improvement": {
+          "file_path": "The path to the file that needs to be changed, relative to the project root. CHOOSE FROM THE LIST ABOVE.",
+          "old_string": "The exact line of code that needs to be replaced.",
+          "new_string": "The new line of code that should replace the old one."
+        }
+      }
+
+      Analyze the backend code and provide your feedback in the specified JSON format.
+    `;
+
+    console.log('\nAsking Gemini for a backend architecture review...');
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const rawText = response.text();
+    const jsonMatch = rawText.match(/```json\n([\s\S]*?)\n```|({[\s\S]*})/);
+    const text = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : rawText;
+
+    // --- SAVE THE STRUCTURED FEEDBACK ---
+    const feedbackDir = path.join(__dirname, 'feedback');
+    if (!fs.existsSync(feedbackDir)) fs.mkdirSync(feedbackDir, { recursive: true });
+
+    const feedbackFilePath = path.join(feedbackDir, 'backend-feedback.json');
+    fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
+    
+    console.log(`\n✅ Backend feedback file generated at ${feedbackFilePath} with status 'pending'.`);
+    console.log('============================================');
+    console.log('🎉 BACKEND REVIEW COMPLETE');
+    console.log('============================================');
+
+  } catch (error) {
+    console.error('\n============================================');
+    console.error('❌ BACKEND REVIEW FAILED');
+    console.error('============================================');
+    console.error('An error occurred during the review process:', error);
+  }
+}
+
+/**
+ * ======================================================
+ * SCRIPT ENTRY POINT (CLI HANDLER)
+ * ======================================================
+ */
+const [,, command] = process.argv;
+
+if (command === 'review-backend') {
+  reviewBackend();
+} else {
+  console.log('Usage: node backend-architect-mcp-agent.js review-backend');
+}
+--- END OF FILE agents/backend-architect-mcp-agent.js ---
 
 --- START OF FILE agents/backend-architect-mcp.md ---
 
@@ -1172,7 +1254,6 @@ persona: |
  * ======================================================
  */
 async function clickSignInButton(page) {
-  // Robustly click the "Sign In" button in the navbar
   try {
     await page.waitForSelector('role=button[name="Sign In"]', { timeout: 5000 });
     await page.getByRole('button', { name: /sign in/i }).click();
@@ -1180,6 +1261,7 @@ async function clickSignInButton(page) {
     throw new Error('Could not find or click the Sign In button');
   }
 }
+
 /**
  * ======================================================
  * FUNCTION: signOut
@@ -1197,66 +1279,39 @@ async function signOut(browser, baseUrl, options = {}) {
     console.error("signOut requires a page object in options.");
     return false;
   }
-  const loginSelector = 'role=button[name="Sign In"]'; // Wait for the sign in button to appear
+  const loginSelector = 'role=button[name="Sign In"]'; 
 
-  // Take a full-page screenshot before any clicks for debugging
-  console.log('Taking screenshot before user menu click...');
-  await page.screenshot({ path: 'agents/screenshots/before-user-menu-full.png', fullPage: true });
-  console.log('Screenshot saved as agents/screenshots/before-user-menu-full.png');
   let success = false;
   try {
-    // 1. Click on user menu using a more robust selector
     console.log('Attempting to click user menu button...');
     const userMenuButtonSelector = 'button:has(svg.lucide-chevron-down)';
-    try {
-      await page.waitForSelector(userMenuButtonSelector, { timeout: 5000 });
-      await page.click(userMenuButtonSelector);
-      console.log('User menu button click succeeded.');
-    } catch (menuErr) {
-      console.log('User menu click failed, taking user-menu-click-failure screenshot...');
-      await page.screenshot({ path: 'agents/screenshots/user-menu-click-failure.png' });
-      console.log('Screenshot saved as agents/screenshots/user-menu-click-failure.png');
-      console.error(menuErr);
-      throw new Error('Failed to click user menu button. Screenshot saved.');
-    }
-    // 2. Wait for the dropdown to appear
+    await page.waitForSelector(userMenuButtonSelector, { timeout: 5000 });
+    await page.click(userMenuButtonSelector);
+
     console.log('Waiting for sign out button to appear...');
     const signOutButtonSelector = 'button:has-text("Sign Out")';
     await page.waitForSelector(signOutButtonSelector, { timeout: 2000 });
 
-    // 3. Take screenshot
-    console.log('Taking after-user-menu-click screenshot...');
-    await page.screenshot({ path: 'agents/screenshots/after-user-menu-click.png' });
-    console.log('Screenshot saved as agents/screenshots/after-user-menu-click.png');
-    // 4. Click on sign out
     console.log('Attempting to click "Sign Out" button...');
     await page.click(signOutButtonSelector);
-    console.log('Clicked "Sign Out" button, waiting for login page...');
+    
     await page.waitForSelector(loginSelector, { timeout: 5000 });
     console.log('Logout successful');
     success = true;
   } catch (err) {
     console.log('Logout failed');
-    await page.screenshot({ path: 'agents/screenshots/logout-failure-debug.png' });
-    console.log('Screenshot saved as agents/screenshots/logout-failure-debug.png');
+    await page.screenshot({ path: 'screenshots/logout-failure-debug.png' });
+    console.log('Screenshot saved as screenshots/logout-failure-debug.png');
     console.error(err);
   }
   return success;
 }
-// browserAuth.js
-// Shared Playwright email/password login utility for MCP agents
 
 /**
  * ======================================================
- * FUNCTION: signInEmailPassword
- * PURPOSE:  Automate email/password login and report success.
- * PARAMETERS:
- * @param {import('playwright').Browser} browser - Playwright browser instance
- * @param {string} baseUrl - Base URL of the frontend (e.g., https://plumbingpoc.netlify.app)
- * @param {string} email - User email
- * @param {string} password - User password
- * @param {object} [options] - Optional selectors and paths
- * @returns {Promise<object>} - Resolves an object with success status and page object
+ * FUNCTION: signInEmailPassword (UPDATED for Admin & Regular Users)
+ * PURPOSE:  Ensures the user is logged in, regardless of role. It checks
+ *           for the universal User Menu button as a success indicator.
  * ======================================================
  */
 async function signInEmailPassword(browser, baseUrl, email, password, options = {}) {
@@ -1264,87 +1319,364 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
   const loginPath = options.loginPath || '/';
   const emailSelector = options.emailSelector || 'input[type="email"]';
   const passwordSelector = options.passwordSelector || 'input[type="password"]';
-  const successSelector = options.successSelector || 'text=My Quote Requests'; // Adjusted for reliable login verification
+  
+  // --- THE FIX IS HERE ---
+  // The new success selector is not role-specific. It looks for the user menu button
+  // that appears for ANY successfully logged-in user.
+  const successSelector = options.successSelector || 'button:has(svg.lucide-chevron-down)';
 
   await page.goto(baseUrl + loginPath);
-  // Click "Sign In" button to open modal
-  console.log('Attempting to click Sign In button...');
-  await clickSignInButton(page);
-  // Wait for modal to appear
-  console.log('Waiting for email input to appear...');
-  await page.waitForSelector(emailSelector, { timeout: 10000 });
-  // Take screenshot after modal appears
-  await page.screenshot({ path: 'agents/screenshots/login-modal-debug.png' });
-  console.log('Filling email and password...');
-  await page.fill(emailSelector, email);
-  await page.fill(passwordSelector, password);
-  console.log('Clicking "Sign In with Email" button...');
-  await page.getByRole('button', { name: /sign in with email/i }).click();
 
-  let success = false;
   try {
-    console.log('Waiting for dashboard or success indicator...');
-    await page.waitForSelector(successSelector, { timeout: 10000 });
-    console.log('Login successful for', email);
-    await page.screenshot({ path: 'agents/screenshots/login-success-debug.png' });
-    console.log('Screenshot saved as agents/screenshots/login-success-debug.png');
-    success = true;
-  } catch (err) {
-    console.log('Login failed for', email);
-    await page.screenshot({ path: 'agents/screenshots/login-failure-debug.png' });
-    console.log('Screenshot saved as agents/screenshots/login-failure-debug.png');
+    // First, check if we are ALREADY logged in by looking for the universal success selector.
+    console.log(`Checking for existing login session by looking for: "User Menu Button"`);
+    await page.waitForSelector(successSelector, { timeout: 3000 }); // Short timeout
+    
+    // If the selector is found, we're already logged in.
+    console.log('✅ Already logged in. Skipping login flow.');
+    return { success: true, page };
+
+  } catch (e) {
+    // If the success selector is not found, it means we are not logged in.
+    console.log('Not logged in. Proceeding with sign-in flow...');
+    try {
+      console.log('Attempting to click Sign In button...');
+      await clickSignInButton(page);
+      
+      console.log('Waiting for email input to appear...');
+      await page.waitForSelector(emailSelector, { timeout: 10000 });
+      
+      console.log('Filling email and password...');
+      await page.fill(emailSelector, email);
+      await page.fill(passwordSelector, password);
+      
+      console.log('Clicking "Sign In with Email" button...');
+      await page.getByRole('button', { name: /sign in with email/i }).click();
+
+      console.log('Waiting for login success indicator (User Menu)...');
+      await page.waitForSelector(successSelector, { timeout: 10000 });
+      
+      console.log('Login successful for', email);
+      return { success: true, page };
+
+    } catch (loginErr) {
+      console.log('Login failed for', email);
+      await page.screenshot({ path: 'screenshots/login-failure-debug.png' });
+      console.log('Screenshot saved as agents/screenshots/login-failure-debug.png');
+      return { success: false, page };
+    }
   }
-  return { success, page };
 }
 
 module.exports = { signInEmailPassword, signOut, clickSignInButton };
 --- END OF FILE agents/browserAuth.js ---
 
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-13-29.101Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The \"My Quote Requests\" section presents a significant UI layout flaw that compromises visual hierarchy and user focus. The quote request card and the \"Emergency Line\" button are placed within a flex container using `justify-between`, pushing them to opposite ends of the content area. This creates a visually jarring, unbalanced composition with excessive negative space. The high-contrast red \"Emergency Line\" button visually competes with the user's primary information (the quote request card), creating confusion about the relationship between the two elements and disrupting the logical flow. This layout fails the design principle of proximity (grouping related items) and is not scalable for multiple quote requests.",
+  "improvement": {
+    "file_path": "vite-app/src/components/MyRequests.tsx",
+    "old_string": "      <div className=\"mt-8 flex items-center justify-between\">",
+    "new_string": "      <div className=\"mt-8 flex flex-col items-center gap-6\">"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-13-29.101Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-24-09.859Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The 'Emergency Line' button within the 'My Quote Requests' section currently uses a destructive (bright red) style, giving it excessive visual prominence. This is a significant UI/UX issue because its placement next to a specific quote request creates ambiguity about its function—it's a general action misplaced in a specific context. The high-contrast color distracts the user from the primary task of this section, which is to review the status of their quotes. This violates the principle of clear visual hierarchy, as the red color incorrectly signals a primary or dangerous action related to the quote itself, rather than a secondary contact option.",
+  "improvement": {
+    "file_path": "vite-app/src/components/Dashboard.tsx",
+    "old_string": "          <Button variant=\"destructive\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button>",
+    "new_string": "          <Button variant=\"outline\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button>"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-24-09.859Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-28-32.043Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The primary UI/UX issue identified is the placement and styling of the 'Emergency Line' button within the 'My Quote Requests' component. From a design principles perspective, this element introduces several problems:\n1.  **Visual Hierarchy Disruption:** The button utilizes a high-contrast, red 'destructive' variant, which immediately draws the user's eye. This color and prominence should be reserved for critical, contextual actions (like deleting a request). Here, it's used for a global, non-contextual action, creating a distracting focal point that pulls attention away from the primary content—the quote requests themselves.\n2.  **Contextual Irrelevance:** A user viewing their quote requests is in a management or review mindset. Placing an urgent, top-level 'Emergency' CTA here is illogical and confusing. Global CTAs for this purpose are already correctly placed in the header and footer, following standard design patterns.\n3.  **Scalability Issues:** The current layout implies that an 'Emergency Line' button will be rendered for each quote request in the list. This is highly redundant and would severely clutter the interface if a user has multiple requests.\nRemoving this button is a high-impact, quick-win improvement. It will declutter the interface, strengthen the visual hierarchy, and allow the user to focus on the primary task of reviewing their quotes, leading to a more streamlined and intuitive experience.",
+  "improvement": {
+    "file_path": "vite-app/src/components/MyRequests.tsx",
+    "old_string": "        <Button variant=\"destructive\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button>",
+    "new_string": "        {/* <Button variant=\"destructive\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button> */}"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-28-32.043Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-43-35.608Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The user menu in the header presents a significant UI/UX issue. It currently displays a generic label 'User' and the user's full email address. This approach is problematic for several reasons: 1) **Redundancy & Clutter:** The word 'User' is superfluous as the person icon already signifies a user profile. The full email address is lengthy and creates visual imbalance in an otherwise clean header. 2) **Poor Information Scent:** It displays identifying information ('ziazdamauler@yahoo.ca') instead of actionable navigation ('Dashboard', 'My Account'). 3) **Privacy Concerns:** Exposing a user's email address directly in the UI is not a recommended practice. This combination of factors makes the header feel less polished and professional than the rest of the site.",
+  "improvement": {
+    "file_path": "vite-app/src/components/UserMenu.tsx",
+    "old_string": "<span className=\"text-xs font-medium\">User</span>",
+    "new_string": "<span className=\"text-sm font-medium\">Dashboard</span>"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-43-35.608Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-48-12.876Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The primary UI/UX issue in the 'My Quote Requests' section is a fundamental lack of interactivity and a broken user flow. The component displays a user's quote request but provides no clear, actionable path to view its details. The entire card acts as a static information display, which is counterintuitive for a list item that implies a deeper level of detail. The user's primary goal—to check on their request—is obstructed. This problem is exacerbated by the only interactive element present being a visually loud, and contextually misplaced, 'Emergency Line' button, which distracts from the user's task rather than facilitating it.",
+  "improvement": {
+    "file_path": "vite-app/src/components/MyRequests.tsx",
+    "old_string": "          <div key={request.id} className=\"bg-white p-4 rounded-lg shadow-md flex items-center justify-between\">",
+    "new_string": "          <button key={request.id} onClick={() => setSelectedRequest(request)} className=\"w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200\">"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-48-12.876Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-50-58.626Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The 'About AquaFlow Plumbing' section effectively uses trust signals like 'Licensed & Insured' and '24/7 Emergency'. However, the value proposition for '5-Star Rated' is described as 'Customer approved,' which is redundant and lacks impact. The rating itself implies customer approval. As a visionary UI designer focused on rapid, impactful iteration, I recommend elevating this microcopy. Changing this description to 'Proven customer satisfaction' is a high-impact, single-line change that transforms a weak statement into a powerful testament to quality and reliability. This subtle adjustment significantly strengthens the company's brand perception and trustworthiness with minimal development effort, aligning perfectly with our principle of optimizing for developer handoff.",
+  "improvement": {
+    "file_path": "vite-app/src/components/AboutSection.tsx",
+    "old_string": "      { name: '5-Star Rated', description: 'Customer approved' },",
+    "new_string": "      { name: '5-Star Rated', description: 'Proven customer satisfaction' },"
+  }
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T20-50-58.626Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T21-11-18.780Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The user interface is clean, modern, and professional, effectively establishing a sense of trust. The layout is well-structured, and the color scheme is appropriate. However, several high-impact, low-effort refinements can elevate the design's polish and user engagement. The primary opportunities involve enhancing visual hierarchy through depth and spacing. Specifically: 1) The service description cards are information-dense and would benefit from increased internal padding for better readability. 2) The customer review cards lack visual separation from the background, which can be improved with a more pronounced shadow. 3) The primary call-to-action button in the hero section is static and would be more effective with interactive feedback on hover.",
+  "improvements": [
+    {
+      "file_path": "vite-app/src/components/ServicesSection.tsx",
+      "old_string": "className=\"bg-white rounded-xl shadow-md p-6 h-full\"",
+      "new_string": "className=\"bg-white rounded-xl shadow-md p-8 h-full\""
+    },
+    {
+      "file_path": "vite-app/src/components/ReviewsSection.tsx",
+      "old_string": "className=\"bg-white rounded-lg p-8 shadow-sm\"",
+      "new_string": "className=\"bg-white rounded-lg p-8 shadow-xl\""
+    },
+    {
+      "file_path": "vite-app/src/components/Dashboard.tsx",
+      "old_string": "<button className=\"bg-white text-blue-700 font-semibold py-3 px-6 rounded-lg shadow-sm hover:bg-gray-100\">",
+      "new_string": "<button className=\"bg-white text-blue-700 font-semibold py-3 px-6 rounded-lg shadow-sm hover:bg-gray-100 transition-transform duration-200 hover:-translate-y-1\">"
+    }
+  ]
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T21-11-18.780Z.json ---
+
+--- START OF FILE agents/feedback/archive/ui-feedback-2025-08-30T21-37-59.686Z.json ---
+
+{
+  "status": "implemented",
+  "analysis": "The user interface is clean, modern, and professional. However, a few high-impact refinements can significantly improve visual hierarchy, scannability, and user clarity. The primary navigation has competing calls-to-action, with the secondary 'Dashboard' button having the same visual weight as the primary 'Call Now' button. In the services section, the icons are somewhat small and light in color, reducing their impact and the section's scannability. Finally, the button copy in the 'Request a Quote' modal is abrupt ('YES'/'NO') and could be more descriptive to improve user confidence, especially in a stressful emergency situation.",
+  "improvements": [
+    {
+      "file_path": "vite-app/src/components/UserMenu.tsx",
+      "old_string": "          className=\"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gray-900 text-white hover:bg-gray-800\"",
+      "new_string": "          className=\"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-transparent text-white hover:bg-white/10\""
+    },
+    {
+      "file_path": "vite-app/src/components/ServicesSection.tsx",
+      "old_string": "                <service.icon className=\"h-8 w-8 text-blue-500\" />",
+      "new_string": "                <service.icon className=\"h-10 w-10 text-blue-600\" />"
+    },
+    {
+      "file_path": "vite-app/src/components/QuoteFormModal.tsx",
+      "old_string": "                <Button onClick={() => handleEmergency(true)} className=\"bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg\">YES</Button>",
+      "new_string": "                <Button onClick={() => handleEmergency(true)} className=\"bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg\">Yes, it's an emergency</Button>"
+    }
+  ]
+}
+--- END OF FILE agents/feedback/archive/ui-feedback-2025-08-30T21-37-59.686Z.json ---
+
 --- START OF FILE agents/frontend-developer-mcp-agent.js ---
 
-// MCP Frontend Developer Agent
-// PRECONDITIONS: 
-// close all chrome instances. 
-// Start Chrome or Chromium in remote-debugging mode:
-// For Chrome:
-//   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
-// For Chromium:
-//   chromium --remote-debugging-port=9222
-// Usage: node agents/frontend-developer-mcp-agent.js login-logout-test <email> <password>
+/**
+ * =====================================================================================
+ * AGENT NAME: Frontend Developer MCP Agent (Multi-Feedback Version)
+ * FILE:       agents/frontend-developer-mcp-agent.js
+ * =====================================================================================
+ *
+ * @description
+ * This agent processes a feedback file containing an ARRAY of improvements. It applies
+ * all changes, then runs a single build verification. If the build fails, it rolls
+ * back ALL changes, ensuring the codebase remains stable.
+ *
+ * @usage
+ * Run from inside the 'agents/' directory:
+ * node frontend-developer-mcp-agent.js implement-feedback --feedback-file feedback/ui-feedback.json
+ *
+ * =====================================================================================
+ */
 const { chromium } = require('playwright');
 const { signInEmailPassword, signOut } = require('./browserAuth');
-require('dotenv').config();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
-const successSelector = 'text=My Quote Requests';
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+/**
+ * ======================================================
+ * FUNCTION: implementFeedback
+ * PURPOSE:  Processes a BATCH of improvements, verifies, and rolls back if needed.
+ * ======================================================
+ */
+async function implementFeedback(feedbackFilePath) {
+  const absoluteFeedbackPath = path.resolve(__dirname, feedbackFilePath);
+  if (!fs.existsSync(absoluteFeedbackPath)) {
+    console.error(`Error: Feedback file not found at ${absoluteFeedbackPath}`);
+    return;
+  }
+
+  const feedback = JSON.parse(fs.readFileSync(absoluteFeedbackPath, 'utf-8'));
+
+  if (feedback.status === 'implemented') {
+    console.log("✅ Feedback has already been implemented. No action taken.");
+    return;
+  }
+
+  const { analysis, improvements } = feedback;
+  if (!improvements || !Array.isArray(improvements)) {
+    throw new Error("Feedback file is malformed: 'improvements' key is missing or not an array.");
+  }
+  
+  const projectRoot = path.resolve(__dirname, '..');
+  // Store original content of all files to be modified for potential rollback
+  const originalFiles = new Map();
+
+  try {
+    console.log(`Found ${improvements.length} improvements to implement. Proceeding...`);
+
+    // --- BATCH IMPLEMENTATION LOOP ---
+    for (const improvement of improvements) {
+      const { file_path, old_string, new_string } = improvement;
+      const absoluteTargetFilePath = path.resolve(projectRoot, file_path);
+
+      if (!fs.existsSync(absoluteTargetFilePath)) {
+        throw new Error(`Target source code file not found at ${absoluteTargetFilePath}`);
+      }
+      
+      // Save original content if we haven't already
+      if (!originalFiles.has(absoluteTargetFilePath)) {
+        originalFiles.set(absoluteTargetFilePath, fs.readFileSync(absoluteTargetFilePath, 'utf-8'));
+      }
+      
+      // Read the most current content for this iteration
+      let currentSourceCode = fs.readFileSync(absoluteTargetFilePath, 'utf-8');
+
+      // Simple string replacement for this batch model
+      const updatedSourceCode = currentSourceCode.replace(old_string, new_string);
+      
+      fs.writeFileSync(absoluteTargetFilePath, updatedSourceCode);
+      console.log(`Applied change to ${file_path}`);
+    }
+
+    // --- SINGLE VERIFICATION STEP ---
+    console.log('\n--- All changes applied. Verifying with a single build command... ---');
+    try {
+      execSync('npm run build', { cwd: projectRoot, stdio: 'inherit' });
+      console.log('✅ Build successful! All changes are valid.');
+    } catch (buildError) {
+      throw new Error('Build verification failed after applying batch changes.');
+    }
+
+    // If build succeeds, update the feedback status
+    feedback.status = 'implemented';
+    fs.writeFileSync(absoluteFeedbackPath, JSON.stringify(feedback, null, 2));
+    console.log(`✅ Updated feedback file status to 'implemented'.`);
+
+  } catch (error) {
+    console.error(`\n--- An error occurred during implementation: ${error.message} ---`);
+    console.log('--- ROLLING BACK all changes... ---');
+    
+    // Rollback all modified files to their original state
+    for (const [filePath, originalContent] of originalFiles.entries()) {
+      fs.writeFileSync(filePath, originalContent);
+      console.log(`✅ Reverted ${path.relative(projectRoot, filePath)}`);
+    }
+    
+    throw new Error("Implementation failed and all changes were rolled back.");
+  }
+}
+
+/**
+ * ======================================================
+ * FUNCTION: loginLogoutTest
+ * PURPOSE:  Performs a simple end-to-end test and ensures cleanup.
+ * ======================================================
+ */
 async function loginLogoutTest(email, password) {
-  const browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
-  console.log('Connected to Playwright MCP server');
-  const { success: loginSuccess, page } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
-  if (loginSuccess) {
-    console.log('Login test: SUCCESS');
-    const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });
-    if (logoutSuccess) {
-      console.log('Logout test: SUCCESS');
+  let browser;
+  let page;
+  try {
+    browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
+    console.log('Connected to Playwright MCP server');
+    
+    const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
+    page = newPage;
+    
+    if (loginSuccess) {
+      console.log('Login test: SUCCESS');
+      const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });
+      if (logoutSuccess) console.log('Logout test: SUCCESS');
+      else console.log('Logout test: FAILED');
     } else {
-      console.log('Logout test: FAILED');
+      console.log('Login test: FAILED');
+    }
+  } catch(error) {
+    console.error('An error occurred during the login/logout test:', error);
+  } finally {
+    if (page) await page.close();
+    if (browser) await browser.close();
+    console.log('Browser session closed.');
+  }
+}
+
+/**
+ * ======================================================
+ * SCRIPT ENTRY POINT (CLI HANDLER)
+ * ======================================================
+ */
+const [,, command, ...args] = process.argv;
+
+(async () => {
+  if (command === 'login-logout-test') {
+    const [email, password] = args;
+    if (email && password) {
+      await loginLogoutTest(email, password);
+    } else {
+      console.log('Usage: node frontend-developer-mcp-agent.js login-logout-test <email> <password>');
+    }
+  } else if (command === 'implement-feedback') {
+    const feedbackFileIndex = args.indexOf('--feedback-file');
+    if (feedbackFileIndex !== -1 && args[feedbackFileIndex + 1]) {
+      try {
+        await implementFeedback(args[feedbackFileIndex + 1]);
+      } catch (e) {
+        process.exit(1);
+      }
+    } else {
+      console.log('Usage: node frontend-developer-mcp-agent.js implement-feedback --feedback-file <path>');
     }
   } else {
-    console.log('Login test: FAILED');
+    console.log('Invalid command. Available commands: login-logout-test, implement-feedback');
   }
-  if (page) await page.close();
-  await browser.close();
-}
-
-// CLI handler
-const [,, command, email, password] = process.argv;
-if (command === 'login-logout-test' && email && password) {
-  loginLogoutTest(email, password);
-} else {
-  console.log('Usage: node agents/frontend-developer-mcp-agent.js login-logout-test <email> <password>');
-}
-
+})();
 --- END OF FILE agents/frontend-developer-mcp-agent.js ---
 
 --- START OF FILE agents/frontend-developer-mcp.md ---
@@ -1392,6 +1724,186 @@ persona: |
 
 --- END OF FILE agents/frontend-developer-mcp.md ---
 
+--- START OF FILE agents/project-manager-mcp-agent.js ---
+
+/**
+ * =====================================================================================
+ * AGENT NAME: Project Manager MCP Agent (Target-Aware Version)
+ * FILE:       agents/project-manager-mcp-agent.js
+ * =====================================================================================
+ *
+ * @description
+ * This agent orchestrates the full UI improvement workflow. It can now be directed
+ * to a specific UI component using the --target flag, which it passes to the
+ * UI Designer agent to initiate a focused analysis.
+ *
+ * @usage
+ * Run from inside the 'agents/' directory:
+ * # Analyze the Request Detail Modal
+ * node project-manager-mcp-agent.js run-workflow <email> <password> --target request-detail-modal
+ *
+ * # Analyze the Quote Agent Modal
+ * node project-manager-mcp-agent.js run-workflow <email> <password> --target quote-agent-modal
+ *
+ * =====================================================================================
+ */
+const { exec } = require('child_process');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fs = require('fs');
+const path = require('path');
+const { editableFileManifest } = require('./projectFileManifest.js');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+function runCommand(command) {
+  return new Promise((resolve, reject) => {
+    console.log(`\n▶️ EXECUTING: ${command}`);
+    const childProcess = exec(command, { cwd: __dirname });
+    childProcess.stdout.pipe(process.stdout);
+    childProcess.stderr.pipe(process.stderr);
+    childProcess.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Command failed with exit code ${code}: ${command}`));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * ======================================================
+ * FUNCTION: runWorkflow
+ * PURPOSE:  Orchestrates the workflow against a specific target.
+ * ======================================================
+ */
+async function runWorkflow(email, password, target) {
+  console.log('============================================');
+  console.log(`🚀 STARTING PROJECT MANAGER WORKFLOW for target: '${target}'`);
+  console.log('============================================');
+
+  const feedbackFilePath = path.join(__dirname, 'feedback', 'ui-feedback.json');
+
+  try {
+    // === STEP 1: Run the UI Designer Agent with the specified target ===
+    console.log(`\n--- STEP 1: Assigning task to UI Designer Agent for target '${target}' ---`);
+    const designerCommand = `node ui-designer-mcp-agent.js analyze-ui ${email} ${password} --target ${target}`;
+    await runCommand(designerCommand);
+    console.log('✅ UI Designer Agent finished analysis.');
+
+    // === STEP 2: Project Manager Reviews, VALIDATES BATCH, and Assigns Task ===
+    console.log('\n--- STEP 2: Reviewing and VALIDATING feedback batch ---');
+    if (!fs.existsSync(feedbackFilePath)) {
+      throw new Error('Critical Error: ui-feedback.json was not generated.');
+    }
+    const feedback = JSON.parse(fs.readFileSync(feedbackFilePath, 'utf-8'));
+
+    if (!feedback.improvements || !Array.isArray(feedback.improvements)) {
+      throw new Error(`VALIDATION FAILED: Feedback file is malformed. 'improvements' array not found.`);
+    }
+
+    for (const improvement of feedback.improvements) {
+      const proposedFilePath = improvement.file_path;
+      if (!proposedFilePath || !editableFileManifest.includes(proposedFilePath)) {
+        throw new Error(`VALIDATION FAILED: An invalid file path was proposed: "${proposedFilePath}". Halting workflow.`);
+      }
+    }
+    console.log(`✅ Validation successful: All ${feedback.improvements.length} proposed file paths are in the manifest.`);
+    
+    if (feedback.status === 'implemented') {
+      console.log("✅ Task has already been implemented. Archiving and completing workflow.");
+      const archiveDir = path.join(__dirname, 'feedback', 'archive');
+      if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/:/g, '-');
+      const archivePath = path.join(archiveDir, `ui-feedback-${timestamp}.json`);
+      fs.renameSync(feedbackFilePath, archivePath);
+      console.log(`✅ Task archived to: ${archivePath}`);
+      return;
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    const personaContent = fs.readFileSync(path.join(__dirname, 'project-manager-mcp.md'), 'utf8');
+
+    const prompt = `
+      ${personaContent}
+      ---------------------------
+      YOUR CURRENT TASK
+      ---------------------------
+      You have received and validated the following BATCH of UI/UX feedback for the '${target}' component. Your task is to create a brief summary and assign the entire batch to the 'frontend-developer-mcp' agent.
+      
+      **Designer Feedback (Status: ${feedback.status}):**
+      \`\`\`json
+      ${JSON.stringify(feedback, null, 2)}
+      \`\`\`
+    `;
+    
+    const result = await model.generateContent(prompt);
+    const summary = await result.response.text();
+    console.log('\n--- PROJECT MANAGER STATUS UPDATE ---');
+    console.log(summary);
+    console.log('-------------------------------------\n');
+
+    // === STEP 3: Run the Frontend Developer Agent ===
+    console.log('\n--- STEP 3: Assigning implementation task to Frontend Developer Agent ---');
+    await runCommand(`node frontend-developer-mcp-agent.js implement-feedback --feedback-file feedback/ui-feedback.json`);
+    console.log('✅ Frontend Developer Agent finished implementation.');
+
+    // === STEP 4: Verification and Archiving ===
+    console.log('\n--- STEP 4: Verifying implementation and archiving task ---');
+    const updatedFeedback = JSON.parse(fs.readFileSync(feedbackFilePath, 'utf-8'));
+
+    if (updatedFeedback.status === 'implemented') {
+        console.log('Verification successful. Status is "implemented".');
+        
+        const archiveDir = path.join(__dirname, 'feedback', 'archive');
+        if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+        const timestamp = new Date().toISOString().replace(/:/g, '-');
+        const archivePath = path.join(archiveDir, `ui-feedback-${timestamp}.json`);
+        fs.renameSync(feedbackFilePath, archivePath);
+        console.log(`✅ Task archived to: ${archivePath}`);
+    } else {
+        throw new Error(`Verification FAILED. Expected status 'implemented', but found '${updatedFeedback.status}'.`);
+    }
+
+    // === STEP 5: Final Summary ===
+    console.log('\n============================================');
+    console.log('🎉 WORKFLOW COMPLETED SUCCESSFULLY');
+    console.log('============================================');
+    console.log(`The '${target}' UI has been updated and the workflow is complete.`);
+
+  } catch (error) {
+    console.error('\n============================================');
+    console.error('❌ WORKFLOW FAILED');
+    console.error('============================================');
+    console.error('An error occurred during the workflow:', error.message);
+  }
+}
+
+/**
+ * ======================================================
+ * SCRIPT ENTRY POINT (CLI HANDLER with --target flag)
+ * ======================================================
+ */
+const args = process.argv.slice(2);
+const command = args[0];
+const email = args[1];
+const password = args[2];
+
+let target = 'dashboard'; // Default target
+const targetIndex = args.indexOf('--target');
+if (targetIndex !== -1 && args[targetIndex + 1]) {
+  target = args[targetIndex + 1];
+}
+
+if (command === 'run-workflow' && email && password) {
+  runWorkflow(email, password, target);
+} else {
+  console.log('Usage: node project-manager-mcp-agent.js run-workflow <email> <password> [--target <target_name>]');
+}
+--- END OF FILE agents/project-manager-mcp-agent.js ---
+
 --- START OF FILE agents/project-manager-mcp.md ---
 
 # -------------------------------------------------------------
@@ -1433,56 +1945,249 @@ persona: |
 
 --- END OF FILE agents/project-manager-mcp.md ---
 
+--- START OF FILE agents/projectFileManifest.js ---
+
+// agents/projectFileManifest.js
+// This file acts as a single source of truth for all files that AI agents
+// are permitted to analyze and modify. It uses CommonJS syntax (module.exports)
+// to be compatible with the Node.js agent scripts.
+
+// IMPORTANT: This list should be updated if you add, remove, or rename files
+// in the vite-app directory that you want the agents to interact with.
+
+const editableFileManifest = [
+  'vite-app/api/config/supabase.js',
+  'vite-app/api/controllers/followUpController.js',
+  'vite-app/api/controllers/requestController.js',
+  'vite-app/api/controllers/triageController.js',
+  'vite-app/api/controllers/userController.js',
+  'vite-app/api/middleware/authMiddleware.js',
+  'vite-app/api/middleware/validationMiddleware.js',
+  'vite-app/api/routes/followUpRoutes.js',
+  'vite-app/api/routes/requestRoutes.js',
+  'vite-app/api/routes/triageRoutes.js',
+  'vite-app/api/routes/userRoutes.js',
+  'vite-app/api/server.js',
+  'vite-app/api/services/emailService.js',
+  'vite-app/api/validation/schemas.js',
+  'vite-app/src/components/AboutSection.tsx',
+  'vite-app/src/components/AttachmentSection.tsx',
+  'vite-app/src/components/AuthModal.tsx',
+  'vite-app/src/components/ContactSection.tsx',
+  'vite-app/src/components/CustomerInfoSection.tsx',
+  'vite-app/src/components/Dashboard.tsx',
+  'vite-app/src/components/MyRequests.tsx',
+  'vite-app/src/components/ProfileModal.tsx',
+  'vite-app/src/components/QuoteAgentModal.tsx',
+  'vite-app/src/components/QuoteFormModal.tsx',
+  'vite-app/src/components/RequestDetailModal.tsx',
+  'vite-app/src/components/ReviewsSection.tsx',
+  'vite-app/src/components/ServicesSection.tsx',
+  'vite-app/src/components/UserMenu.tsx',
+  'vite-app/src/contexts/AuthContext.tsx',
+  'vite-app/src/lib/apiClient.ts',
+  'vite-app/src/lib/serviceQuoteQuestions.ts',
+  'vite-app/src/lib/servicesData.ts',
+  'vite-app/src/lib/statusColors.ts',
+  'vite-app/src/lib/supabaseClient.ts',
+  'vite-app/src/main.tsx',
+  'vite-app/vite.config.js'
+];
+
+module.exports = {
+  editableFileManifest
+};
+--- END OF FILE agents/projectFileManifest.js ---
+
 --- START OF FILE agents/ui-designer-mcp-agent.js ---
 
-// MCP UI Designer Agent
-// PRECONDITIONS: 
-// close all chrome instances. 
-// Start Chrome or Chromium in remote-debugging mode:
-// For Chrome:
-//   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
-// For Chromium:
-//   chromium --remote-debugging-port=9222
-// Usage: node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>
+/**
+ * =====================================================================================
+ * AGENT NAME: UI Designer MCP Agent (Target-Aware Version)
+ * FILE:       agents/ui-designer-mcp-agent.js
+ * =====================================================================================
+ *
+ * @description
+ * This agent can now follow a "mission" to analyze specific parts of the application.
+ * Use the --target flag to specify which UI component to analyze. It generates
+ * multiple feedback items in a single, structured JSON file.
+ *
+ * @usage
+ * Run from inside the 'agents/' directory:
+ *
+ * # Analyze the main dashboard (default)
+ * node ui-designer-mcp-agent.js analyze-ui <email> <password>
+ *
+ * # Analyze the Request Detail Modal
+ * node ui-designer-mcp-agent.js analyze-ui <email> <password> --target request-detail-modal
+ *
+ * # Analyze the Quote Agent Modal
+ * node ui-designer-mcp-agent.js analyze-ui <email> <password> --target quote-agent-modal
+ *
+ * =====================================================================================
+ */
 const { chromium } = require('playwright');
-const { signInEmailPassword, signOut } = require('./browserAuth');
-require('dotenv').config();
+const { signInEmailPassword } = require('./browserAuth');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fs = require('fs');
+const path = require('path');
+const { editableFileManifest } = require('./projectFileManifest.js');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-async function analyzeUI(email, password) {
-  const browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
-  console.log('Connected to Playwright MCP server');
-  const { success: loginSuccess, page } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
-  if (loginSuccess) {
-    console.log('Login successful. Analyzing UI...');
-    // In a real scenario, you would add more advanced UI analysis here.
-    // For now, we'll just take a screenshot of the dashboard.
-    await page.screenshot({ path: 'agents/screenshots/dashboard-analysis.png', fullPage: true });
-    console.log('Dashboard screenshot saved as agents/screenshots/dashboard-analysis.png');
+function fileToGenerativePart(filePath, mimeType) {
+  return {
+    inlineData: { data: Buffer.from(fs.readFileSync(filePath)).toString("base64"), mimeType },
+  };
+}
 
-    // The agent can now generate a report based on the analysis.
-    // For this example, we'll just log a message.
-    console.log('UI analysis complete. Feedback can be generated from the screenshot.');
+async function generateFeedback(screenshotPath) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    const personaContent = fs.readFileSync(path.join(__dirname, 'ui-designer-mcp.md'), 'utf8');
+    const imageParts = [ fileToGenerativePart(screenshotPath, "image/png") ];
 
-    // The agent doesn't log out immediately, allowing for further interaction if needed.
-    // You can add a signOut call here or in a separate function if you want to log out.
+    const prompt = `
+      ${personaContent}
+      ---------------------------
+      CONTEXT: VALID FILE PATHS
+      ---------------------------
+      Here is a list of files you are allowed to modify. You MUST choose file paths from this list.
+      \`\`\`json
+      ${JSON.stringify(editableFileManifest, null, 2)}
+      \`\`\`
+      ---------------------------
+      YOUR CURRENT TASK
+      ---------------------------
+      Analyze the provided screenshot. Identify up to THREE (3) distinct, high-impact, actionable improvements that can each be implemented by changing a single line of code.
 
-  } else {
-    console.log('Login failed. Cannot analyze UI.');
+      Your response MUST be a single JSON object with an 'improvements' ARRAY. Each 'file_path' you choose MUST exist in the list provided above.
+      {
+        "status": "pending",
+        "analysis": "A high-level summary of all the UI/UX issues you identified in the screenshot.",
+        "improvements": [
+          {
+            "file_path": "path/to/file_one.tsx",
+            "old_string": "The exact line of code to be replaced.",
+            "new_string": "The new line of code."
+          }
+        ]
+      }
+      Analyze the screenshot and provide your comprehensive feedback in the specified JSON format.
+    `;
+
+    console.log('Analyzing screenshot for multiple improvements...');
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    const rawText = response.text();
+    const jsonMatch = rawText.match(/```json\n([\s\S]*?)\n```|({[\s\S]*})/);
+    const text = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : rawText;
+
+    const feedbackDir = path.join(__dirname, 'feedback');
+    if (!fs.existsSync(feedbackDir)) fs.mkdirSync(feedbackDir, { recursive: true });
+
+    const feedbackFilePath = path.join(feedbackDir, 'ui-feedback.json');
+    fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
+    console.log(`Feedback file generated at ${feedbackFilePath} with multiple suggestions.`);
+  } catch (error) {
+    console.error('Error during feedback generation:', error);
   }
-  if (page) await page.close();
-  await browser.close();
 }
 
-// CLI handler
-const [,, command, email, password] = process.argv;
+/**
+ * ======================================================
+ * FUNCTION: analyzeUI
+ * PURPOSE:  Orchestrates the analysis workflow based on the specified target.
+ * ======================================================
+ */
+async function analyzeUI(email, password, target) {
+  let browser;
+  let page;
+  try {
+    browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
+    console.log('Connected to Playwright MCP server');
+    
+    const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
+    page = newPage;
+
+    if (loginSuccess) {
+      console.log(`Login successful. Analyzing target: '${target}'`);
+      
+      let screenshotPath = path.join(__dirname, `screenshots/${target}-analysis.png`);
+
+      // --- NEW: Mission Script Logic ---
+      switch (target) {
+        case 'request-detail-modal':
+          console.log('Navigating to open the first request detail modal...');
+          // This selector finds the first button-like element inside the "My Requests" section.
+          await page.click('#my-requests [role="button"]:first-of-type');
+          // Wait for a unique element inside the modal to ensure it's loaded.
+          await page.waitForSelector('h5:has-text("Job Docket")');
+          console.log('Request Detail Modal is open.');
+          break;
+        
+        case 'quote-agent-modal':
+          console.log('Navigating to open the quote agent modal...');
+          await page.click('role=button[name="Request a Quote"]');
+          // Wait for a unique element inside this modal.
+          await page.waitForSelector('h2:has-text("Request a Quote")');
+          console.log('Quote Agent Modal is open.');
+          break;
+
+        case 'dashboard':
+        default:
+          console.log('Analyzing main dashboard view.');
+          // No extra clicks needed for the dashboard.
+          break;
+      }
+
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      console.log(`Screenshot for '${target}' saved to ${screenshotPath}`);
+      
+      await generateFeedback(screenshotPath);
+
+    } else {
+      console.log('Login failed. Cannot analyze UI.');
+    }
+  } catch (error) {
+    console.error(`An error occurred during analysis of target '${target}':`, error);
+  } finally {
+    if (page) await page.close();
+    if (browser) await browser.close();
+    console.log('Browser session closed.');
+  }
+}
+
+/**
+ * ======================================================
+ * SCRIPT ENTRY POINT (CLI HANDLER with --target flag)
+ * ======================================================
+ */
+const args = process.argv.slice(2);
+const command = args[0];
+const email = args[1];
+const password = args[2];
+
+// Default target is 'dashboard'
+let target = 'dashboard';
+const targetIndex = args.indexOf('--target');
+if (targetIndex !== -1 && args[targetIndex + 1]) {
+  const specifiedTarget = args[targetIndex + 1];
+  if (['dashboard', 'request-detail-modal', 'quote-agent-modal'].includes(specifiedTarget)) {
+    target = specifiedTarget;
+  } else {
+    console.error(`Invalid target specified: "${specifiedTarget}". Using default 'dashboard'.`);
+  }
+}
+
 if (command === 'analyze-ui' && email && password) {
-  analyzeUI(email, password);
+  analyzeUI(email, password, target);
 } else {
-  console.log('Usage: node agents/ui-designer-mcp-agent.js analyze-ui <email> <password>');
+  console.log('Usage: node ui-designer-mcp-agent.js analyze-ui <email> <password> [--target <target_name>]');
 }
-
 --- END OF FILE agents/ui-designer-mcp-agent.js ---
 
 --- START OF FILE agents/ui-designer-mcp.md ---
@@ -1663,6 +2368,7 @@ module.exports.handler = serverless(app);
       "dependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
+        "@google/generative-ai": "^0.24.1",
         "@mui/material": "^7.3.1",
         "@mui/x-data-grid": "^8.10.2",
         "@supabase/supabase-js": "^2.55.0",
@@ -2491,6 +3197,15 @@ module.exports.handler = serverless(app);
       ],
       "engines": {
         "node": ">=12"
+      }
+    },
+    "node_modules/@google/generative-ai": {
+      "version": "0.24.1",
+      "resolved": "https://registry.npmjs.org/@google/generative-ai/-/generative-ai-0.24.1.tgz",
+      "integrity": "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=18.0.0"
       }
     },
     "node_modules/@jridgewell/gen-mapping": {
@@ -5542,6 +6257,7 @@ module.exports.handler = serverless(app);
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@google/generative-ai": "^0.24.1",
     "@mui/material": "^7.3.1",
     "@mui/x-data-grid": "^8.10.2",
     "@supabase/supabase-js": "^2.55.0",
@@ -10845,7 +11561,7 @@ const AboutSection: React.FC = () => (
             <Star className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
             <div>
               <div className="font-semibold text-gray-900">5-Star Rated</div>
-              <div className="text-gray-600">Customer approved</div>
+              <div className="text-gray-600">Proven customer satisfaction</div>
             </div>
           </div>
         </div>
@@ -10855,7 +11571,6 @@ const AboutSection: React.FC = () => (
 );
 
 export default AboutSection;
-
 --- END OF FILE vite-app/src/components/AboutSection.tsx ---
 
 --- START OF FILE vite-app/src/components/AttachmentSection.tsx ---
@@ -11544,15 +12259,15 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // THE FIX: Use an explicit inner join for robustness.
+      // --- FIX #1: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
         .select(`
-          *, 
-          user_profiles!inner(*), 
-          quote_attachments(*), 
-          quotes(*), 
-          request_notes(*)
+          *
+          ,user_profiles!inner(*)
+          ,quote_attachments(*)
+          ,quotes(*)
+          ,request_notes(*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -11573,17 +12288,16 @@ const MyRequests: React.FC = () => {
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // ALSO FIX IT HERE for consistency when refreshing a single request.
+      // --- FIX #2: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .select(`* ,user_profiles!inner(*) ,quote_attachments(*) ,quotes(*) ,request_notes(*)`)
         .eq('id', selectedRequest.id)
         .single();
 
       if (error) throw error;
       if (data) {
         const updatedRequest = data as QuoteRequest;
-        // Update the specific request in the list and also the selected request for the modal
         setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
         setSelectedRequest(updatedRequest);
       }
@@ -11617,7 +12331,7 @@ const MyRequests: React.FC = () => {
               {requests.map((req) => {
                 const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
                 return (
-                  <Paper key={req.id} component={ListItemButton} onClick={() => handleOpenModal(req)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}>
+                  <button key={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
                     <Box>
                       <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
                         {req.problem_category.replace(/_/g, " ")}
@@ -11634,14 +12348,14 @@ const MyRequests: React.FC = () => {
                       )}
                       <Chip label={req.status} color={getRequestStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
                     </Box>
-                  </Paper>
+                  </button>
                 );
               })}
             </Box>
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '800px', margin: 'auto' }}>
               <Typography variant="h6" color="text.secondary">
-                You haven't made any quote requests yet.
+                You have no quote requests yet. Request a quote now!
               </Typography>
             </Paper>
           )}
@@ -12832,7 +13546,7 @@ const ServicesSection: React.FC = () => (
   <section id="services" className="py-20 bg-gray-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Plumbing Services</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Professional Plumbing Services</h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">From emergency repairs to complete installations, we provide comprehensive plumbing solutions for homes and businesses.</p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -12886,12 +13600,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
           <User className="w-4 h-4 text-white" />
         </div>
         <div className="text-left hidden sm:block">
-          <div className="text-sm font-medium text-white">
-            {profile?.name || 'User'}
-          </div>
-          <div className="text-xs text-gray-400">
-            {user.email}
-          </div>
+          <span className="text-sm font-medium text-white">Dashboard</span>
         </div>
         <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>

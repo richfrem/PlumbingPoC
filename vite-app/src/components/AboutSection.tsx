@@ -37,7 +37,7 @@ const AboutSection: React.FC = () => (
             <Star className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
             <div>
               <div className="font-semibold text-gray-900">5-Star Rated</div>
-              <div className="text-gray-600">Customer approved</div>
+              <div className="text-gray-600">Proven customer satisfaction</div>
             </div>
           </div>
         </div>

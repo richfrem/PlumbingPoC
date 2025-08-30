@@ -16,7 +16,7 @@ const ServicesSection: React.FC = () => (
   <section id="services" className="py-20 bg-gray-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Plumbing Services</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Professional Plumbing Services</h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">From emergency repairs to complete installations, we provide comprehensive plumbing solutions for homes and businesses.</p>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

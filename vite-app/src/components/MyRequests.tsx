@@ -21,15 +21,15 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // THE FIX: Use an explicit inner join for robustness.
+      // --- FIX #1: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
         .select(`
-          *, 
-          user_profiles!inner(*), 
-          quote_attachments(*), 
-          quotes(*), 
-          request_notes(*)
+          *
+          ,user_profiles!inner(*)
+          ,quote_attachments(*)
+          ,quotes(*)
+          ,request_notes(*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -50,17 +50,16 @@ const MyRequests: React.FC = () => {
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // ALSO FIX IT HERE for consistency when refreshing a single request.
+      // --- FIX #2: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
+        .select(`* ,user_profiles!inner(*) ,quote_attachments(*) ,quotes(*) ,request_notes(*)`)
         .eq('id', selectedRequest.id)
         .single();
 
       if (error) throw error;
       if (data) {
         const updatedRequest = data as QuoteRequest;
-        // Update the specific request in the list and also the selected request for the modal
         setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
         setSelectedRequest(updatedRequest);
       }
@@ -94,7 +93,7 @@ const MyRequests: React.FC = () => {
               {requests.map((req) => {
                 const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
                 return (
-                  <Paper key={req.id} component={ListItemButton} onClick={() => handleOpenModal(req)} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.3s', '&:hover': { boxShadow: 3 } }}>
+                  <button key={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
                     <Box>
                       <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
                         {req.problem_category.replace(/_/g, " ")}
@@ -111,14 +110,14 @@ const MyRequests: React.FC = () => {
                       )}
                       <Chip label={req.status} color={getRequestStatusChipColor(req.status)} size="small" sx={{ textTransform: 'capitalize', fontWeight: 'bold' }} />
                     </Box>
-                  </Paper>
+                  </button>
                 );
               })}
             </Box>
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center', maxWidth: '800px', margin: 'auto' }}>
               <Typography variant="h6" color="text.secondary">
-                You haven't made any quote requests yet.
+                You have no quote requests yet. Request a quote now!
               </Typography>
             </Paper>
           )}
