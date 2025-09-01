@@ -36,6 +36,21 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const fetchRequestData = async () => {
+    if (!requestId) return;
+    setLoadingRequest(true);
+    setErrorRequest(null);
+    try {
+      const res = await apiClient.get(`/requests/${requestId}`);
+      setRequest(res.data);
+    } catch (err: any) {
+      setErrorRequest(err?.response?.data?.error || err.message || 'Unknown error');
+      setRequest(null);
+    } finally {
+      setLoadingRequest(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setNewAttachments([]);
@@ -59,23 +74,25 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setGoodUntil('');
         setStatus('sent');
       }
-    }
-  }, [quote, isOpen]);
 
-  useEffect(() => {
-    if (isOpen && !initialRequest && requestId) {
-      setLoadingRequest(true);
-      setErrorRequest(null);
-      apiClient.get(`/requests/${requestId}`)
-        .then(res => setRequest(res.data))
-        .catch(err => setErrorRequest(err?.response?.data?.error || err.message || 'Unknown error'))
-        .finally(() => setLoadingRequest(false));
-    } else if (initialRequest) {
-      setRequest(initialRequest);
+      if (initialRequest) {
+        setRequest(initialRequest);
+      } else if (requestId) {
+        fetchRequestData();
+      }
     }
-  }, [initialRequest, requestId, isOpen]);
+  }, [quote, isOpen, initialRequest, requestId]);
+  
+  const handleRefreshAndClose = () => onClose(true);
 
-  const handleRefresh = () => onClose(true);
+  const handleLocalRefresh = () => {
+      // *** THE CORE FIX IS HERE ***
+      // This function will be called by the AttachmentSection after an upload.
+      // It re-fetches the request data to update the modal's internal state.
+      fetchRequestData();
+      // We also still call the parent's refresh function to keep it in sync.
+      onClose(true); 
+  };
 
   const handleSaveQuote = async () => {
     setSaveError(null);
@@ -117,7 +134,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       setSaveSuccess(true);
       setTimeout(() => {
         setSaveSuccess(false);
-        handleRefresh();
+        handleRefreshAndClose();
       }, 1200);
     } catch (err: any) {
       setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
@@ -134,9 +151,6 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const gst = subtotal * 0.05;
   const pst = (request?.problem_category?.toLowerCase().includes('commercial') ? subtotal : materialTotal) * 0.07;
   const totalPrice = subtotal + gst + pst;
-
-  // *** THE CORE FIX IS HERE ***
-  // Filter attachments to show ONLY those associated with THIS specific quote.
   const quoteAttachments = request?.quote_attachments?.filter((att: any) => att.quote_id === quote?.id) || [];
 
   return (
@@ -188,7 +202,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               attachments={quoteAttachments}
               pendingFiles={newAttachments}
               editable={editable}
-              onUpdate={handleRefresh}
+              onUpdate={handleLocalRefresh}
               onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
               onRemovePendingFile={(index) => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
             />
