@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T02:00:47.360Z
+Generated On: 2025-09-01T02:09:56.081Z
 
-# Mnemonic Weight (Token Count): ~173,377 tokens
+# Mnemonic Weight (Token Count): ~173,473 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -11598,9 +11598,10 @@ interface AttachmentSectionProps {
   attachments: Attachment[];
   editable: boolean;
   onUpdate: () => void;
+  onNewFiles?: (files: File[]) => void;
 }
 
-const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteId, attachments, editable, onUpdate }) => {
+const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteId, attachments, editable, onUpdate, onNewFiles }) => {
   const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -11661,11 +11662,18 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteI
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    if (onNewFiles) {
+      onNewFiles(Array.from(files));
+      // Reset the file input so the user can select the same file again if they wish
+      event.target.value = '';
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     try {
       await uploadAttachments(requestId, Array.from(files), quoteId);
-      onUpdate(); // Trigger a refresh in the parent component
+      onUpdate();
     } catch (err: any) {
       setUploadError(err?.response?.data?.error || err.message || 'Failed to upload files.');
     } finally {
@@ -11713,7 +11721,6 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteI
 };
 
 export default AttachmentSection;
-
 --- END OF FILE vite-app/src/components/AttachmentSection.tsx ---
 
 --- START OF FILE vite-app/src/components/AuthModal.tsx ---
@@ -12619,7 +12626,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isEmergency, setIsEmergency] = useState<boolean | null>(null);
-  const [newAttachments, setNewAttachments] = useState<File[]>([]); // <-- STATE FOR NEW FILES
+  const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const GENERIC_QUESTIONS = [
@@ -12648,7 +12655,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     setChatHistory([]);
     setStatus('ASKING_EMERGENCY');
     setIsEmergency(null);
-    setNewAttachments([]); // <-- RESET ATTACHMENTS
+    setNewAttachments([]);
     setUserInput("");
     setLoading(false);
     setInitialQuestions([]);
@@ -12759,6 +12766,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         const allQuestions = [...initialQuestions, ...followUpQuestions];
         const structuredAnswers = allQuestions.map((question, index) => ({ question: question, answer: allAnswers[index] || '(No answer provided)' }));
         const payload = { clarifyingAnswers: structuredAnswers, contactInfo: profile, category: selectedCategory.key, isEmergency: isEmergency, ...genericAnswers };
+        
         const { data: result } = await apiClient.post('/requests/submit', payload);
         const newRequest = result.request;
         const newRequestId = newRequest?.id;
@@ -12787,95 +12795,119 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const renderContent = () => {
     switch (status) {
         case 'ASKING_EMERGENCY':
-        case 'SELECTING_CATEGORY':
-        case 'INITIAL_QUESTIONS':
-        case 'FOLLOW_UP_QUESTIONS':
-          // All interactive steps will be rendered similarly
           return (
-            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 1 }}>
-                <div style={{ maxHeight: 220, overflowY: 'auto', background: '#f8f8f8', padding: 10, borderRadius: 8, marginBottom: 12 }}>
-                  {chatHistory.map((msg, idx) => ( <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}> <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span> </div> ))}
-                  {status === 'AWAITING_GPT' && ( <div style={{ textAlign: 'left', margin: '8px 0' }}> <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span> </div> )}
-                  <div ref={chatEndRef} />
-                </div>
-                {status === 'SELECTING_CATEGORY' && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontWeight: 500, marginBottom: 8 }}>Select a service type:</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {SERVICE_QUOTE_CATEGORIES.map((cat) => ( <Button key={cat.key} variant="contained" onClick={() => handleSelectCategory(cat)}>{cat.label}</Button> ))}
-                    </div>
-                  </div>
-                )}
-                {['INITIAL_QUESTIONS', 'FOLLOW_UP_QUESTIONS'].includes(status) && (
-                  <form onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
-                    {(() => {
-                        let inputControl = null;
-                        const isGenericPhase = status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length;
-                        const currentGenericQuestion = isGenericPhase ? GENERIC_QUESTIONS[currentQuestionIndex] : null;
-
-                        if (currentGenericQuestion && currentGenericQuestion.choices) {
-                            inputControl = ( <FormControl fullWidth> <InputLabel>{currentGenericQuestion.question}</InputLabel> <Select value={userInput} label={currentGenericQuestion.question} onChange={e => setUserInput(e.target.value)}> {currentGenericQuestion.choices.map(choice => ( <MenuItem key={choice} value={choice}>{choice}</MenuItem> ))} </Select> </FormControl> );
-                        } else {
-                            const isTextarea = currentGenericQuestion?.textarea === true;
-                            inputControl = ( <TextField value={userInput} onChange={e => setUserInput(e.target.value)} placeholder="Type your answer..." fullWidth multiline={isTextarea} rows={isTextarea ? 3 : 1} /> );
-                        }
-                        return inputControl;
-                    })()}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button type="submit" variant="contained" color="primary" disabled={loading || userInput.trim() === ''}>{loading ? '...' : 'Send'}</Button>
-                    </Box>
-                  </form>
-                )}
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Is this an emergency?</Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                <Button variant="contained" color="error" size="large" onClick={() => handleEmergencyChoice(true)}>Yes, it's an emergency</Button>
+                <Button variant="contained" color="primary" size="large" onClick={() => handleEmergencyChoice(false)}>No</Button>
               </Box>
             </Box>
           );
+        case 'SELECTING_CATEGORY':
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontWeight: 500, marginBottom: 8 }}>Select a service type:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {SERVICE_QUOTE_CATEGORIES.map((cat) => ( <Button key={cat.key} variant="contained" onClick={() => handleSelectCategory(cat)}>{cat.label}</Button> ))}
+              </div>
+            </div>
+          );
+        case 'INITIAL_QUESTIONS':
+        case 'FOLLOW_UP_QUESTIONS': {
+            let inputControl = null;
+            const isGenericPhase = status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length;
+            const currentGenericQuestion = isGenericPhase ? GENERIC_QUESTIONS[currentQuestionIndex] : null;
+
+            if (currentGenericQuestion && currentGenericQuestion.choices) {
+                inputControl = (
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel>{currentGenericQuestion.question}</InputLabel>
+                        <Select value={userInput} label={currentGenericQuestion.question} onChange={e => setUserInput(e.target.value)}>
+                            {currentGenericQuestion.choices.map(choice => ( <MenuItem key={choice} value={choice}>{choice}</MenuItem> ))}
+                        </Select>
+                    </FormControl>
+                );
+            } else {
+                const isTextarea = currentGenericQuestion?.textarea === true;
+                inputControl = (
+                    <TextField value={userInput} onChange={e => setUserInput(e.target.value)} placeholder="Type your answer..." fullWidth multiline={isTextarea} rows={isTextarea ? 3 : 1} sx={{ mt: 2 }} />
+                );
+            }
+
+            return (
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+                    {inputControl}
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button type="submit" variant="contained" color="primary" disabled={loading || userInput.trim() === ''}>{loading ? '...' : 'Send'}</Button>
+                    </Box>
+                </form>
+            );
+        }
         case 'SUMMARY':
           const allQuestions = [...initialQuestions, ...followUpQuestions];
-          const summaryAnswers = allQuestions.map((question, index) => ({ question, answer: allAnswers[index] || '(No answer provided)' }));
+          const summaryAnswers = allQuestions.map((question, index) => ({
+            question,
+            answer: allAnswers[index] || '(No answer provided)'
+          }));
           return (
-            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 2 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Service Type: {selectedCategory?.label}</div>
-                  {isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1 }}>EMERGENCY REQUEST</Typography>}
-                  <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
-                      {summaryAnswers.map((item, i) => ( <li key={i} style={{ marginBottom: 6 }}> <div style={{ fontWeight: 500 }}>{item.question}</div> <div style={{ color: '#333', marginLeft: 4 }}>{item.answer}</div> </li> ))}
-                  </ul>
-                  {profile && ( <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}> <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </div> )}
-                  
-                  {/* *** THE CORE FIX: USE AttachmentSection *** */}
-                  <AttachmentSection
-                    requestId="new-request" // Placeholder, not used for new uploads
-                    attachments={[]} // No existing attachments
-                    editable={true}
-                    onUpdate={() => {}} // Not needed here
-                  />
-              </Box>
+            <>
+              <div style={{ flex: '1 1 auto', overflowY: 'auto', paddingRight: '8px', marginRight: '-8px' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Service Type: {selectedCategory?.label}</div>
+                {isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1 }}>EMERGENCY REQUEST</Typography>}
+                <ul style={{ paddingLeft: 18, marginBottom: 12 }}>
+                    {summaryAnswers.map((item, i) => ( <li key={i} style={{ marginBottom: 6 }}> <div style={{ fontWeight: 500 }}>{item.question}</div> <div style={{ color: '#333', marginLeft: 4 }}>{item.answer}</div> </li> ))}
+                </ul>
+                {profile && ( <div style={{ marginTop: 16, padding: 10, background: '#e3f2fd', borderRadius: 6, marginBottom: 12 }}> <div style={{ fontWeight: 600, marginBottom: 4 }}>Contact Information:</div> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </div> )}
+                
+                <AttachmentSection
+                  requestId="new-request"
+                  attachments={[]}
+                  editable={true}
+                  onUpdate={() => {}}
+                  onNewFiles={setNewAttachments}
+                />
+
+              </div>
               {errorMessage && (
-                  <div style={{ margin: '16px', padding: 12, background: '#ffebee', color: '#c62828', borderRadius: 6, border: '1px solid #ef9a9a' }}>
+                  <div style={{ marginTop: 16, padding: 12, background: '#ffebee', color: '#c62828', borderRadius: 6, border: '1px solid #ef9a9a' }}>
                       <p style={{ fontWeight: 600, marginBottom: 4 }}>Submission Failed</p>
                       <p>{errorMessage}</p>
                   </div>
               )}
-              <Box sx={{ flexShrink: 0, p: 2, borderTop: '1px solid #eee' }}>
+              <div style={{ flexShrink: 0, paddingTop: '16px', borderTop: '1px solid #eee' }}>
                 <Button variant="contained" fullWidth onClick={handleSubmitQuote} disabled={loading}>{loading ? 'Submitting...' : 'Confirm & Submit Request'}</Button>
-              </Box>
-            </Box>
+              </div>
+            </>
           );
         case 'SUBMITTED':
-            return ( <div style={{ textAlign: 'center', fontWeight: 500, padding: '2rem' }}> Thank you! Your quote request has been submitted. <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>This window will close automatically.</div> </div> );
+          return (
+            <div style={{ textAlign: 'center', fontWeight: 500 }}>
+              Thank you! Your quote request has been submitted.
+              <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>This window will close automatically.</div>
+            </div>
+          );
         default: return null;
       }
   }
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 400, width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        <button style={{ position: 'absolute', top: 16, right: 16, fontSize: 22, color: '#888', background: 'none', border: 'none', cursor: 'pointer', zIndex: 1 }} onClick={onClose}>&times;</button>
-        <h2 style={{ fontSize: 22, fontWeight: 700, padding: 24, paddingBottom: 12, color: '#1976d2', flexShrink: 0 }}>Request a Quote</h2>
-        {renderContent()}
+      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 400, width: '100%', padding: 24, position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+        <button style={{ position: 'absolute', top: 16, right: 16, fontSize: 22, color: '#888', background: 'none', border: 'none', cursor: 'pointer' }} onClick={onClose}>&times;</button>
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12, color: '#1976d2', flexShrink: 0 }}>Request a Quote</h2>
+        <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {status !== 'ASKING_EMERGENCY' && status !== 'SUMMARY' && status !== 'SUBMITTED' && (
+            <div style={{ maxHeight: 220, overflowY: 'auto', background: '#f8f8f8', padding: 10, borderRadius: 8, marginBottom: 12, flexShrink: 0 }}>
+              {chatHistory.map((msg, idx) => ( <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}> <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>{msg.message}</span> </div> ))}
+              {status === 'AWAITING_GPT' && ( <div style={{ textAlign: 'left', margin: '8px 0' }}> <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span> </div> )}
+              <div ref={chatEndRef} />
+            </div>
+          )}
+          {renderContent()}
+        </div>
         {showDebugPanel && (
-          <div style={{ flexShrink: 0, padding: '0 24px 24px 24px' }}>
+          <div style={{ flexShrink: 0 }}>
             <DebugInfo status={status} isEmergency={isEmergency} initialCount={initialQuestions.length} followUpCount={followUpQuestions.length} answerCount={allAnswers.length} currentIndex={currentQuestionIndex} />
           </div>
         )}

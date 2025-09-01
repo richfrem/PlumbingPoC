@@ -20,9 +20,10 @@ interface AttachmentSectionProps {
   attachments: Attachment[];
   editable: boolean;
   onUpdate: () => void;
+  onNewFiles?: (files: File[]) => void;
 }
 
-const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteId, attachments, editable, onUpdate }) => {
+const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteId, attachments, editable, onUpdate, onNewFiles }) => {
   const [imageUrls, setImageUrls] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -83,11 +84,18 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteI
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    if (onNewFiles) {
+      onNewFiles(Array.from(files));
+      // Reset the file input so the user can select the same file again if they wish
+      event.target.value = '';
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     try {
       await uploadAttachments(requestId, Array.from(files), quoteId);
-      onUpdate(); // Trigger a refresh in the parent component
+      onUpdate();
     } catch (err: any) {
       setUploadError(err?.response?.data?.error || err.message || 'Failed to upload files.');
     } finally {
