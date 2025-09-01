@@ -129,7 +129,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
   
   // *** THE CORE FIX IS HERE ***
-  // We defensively check for `quote_attachments` and default to an empty array if it's missing.
+  // This correctly filters for attachments that belong ONLY to the initial request.
   const requestAttachments = (request.quote_attachments || []).filter(att => !att.quote_id);
 
   return (
@@ -199,6 +199,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               </Box>
             </Paper>
             
+            {/* This section now ONLY shows request-level attachments */}
             <AttachmentSection 
               requestId={request.id}
               attachments={requestAttachments}
