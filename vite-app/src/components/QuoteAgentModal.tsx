@@ -4,10 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
 import apiClient, { uploadAttachments } from "../lib/apiClient";
-import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert } from '@mui/material'; // <-- THE FIX IS HERE
+import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
 import { X as XIcon } from 'lucide-react';
-
 
 // Diagnostic component (kept for development)
 const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCount, currentIndex }: { status: string; isEmergency: boolean | null; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
@@ -196,7 +195,11 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
         setLoading(false);
     }
-  }
+  };
+
+  const handleRemovePendingFile = (indexToRemove: number) => {
+    setNewAttachments(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
 
   if (!isOpen) return null;
 
@@ -275,9 +278,11 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                   <AttachmentSection
                     requestId="new-request"
                     attachments={[]}
+                    pendingFiles={newAttachments}
                     editable={true}
                     onUpdate={() => {}}
-                    onNewFiles={setNewAttachments}
+                    onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
+                    onRemovePendingFile={handleRemovePendingFile}
                   />
               </Box>
               {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
