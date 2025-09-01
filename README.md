@@ -2,42 +2,43 @@
 
 **PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation, and extends into a full client portal for managing the entire job lifecycle.
 
-Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI and Supabase for its core functionality.
+Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients in real-time. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI and Supabase for its core functionality.
 
 ## Features
 
--   **Modern Frontend:** A fully responsive web app built with Vite, React, and Tailwind CSS (TypeScript/TSX).
+-   **Modern Frontend:** A fully responsive web app built with Vite, React (TypeScript/TSX), and Tailwind CSS, architected with a professional, feature-based structure.
 -   **Intelligent Quoting Agent:** A guided, conversational modal that uses expert logic and dynamic, AI-generated questions to ensure every lead is perfectly qualified.
 -   **Scalable MVC Backend:** A robust Express/Node API architected for maintainability, featuring separate layers for routing, controllers, middleware, and validation.
 -   **Secure Database & Auth:** Full integration with Supabase for user profiles, requests, quotes, notes, file storage, and secure authentication (Email/Password, Google, and Azure/Microsoft).
 -   **Comprehensive Admin Dashboard:** A "Command Center" for business owners to view, manage, and act on all incoming quote requests in a professional, interactive UI.
 -   **Interactive Job Management:** Update the status of any job (`new`, `quoted`, `scheduled`, `completed`) directly from the dashboard.
--   **Integrated Quoting & Communication:** Admins can create official quotes and both parties can add notes, creating a persistent, secure communication log for each job.
+-   **Real-time Communication Log:** A live chat interface allowing admins and customers to communicate directly within a job's context, with messages appearing instantly for both parties.
+-   **AI-Powered Triage:** With one click, admins can generate an AI summary, priority score, and profitability analysis for any new request, enabling them to focus on the most valuable jobs first.
 
 ## Project Structure
 
-The repository is organized for clarity and professional development standards.
+The repository is organized for clarity and professional development standards, featuring a modern feature-based UI architecture.
 
 ```
 .
-├── PROMPTS/ # Prompt engineering & agent logic
+├── PROMPTS/              # Prompt engineering & agent logic
+├── supabase/
+│   └── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide for Supabase
 ├── vite-app/
-│ ├── public/ # Static assets (images, etc.)
-│ ├── src/ # Frontend React application (TSX)
-│ ├── api/ # Backend API (Express/Node)
-│ │ ├── controllers/ # Contains the core business logic for each route.
-│ │ ├── middleware/ # Handles auth, validation, etc. before the controller.
-│ │ ├── routes/ # Defines API endpoints and connects them to controllers.
-│ │ ├── validation/ # Holds all Zod data validation schemas.
-│ │ ├── README.md # Detailed API architecture documentation.
-│ │ └── server.js # Initializes and wires up the Express server.
-│ ├── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide for Supabase
-│ └── ... # Vite config, etc.
-├── blueprint.md # The original "Operation Overmatch" strategic plan
-└── startup.sh # Convenience script for local development
+│   ├── public/           # Static assets (images, etc.)
+│   ├── src/              # Frontend React application (TSX)
+│   │   ├── features/
+│   │   │   ├── auth/
+│   │   │   ├── profile/
+│   │   │   └── requests/ # Components, hooks, and types for a feature are co-located
+│   │   └── lib/          # Shared libraries (Supabase client, API client)
+│   └── api/              # Backend API (Express/Node)
+│       ├── controllers/
+│       ├── middleware/
+│       ├── routes/
+│       └── server.js
+└── ...
 ```
-
----
 
 ---
 
@@ -59,25 +60,10 @@ The repository is organized for clarity and professional development standards.
     ```
 
 2.  **Configure Supabase:**
-    Follow the detailed instructions in `vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md`. Run the **Master SQL Setup Script** to create all tables and apply the necessary Row Level Security (RLS) policies.
+    Follow the detailed instructions in `supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md`. This guide contains the master SQL script to create all tables, set up the real-time publications, and apply the necessary Row Level Security (RLS) policies.
 
 3.  **Set Up Environment Variables:**
     Navigate to the `vite-app/` directory, create a copy of `.env.example` named `.env`, and fill in your Supabase and OpenAI API keys.
-
-        ### Netlify Deployment & Environment Variables
-        - Netlify does **not** automatically use your local `.env` files for builds. You must manually add all required environment variables in the Netlify dashboard under "Site settings > Environment variables".
-        - For frontend (Vite/React), all variables must be prefixed with `VITE_` (e.g., `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
-        - For backend (Node/Express), use non-prefixed variables (e.g., `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`).
-        - **Supabase anon keys are not secrets**: The `VITE_SUPABASE_ANON_KEY` is designed to be public and is required for client-side Supabase usage. Netlify's secrets scanning may flag it, but you can safely ignore this warning. You do not need to treat it as a secret.
-        - The Netlify config file (`netlify.toml`) is ignored for secrets scanning if you do not use the `[secrets]` section or related settings. Instead, manage all secrets and public variables in the Netlify dashboard.
-        - If you see build failures due to secrets scanning, ensure your public keys (like `VITE_SUPABASE_ANON_KEY`) are not marked as secrets, or add them to the omit list if needed.
-
-        ### Netlify Production Domain & Supabase Settings
-        - Your production domain is: `https://plumbingpoc.netlify.app`
-        - In your Supabase project settings, set:
-            - **Site URL:** `https://plumbingpoc.netlify.app`
-            - **Redirect URLs:** `https://plumbingpoc.netlify.app/*`
-        - This ensures authentication and redirects work correctly in production. You can confirm the app is running and sign-in works at this domain.
 
 4.  **Install Dependencies:**
     ```sh
@@ -95,7 +81,7 @@ From the project root directory, run the convenience script:
 ```sh
 ./startup.sh
 ```
-This script will start both services in the background and provide you with the URLs. It will also give you a command to stop both services when you're done.
+This script will start both services in the background and provide you with the URLs.
 
 #### Manual Method
 
@@ -104,24 +90,22 @@ This script will start both services in the background and provide you with the 
     ```sh
     npm run start:api
     ```
-    The API will start, typically on `http://your-local-backend-url/`.
 
 2.  **Start the Frontend Vite Server:**
     In a second terminal, from the `vite-app/` directory:
     ```sh
     npm run dev
     ```
-    The frontend will start, typically on `http://your-local-frontend-url/`.
 
 3.  **Access the App:**
-    Open your browser and navigate to `http://your-local-frontend-url/`.
+    Open your browser and navigate to the frontend URL provided by Vite.
 
 ---
 
 ## Application Flows
+
 ### 1. The AI-Powered Intake Flow
 This diagram illustrates the initial, intelligent lead qualification process.
-The intelligent agent is the core of this POC. Here's how it works:
 
 ```mermaid
 sequenceDiagram
@@ -172,7 +156,7 @@ sequenceDiagram
 
 ### 2. The Client & Admin Management Flow
 
-This diagram shows how admins and clients interact with a request after it has been submitted, turning the app into a client portal.
+This diagram shows how admins and clients interact with a request after it has been submitted.
 
 ```mermaid
 sequenceDiagram
@@ -197,19 +181,19 @@ sequenceDiagram
     Supabase-->>Backend API: Confirms note saved
     Backend API-->>Frontend: Returns new note data
     deactivate Backend API
-    Frontend->>Admin: UI updates instantly with the new note
+    Frontend->>Admin: UI updates instantly with the new note (via Realtime)
 
     Customer->>Frontend: Logs in and views their request
     Frontend->>Backend API: GET /api/requests/:id (fetch single request)
     Backend API->>Supabase: SELECT request data for this user
     Supabase-->>Backend API: Returns request, including admin's note
     Backend API-->>Frontend: Sends data to client view
-    Frontend->>Customer: Displays the conversation log
+    Frontend->>Customer: Displays the conversation log (with new note)
 ```
 
 ### 3. The AI-Powered Triage Process
 
-After a new service request is submitted, the system automatically initiates an AI-powered triage process. This leverages OpenAI's powerful language models to analyze the request details, summarize the problem, and assign a priority score.
+This shows the backend process for automatically analyzing a new request.
 
 ```mermaid
 sequenceDiagram
@@ -235,70 +219,35 @@ sequenceDiagram
     Backend API-->>Admin: Returns success message with triage results
     deactivate Backend API
 ```
-### 4. MVC architecture with react (Hook-Powered MVC Cycle)
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant ReactView as "React View (JSX)"
-    participant ReactController as "React Controller (Hooks & Handlers)"
-    participant NodeController as "Node.js Controller (API)"
-    participant SupabaseModel as "Supabase (Model)"
+### 4. Real-time Publish/Subscribe Synchronization
 
-    User->>ReactView: 1. Clicks "Add Note" button
-    
-    ReactView->>ReactController: 2. Triggers onClick handler
-    
-    ReactController->>NodeController: 3. `useRequests` hook calls apiClient.post('/api/.../notes')
-    
-    NodeController->>SupabaseModel: 4. Inserts new note into database
-    
-    SupabaseModel-->>NodeController: 5. Confirms success
-    
-    NodeController-->>ReactController: 6. Returns 201 Created response
-    
-    Note over ReactController: 7. Realtime subscription fires, hook re-fetches data
-    
-    ReactController->>ReactController: 8. Updates state with useState()
-    
-    ReactController->>ReactView: 9. Triggers a re-render with new notes
-    
-    ReactView-->>User: 10. User sees the new note appear instantly
-```
-
-### 5. Realtime publish/subscribe pattern between react and supabase
+This diagram illustrates how a message sent by one user appears instantly for another, using the Pub/Sub pattern.
 
 ```mermaid
 sequenceDiagram
     participant Admin's Browser (Client A)
     participant Customer's Browser (Client B)
     participant Supabase Realtime Server
-    participant Postgres Database (request_notes table)
+    participant Postgres Database
 
-    Note over Admin's Browser (Client A), Customer's Browser (Client B): Pre-condition: Both users have the RequestDetailModal open.
+    Note over Admin's Browser (Client A), Customer's Browser (Client B): Pre-condition: Both users are viewing the same Job Docket.
+    Note over Admin's Browser (Client A), Customer's Browser (Client B): The `useRequests` hook has already subscribed both clients to the channel.
 
-    Admin's Browser (Client A)->>+Supabase Realtime Server: 1. Subscribe to channel: "request-notes-XYZ"
-    Supabase Realtime Server-->>-Admin's Browser (Client A): 2. Subscription Confirmed (WebSocket open)
+    Admin's Browser (Client A)->>+Postgres Database: 1. User sends message (API call -> INSERT new note)
+    Postgres Database-->>-Admin's Browser (Client A): API Response (OK)
 
-    Customer's Browser (Client B)->>+Supabase Realtime Server: 1. Subscribe to channel: "request-notes-XYZ"
-    Supabase Realtime Server-->>-Customer's Browser (Client B): 2. Subscription Confirmed (WebSocket open)
-
-    Note over Supabase Realtime Server: Realtime Server now knows that Client A and Client B are both listening to "request-notes-XYZ".
-
-    Admin's Browser (Client A)->>+Postgres Database (request_notes table): 3. User sends message (API call -> INSERT new note)
-    Postgres Database (request_notes table)-->>-Admin's Browser (Client A): API Response (OK)
-
-    Postgres Database (request_notes table)->>+Supabase Realtime Server: 4. [Publication] A new row was inserted into request_notes for request_id = 'XYZ'
+    Postgres Database->>+Supabase Realtime Server: 2. [Publication] A change was detected in the `request_notes` table.
     
-    Note over Supabase Realtime Server: The Routing Logic!
-    Supabase Realtime Server->>Supabase Realtime Server: 5. Check subscribers for channel "request-notes-XYZ". Found: Client A, Client B.
+    Note over Supabase Realtime Server: Routing Logic!
+    Supabase Realtime Server->>Supabase Realtime Server: 3. Check subscribers for the relevant channel. Found: Client A, Client B.
 
-    Supabase Realtime Server->>+Admin's Browser (Client A): 6. [WebSocket Push] Broadcast new note payload
-    Admin's Browser (Client A)->>Admin's Browser (Client A): 8. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
+    Supabase Realtime Server->>+Admin's Browser (Client A): 4. [WebSocket Push] Broadcast new data payload
+    Admin's Browser (Client A)->>Admin's Browser (Client A): 5. `useRequests` hook re-fetches data & UI refreshes
     deactivate Admin's Browser (Client A)
 
-    Supabase Realtime Server->>+Customer's Browser (Client B): 7. [WebSocket Push] Broadcast new note payload
-    Customer's Browser (Client B)->>Customer's Browser (Client B): 9. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
+    Supabase Realtime Server->>+Customer's Browser (Client B): 4. [WebSocket Push] Broadcast new data payload
+    Customer's Browser (Client B)->>Customer's Browser (Client B): 5. `useRequests` hook re-fetches data & UI refreshes
     deactivate Customer's Browser (Client B)
     
     deactivate Supabase Realtime Server
