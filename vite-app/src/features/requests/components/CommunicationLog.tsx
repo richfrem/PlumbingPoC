@@ -5,13 +5,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import apiClient from '../../../lib/apiClient';
 import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
-
-interface RequestNote {
-  id: string;
-  note: string;
-  author_role: 'admin' | 'customer';
-  created_at: string;
-}
+import { RequestNote } from '../types'; // Import the type from the central location
 
 interface CommunicationLogProps {
   requestId: string;
@@ -23,8 +17,8 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // This real-time listener is for receiving messages from OTHER users (e.g., an admin).
-  // It correctly signals the parent dashboard to re-fetch all data.
+  // This real-time listener is the SINGLE SOURCE OF TRUTH for all updates to the log.
+  // It works for both the sender and the receiver.
   useEffect(() => {
     if (!requestId) return;
 
@@ -39,7 +33,9 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
           filter: `request_id=eq.${requestId}`
         },
         (payload) => {
-          console.log('New note received via realtime, telling parent to update...', payload);
+          console.log('Real-time note received. Telling parent to re-fetch.', payload);
+          // This call is the key. It tells the Dashboard/MyRequests to get fresh data,
+          // which then flows down to this component.
           onNoteAdded();
         }
       )
@@ -54,12 +50,13 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
     if (!newNote.trim() || !requestId) return;
     setIsSubmitting(true);
     try {
+      // We simply post the new note to the database.
       await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
       setNewNote("");
-      // *** THE FIX: Immediately call onNoteAdded after a successful submission. ***
-      // This tells the parent to re-fetch right away, ensuring the user who sent the message
-      // sees their update instantly, without waiting for the real-time broadcast.
-      onNoteAdded();
+      // *** THE FIX: The manual `onNoteAdded()` call is REMOVED from here. ***
+      // We now confidently rely on the useEffect listener above to receive the
+      // broadcast from Supabase, just like the other user will. This ensures
+      // both clients use the exact same update mechanism.
     } catch (error) {
       console.error("Failed to add note:", error);
     } finally {
@@ -74,7 +71,6 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
       </Typography>
 
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, minHeight: '200px' }}>
-        {/* *** THE FIX: Render the `initialNotes` prop directly, not a local state copy. *** */}
         {initialNotes.length > 0 ? (
           initialNotes.map(note => (
             <Box

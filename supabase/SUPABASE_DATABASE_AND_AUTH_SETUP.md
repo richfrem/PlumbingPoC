@@ -361,6 +361,80 @@ WHERE
 ORDER BY 
   p.proname;
 
+#### Query 6: Publications
+
+##### Create publication
+
+```sql
+-- This script directly and explicitly adds the required tables to the real-time publication.
+ALTER PUBLICATION supabase_realtime ADD TABLE public.requests;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.request_notes;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.quote_attachments;
+```
+
+##### get list of all publications
+
+```sql
+SELECT
+  schemaname,
+  tablename
+FROM
+  pg_publication_tables
+WHERE
+  pubname = 'supabase_realtime';
+```
+
+#### subscribers in useRequests.ts
+
+```typescript
+// From: vite-app/src/features/requests/hooks/useRequests.ts
+const subscriptions = [
+    { table: 'requests' },          // <-- For status changes, etc.
+    { table: 'request_notes' },      // <-- For the communication log
+    { table: 'quotes' },             // <-- For quote updates
+    { table: 'quote_attachments' } // <-- For file uploads
+];
+```
+
+##### How process works public subscribe pattern with supabase. 
+
+```mermaid
+sequenceDiagram
+    participant Admin's Browser (Client A)
+    participant Customer's Browser (Client B)
+    participant Supabase Realtime Server
+    participant Postgres Database (request_notes table)
+
+    Note over Admin's Browser (Client A), Customer's Browser (Client B): Pre-condition: Both users have the RequestDetailModal open.
+
+    Admin's Browser (Client A)->>+Supabase Realtime Server: 1. Subscribe to channel: "request-notes-XYZ"
+    Supabase Realtime Server-->>-Admin's Browser (Client A): 2. Subscription Confirmed (WebSocket open)
+
+    Customer's Browser (Client B)->>+Supabase Realtime Server: 1. Subscribe to channel: "request-notes-XYZ"
+    Supabase Realtime Server-->>-Customer's Browser (Client B): 2. Subscription Confirmed (WebSocket open)
+
+    Note over Supabase Realtime Server: Realtime Server now knows that Client A and Client B are both listening to "request-notes-XYZ".
+
+    Admin's Browser (Client A)->>+Postgres Database (request_notes table): 3. User sends message (API call -> INSERT new note)
+    Postgres Database (request_notes table)-->>-Admin's Browser (Client A): API Response (OK)
+
+    Postgres Database (request_notes table)->>+Supabase Realtime Server: 4. [Publication] A new row was inserted into request_notes for request_id = 'XYZ'
+    
+    Note over Supabase Realtime Server: The Routing Logic!
+    Supabase Realtime Server->>Supabase Realtime Server: 5. Check subscribers for channel "request-notes-XYZ". Found: Client A, Client B.
+
+    Supabase Realtime Server->>+Admin's Browser (Client A): 6. [WebSocket Push] Broadcast new note payload
+    Admin's Browser (Client A)->>Admin's Browser (Client A): 8. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
+    deactivate Admin's Browser (Client A)
+
+    Supabase Realtime Server->>+Customer's Browser (Client B): 7. [WebSocket Push] Broadcast new note payload
+    Customer's Browser (Client B)->>Customer's Browser (Client B): 9. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
+    deactivate Customer's Browser (Client B)
+    
+    deactivate Supabase Realtime Server
+```
+
 #### Calling key functions 
 -- Replace with the actual user_id you want to clear.
 SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');

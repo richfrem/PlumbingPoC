@@ -1,6 +1,6 @@
 // vite-app/src/features/requests/components/MyRequests.tsx
 
-import React, { useState, useEffect, useCallback } from 'react'; // <-- IMPORT useCallback
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
@@ -8,31 +8,37 @@ import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
 import { useRequests } from '../hooks/useRequests';
 
-interface MyRequestsProps {
-  setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
-}
+// *** THE FIX: The legacy prop interface is removed. ***
+// interface MyRequestsProps {
+//   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
+// }
 
-const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => {
+const MyRequests: React.FC = () => {
   const { user } = useAuth();
-  const { requests, loading, refreshRequests } = useRequests(user?.id);
+  const { requests, loading, error, refreshRequests } = useRequests(user?.id);
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // *** THE FIX: The useEffect for the legacy callback is removed. ***
+  // useEffect(() => {
+  //   if (setAddNewRequestCallback) { ... }
+  // }, [setAddNewRequestCallback, refreshRequests]);
 
+  // This effect ensures the modal always has the latest data after a refresh.
   useEffect(() => {
-    if (setAddNewRequestCallback) {
-      setAddNewRequestCallback(() => {
-        refreshRequests();
-      });
+    if (selectedRequest && requests.length > 0) {
+      const newRequestData = requests.find(r => r.id === selectedRequest.id);
+      if (newRequestData) {
+        setSelectedRequest(newRequestData);
+      }
     }
-  }, [setAddNewRequestCallback, refreshRequests]);
+  }, [requests, selectedRequest?.id]);
 
   const handleOpenModal = (req: QuoteRequest) => {
     setSelectedRequest(req);
     setIsModalOpen(true);
   };
   
-  // --- THE INFINITE LOOP FIX IS HERE ---
-  // We wrap the function we pass down as a prop in useCallback.
   const handleModalUpdate = useCallback(() => {
     refreshRequests();
   }, [refreshRequests]);
@@ -43,6 +49,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
   };
 
   if (loading && requests.length === 0) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+  if (error) return <Box sx={{ p: 4 }}><Typography color="error">{error}</Typography></Box>;
 
   return (
     <>
@@ -93,7 +100,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           request={selectedRequest}
-          onUpdateRequest={handleModalUpdate} // Pass the stable function
+          onUpdateRequest={handleModalUpdate}
         />
       )}
     </>
