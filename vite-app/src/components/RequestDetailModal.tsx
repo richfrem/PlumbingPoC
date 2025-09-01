@@ -128,8 +128,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
   
-  // *** THE CORE FIX IS HERE ***
-  // This correctly filters for attachments that belong ONLY to the initial request.
   const requestAttachments = (request.quote_attachments || []).filter(att => !att.quote_id);
 
   return (
@@ -199,7 +197,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               </Box>
             </Paper>
             
-            {/* This section now ONLY shows request-level attachments */}
             <AttachmentSection 
               requestId={request.id}
               attachments={requestAttachments}
@@ -223,30 +220,49 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No quotes yet.</Typography>
               ) : (
                 <List>
-                  {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => (
-                    <ListItem key={quote.id || idx} disablePadding secondaryAction={
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
-                          <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
-                            Accept
-                          </Button>
-                        )}
-                        <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(request.quotes.findIndex(q => q.id === quote.id)); setShowQuoteForm(true); }}>
-                          {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
-                        </Button>
-                      </Box>
-                    }>
-                      <ListItemText
-                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
-                        secondary={
-                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
-                            <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
+                  {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => {
+                    // *** THE CORE FIX IS HERE ***
+                    // Filter for attachments that belong specifically to this quote.
+                    const specificQuoteAttachments = (request.quote_attachments || []).filter(att => att.quote_id === quote.id);
+                    return (
+                      <React.Fragment key={quote.id || idx}>
+                        <ListItem disablePadding secondaryAction={
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                              <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
+                                Accept
+                              </Button>
+                            )}
+                            <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(request.quotes.findIndex(q => q.id === quote.id)); setShowQuoteForm(true); }}>
+                              {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
+                            </Button>
                           </Box>
-                        }
-                      />
-                    </ListItem>
-                  ))}
+                        }>
+                          <ListItemText
+                            primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
+                            secondary={
+                              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
+                                <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {/* If there are attachments for this quote, display them */}
+                        {specificQuoteAttachments.length > 0 && isAdmin && (
+                           <Box sx={{ pl: 2, pb: 2 }}>
+                              <AttachmentSection
+                                requestId={request.id}
+                                quoteId={quote.id}
+                                attachments={specificQuoteAttachments}
+                                editable={false} // This is a view-only context
+                                onUpdate={() => {}}
+                              />
+                           </Box>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </List>
               )}
               {isAdmin && !isReadOnly && (
