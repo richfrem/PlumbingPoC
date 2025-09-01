@@ -11,7 +11,7 @@ import AboutSection from './components/AboutSection';
 import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
-import Dashboard from './components/Dashboard';
+import Dashboard, { QuoteRequest } from './components/Dashboard';
 import MyRequests from './components/MyRequests';
 import {
   Phone,
@@ -28,6 +28,8 @@ const AppContent: React.FC = () => {
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [route, setRoute] = useState(window.location.hash);
+  
+  let myRequestsUpdater: ((request: QuoteRequest) => void) | null = null;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -46,6 +48,12 @@ const AppContent: React.FC = () => {
       // Profile modal is shown automatically
     } else {
       setShowAgentModal(true);
+    }
+  };
+
+  const handleNewRequestSuccess = (newRequest: QuoteRequest) => {
+    if (myRequestsUpdater) {
+      myRequestsUpdater(newRequest);
     }
   };
 
@@ -85,8 +93,9 @@ const AppContent: React.FC = () => {
         </div>
       </section>
 
-      {/* Conditionally render MyRequests for logged-in, non-admin users */}
-      {user && !profileIncomplete && profile?.role !== 'admin' && <MyRequests />}
+      {user && !profileIncomplete && profile?.role !== 'admin' && (
+          <MyRequests setAddNewRequestCallback={(updater) => { myRequestsUpdater = updater; }} />
+      )}
       
       <ServicesSection />
       <AboutSection />
@@ -141,6 +150,7 @@ const AppContent: React.FC = () => {
           <QuoteAgentModal
             isOpen={showAgentModal}
             onClose={() => setShowAgentModal(false)}
+            onSubmissionSuccess={handleNewRequestSuccess}
           />
         )}
         

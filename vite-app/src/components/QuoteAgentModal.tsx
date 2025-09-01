@@ -1,9 +1,9 @@
-// QuoteAgentModal.tsx (v2.0 - Refactored API Integration)
+// vite-app/src/components/QuoteAgentModal.tsx
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
-import apiClient from "../lib/apiClient"; // <-- IMPORT the new apiClient
+import apiClient from "../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
 
 // Diagnostic component (kept for development)
@@ -17,7 +17,14 @@ const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCou
 
 type ModalStatus = 'ASKING_EMERGENCY' | 'SELECTING_CATEGORY' | 'INITIAL_QUESTIONS' | 'AWAITING_GPT' | 'FOLLOW_UP_QUESTIONS' | 'SUMMARY' | 'SUBMITTED';
 
-const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+// ADD a new prop to the interface
+interface QuoteAgentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmissionSuccess: (newRequest: any) => void;
+}
+
+const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentModalProps) => {
   const { profile, user } = useAuth();
 
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
@@ -44,8 +51,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  // Use process.env for CommonJS compatibility
-  const showDebugPanel = typeof process !== 'undefined' && process.env && process.env.VITE_DEBUG_PANEL === 'true';
+  const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -184,24 +190,24 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         };
         
         const { data: result } = await apiClient.post('/requests/submit', payload);
-        const newRequestId = result.request?.id;
+        const newRequest = result.request;
+        const newRequestId = newRequest?.id;
 
         if (selectedFile && newRequestId) {
-            const formData = new FormData();
-            formData.append('attachment', selectedFile);
-            formData.append('request_id', newRequestId);
-            
-            await apiClient.post('/requests/attachments', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await uploadAttachments(newRequestId, [selectedFile]);
         }
 
         setStatus('SUBMITTED');
+
+        setTimeout(() => {
+          onSubmissionSuccess(newRequest);
+          onClose();
+        }, 1500);
+
     } catch (err: any) {
         console.error("Submission Error:", err);
         const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
         setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
-    } finally {
         setLoading(false);
     }
   }
@@ -296,7 +302,12 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </>
           );
         case 'SUBMITTED':
-            return ( <div style={{ textAlign: 'center', fontWeight: 500 }}> Thank you! Your quote request has been submitted. We will get back to you soon. </div> );
+          return (
+            <div style={{ textAlign: 'center', fontWeight: 500 }}>
+              Thank you! Your quote request has been submitted.
+              <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>This window will close automatically.</div>
+            </div>
+          );
         default: return null;
       }
   }

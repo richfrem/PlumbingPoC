@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T01:22:09.720Z
+Generated On: 2025-09-01T01:54:39.917Z
 
-# Mnemonic Weight (Token Count): ~173,212 tokens
+# Mnemonic Weight (Token Count): ~173,524 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -6679,6 +6679,24 @@ ORDER BY
     tablename,
     indexname;
 
+#### Query 5: Functions
+SELECT 
+  p.proname AS function_name,
+  pg_get_function_identity_arguments(p.oid) AS function_arguments,
+  pg_get_functiondef(p.oid) AS function_definition
+FROM 
+  pg_proc p
+JOIN 
+  pg_namespace n ON n.oid = p.pronamespace
+WHERE 
+  n.nspname = 'public' -- Filters for your main schema
+  AND p.prokind = 'f'   -- Ensures we only get functions, not procedures or aggregates
+ORDER BY 
+  p.proname;
+
+#### Calling key functions 
+-- Replace with the actual user_id you want to clear.
+SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 
 _Last updated: August 21, 2025_
 --- END OF FILE vite-app/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
@@ -12224,12 +12242,16 @@ export default Dashboard;
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from './Dashboard';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
-const MyRequests: React.FC = () => {
+interface MyRequestsProps {
+  setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
+}
+
+const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12242,15 +12264,14 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // --- FIX #1: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
         .select(`
-          *
-          ,user_profiles!inner(*)
-          ,quote_attachments(*)
-          ,quotes(*)
-          ,request_notes(*)
+          *,
+          user_profiles!inner(*),
+          quote_attachments(*),
+          quotes(*),
+          request_notes(*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -12268,13 +12289,20 @@ const MyRequests: React.FC = () => {
     fetchUserRequests();
   }, [user]);
 
+  useEffect(() => {
+    if (setAddNewRequestCallback) {
+      setAddNewRequestCallback((newRequest: QuoteRequest) => {
+        setRequests(prevRequests => [newRequest, ...prevRequests]);
+      });
+    }
+  }, [setAddNewRequestCallback]);
+
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // --- FIX #2: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
-        .select(`* ,user_profiles!inner(*) ,quote_attachments(*) ,quotes(*) ,request_notes(*)`)
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('id', selectedRequest.id)
         .single();
 
@@ -12557,12 +12585,12 @@ export default ProfileModal;
 
 --- START OF FILE vite-app/src/components/QuoteAgentModal.tsx ---
 
-// QuoteAgentModal.tsx (v2.0 - Refactored API Integration)
+// vite-app/src/components/QuoteAgentModal.tsx
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
-import apiClient from "../lib/apiClient"; // <-- IMPORT the new apiClient
+import apiClient from "../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
 
 // Diagnostic component (kept for development)
@@ -12576,7 +12604,14 @@ const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCou
 
 type ModalStatus = 'ASKING_EMERGENCY' | 'SELECTING_CATEGORY' | 'INITIAL_QUESTIONS' | 'AWAITING_GPT' | 'FOLLOW_UP_QUESTIONS' | 'SUMMARY' | 'SUBMITTED';
 
-const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+// ADD a new prop to the interface
+interface QuoteAgentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmissionSuccess: (newRequest: any) => void;
+}
+
+const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentModalProps) => {
   const { profile, user } = useAuth();
 
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
@@ -12603,8 +12638,7 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  // Use process.env for CommonJS compatibility
-  const showDebugPanel = typeof process !== 'undefined' && process.env && process.env.VITE_DEBUG_PANEL === 'true';
+  const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -12743,24 +12777,24 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         };
         
         const { data: result } = await apiClient.post('/requests/submit', payload);
-        const newRequestId = result.request?.id;
+        const newRequest = result.request;
+        const newRequestId = newRequest?.id;
 
         if (selectedFile && newRequestId) {
-            const formData = new FormData();
-            formData.append('attachment', selectedFile);
-            formData.append('request_id', newRequestId);
-            
-            await apiClient.post('/requests/attachments', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await uploadAttachments(newRequestId, [selectedFile]);
         }
 
         setStatus('SUBMITTED');
+
+        setTimeout(() => {
+          onSubmissionSuccess(newRequest);
+          onClose();
+        }, 1500);
+
     } catch (err: any) {
         console.error("Submission Error:", err);
         const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
         setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
-    } finally {
         setLoading(false);
     }
   }
@@ -12855,7 +12889,12 @@ const QuoteAgentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </>
           );
         case 'SUBMITTED':
-            return ( <div style={{ textAlign: 'center', fontWeight: 500 }}> Thank you! Your quote request has been submitted. We will get back to you soon. </div> );
+          return (
+            <div style={{ textAlign: 'center', fontWeight: 500 }}>
+              Thank you! Your quote request has been submitted.
+              <div style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>This window will close automatically.</div>
+            </div>
+          );
         default: return null;
       }
   }
@@ -13990,7 +14029,7 @@ import AboutSection from './components/AboutSection';
 import ContactSection from './components/ContactSection';
 import UserMenu from './components/UserMenu';
 import ProfileModal from './components/ProfileModal';
-import Dashboard from './components/Dashboard';
+import Dashboard, { QuoteRequest } from './components/Dashboard';
 import MyRequests from './components/MyRequests';
 import {
   Phone,
@@ -14007,6 +14046,8 @@ const AppContent: React.FC = () => {
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [route, setRoute] = useState(window.location.hash);
+  
+  let myRequestsUpdater: ((request: QuoteRequest) => void) | null = null;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -14025,6 +14066,12 @@ const AppContent: React.FC = () => {
       // Profile modal is shown automatically
     } else {
       setShowAgentModal(true);
+    }
+  };
+
+  const handleNewRequestSuccess = (newRequest: QuoteRequest) => {
+    if (myRequestsUpdater) {
+      myRequestsUpdater(newRequest);
     }
   };
 
@@ -14064,8 +14111,9 @@ const AppContent: React.FC = () => {
         </div>
       </section>
 
-      {/* Conditionally render MyRequests for logged-in, non-admin users */}
-      {user && !profileIncomplete && profile?.role !== 'admin' && <MyRequests />}
+      {user && !profileIncomplete && profile?.role !== 'admin' && (
+          <MyRequests setAddNewRequestCallback={(updater) => { myRequestsUpdater = updater; }} />
+      )}
       
       <ServicesSection />
       <AboutSection />
@@ -14120,6 +14168,7 @@ const AppContent: React.FC = () => {
           <QuoteAgentModal
             isOpen={showAgentModal}
             onClose={() => setShowAgentModal(false)}
+            onSubmissionSuccess={handleNewRequestSuccess}
           />
         )}
         

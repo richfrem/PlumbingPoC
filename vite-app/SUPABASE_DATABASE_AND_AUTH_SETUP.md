@@ -346,5 +346,23 @@ ORDER BY
     tablename,
     indexname;
 
+#### Query 5: Functions
+SELECT 
+  p.proname AS function_name,
+  pg_get_function_identity_arguments(p.oid) AS function_arguments,
+  pg_get_functiondef(p.oid) AS function_definition
+FROM 
+  pg_proc p
+JOIN 
+  pg_namespace n ON n.oid = p.pronamespace
+WHERE 
+  n.nspname = 'public' -- Filters for your main schema
+  AND p.prokind = 'f'   -- Ensures we only get functions, not procedures or aggregates
+ORDER BY 
+  p.proname;
+
+#### Calling key functions 
+-- Replace with the actual user_id you want to clear.
+SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 
 _Last updated: August 21, 2025_

@@ -3,12 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { Box, Typography, CircularProgress, Paper, ListItemButton, Chip } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from './Dashboard';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
-const MyRequests: React.FC = () => {
+interface MyRequestsProps {
+  setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
+}
+
+const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,15 +25,14 @@ const MyRequests: React.FC = () => {
       return;
     }
     try {
-      // --- FIX #1: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
         .select(`
-          *
-          ,user_profiles!inner(*)
-          ,quote_attachments(*)
-          ,quotes(*)
-          ,request_notes(*)
+          *,
+          user_profiles!inner(*),
+          quote_attachments(*),
+          quotes(*),
+          request_notes(*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -47,13 +50,20 @@ const MyRequests: React.FC = () => {
     fetchUserRequests();
   }, [user]);
 
+  useEffect(() => {
+    if (setAddNewRequestCallback) {
+      setAddNewRequestCallback((newRequest: QuoteRequest) => {
+        setRequests(prevRequests => [newRequest, ...prevRequests]);
+      });
+    }
+  }, [setAddNewRequestCallback]);
+
   const refreshRequestData = async () => {
     if (!selectedRequest) return;
     try {
-      // --- FIX #2: REMOVED COMMA AFTER * ---
       const { data, error } = await supabase
         .from('requests')
-        .select(`* ,user_profiles!inner(*) ,quote_attachments(*) ,quotes(*) ,request_notes(*)`)
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('id', selectedRequest.id)
         .single();
 
