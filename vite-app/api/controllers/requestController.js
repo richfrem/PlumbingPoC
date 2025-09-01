@@ -89,7 +89,6 @@ const submitQuoteRequest = async (req, res, next) => {
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 
-    // Send email notification
     await emailService.sendRequestSubmittedEmail(data);
     
     res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
@@ -103,7 +102,7 @@ const submitQuoteRequest = async (req, res, next) => {
  */
 const uploadAttachment = async (req, res, next) => {
   try {
-    const { request_id, quote_id } = req.body; // quote_id is optional
+    const { request_id, quote_id } = req.body;
     const files = req.files;
 
     if (!files || files.length === 0) {
@@ -113,7 +112,6 @@ const uploadAttachment = async (req, res, next) => {
       return res.status(400).json({ error: 'request_id is required.' });
     }
 
-    // Security check: User must be an admin OR own the request associated with the upload.
     const { data: requestOwner, error: ownerError } = await supabase
       .from('requests')
       .select('user_id')
@@ -132,8 +130,6 @@ const uploadAttachment = async (req, res, next) => {
 
     const uploadPromises = files.map(async (file) => {
       const sanitizedFileName = file.originalname.replace(/\s/g, '_');
-      
-      // Standardize the path
       const pathSegments = ['public', request_id];
       if (quote_id) {
         pathSegments.push(quote_id);
@@ -141,28 +137,22 @@ const uploadAttachment = async (req, res, next) => {
       pathSegments.push(sanitizedFileName);
       const filePath = pathSegments.join('/');
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('PlumbingPoCBucket')
-        .upload(filePath, file.buffer, { 
-          contentType: file.mimetype, 
-          upsert: true // Allow overwriting files with the same name in the same location
-        });
+        .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: true });
       
       if (uploadError) {
         console.error('Supabase upload error:', uploadError);
         throw uploadError;
       }
 
-      const attachmentRecord = { 
+      return { 
         request_id,
         quote_id: quote_id || null,
         file_name: file.originalname, 
         mime_type: file.mimetype,
-        // Store the consistent, predictable path. The name file_url is kept for schema consistency.
         file_url: filePath 
       };
-
-      return attachmentRecord;
     });
 
     const attachmentRecords = await Promise.all(uploadPromises);
@@ -247,7 +237,7 @@ const createQuoteForRequest = async (req, res, next) => {
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
-      .select('user_id, contact_info') // Fetch contact_info for email
+      .select('user_id, contact_info')
       .eq('id', requestId)
       .single();
     if (requestError) throw requestError;
@@ -265,7 +255,6 @@ const createQuoteForRequest = async (req, res, next) => {
     
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
 
-    // Send email notification
     await emailService.sendQuoteAddedEmail(requestData, newQuote);
 
     res.status(201).json(newQuote);
@@ -296,7 +285,6 @@ const updateQuote = async (req, res, next) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
-    // Also update the parent request's status to ensure consistency
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
 
     res.status(200).json(data);
@@ -319,7 +307,6 @@ const acceptQuote = async (req, res, next) => {
 
     if (error) throw error;
 
-    // Send email notification
     const { data: requestData } = await supabase.from('requests').select('*').eq('id', requestId).single();
     if (requestData) {
       await emailService.sendStatusUpdateEmail(requestData);
@@ -339,9 +326,14 @@ const updateRequestStatus = async (req, res, next) => {
     const { requestId } = req.params;
     const { status, scheduled_start_date } = req.body;
 
+    const updatePayload = { status };
+    if (scheduled_start_date) {
+      updatePayload.scheduled_start_date = scheduled_start_date;
+    }
+
     const { data, error } = await supabase
       .from('requests')
-      .update({ status, scheduled_start_date })
+      .update(updatePayload)
       .eq('id', requestId)
       .select()
       .single();
@@ -349,7 +341,6 @@ const updateRequestStatus = async (req, res, next) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Request not found.' });
 
-    // Send email notification
     await emailService.sendStatusUpdateEmail(data);
 
     res.status(200).json(data);
