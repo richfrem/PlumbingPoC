@@ -1,8 +1,8 @@
 // vite-app/src/components/ProfileModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import apiClient from '../lib/apiClient';
-import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../../../lib/apiClient';
+import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
 import { X as XIcon } from 'lucide-react';
 

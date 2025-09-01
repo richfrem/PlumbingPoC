@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, LogOut, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../AuthContext';
 
 interface UserMenuProps {
   onOpenProfile: () => void;

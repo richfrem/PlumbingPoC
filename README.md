@@ -235,3 +235,33 @@ sequenceDiagram
     Backend API-->>Admin: Returns success message with triage results
     deactivate Backend API
 ```
+### 4. MVC architecture with react (Hook-Powered MVC Cycle)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ReactView as "React View (JSX)"
+    participant ReactController as "React Controller (Hooks & Handlers)"
+    participant NodeController as "Node.js Controller (API)"
+    participant SupabaseModel as "Supabase (Model)"
+
+    User->>ReactView: 1. Clicks "Add Note" button
+    
+    ReactView->>ReactController: 2. Triggers onClick handler
+    
+    ReactController->>NodeController: 3. `useRequests` hook calls apiClient.post('/api/.../notes')
+    
+    NodeController->>SupabaseModel: 4. Inserts new note into database
+    
+    SupabaseModel-->>NodeController: 5. Confirms success
+    
+    NodeController-->>ReactController: 6. Returns 201 Created response
+    
+    Note over ReactController: 7. Realtime subscription fires, hook re-fetches data
+    
+    ReactController->>ReactController: 8. Updates state with useState()
+    
+    ReactController->>ReactView: 9. Triggers a re-render with new notes
+    
+    ReactView-->>User: 10. User sees the new note appear instantly
+```

@@ -1,9 +1,9 @@
 // vite-app/src/components/QuoteAgentModal.tsx
 
 import React, { useState, useRef, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
-import apiClient, { uploadAttachments } from "../lib/apiClient";
+import { useAuth } from "../../auth/AuthContext";
+import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../../../lib/serviceQuoteQuestions";
+import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
 import { X as XIcon } from 'lucide-react';

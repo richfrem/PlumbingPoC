@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, Droplets, Wrench, Wind, Thermometer, ShowerHead, Settings } from 'lucide-react';
-import { services } from '../lib/servicesData';
+import { services } from '../../../lib/servicesData';
 
 // Create a mapping from the string name to the actual icon component
 const iconComponents: { [key: string]: React.ReactElement } = {

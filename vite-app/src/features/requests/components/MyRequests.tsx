@@ -1,12 +1,12 @@
-// vite-app/src/components/MyRequests.tsx
+// vite-app/src/features/requests/components/MyRequests.tsx
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useEffect, useCallback } from 'react'; // <-- IMPORT useCallback
+import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
-import { QuoteRequest } from './Dashboard';
-import { getRequestStatusChipColor } from '../lib/statusColors';
+import { QuoteRequest } from '../types';
+import { getRequestStatusChipColor } from '../../../lib/statusColors';
+import { useRequests } from '../hooks/useRequests';
 
 interface MyRequestsProps {
   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
@@ -14,108 +14,35 @@ interface MyRequestsProps {
 
 const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<QuoteRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { requests, loading, refreshRequests } = useRequests(user?.id);
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchUserRequests = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    if (requests.length === 0) setLoading(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('requests')
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setRequests((data as QuoteRequest[]) || []);
-    } catch (err: any) {
-      console.error("Failed to fetch user requests:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, requests.length]);
-
-  useEffect(() => {
-    fetchUserRequests();
-  }, [fetchUserRequests]);
-
-  // ** THE FIX IS HERE: This now listens to multiple tables relevant to the user **
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel(`my-requests-realtime-${user.id}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'requests',
-          filter: `user_id=eq.${user.id}` 
-        },
-        (payload) => {
-          console.log('Realtime request update received in MyRequests:', payload);
-          fetchUserRequests();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'request_notes',
-          // Filter notes based on the request_id, which must belong to the user
-          filter: `request_id=in.(select id from requests where user_id = '${user.id}')`
-        },
-        (payload) => {
-          console.log('Realtime note update received in MyRequests:', payload);
-          fetchUserRequests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, fetchUserRequests]);
-
   useEffect(() => {
     if (setAddNewRequestCallback) {
-      setAddNewRequestCallback((newRequest: QuoteRequest) => {
-        setRequests(prevRequests => [newRequest, ...prevRequests]);
+      setAddNewRequestCallback(() => {
+        refreshRequests();
       });
     }
-  }, [setAddNewRequestCallback]);
+  }, [setAddNewRequestCallback, refreshRequests]);
 
-  const refreshRequestData = async () => {
-    await fetchUserRequests();
-    if (selectedRequest) {
-        const refreshedRequest = requests.find(r => r.id === selectedRequest.id);
-        if (refreshedRequest) {
-            setSelectedRequest(refreshedRequest);
-        }
-    }
-  };
-  
   const handleOpenModal = (req: QuoteRequest) => {
     setSelectedRequest(req);
     setIsModalOpen(true);
   };
+  
+  // --- THE INFINITE LOOP FIX IS HERE ---
+  // We wrap the function we pass down as a prop in useCallback.
+  const handleModalUpdate = useCallback(() => {
+    refreshRequests();
+  }, [refreshRequests]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
-    fetchUserRequests();
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+  if (loading && requests.length === 0) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
 
   return (
     <>
@@ -166,7 +93,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           request={selectedRequest}
-          onUpdateRequest={refreshRequestData}
+          onUpdateRequest={handleModalUpdate} // Pass the stable function
         />
       )}
     </>

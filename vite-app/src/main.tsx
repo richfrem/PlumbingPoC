@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import AuthModal from './components/AuthModal';
-import QuoteAgentModal from './components/QuoteAgentModal';
-import ServicesSection from './components/ServicesSection';
-import ReviewsSection from './components/ReviewsSection';
-import AboutSection from './components/AboutSection';
-import ContactSection from './components/ContactSection';
-import UserMenu from './components/UserMenu';
-import ProfileModal from './components/ProfileModal';
-import Dashboard, { QuoteRequest } from './components/Dashboard';
-import MyRequests from './components/MyRequests';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
+import AuthModal from './features/auth/components/AuthModal';
+import QuoteAgentModal from './features/requests/components/QuoteAgentModal';
+import ServicesSection from './features/landing/components/ServicesSection';
+import ReviewsSection from './features/landing/components/ReviewsSection';
+import AboutSection from './features/landing/components/AboutSection';
+import ContactSection from './features/landing/components/ContactSection';
+import UserMenu from './features/auth/components/UserMenu';
+import ProfileModal from './features/profile/components/ProfileModal';
+import Dashboard from './features/requests/components/Dashboard';
+import MyRequests from './features/requests/components/MyRequests';
+import { QuoteRequest } from './features/requests/types';
 import {
   Phone,
   Wrench,
