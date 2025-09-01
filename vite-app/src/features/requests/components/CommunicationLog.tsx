@@ -20,13 +20,11 @@ interface CommunicationLogProps {
 }
 
 const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialNotes, onNoteAdded }) => {
-  // *** THE FIX: Remove the local state for notes. ***
-  // const [notes, setNotes] = useState<RequestNote[]>(initialNotes); // This line is REMOVED.
-  
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // This real-time listener remains. It correctly signals the parent to update.
+  // This real-time listener is for receiving messages from OTHER users (e.g., an admin).
+  // It correctly signals the parent dashboard to re-fetch all data.
   useEffect(() => {
     if (!requestId) return;
 
@@ -42,7 +40,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
         },
         (payload) => {
           console.log('New note received via realtime, telling parent to update...', payload);
-          onNoteAdded(); // This signals the Dashboard to re-fetch all data.
+          onNoteAdded();
         }
       )
       .subscribe();
@@ -58,7 +56,10 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
     try {
       await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
       setNewNote("");
-      // No need to manually update state here; the onNoteAdded signal will handle it.
+      // *** THE FIX: Immediately call onNoteAdded after a successful submission. ***
+      // This tells the parent to re-fetch right away, ensuring the user who sent the message
+      // sees their update instantly, without waiting for the real-time broadcast.
+      onNoteAdded();
     } catch (error) {
       console.error("Failed to add note:", error);
     } finally {
@@ -73,7 +74,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
       </Typography>
 
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, minHeight: '200px' }}>
-        {/* *** THE FIX: Render the `initialNotes` prop directly. *** */}
+        {/* *** THE FIX: Render the `initialNotes` prop directly, not a local state copy. *** */}
         {initialNotes.length > 0 ? (
           initialNotes.map(note => (
             <Box
