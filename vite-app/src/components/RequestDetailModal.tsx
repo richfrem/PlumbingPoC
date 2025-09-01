@@ -127,7 +127,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isReadOnly = ['scheduled', 'completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
-  const requestAttachments = request.quote_attachments.filter(att => !att.quote_id);
+  
+  // *** THE CORE FIX IS HERE ***
+  // We defensively check for `quote_attachments` and default to an empty array if it's missing.
+  const requestAttachments = (request.quote_attachments || []).filter(att => !att.quote_id);
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -281,7 +284,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       <QuoteFormModal
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
-        quote={quoteModalMode === 'update' && selectedQuoteIdx !== null ? request.quotes[selectedQuoteIdx] : undefined}
+        quote={quoteModalMode === 'update' && selectedQuoteIdx !== null && request.quotes[selectedQuoteIdx] ? request.quotes[selectedQuoteIdx] : undefined}
         editable={isAdmin && !isReadOnly}
         requestId={request.id}
         request={request}
