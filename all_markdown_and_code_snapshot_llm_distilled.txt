@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T03:48:46.269Z
+Generated On: 2025-09-01T04:21:14.674Z
 
-# Mnemonic Weight (Token Count): ~175,174 tokens
+# Mnemonic Weight (Token Count): ~175,109 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -13341,7 +13341,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (request) {
       setCurrentStatus(request.status);
       setScheduledStartDate(request.scheduled_start_date || '');
-      setScheduledDateChanged(false);
+      setScheduledDateChanged(false); // Reset changed status when request data changes
     }
   }, [request]);
 
@@ -13362,10 +13362,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   };
 
+  // *** THE CORE FIX IS HERE ***
+  // This function is now fully implemented to handle the save action.
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
+    // When the date is saved, we explicitly set the status to "scheduled".
     await handleStatusUpdate('scheduled', scheduledStartDate);
-    setScheduledDateChanged(false);
+    setScheduledDateChanged(false); // Reset the changed flag after saving
   };
   
   const handleAcceptQuote = async (quoteId: string) => {
@@ -13419,11 +13422,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
-  const isReadOnly = ['scheduled', 'completed'].includes(request.status);
+  const isReadOnly = ['completed'].includes(request.status); // Simplified read-only logic
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
   
-  const requestAttachments = (request.quote_attachments || []).filter(att => !att.quote_id);
+  const allAttachments = request.quote_attachments || [];
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -13450,20 +13453,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* *** PASS THE NEW PROPS DOWN TO THE CHILD *** */}
             <CustomerInfoSection
               request={request}
               isAdmin={isAdmin}
-              isDateEditable={true} 
+              isDateEditable={true}
               scheduledStartDate={scheduledStartDate}
               setScheduledStartDate={(date) => {
                 setScheduledStartDate(date);
-                setScheduledDateChanged(true);
+                setScheduledDateChanged(true); // Set the flag when the date changes
               }}
               currentStatus={currentStatus}
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
-              onSaveScheduledDate={handleSaveScheduledDate}
-              scheduledDateChanged={scheduledDateChanged}
+              onSaveScheduledDate={handleSaveScheduledDate} // Pass the save function
+              scheduledDateChanged={scheduledDateChanged}    // Pass the changed flag
             />
             
             {isAdmin && request.triage_summary && (
@@ -13492,9 +13496,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               </Box>
             </Paper>
             
-            <AttachmentSection 
+            <AttachmentSection
               requestId={request.id}
-              attachments={requestAttachments}
+              attachments={allAttachments}
               editable={!isReadOnly && isAdmin}
               onUpdate={onUpdateRequest}
             />
@@ -13515,49 +13519,30 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No quotes yet.</Typography>
               ) : (
                 <List>
-                  {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => {
-                    // *** THE CORE FIX IS HERE ***
-                    // Filter for attachments that belong specifically to this quote.
-                    const specificQuoteAttachments = (request.quote_attachments || []).filter(att => att.quote_id === quote.id);
-                    return (
-                      <React.Fragment key={quote.id || idx}>
-                        <ListItem disablePadding secondaryAction={
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
-                              <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
-                                Accept
-                              </Button>
-                            )}
-                            <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(request.quotes.findIndex(q => q.id === quote.id)); setShowQuoteForm(true); }}>
-                              {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
-                            </Button>
-                          </Box>
-                        }>
-                          <ListItemText
-                            primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
-                            secondary={
-                              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
-                                <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        {/* If there are attachments for this quote, display them */}
-                        {specificQuoteAttachments.length > 0 && isAdmin && (
-                           <Box sx={{ pl: 2, pb: 2 }}>
-                              <AttachmentSection
-                                requestId={request.id}
-                                quoteId={quote.id}
-                                attachments={specificQuoteAttachments}
-                                editable={false} // This is a view-only context
-                                onUpdate={() => {}}
-                              />
-                           </Box>
+                  {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => (
+                    <ListItem key={quote.id || idx} disablePadding secondaryAction={
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                          <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
+                            Accept
+                          </Button>
                         )}
-                      </React.Fragment>
-                    );
-                  })}
+                        <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(request.quotes.findIndex(q => q.id === quote.id)); setShowQuoteForm(true); }}>
+                          {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
+                        </Button>
+                      </Box>
+                    }>
+                      <ListItemText
+                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
+                        secondary={
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
+                            <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                  ))}
                 </List>
               )}
               {isAdmin && !isReadOnly && (
@@ -13576,7 +13561,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusUpdate(e.target.value as string)} disabled={isUpdating || isReadOnly}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusUpdate(e.target.value as string)} disabled={isUpdating || request.status === 'completed'}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
