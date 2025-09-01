@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T23:32:13.825Z
+Generated On: 2025-09-01T23:47:30.557Z
 
-# Mnemonic Weight (Token Count): ~131,385 tokens
+# Mnemonic Weight (Token Count): ~131,478 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -10911,10 +10911,11 @@ export function useRequests(userId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ** THE FIX: Create a STABLE fetch function using useCallback **
-  // We remove `requests.length` from the dependency array and fix the loading logic.
   const fetchRequests = useCallback(async () => {
-    setLoading(true); // Always set loading to true when a fetch starts
+    // Only show initial loading spinner, not for every background refresh
+    if (requests.length === 0) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -10937,44 +10938,46 @@ export function useRequests(userId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [userId]); // The only dependency is userId, which is stable.
+  }, [userId, requests.length]); // requests.length is intentionally included for the initial load logic
 
-  // Effect for the initial data fetch. Runs only once when the component mounts or userId changes.
+  // Effect for the initial data fetch.
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // Effect for the real-time subscriptions. Also runs only once.
+  // *** THE DEFINITIVE FIX: Use a separate, dedicated channel for each table. ***
+  // This is the most robust real-time pattern. It ensures that both the admin (who can see all requests)
+  // and the user (who can only see their own via RLS) are listening on the exact same broadcast channels.
   useEffect(() => {
-    const channelId = userId ? `user-requests-${userId}` : 'admin-dashboard';
-    const channel = supabase.channel(channelId);
-
     const handleUpdate = (payload: any) => {
-      console.log(`Realtime update on channel ${channelId}:`, payload);
-      // When an update comes in, we call the stable fetch function.
+      console.log('Realtime update received, re-fetching data:', payload);
       fetchRequests();
     };
 
-    //these are associated with publications in supabase .  see also supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md
-    const subscriptions = [
-        { table: 'requests' },
-        { table: 'request_notes' },
-        { table: 'quotes' },
-        { table: 'quote_attachments' }
-    ];
+    const requestsChannel = supabase.channel('public:requests')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleUpdate)
+      .subscribe();
 
-    subscriptions.forEach(({ table }) => {
-        channel.on(
-            'postgres_changes', 
-            { event: '*', schema: 'public', table: table }, 
-            handleUpdate
-        ).subscribe();
-    });
+    const notesChannel = supabase.channel('public:request_notes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'request_notes' }, handleUpdate)
+      .subscribe();
+      
+    const quotesChannel = supabase.channel('public:quotes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, handleUpdate)
+      .subscribe();
 
+    const attachmentsChannel = supabase.channel('public:quote_attachments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_attachments' }, handleUpdate)
+      .subscribe();
+
+    // Cleanup function to remove all subscriptions when the component unmounts
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(notesChannel);
+      supabase.removeChannel(quotesChannel);
+      supabase.removeChannel(attachmentsChannel);
     };
-  }, [userId, fetchRequests]); // Dependencies are stable.
+  }, [fetchRequests]); // The dependency on the stable fetchRequests function is correct.
 
   return { requests, loading, error, refreshRequests: fetchRequests };
 }
