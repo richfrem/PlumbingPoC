@@ -8,6 +8,7 @@ import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typo
 import AttachmentSection from "./AttachmentSection";
 import { X as XIcon } from 'lucide-react';
 
+
 // Diagnostic component (kept for development)
 const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCount, currentIndex }: { status: string; isEmergency: boolean | null; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
   <div style={{ background: '#333', color: '#fff', padding: '8px', marginTop: '16px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
@@ -52,7 +53,6 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  // *** THE CORE FIX IS HERE ***
   const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
