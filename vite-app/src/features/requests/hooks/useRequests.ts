@@ -53,6 +53,7 @@ export function useRequests(userId?: string) {
       fetchRequests();
     };
 
+    //these are associated with publications in supabase .  see also supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md
     const subscriptions = [
         { table: 'requests' },
         { table: 'request_notes' },
