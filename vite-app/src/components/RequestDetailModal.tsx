@@ -127,21 +127,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isReadOnly = ['scheduled', 'completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
+  const requestAttachments = request.quote_attachments.filter(att => !att.quote_id);
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '900px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
         
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          bgcolor: 'primary.main',
-          color: '#fff',
-          px: 3,
-          py: 2,
-          flexShrink: 0
-        }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2, flexShrink: 0 }}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               Job Docket: {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -152,15 +144,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {isAdmin && !request.triage_summary && (
-              <Button
-                variant="contained"
-                color="secondary"
-                size="small"
-                onClick={handleTriageRequest}
-                disabled={isTriaging}
-                sx={{ whiteSpace: 'nowrap' }}
-                startIcon={<Zap />}
-              >
+              <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={isTriaging} sx={{ whiteSpace: 'nowrap' }} startIcon={<Zap />}>
                 {isTriaging ? 'Triaging...' : 'AI Triage'}
               </Button>
             )}
@@ -214,15 +198,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             
             <AttachmentSection 
               requestId={request.id}
-              attachments={request.quote_attachments}
-              editable={!isReadOnly}
+              attachments={requestAttachments}
+              editable={!isReadOnly && isAdmin}
               onUpdate={onUpdateRequest}
             />
 
             <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16} /> Communication Log</Typography>
               <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
-                {request.request_notes.length > 0 ? request.request_notes.map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'You' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
+                {request.request_notes.length > 0 ? request.request_notes.sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'Admin' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
               </Box>
               <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                 <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
@@ -235,32 +219,25 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No quotes yet.</Typography>
               ) : (
                 <List>
-                  {request.quotes.map((quote, idx) => (
+                  {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {request.status !== 'accepted' && request.status !== 'scheduled' && request.status !== 'completed' && quote.status !== 'accepted' && (
+                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>
                         )}
-                        <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(idx); setShowQuoteForm(true); }}>
-                          {isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status) ? 'Update' : 'View Details'}
+                        <Button variant="outlined" size="small" onClick={() => { setQuoteModalMode('update'); setSelectedQuoteIdx(request.quotes.findIndex(q => q.id === quote.id)); setShowQuoteForm(true); }}>
+                          {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
                         </Button>
                       </Box>
                     }>
                       <ListItemText
-                        primary={`Quote #${idx + 1} - $${quote.quote_amount}`}
+                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
                         secondary={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Chip
-                              label={quote.status || 'N/A'}
-                              color={getQuoteStatusChipColor(quote.status)}
-                              size="small"
-                              sx={{ textTransform: 'capitalize' }}
-                            />
-                            <Typography variant="caption" color="text.secondary">
-                              | Created: {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}
-                            </Typography>
+                            <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
+                            <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
                           </Box>
                         }
                       />
@@ -268,7 +245,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   ))}
                 </List>
               )}
-              {isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status) && (
+              {isAdmin && !isReadOnly && (
                 <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 2 }} onClick={() => { setQuoteModalMode('create'); setSelectedQuoteIdx(null); setShowQuoteForm(true); }}>Add New Quote</Button>
               )}
             </Paper>
@@ -284,7 +261,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Update Status</InputLabel>
-                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusUpdate(e.target.value as string)} disabled={isUpdating || request.status === 'completed'}>
+                <Select value={currentStatus} label="Update Status" onChange={(e) => handleStatusUpdate(e.target.value as string)} disabled={isUpdating || isReadOnly}>
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="viewed">Viewed</MenuItem>
                   <MenuItem value="quoted">Quoted</MenuItem>
@@ -305,7 +282,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
         quote={quoteModalMode === 'update' && selectedQuoteIdx !== null ? request.quotes[selectedQuoteIdx] : undefined}
-        editable={isAdmin && !['accepted', 'scheduled', 'completed'].includes(request.status)}
+        editable={isAdmin && !isReadOnly}
         requestId={request.id}
         request={request}
       />
