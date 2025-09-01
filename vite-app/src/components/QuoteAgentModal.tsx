@@ -52,6 +52,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // *** THE CORE FIX IS HERE ***
   const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
 
   useEffect(() => {
@@ -207,7 +208,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     switch (status) {
         case 'ASKING_EMERGENCY':
           return (
-            <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Box sx={{ textAlign: 'center', p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Is this an emergency?</Typography>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                 <Button variant="contained" color="error" size="large" onClick={() => handleEmergencyChoice(true)}>Yes, it's an emergency</Button>
@@ -220,7 +221,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         case 'FOLLOW_UP_QUESTIONS':
         case 'AWAITING_GPT':
           return (
-            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 1 }}>
+            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 3, pt: 1 }}>
               <Box sx={{ flex: '1 1 auto', overflowY: 'auto', background: '#f8f8f8', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
                 {chatHistory.map((msg, idx) => ( <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}> <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>{msg.message}</span> </div> ))}
                 {status === 'AWAITING_GPT' && ( <div style={{ textAlign: 'left', margin: '8px 0' }}> <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span> </div> )}
@@ -263,7 +264,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
           const summaryAnswers = allQuestions.map((question, index) => ({ question, answer: allAnswers[index] || '(No answer provided)' }));
           return (
             <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 2 }}>
+              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Please confirm your details:</Typography>
                   {isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>EMERGENCY REQUEST</Typography>}
                   <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -286,7 +287,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                   />
               </Box>
               {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
-              <Box sx={{ flexShrink: 0, p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+              <Box sx={{ flexShrink: 0, p: 3, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                 <Button variant="contained" color="primary" fullWidth onClick={handleSubmitQuote} disabled={loading}>{loading ? 'Submitting...' : 'Confirm & Submit Request'}</Button>
               </Box>
             </Box>
@@ -305,7 +306,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 500, width: '95%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+      <Paper elevation={24} sx={{ background: '#fff', borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 500, width: '95%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1, color: 'grey.500' }}>
           <XIcon size={24} />
         </IconButton>
@@ -320,7 +321,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
             <DebugInfo status={status} isEmergency={isEmergency} initialCount={initialQuestions.length} followUpCount={followUpQuestions.length} answerCount={allAnswers.length} currentIndex={currentQuestionIndex} />
           </div>
         )}
-      </div>
+      </Paper>
     </div>
   );
 };
