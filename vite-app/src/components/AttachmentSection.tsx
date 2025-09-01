@@ -86,8 +86,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, quoteI
 
     if (onNewFiles) {
       onNewFiles(Array.from(files));
-      // Reset the file input so the user can select the same file again if they wish
-      event.target.value = '';
+      event.target.value = ''; // Reset file input
       return;
     }
 
