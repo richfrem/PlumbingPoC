@@ -69,6 +69,10 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Create stable dependencies from props that are arrays of objects
+  const attachmentIds = attachments.map(att => att.id).join(',');
+  const pendingFileNames = pendingFiles.map(file => file.name).join(',');
+
   useEffect(() => {
     // Generate signed URLs for existing attachments
     if (attachments && attachments.length > 0) {
@@ -88,7 +92,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         .catch(err => setError("Failed to load attachments."))
         .finally(() => setLoading(false));
     }
-  }, [attachments]);
+  }, [attachmentIds]); // Use stable dependency
 
   useEffect(() => {
     // Generate preview URLs for pending files
@@ -104,7 +108,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     } else {
       setPendingImageUrls({});
     }
-  }, [pendingFiles]);
+  }, [pendingFileNames]); // Use stable dependency
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

@@ -9,11 +9,11 @@ const emailService = require('../services/emailService');
  */
 const getRequestById = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { data: request, error } = await supabase
       .from('requests')
       .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
-      .eq('id', requestId)
+      .eq('id', id)
       .single();
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
@@ -199,7 +199,7 @@ const getStorageObject = async (req, res, next) => {
  */
 const addRequestNote = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { note } = req.body;
     const { user } = req;
 
@@ -212,7 +212,7 @@ const addRequestNote = async (req, res, next) => {
     if (profileError) throw profileError;
 
     const noteData = {
-      request_id: requestId,
+      request_id: id,
       user_id: user.id,
       note,
       author_role: profile.role === 'admin' ? 'admin' : 'customer',
@@ -232,18 +232,18 @@ const addRequestNote = async (req, res, next) => {
  */
 const createQuoteForRequest = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { quote_amount, details } = req.body;
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
       .select('user_id, contact_info')
-      .eq('id', requestId)
+      .eq('id', id)
       .single();
     if (requestError) throw requestError;
 
     const quoteData = {
-      request_id: requestId,
+      request_id: id,
       user_id: requestData.user_id,
       quote_amount,
       details,
@@ -253,7 +253,7 @@ const createQuoteForRequest = async (req, res, next) => {
     const { data: newQuote, error } = await supabase.from('quotes').insert(quoteData).select().single();
     if (error) throw error;
     
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     await emailService.sendQuoteAddedEmail(requestData, newQuote);
 
@@ -268,7 +268,7 @@ const createQuoteForRequest = async (req, res, next) => {
  */
 const updateQuote = async (req, res, next) => {
   try {
-    const { requestId, quoteId } = req.params;
+    const { id, quoteId } = req.params;
     const { quote_amount, details } = req.body;
 
     const { data, error } = await supabase
@@ -278,14 +278,14 @@ const updateQuote = async (req, res, next) => {
         details,
       })
       .eq('id', quoteId)
-      .eq('request_id', requestId)
+      .eq('request_id', id)
       .select()
       .single();
 
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     res.status(200).json(data);
   } catch (err) {
@@ -298,16 +298,16 @@ const updateQuote = async (req, res, next) => {
  */
 const acceptQuote = async (req, res, next) => {
   try {
-    const { requestId, quoteId } = req.params;
+    const { id, quoteId } = req.params;
 
     const { error } = await supabase.rpc('accept_quote_and_update_request', {
-      p_request_id: requestId,
+      p_request_id: id,
       p_quote_id: quoteId,
     });
 
     if (error) throw error;
 
-    const { data: requestData } = await supabase.from('requests').select('*').eq('id', requestId).single();
+    const { data: requestData } = await supabase.from('requests').select('*').eq('id', id).single();
     if (requestData) {
       await emailService.sendStatusUpdateEmail(requestData);
     }
@@ -323,7 +323,7 @@ const acceptQuote = async (req, res, next) => {
  */
 const updateRequestStatus = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { status, scheduled_start_date } = req.body;
 
     const updatePayload = { status };
@@ -334,7 +334,7 @@ const updateRequestStatus = async (req, res, next) => {
     const { data, error } = await supabase
       .from('requests')
       .update(updatePayload)
-      .eq('id', requestId)
+      .eq('id', id)
       .select()
       .single();
 

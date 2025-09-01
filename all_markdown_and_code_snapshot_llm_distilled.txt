@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T04:28:24.540Z
+Generated On: 2025-09-01T05:00:33.193Z
 
-# Mnemonic Weight (Token Count): ~175,007 tokens
+# Mnemonic Weight (Token Count): ~175,160 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -7206,11 +7206,11 @@ const emailService = require('../services/emailService');
  */
 const getRequestById = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { data: request, error } = await supabase
       .from('requests')
       .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
-      .eq('id', requestId)
+      .eq('id', id)
       .single();
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
@@ -7396,7 +7396,7 @@ const getStorageObject = async (req, res, next) => {
  */
 const addRequestNote = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { note } = req.body;
     const { user } = req;
 
@@ -7409,7 +7409,7 @@ const addRequestNote = async (req, res, next) => {
     if (profileError) throw profileError;
 
     const noteData = {
-      request_id: requestId,
+      request_id: id,
       user_id: user.id,
       note,
       author_role: profile.role === 'admin' ? 'admin' : 'customer',
@@ -7429,18 +7429,18 @@ const addRequestNote = async (req, res, next) => {
  */
 const createQuoteForRequest = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { quote_amount, details } = req.body;
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
       .select('user_id, contact_info')
-      .eq('id', requestId)
+      .eq('id', id)
       .single();
     if (requestError) throw requestError;
 
     const quoteData = {
-      request_id: requestId,
+      request_id: id,
       user_id: requestData.user_id,
       quote_amount,
       details,
@@ -7450,7 +7450,7 @@ const createQuoteForRequest = async (req, res, next) => {
     const { data: newQuote, error } = await supabase.from('quotes').insert(quoteData).select().single();
     if (error) throw error;
     
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     await emailService.sendQuoteAddedEmail(requestData, newQuote);
 
@@ -7465,7 +7465,7 @@ const createQuoteForRequest = async (req, res, next) => {
  */
 const updateQuote = async (req, res, next) => {
   try {
-    const { requestId, quoteId } = req.params;
+    const { id, quoteId } = req.params;
     const { quote_amount, details } = req.body;
 
     const { data, error } = await supabase
@@ -7475,14 +7475,14 @@ const updateQuote = async (req, res, next) => {
         details,
       })
       .eq('id', quoteId)
-      .eq('request_id', requestId)
+      .eq('request_id', id)
       .select()
       .single();
 
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', requestId);
+    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     res.status(200).json(data);
   } catch (err) {
@@ -7495,16 +7495,16 @@ const updateQuote = async (req, res, next) => {
  */
 const acceptQuote = async (req, res, next) => {
   try {
-    const { requestId, quoteId } = req.params;
+    const { id, quoteId } = req.params;
 
     const { error } = await supabase.rpc('accept_quote_and_update_request', {
-      p_request_id: requestId,
+      p_request_id: id,
       p_quote_id: quoteId,
     });
 
     if (error) throw error;
 
-    const { data: requestData } = await supabase.from('requests').select('*').eq('id', requestId).single();
+    const { data: requestData } = await supabase.from('requests').select('*').eq('id', id).single();
     if (requestData) {
       await emailService.sendStatusUpdateEmail(requestData);
     }
@@ -7520,7 +7520,7 @@ const acceptQuote = async (req, res, next) => {
  */
 const updateRequestStatus = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
+    const { id } = req.params;
     const { status, scheduled_start_date } = req.body;
 
     const updatePayload = { status };
@@ -7531,7 +7531,7 @@ const updateRequestStatus = async (req, res, next) => {
     const { data, error } = await supabase
       .from('requests')
       .update(updatePayload)
-      .eq('id', requestId)
+      .eq('id', id)
       .select()
       .single();
 
@@ -7558,6 +7558,7 @@ module.exports = {
   acceptQuote,
   updateRequestStatus,
 };
+
 --- END OF FILE vite-app/api/controllers/requestController.js ---
 
 --- START OF FILE vite-app/api/controllers/triageController.js ---
@@ -7938,12 +7939,12 @@ router.post('/attachments', authenticate, upload.array('attachment', 10), upload
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---
-router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
-router.patch('/:requestId/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
-router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
-router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
-router.post('/:requestId/quotes/:quoteId/accept', authenticate, acceptQuote);
-router.get('/:requestId', authenticate, getRequestById);
+router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
+router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
+router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
+router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
+router.get('/:id', authenticate, getRequestById);
 
 module.exports = router;
 --- END OF FILE vite-app/api/routes/requestRoutes.js ---
@@ -8205,7 +8206,7 @@ const submitQuoteSchema = z.object({
 // Schema for adding a new note to a request
 const addNoteSchema = z.object({
   params: z.object({ 
-    requestId: z.string().uuid("Invalid request ID format.") 
+    id: z.string().uuid("Invalid request ID format.") 
   }),
   body: z.object({ 
     note: z.string().min(1, "Note cannot be empty.") 
@@ -8215,7 +8216,7 @@ const addNoteSchema = z.object({
 // Schema for an admin creating a quote for a request
 const createQuoteSchema = z.object({
   params: z.object({ 
-    requestId: z.string().uuid("Invalid request ID format.") 
+    id: z.string().uuid("Invalid request ID format.") 
   }),
   body: z.object({
     quote_amount: z.number().positive("Quote amount must be a positive number."),
@@ -8226,7 +8227,7 @@ const createQuoteSchema = z.object({
 // --- NEW SCHEMA FOR UPDATING A QUOTE ---
 const updateQuoteSchema = z.object({
   params: z.object({
-    requestId: z.string().uuid("Invalid request ID format."),
+    id: z.string().uuid("Invalid request ID format."),
     quoteId: z.string().uuid("Invalid quote ID format."),
   }),
   body: z.object({
@@ -8242,13 +8243,24 @@ const getObjectSchema = z.object({
     })
 });
 
+const updateStatusSchema = z.object({
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format."),
+  }),
+  body: z.object({
+    status: z.string().min(1, "Status cannot be empty."),
+    scheduled_start_date: z.string().datetime({ offset: true }).optional(),
+  }),
+});
+
 module.exports = {
   gptRequestSchema,
   submitQuoteSchema,
   addNoteSchema,
   createQuoteSchema,
-  updateQuoteSchema, // <-- EXPORT THE NEW SCHEMA
+  updateQuoteSchema,
   getObjectSchema,
+  updateStatusSchema,
 };
 --- END OF FILE vite-app/api/validation/schemas.js ---
 
@@ -11729,6 +11741,10 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Create stable dependencies from props that are arrays of objects
+  const attachmentIds = attachments.map(att => att.id).join(',');
+  const pendingFileNames = pendingFiles.map(file => file.name).join(',');
+
   useEffect(() => {
     // Generate signed URLs for existing attachments
     if (attachments && attachments.length > 0) {
@@ -11748,7 +11764,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         .catch(err => setError("Failed to load attachments."))
         .finally(() => setLoading(false));
     }
-  }, [attachments]);
+  }, [attachmentIds]); // Use stable dependency
 
   useEffect(() => {
     // Generate preview URLs for pending files
@@ -11764,7 +11780,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     } else {
       setPendingImageUrls({});
     }
-  }, [pendingFiles]);
+  }, [pendingFileNames]); // Use stable dependency
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -13356,9 +13372,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   // This function is now fully implemented to handle the save action.
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
-    // When the date is saved, we explicitly set the status to "scheduled".
-    await handleStatusUpdate('scheduled', scheduledStartDate);
-    setScheduledDateChanged(false); // Reset the changed flag after saving
+    
+    // The scheduledStartDate is a 'YYYY-MM-DD' string.
+    // To ensure the date is saved correctly without timezone issues,
+    // we treat it as a UTC date from the beginning.
+    const utcDate = new Date(scheduledStartDate + 'T00:00:00Z');
+
+    await handleStatusUpdate('scheduled', utcDate.toISOString());
+    setScheduledDateChanged(false); // Reset the changed flag
+    onClose(); // Close the modal after saving
   };
   
   const handleAcceptQuote = async (quoteId: string) => {
@@ -13523,7 +13545,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Box>
                     }>
                       <ListItemText
-                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
+                        primary={`Quote - ${quote.quote_amount.toFixed(2)}`}
                         secondary={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                             <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />

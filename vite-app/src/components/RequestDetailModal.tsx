@@ -71,9 +71,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   // This function is now fully implemented to handle the save action.
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
-    // When the date is saved, we explicitly set the status to "scheduled".
-    await handleStatusUpdate('scheduled', scheduledStartDate);
-    setScheduledDateChanged(false); // Reset the changed flag after saving
+    
+    // The scheduledStartDate is a 'YYYY-MM-DD' string.
+    // To ensure the date is saved correctly without timezone issues,
+    // we treat it as a UTC date from the beginning.
+    const utcDate = new Date(scheduledStartDate + 'T00:00:00Z');
+
+    await handleStatusUpdate('scheduled', utcDate.toISOString());
+    setScheduledDateChanged(false); // Reset the changed flag
+    onClose(); // Close the modal after saving
   };
   
   const handleAcceptQuote = async (quoteId: string) => {
@@ -238,7 +244,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Box>
                     }>
                       <ListItemText
-                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
+                        primary={`Quote - ${quote.quote_amount.toFixed(2)}`}
                         secondary={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                             <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />

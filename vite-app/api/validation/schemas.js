@@ -37,7 +37,7 @@ const submitQuoteSchema = z.object({
 // Schema for adding a new note to a request
 const addNoteSchema = z.object({
   params: z.object({ 
-    requestId: z.string().uuid("Invalid request ID format.") 
+    id: z.string().uuid("Invalid request ID format.") 
   }),
   body: z.object({ 
     note: z.string().min(1, "Note cannot be empty.") 
@@ -47,7 +47,7 @@ const addNoteSchema = z.object({
 // Schema for an admin creating a quote for a request
 const createQuoteSchema = z.object({
   params: z.object({ 
-    requestId: z.string().uuid("Invalid request ID format.") 
+    id: z.string().uuid("Invalid request ID format.") 
   }),
   body: z.object({
     quote_amount: z.number().positive("Quote amount must be a positive number."),
@@ -58,7 +58,7 @@ const createQuoteSchema = z.object({
 // --- NEW SCHEMA FOR UPDATING A QUOTE ---
 const updateQuoteSchema = z.object({
   params: z.object({
-    requestId: z.string().uuid("Invalid request ID format."),
+    id: z.string().uuid("Invalid request ID format."),
     quoteId: z.string().uuid("Invalid quote ID format."),
   }),
   body: z.object({
@@ -74,11 +74,22 @@ const getObjectSchema = z.object({
     })
 });
 
+const updateStatusSchema = z.object({
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format."),
+  }),
+  body: z.object({
+    status: z.string().min(1, "Status cannot be empty."),
+    scheduled_start_date: z.string().datetime({ offset: true }).optional(),
+  }),
+});
+
 module.exports = {
   gptRequestSchema,
   submitQuoteSchema,
   addNoteSchema,
   createQuoteSchema,
-  updateQuoteSchema, // <-- EXPORT THE NEW SCHEMA
+  updateQuoteSchema,
   getObjectSchema,
+  updateStatusSchema,
 };

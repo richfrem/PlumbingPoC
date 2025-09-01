@@ -41,11 +41,11 @@ router.post('/attachments', authenticate, upload.array('attachment', 10), upload
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---
-router.post('/:requestId/notes', authenticate, validate(addNoteSchema), addRequestNote);
-router.patch('/:requestId/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
-router.post('/:requestId/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
-router.put('/:requestId/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
-router.post('/:requestId/quotes/:quoteId/accept', authenticate, acceptQuote);
-router.get('/:requestId', authenticate, getRequestById);
+router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
+router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
+router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
+router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
+router.get('/:id', authenticate, getRequestById);
 
 module.exports = router;
