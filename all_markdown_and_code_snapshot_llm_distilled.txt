@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T21:58:29.832Z
+Generated On: 2025-09-01T23:32:13.825Z
 
-# Mnemonic Weight (Token Count): ~131,425 tokens
+# Mnemonic Weight (Token Count): ~131,385 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -870,82 +870,48 @@ You have successfully forged a complete, end-to-end client management platform. 
 *   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
 *   Speak clearly and naturally. Imagine you're showing this to a friend who runs a plumbing business.
 *   Follow the **[ACTION]** cues precisely.
-
 ---
-
 **(Start Recording)**
-
 **(Shot 1: Customer Experience - Start on your landing page)**
-
-**YOU:**
 "Hi, I wanted to show you a quick look at an AI-powered system I've built to help local trades businesses save time and win more jobs."
-
 "This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
 
 **[ACTION]: Click "Request a Quote".  This will ask a user to login so the quote request is associated with a person you can contact**
-
 "First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
-
 **[ACTION]: Click "Continue with Google" and quickly complete the login.**
-
 "Once they're in, they start a conversation with your AI assistant. The assistant's first job is to understand exactly what they need."
-
 **[ACTION]: Select a service category, like "Perimeter Drains".**
-
 "The AI starts with the standard questions for that service. But here's where it gets smart."
-
 **[ACTION]: Answer the initial questions quickly.**
-
 *(Pause for a moment as the "Thinking..." message appears)*
-
 "Right now, the AI is analyzing the customer's answers. It understands the context and generates intelligent, follow-up questions to get all the details you'd normally have to ask over the phone."
-
 **[ACTION]: Show the new AI-generated questions appearing. Answer them.**
-
 "The customer can also upload photos of the problem area directly from their phone or computer, which gives you eyes on the job before you even send a quote."
-
 **[ACTION]: Upload your dummy `leak.jpg` file.**
-
 "Finally, the system gives them a clean summary to review. Once they confirm, the job is done for them, and you get a perfect lead."
-
 **[ACTION]: Click "Confirm & Submit Request". Show the "Thank you" screen.**
 
 ---
-
 **(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
-
-**YOU:**
 "Now, let's look at what you see as the business owner. This is your command center."
 
 **[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top.**
-
 "The new request from our customer appears instantly. But instead of just raw data, you have an AI partner."
-
 **[ACTION]: Click the "AI Triage" button for the new request. Let the results appear.**
-
 "With one click, your AI assistant analyzes the entire request and gives you a triage summary, a priority score, and even a profitability score, so you know exactly which jobs to focus on first."
-
 **[ACTION]: Click on the request to open the Job Docket modal.**
-
 "Inside the docket, you have everything you need, perfectly organized: all the customer's answers, the photos they sent, and a full communication log."
-
 **[ACTION]: Scroll down, showing the different sections.**
-
 "From here, you can add your official quote and update the job status with a single click."
-
 **[ACTION]: Quickly create a simple quote. Change the status from "New" to "Quoted".**
-
 "The best part is, this is a full client portal. The customer can log back in anytime to see the status of their request and review the quote you just sent."
 
 **[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status and quote amount.**
-
 ---
 
 **(Final Shot: Back on Admin View, ready to close)**
-
 **YOU:**
 "So, in under two minutes, the system handled a new lead, qualified them with AI, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
-
 "This is the kind of tool that saves hours every week and puts you ahead of the competition."
 
 **(End Recording)**
@@ -9701,21 +9667,21 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
 import { AlertTriangle } from 'lucide-react';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
-import { useRequests } from '../hooks/useRequests';
 import { QuoteRequest, Quote } from '../types';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  requests: QuoteRequest[];
+  loading: boolean;
+  error: string | null;
+  refreshRequests: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, error, refreshRequests }) => {
   const { profile } = useAuth();
-  const { requests: allRequests, loading, error, refreshRequests } = useRequests();
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
-  // *** THE DEFINITIVE FIX: State Synchronization Effect ***
-  // This effect listens for changes in the main `allRequests` array.
-  // If a modal is open (`selectedRequest` has an ID), it finds the NEW version
-  // of that request in the updated array and forces the `selectedRequest` state
-  // to be updated. This ensures the modal always receives the freshest data.
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
       const newRequestData = allRequests.find(r => r.id === selectedRequest.id);
@@ -9723,7 +9689,7 @@ const Dashboard: React.FC = () => {
         setSelectedRequest(newRequestData);
       }
     }
-  }, [allRequests, selectedRequest?.id]); // Dependency array is stable and correct
+  }, [allRequests, selectedRequest?.id]);
 
   const filteredRequests = useMemo(() => {
     if (activeFilterStatus === 'all') return allRequests;
@@ -9755,7 +9721,7 @@ const Dashboard: React.FC = () => {
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
     },
-    { field: 'problem_category', headerName: 'Request Type', width: 180,
+    { field: 'problem_category', headerName: 'Request Type', width: 180, 
       valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A'
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 180,
@@ -9791,13 +9757,13 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Box>
       </Box>
-      {selectedRequest && (
-        <RequestDetailModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          request={selectedRequest}
+      {selectedRequest && ( 
+        <RequestDetailModal 
+          isOpen={isModalOpen} 
+          onClose={handleCloseModal} 
+          request={selectedRequest} 
           onUpdateRequest={handleModalUpdate}
-        />
+        /> 
       )}
     </>
   );
@@ -9891,25 +9857,19 @@ import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
-import { useRequests } from '../hooks/useRequests';
 
-// *** THE FIX: The legacy prop interface is removed. ***
-// interface MyRequestsProps {
-//   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
-// }
+interface MyRequestsProps {
+  requests: QuoteRequest[];
+  loading: boolean;
+  error: string | null;
+  refreshRequests: () => void;
+}
 
-const MyRequests: React.FC = () => {
+const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refreshRequests }) => {
   const { user } = useAuth();
-  const { requests, loading, error, refreshRequests } = useRequests(user?.id);
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // *** THE FIX: The useEffect for the legacy callback is removed. ***
-  // useEffect(() => {
-  //   if (setAddNewRequestCallback) { ... }
-  // }, [setAddNewRequestCallback, refreshRequests]);
 
-  // This effect ensures the modal always has the latest data after a refresh.
   useEffect(() => {
     if (selectedRequest && requests.length > 0) {
       const newRequestData = requests.find(r => r.id === selectedRequest.id);
@@ -11324,6 +11284,7 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
+import { useRequests } from './features/requests/hooks/useRequests'; // Import the hook
 import {
   Phone,
   Wrench,
@@ -11334,13 +11295,15 @@ import {
 
 const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
+  
+  // *** THE FIX: Data fetching is "lifted up" to this central component. ***
+  const { requests, loading, error, refreshRequests } = useRequests(profile?.role === 'admin' ? undefined : user?.id);
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [route, setRoute] = useState(window.location.hash);
-  
-  let myRequestsUpdater: ((request: QuoteRequest) => void) | null = null;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -11362,15 +11325,14 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleNewRequestSuccess = (newRequest: QuoteRequest) => {
-    if (myRequestsUpdater) {
-      myRequestsUpdater(newRequest);
-    }
+  // *** THE FIX: This callback now has access to the central refresh function. ***
+  const handleNewRequestSuccess = () => {
+    console.log("New request submitted. Triggering a manual refresh.");
+    refreshRequests();
   };
 
   const renderHomePage = () => (
     <>
-      {/* Hero Section */}
       <section className="pt-12 pb-20 bg-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -11405,7 +11367,13 @@ const AppContent: React.FC = () => {
       </section>
 
       {user && !profileIncomplete && profile?.role !== 'admin' && (
-          <MyRequests setAddNewRequestCallback={(updater) => { myRequestsUpdater = updater; }} />
+          // *** THE FIX: MyRequests now receives its data and functions as props. ***
+          <MyRequests 
+            requests={requests} 
+            loading={loading} 
+            error={error} 
+            refreshRequests={refreshRequests} 
+          />
       )}
       
       <ServicesSection />
@@ -11454,7 +11422,15 @@ const AppContent: React.FC = () => {
         </header>
         
         <main className="pt-20 flex-grow">
-          {route === '#/dashboard' ? <Dashboard /> : renderHomePage()}
+          {route === '#/dashboard' ? (
+            // *** THE FIX: Dashboard now receives its data and functions as props. ***
+            <Dashboard 
+              requests={requests} 
+              loading={loading} 
+              error={error} 
+              refreshRequests={refreshRequests} 
+            />
+          ) : renderHomePage()}
         </main>
 
         {user && !profileIncomplete && (

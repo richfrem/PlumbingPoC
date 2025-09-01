@@ -6,25 +6,19 @@ import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
 import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
-import { useRequests } from '../hooks/useRequests';
 
-// *** THE FIX: The legacy prop interface is removed. ***
-// interface MyRequestsProps {
-//   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
-// }
+interface MyRequestsProps {
+  requests: QuoteRequest[];
+  loading: boolean;
+  error: string | null;
+  refreshRequests: () => void;
+}
 
-const MyRequests: React.FC = () => {
+const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refreshRequests }) => {
   const { user } = useAuth();
-  const { requests, loading, error, refreshRequests } = useRequests(user?.id);
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // *** THE FIX: The useEffect for the legacy callback is removed. ***
-  // useEffect(() => {
-  //   if (setAddNewRequestCallback) { ... }
-  // }, [setAddNewRequestCallback, refreshRequests]);
 
-  // This effect ensures the modal always has the latest data after a refresh.
   useEffect(() => {
     if (selectedRequest && requests.length > 0) {
       const newRequestData = requests.find(r => r.id === selectedRequest.id);

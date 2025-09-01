@@ -14,6 +14,7 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
+import { useRequests } from './features/requests/hooks/useRequests'; // Import the hook
 import {
   Phone,
   Wrench,
@@ -24,13 +25,15 @@ import {
 
 const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
+  
+  // *** THE FIX: Data fetching is "lifted up" to this central component. ***
+  const { requests, loading, error, refreshRequests } = useRequests(profile?.role === 'admin' ? undefined : user?.id);
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [route, setRoute] = useState(window.location.hash);
-  
-  let myRequestsUpdater: ((request: QuoteRequest) => void) | null = null;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -52,15 +55,14 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleNewRequestSuccess = (newRequest: QuoteRequest) => {
-    if (myRequestsUpdater) {
-      myRequestsUpdater(newRequest);
-    }
+  // *** THE FIX: This callback now has access to the central refresh function. ***
+  const handleNewRequestSuccess = () => {
+    console.log("New request submitted. Triggering a manual refresh.");
+    refreshRequests();
   };
 
   const renderHomePage = () => (
     <>
-      {/* Hero Section */}
       <section className="pt-12 pb-20 bg-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -95,7 +97,13 @@ const AppContent: React.FC = () => {
       </section>
 
       {user && !profileIncomplete && profile?.role !== 'admin' && (
-          <MyRequests setAddNewRequestCallback={(updater) => { myRequestsUpdater = updater; }} />
+          // *** THE FIX: MyRequests now receives its data and functions as props. ***
+          <MyRequests 
+            requests={requests} 
+            loading={loading} 
+            error={error} 
+            refreshRequests={refreshRequests} 
+          />
       )}
       
       <ServicesSection />
@@ -144,7 +152,15 @@ const AppContent: React.FC = () => {
         </header>
         
         <main className="pt-20 flex-grow">
-          {route === '#/dashboard' ? <Dashboard /> : renderHomePage()}
+          {route === '#/dashboard' ? (
+            // *** THE FIX: Dashboard now receives its data and functions as props. ***
+            <Dashboard 
+              requests={requests} 
+              loading={loading} 
+              error={error} 
+              refreshRequests={refreshRequests} 
+            />
+          ) : renderHomePage()}
         </main>
 
         {user && !profileIncomplete && (

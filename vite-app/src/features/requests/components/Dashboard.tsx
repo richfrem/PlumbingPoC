@@ -7,21 +7,21 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
 import { AlertTriangle } from 'lucide-react';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
-import { useRequests } from '../hooks/useRequests';
 import { QuoteRequest, Quote } from '../types';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  requests: QuoteRequest[];
+  loading: boolean;
+  error: string | null;
+  refreshRequests: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, error, refreshRequests }) => {
   const { profile } = useAuth();
-  const { requests: allRequests, loading, error, refreshRequests } = useRequests();
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
-  // *** THE DEFINITIVE FIX: State Synchronization Effect ***
-  // This effect listens for changes in the main `allRequests` array.
-  // If a modal is open (`selectedRequest` has an ID), it finds the NEW version
-  // of that request in the updated array and forces the `selectedRequest` state
-  // to be updated. This ensures the modal always receives the freshest data.
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
       const newRequestData = allRequests.find(r => r.id === selectedRequest.id);
@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
         setSelectedRequest(newRequestData);
       }
     }
-  }, [allRequests, selectedRequest?.id]); // Dependency array is stable and correct
+  }, [allRequests, selectedRequest?.id]);
 
   const filteredRequests = useMemo(() => {
     if (activeFilterStatus === 'all') return allRequests;
@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
     },
-    { field: 'problem_category', headerName: 'Request Type', width: 180,
+    { field: 'problem_category', headerName: 'Request Type', width: 180, 
       valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A'
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 180,
@@ -97,13 +97,13 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Box>
       </Box>
-      {selectedRequest && (
-        <RequestDetailModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          request={selectedRequest}
+      {selectedRequest && ( 
+        <RequestDetailModal 
+          isOpen={isModalOpen} 
+          onClose={handleCloseModal} 
+          request={selectedRequest} 
           onUpdateRequest={handleModalUpdate}
-        />
+        /> 
       )}
     </>
   );
