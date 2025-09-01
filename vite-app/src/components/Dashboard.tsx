@@ -1,6 +1,6 @@
 // vite-app/src/components/Dashboard.tsx
 
-import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
@@ -9,8 +9,6 @@ import RequestDetailModal from './RequestDetailModal';
 import { AlertTriangle } from 'lucide-react';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
-// Interfaces remain the same
-// ... (paste your interfaces here) ...
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
 export interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
 export interface QuoteRequest {
@@ -54,13 +52,11 @@ const Dashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
-  // ** THE FIX - PART 1: Wrap fetch logic in useCallback for stable dependency **
   const fetchAllRequests = useCallback(async () => {
     if (!profile || profile.role !== 'admin') {
       setLoading(false);
       return;
     }
-    // Set loading to true only for the very first fetch
     if (requests.length === 0) setLoading(true);
 
     try {
@@ -82,19 +78,18 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [profile, activeFilterStatus, requests.length]); // Add dependencies
+  }, [profile, activeFilterStatus, requests.length]);
 
-  // Initial fetch
   useEffect(() => {
     fetchAllRequests();
   }, [fetchAllRequests]);
 
-  // ** THE FIX - PART 2: Supabase Realtime Subscription **
+  // ** THE FIX IS HERE: This now listens to requests AND request_notes **
   useEffect(() => {
     if (!profile || profile.role !== 'admin') return;
 
     const channel = supabase
-      .channel('dashboard-requests')
+      .channel('dashboard-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'requests' },
@@ -107,7 +102,7 @@ const Dashboard: React.FC = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'request_notes' },
         (payload) => {
-          console.log('Realtime update on notes table:', payload);
+          console.log('Realtime update on notes table for Dashboard:', payload);
           fetchAllRequests();
         }
       )
@@ -129,8 +124,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // The rest of the component (handleRowClick, handleCloseModal, columns, render logic) remains exactly the same.
-  // ... (paste the rest of your Dashboard.tsx component code here) ...
   const handleRowClick = (params: any) => {
     const fullRequestData = requests.find(r => r.id === params.id);
     if (fullRequestData) {
@@ -142,7 +135,6 @@ const Dashboard: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
-    // After closing modal, a quick refresh ensures consistency
     fetchAllRequests();
   };
 
