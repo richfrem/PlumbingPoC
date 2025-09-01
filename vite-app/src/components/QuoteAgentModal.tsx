@@ -4,8 +4,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../lib/serviceQuoteQuestions";
 import apiClient, { uploadAttachments } from "../lib/apiClient";
-import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography } from '@mui/material';
+import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert } from '@mui/material'; // <-- THE FIX IS HERE
 import AttachmentSection from "./AttachmentSection";
+import { X as XIcon } from 'lucide-react';
+
 
 // Diagnostic component (kept for development)
 const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCount, currentIndex }: { status: string; isEmergency: boolean | null; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
@@ -299,15 +301,17 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 500, width: '95%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1, color: 'grey.500' }}>
+        <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1, color: 'grey.500' }}>
           <XIcon size={24} />
         </IconButton>
         <Typography variant="h5" sx={{ fontWeight: 700, p: 3, pb: 2, color: 'primary.main', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
           Request a Quote
         </Typography>
-        {renderContent()}
+        <Box sx={{ flex: '1 1 auto', overflowY: 'auto' }}>
+          {renderContent()}
+        </Box>
         {showDebugPanel && (
-          <div style={{ flexShrink: 0, padding: '0 24px 24px 24px' }}>
+          <div style={{ flexShrink: 0, padding: '0 24px 24px 24px', borderTop: '1px solid #eee' }}>
             <DebugInfo status={status} isEmergency={isEmergency} initialCount={initialQuestions.length} followUpCount={followUpQuestions.length} answerCount={allAnswers.length} currentIndex={currentQuestionIndex} />
           </div>
         )}
