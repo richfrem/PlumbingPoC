@@ -78,7 +78,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Include link to request in notification emails
 - [x] Correct RLS policies for `user_profiles` to allow admin access
 - [ ] Implement automated follow-up emails for quoted requests
-- [ ] Add AI-powered triage summary and priority score to requests
+- [x] Add AI-powered triage summary and priority score to requests
 - [ ] Review backend for scalability, security, and maintainability (agent-driven)
 - [ ] Configure Resend domain verification (manual step for user)
 
