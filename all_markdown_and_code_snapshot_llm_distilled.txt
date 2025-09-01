@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-01T06:11:48.417Z
+Generated On: 2025-09-01T18:23:57.374Z
 
-# Mnemonic Weight (Token Count): ~175,005 tokens
+# Mnemonic Weight (Token Count): ~176,673 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -109,6 +109,7 @@ Generated On: 2025-09-01T06:11:48.417Z
   ./vite-app/src/components/AboutSection.tsx
   ./vite-app/src/components/AttachmentSection.tsx
   ./vite-app/src/components/AuthModal.tsx
+  ./vite-app/src/components/CommunicationLog.tsx
   ./vite-app/src/components/ContactSection.tsx
   ./vite-app/src/components/CustomerInfoSection.tsx
   ./vite-app/src/components/Dashboard.tsx
@@ -611,7 +612,7 @@ You have successfully forged a complete, end-to-end client management platform. 
 
 "This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
 
-**[ACTION]: Click "Request a Quote".**
+**[ACTION]: Click "Request a Quote".  This will ask a user to login so the quote request is associated with a person you can contact**
 
 "First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
 
@@ -11964,6 +11965,185 @@ export default AuthModal;
 
 --- END OF FILE vite-app/src/components/AuthModal.tsx ---
 
+--- START OF FILE vite-app/src/components/CommunicationLog.tsx ---
+
+// vite-app/src/components/CommunicationLog.tsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import apiClient from '../lib/apiClient';
+import { Box, Typography, Paper, TextField, Button, CircularProgress } from '@mui/material';
+import { MessageSquare } from 'lucide-react';
+
+interface RequestNote {
+  id: string;
+  note: string;
+  author_role: 'admin' | 'customer';
+  created_at: string;
+}
+
+interface CommunicationLogProps {
+  requestId: string;
+}
+
+const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId }) => {
+  const { profile } = useAuth();
+  const [notes, setNotes] = useState<RequestNote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newNote, setNewNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchNotes = useCallback(async () => {
+    // Only fetch if we have a valid requestId
+    if (!requestId) return;
+    try {
+      const { data, error } = await supabase
+        .from('request_notes')
+        .select('*')
+        .eq('request_id', requestId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (err) {
+      console.error("Failed to fetch notes:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [requestId]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
+
+  // Real-time subscription for this specific request's notes
+  useEffect(() => {
+    if (!requestId) return;
+
+    const channel = supabase
+      .channel(`request-notes-${requestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'request_notes',
+          filter: `request_id=eq.${requestId}`
+        },
+        (payload) => {
+          console.log('New note received via realtime!', payload);
+          // Add the new note to our state without a full re-fetch
+          setNotes(currentNotes => [...currentNotes, payload.new as RequestNote]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [requestId]);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !requestId) return;
+    setIsSubmitting(true);
+    try {
+      // The API call will insert the note, and the realtime subscription
+      // will handle updating the UI for all connected clients.
+      await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
+      setNewNote(""); // Clear the input field on success
+    } catch (error) {
+      console.error("Failed to add note:", error);
+      // You could add user-facing error handling here
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const isAdmin = profile?.role === 'admin';
+
+  return (
+    <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
+      <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <MessageSquare size={16} /> Communication Log
+      </Typography>
+
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, minHeight: '200px' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress />
+          </Box>
+        ) : notes.length > 0 ? (
+          notes.map(note => (
+            <Box
+              key={note.id}
+              sx={{
+                mb: 1.5,
+                display: 'flex',
+                justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end'
+              }}
+            >
+              <Box>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="body2">{note.note}</Typography>
+                </Paper>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  sx={{
+                    px: 1,
+                    color: 'text.secondary',
+                    textAlign: note.author_role === 'admin' ? 'left' : 'right'
+                  }}
+                >
+                  {note.author_role === 'admin' ? 'Admin' : 'You'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                </Typography>
+              </Box>
+            </Box>
+          ))
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+            No notes yet.
+          </Typography>
+        )}
+      </Box>
+
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField
+            label="Add a note or message..."
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            fullWidth
+            multiline
+            maxRows={3}
+            size="small"
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddNote();
+                }
+            }}
+          />
+          <Button variant="contained" onClick={handleAddNote} disabled={isSubmitting || !newNote.trim()}>
+            {isSubmitting ? '...' : 'Send'}
+          </Button>
+        </Box>
+      </Box>
+    </Paper>
+  );
+};
+
+export default CommunicationLog;
+--- END OF FILE vite-app/src/components/CommunicationLog.tsx ---
+
 --- START OF FILE vite-app/src/components/ContactSection.tsx ---
 
 import React from 'react';
@@ -12153,7 +12333,7 @@ export default CustomerInfoSection;
 
 // vite-app/src/components/Dashboard.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
@@ -12163,6 +12343,7 @@ import { AlertTriangle } from 'lucide-react';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
 // Interfaces remain the same
+// ... (paste your interfaces here) ...
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
 export interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
 export interface QuoteRequest {
@@ -12184,7 +12365,6 @@ export interface QuoteRequest {
     name: string;
     email: string;
     phone: string;
-    // Allow for other potential profile fields
     [key: string]: any; 
   } | null;
   service_address: string;
@@ -12207,73 +12387,83 @@ const Dashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
-  const fetchAllRequests = async () => {
-    if (!profile) {
+  // ** THE FIX - PART 1: Wrap fetch logic in useCallback for stable dependency **
+  const fetchAllRequests = useCallback(async () => {
+    if (!profile || profile.role !== 'admin') {
       setLoading(false);
       return;
     }
+    // Set loading to true only for the very first fetch
+    if (requests.length === 0) setLoading(true);
+
     try {
       let query = supabase
         .from('requests')
-        // THE FIX: Use an explicit inner join to robustly fetch the user profile.
-        .select(`
-          *, 
-          user_profiles!inner(name, email, phone), 
-          quote_attachments(*), 
-          quotes(*), 
-          request_notes(*), 
-          scheduled_start_date
-        `)
+        .select(`*, user_profiles!inner(name, email, phone), quote_attachments(*), quotes(*), request_notes(*), scheduled_start_date`)
         .order('created_at', { ascending: false });
 
-      // Non-admin users can only see their own requests.
-      if (profile.role !== 'admin') {
-        // Use user_id from the profile object for filtering.
-        query = query.eq('user_id', profile.user_id);
-      }
-
-      // Apply status filter if not 'all'.
       if (activeFilterStatus !== 'all') {
         query = query.eq('status', activeFilterStatus);
       }
 
       const { data, error: fetchError } = await query;
-
       if (fetchError) throw fetchError;
       setRequests((data as QuoteRequest[]) || []);
     } catch (err: any) {
-      setError("Failed to fetch quote requests. Please check permissions or network.");
+      setError("Failed to fetch quote requests.");
       console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, [profile, activeFilterStatus, requests.length]); // Add dependencies
+
+  // Initial fetch
   useEffect(() => {
     fetchAllRequests();
-  }, [profile, activeFilterStatus]);
-  
+  }, [fetchAllRequests]);
+
+  // ** THE FIX - PART 2: Supabase Realtime Subscription **
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return;
+
+    const channel = supabase
+      .channel('dashboard-requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        (payload) => {
+          console.log('Realtime update on requests table:', payload);
+          fetchAllRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'request_notes' },
+        (payload) => {
+          console.log('Realtime update on notes table:', payload);
+          fetchAllRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile, fetchAllRequests]);
+
+
   const refreshRequestData = async () => {
-    if (!selectedRequest) return;
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('requests')
-        // ALSO FIX IT HERE for consistency when refreshing a single request.
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*), scheduled_start_date`)
-        .eq('id', selectedRequest.id)
-        .single();
-      
-      if (fetchError) throw fetchError;
-      if (data) {
-        const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
-        setSelectedRequest(updatedRequest);
-      }
-    } catch (err) {
-      console.error("Error refreshing request data:", err);
+    await fetchAllRequests();
+    if (selectedRequest) {
+        const refreshedRequest = requests.find(r => r.id === selectedRequest.id);
+        if (refreshedRequest) {
+            setSelectedRequest(refreshedRequest);
+        }
     }
   };
 
+  // The rest of the component (handleRowClick, handleCloseModal, columns, render logic) remains exactly the same.
+  // ... (paste the rest of your Dashboard.tsx component code here) ...
   const handleRowClick = (params: any) => {
     const fullRequestData = requests.find(r => r.id === params.id);
     if (fullRequestData) {
@@ -12285,6 +12475,8 @@ const Dashboard: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
+    // After closing modal, a quick refresh ensures consistency
+    fetchAllRequests();
   };
 
   const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
@@ -12323,45 +12515,15 @@ const Dashboard: React.FC = () => {
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
             Plumber's Command Center
           </Typography>
-
-          {/* Status Filter Chips */}
           <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {allStatuses.map(status => (
-              <Chip
-                key={status}
-                label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                onClick={() => setActiveFilterStatus(status)}
-                color={status === 'all' ? 'default' : getRequestStatusChipColor(status)}
-                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
-                sx={{ textTransform: 'capitalize' }}
-              />
-            ))}
+            {allStatuses.map(status => ( <Chip key={status} label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} onClick={() => setActiveFilterStatus(status)} color={status === 'all' ? 'default' : getRequestStatusChipColor(status)} variant={activeFilterStatus === status ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize' }} /> ))}
           </Box>
-
           <Paper sx={{ height: 600, width: '100%' }}>
-            <DataGrid
-              rows={requests}
-              columns={columns}
-              onRowClick={handleRowClick}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-                sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] },
-              }}
-              pageSizeOptions={[10, 25, 50]}
-              sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }}
-            />
+            <DataGrid rows={requests} columns={columns} onRowClick={handleRowClick} initialState={{ pagination: { paginationModel: { pageSize: 10 } }, sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] }, }} pageSizeOptions={[10, 25, 50]} sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }} />
           </Paper>
         </Box>
       </Box>
-
-      {selectedRequest && (
-        <RequestDetailModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          request={selectedRequest}
-          onUpdateRequest={refreshRequestData}
-        />
-      )}
+      {selectedRequest && ( <RequestDetailModal isOpen={isModalOpen} onClose={handleCloseModal} request={selectedRequest} onUpdateRequest={refreshRequestData} /> )}
     </>
   );
 };
@@ -12373,7 +12535,7 @@ export default Dashboard;
 
 // vite-app/src/components/MyRequests.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
@@ -12381,6 +12543,7 @@ import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from './Dashboard';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
+// Interface remains the same
 interface MyRequestsProps {
   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
 }
@@ -12392,21 +12555,19 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchUserRequests = async () => {
+  // ** THE FIX - PART 1: Wrap fetch logic in useCallback for stable dependency **
+  const fetchUserRequests = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
+    // Set loading to true only if it's the initial load
+    if (requests.length === 0) setLoading(true);
+
     try {
       const { data, error } = await supabase
         .from('requests')
-        .select(`
-          *,
-          user_profiles!inner(*),
-          quote_attachments(*),
-          quotes(*),
-          request_notes(*)
-        `)
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -12417,12 +12578,43 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, [user, requests.length]); // Add requests.length to dependencies
+
+  // Initial fetch
   useEffect(() => {
     fetchUserRequests();
-  }, [user]);
+  }, [fetchUserRequests]);
 
+  // ** THE FIX - PART 2: Supabase Realtime Subscription **
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`my-requests-${user.id}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          // Only listen to changes affecting this user's requests
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Realtime update received in MyRequests:', payload);
+          // When any change happens, simply re-fetch the data
+          fetchUserRequests();
+        }
+      )
+      .subscribe();
+
+    // Cleanup function to remove the subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchUserRequests]);
+
+
+  // setAddNewRequestCallback logic remains the same
   useEffect(() => {
     if (setAddNewRequestCallback) {
       setAddNewRequestCallback((newRequest: QuoteRequest) => {
@@ -12431,26 +12623,20 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
     }
   }, [setAddNewRequestCallback]);
 
+  // refreshRequestData can be simplified or removed, as the realtime listener handles updates
   const refreshRequestData = async () => {
-    if (!selectedRequest) return;
-    try {
-      const { data, error } = await supabase
-        .from('requests')
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
-        .eq('id', selectedRequest.id)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
-        setSelectedRequest(updatedRequest);
-      }
-    } catch (err) {
-      console.error("Error refreshing user request data:", err);
+    await fetchUserRequests();
+    // Also update the selected request if it's open
+    if (selectedRequest) {
+        const refreshedRequest = requests.find(r => r.id === selectedRequest.id);
+        if (refreshedRequest) {
+            setSelectedRequest(refreshedRequest);
+        }
     }
   };
   
+  // The rest of the component (handleOpenModal, handleCloseModal, render logic) remains exactly the same.
+  // ... (paste the rest of your MyRequests.tsx component code here) ...
   const handleOpenModal = (req: QuoteRequest) => {
     setSelectedRequest(req);
     setIsModalOpen(true);
@@ -12459,6 +12645,8 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
+    // After closing modal, a quick refresh ensures consistency
+    fetchUserRequests();
   };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
@@ -12763,7 +12951,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     { key: 'is_homeowner', question: 'Are you the homeowner?', choices: ['Yes', 'No'] },
     { key: 'problem_description', question: 'Please describe the general problem or need.', textarea: true },
     { key: 'preferred_timing', question: 'What is your preferred timing for the service? (e.g., "ASAP", "This week", "Next Monday afternoon")' },
-    { key: 'additional_notes', question: 'Additional notes (optional):', textarea: true },
+    { key: 'additional_notes', question: 'Additional notes (specify "none" if not applicable):', textarea: true },
   ];
 
   const [initialQuestions, setInitialQuestions] = useState<string[]>([]);
@@ -13298,15 +13486,17 @@ export default QuoteFormModal;
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle, Zap } from 'lucide-react';
+import { X as XIcon, User, Phone, FilePlus, AlertTriangle, Zap } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../lib/apiClient';
 import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../lib/statusColors';
 import CustomerInfoSection from './CustomerInfoSection';
+import CommunicationLog from './CommunicationLog';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -13332,12 +13522,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [newNote, setNewNote] = useState("");
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
   const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
   const [isTriaging, setIsTriaging] = useState(false);
 
+  // This effect ensures the modal's internal state is always in sync with the request prop
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
@@ -13345,6 +13535,44 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setScheduledDateChanged(false);
     }
   }, [request]);
+
+  // *** THE REAL-TIME UPGRADE FOR THE ENTIRE MODAL IS HERE ***
+  useEffect(() => {
+    if (!request?.id) return;
+
+    const channel = supabase
+      .channel(`request-details-${request.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on REQUEST detected!', payload);
+          onUpdateRequest(); // Tell the parent component to refetch all data
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quotes', filter: `request_id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on QUOTES detected!', payload);
+          onUpdateRequest();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quote_attachments', filter: `request_id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on ATTACHMENTS detected!', payload);
+          onUpdateRequest();
+        }
+      )
+      .subscribe();
+
+    // Cleanup function to remove the channel when the modal is closed
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [request?.id, onUpdateRequest]);
 
   const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
     if (!request) return;
@@ -13354,8 +13582,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       if (date !== undefined) {
         payload.scheduled_start_date = date;
       }
+      // This API call will trigger the 'requests' table subscription above
       await apiClient.patch(`/requests/${request.id}/status`, payload);
-      onUpdateRequest();
+      // No need to call onUpdateRequest() here, the subscription will handle it.
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
@@ -13365,10 +13594,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
-    
     const utcDate = new Date(scheduledStartDate);
     await handleStatusUpdate('scheduled', utcDate.toISOString());
-    
     setScheduledDateChanged(false);
   };
   
@@ -13376,24 +13603,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     setIsUpdating(true);
     try {
+      // This API call triggers changes on both 'quotes' and 'requests' tables
       await apiClient.post(`/requests/${request.id}/quotes/${quoteId}/accept`);
-      onUpdateRequest();
     } catch (error) {
       console.error("Failed to accept quote:", error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !request) return;
-    setIsUpdating(true);
-    try {
-      await apiClient.post(`/requests/${request.id}/notes`, { note: newNote });
-      setNewNote("");
-      onUpdateRequest();
-    } catch (error) {
-      console.error("Failed to add note:", error);
     } finally {
       setIsUpdating(false);
     }
@@ -13411,8 +13624,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     setIsTriaging(true);
     try {
+      // This API call triggers an update on the 'requests' table
       await apiClient.post(`/triage/${request.id}`);
-      onUpdateRequest();
     } catch (error) {
       console.error("Failed to triage request:", error);
     } finally {
@@ -13426,7 +13639,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isReadOnly = ['completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
-  
   const allAttachments = request.quote_attachments || [];
 
   return (
@@ -13453,66 +13665,69 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         </Box>
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection
-              request={request}
-              isAdmin={isAdmin}
-              isDateEditable={true}
-              scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={(date) => {
-                setScheduledStartDate(date);
-                setScheduledDateChanged(true);
-              }}
-              currentStatus={currentStatus}
-              setCurrentStatus={setCurrentStatus}
-              isUpdating={isUpdating}
-              onSaveScheduledDate={handleSaveScheduledDate}
-              scheduledDateChanged={scheduledDateChanged}
-            />
-            
-            {isAdmin && request.triage_summary && (
-              <Paper variant="outlined">
-                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
-                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Zap size={16} /> AI Triage Summary</Typography>
-                  <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
-                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
-                  {request.priority_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>)}
-                  {request.profitability_score != null && (<Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>)}
-                  {request.profitability_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>)}
-                </Box>
-              </Paper>
-            )}
+          <Grid container spacing={3}>
+            {/* --- LEFT COLUMN --- */}
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <CustomerInfoSection
+                  request={request}
+                  isAdmin={isAdmin}
+                  isDateEditable={true}
+                  scheduledStartDate={scheduledStartDate}
+                  setScheduledStartDate={(date) => {
+                    setScheduledStartDate(date);
+                    setScheduledDateChanged(true);
+                  }}
+                  currentStatus={currentStatus}
+                  setCurrentStatus={setCurrentStatus}
+                  isUpdating={isUpdating}
+                  onSaveScheduledDate={handleSaveScheduledDate}
+                  scheduledDateChanged={scheduledDateChanged}
+                />
+                
+                {isAdmin && request.triage_summary && (
+                  <Paper variant="outlined">
+                    <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Zap size={16} /> AI Triage Summary</Typography>
+                      <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
+                      {request.priority_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>)}
+                      {request.profitability_score != null && (<Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>)}
+                      {request.profitability_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>)}
+                    </Box>
+                  </Paper>
+                )}
 
-            <Paper variant="outlined">
-              <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
-                <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>
-                <Typography variant="body1" sx={{ fontStyle: 'italic', mt: 1 }}>"{problemDescriptionAnswer?.answer || 'N/A'}"</Typography>
+                <Paper variant="outlined">
+                  <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>
+                    <Typography variant="body1" sx={{ fontStyle: 'italic', mt: 1 }}>"{problemDescriptionAnswer?.answer || 'N/A'}"</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ p: 2 }}>
+                    <Grid container spacing={2}>
+                      {otherAnswers.map(ans => (<AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />))}
+                    </Grid>
+                  </Box>
+                </Paper>
+                
+                <AttachmentSection
+                  requestId={request.id}
+                  attachments={allAttachments}
+                  editable={!isReadOnly && (isAdmin || !request.quotes.some(q => q.status === 'accepted'))}
+                  onUpdate={onUpdateRequest}
+                />
               </Box>
-              <Divider />
-              <Box sx={{ p: 2 }}>
-                <Grid container spacing={2}>
-                  {otherAnswers.map(ans => (<AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />))}
-                </Grid>
-              </Box>
-            </Paper>
-            
-            <AttachmentSection
-              requestId={request.id}
-              attachments={allAttachments}
-              editable={!isReadOnly && isAdmin}
-              onUpdate={onUpdateRequest}
-            />
+            </Grid>
 
-            <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16} /> Communication Log</Typography>
-              <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
-                {request.request_notes.length > 0 ? request.request_notes.sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'Admin' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
-              </Box>
-              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
-              </Box>
-            </Paper>
+            {/* --- RIGHT COLUMN --- */}
+            <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <CommunicationLog requestId={request.id} />
+            </Grid>
+          </Grid>
 
+          {/* --- QUOTES SECTION (Full Width Below Columns) --- */}
+          <Box sx={{ mt: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><FilePlus size={16} /> Quotes</Typography>
               {request.quotes.length === 0 ? (
@@ -13522,7 +13737,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && request.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>

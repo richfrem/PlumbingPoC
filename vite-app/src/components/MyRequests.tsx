@@ -1,6 +1,6 @@
 // vite-app/src/components/MyRequests.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
@@ -8,6 +8,7 @@ import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from './Dashboard';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
+// Interface remains the same
 interface MyRequestsProps {
   setAddNewRequestCallback?: (callback: (request: QuoteRequest) => void) => void;
 }
@@ -19,21 +20,19 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchUserRequests = async () => {
+  // ** THE FIX - PART 1: Wrap fetch logic in useCallback for stable dependency **
+  const fetchUserRequests = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
+    // Set loading to true only if it's the initial load
+    if (requests.length === 0) setLoading(true);
+
     try {
       const { data, error } = await supabase
         .from('requests')
-        .select(`
-          *,
-          user_profiles!inner(*),
-          quote_attachments(*),
-          quotes(*),
-          request_notes(*)
-        `)
+        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -44,12 +43,43 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, [user, requests.length]); // Add requests.length to dependencies
+
+  // Initial fetch
   useEffect(() => {
     fetchUserRequests();
-  }, [user]);
+  }, [fetchUserRequests]);
 
+  // ** THE FIX - PART 2: Supabase Realtime Subscription **
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`my-requests-${user.id}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          // Only listen to changes affecting this user's requests
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Realtime update received in MyRequests:', payload);
+          // When any change happens, simply re-fetch the data
+          fetchUserRequests();
+        }
+      )
+      .subscribe();
+
+    // Cleanup function to remove the subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchUserRequests]);
+
+
+  // setAddNewRequestCallback logic remains the same
   useEffect(() => {
     if (setAddNewRequestCallback) {
       setAddNewRequestCallback((newRequest: QuoteRequest) => {
@@ -58,26 +88,20 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
     }
   }, [setAddNewRequestCallback]);
 
+  // refreshRequestData can be simplified or removed, as the realtime listener handles updates
   const refreshRequestData = async () => {
-    if (!selectedRequest) return;
-    try {
-      const { data, error } = await supabase
-        .from('requests')
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*)`)
-        .eq('id', selectedRequest.id)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
-        setSelectedRequest(updatedRequest);
-      }
-    } catch (err) {
-      console.error("Error refreshing user request data:", err);
+    await fetchUserRequests();
+    // Also update the selected request if it's open
+    if (selectedRequest) {
+        const refreshedRequest = requests.find(r => r.id === selectedRequest.id);
+        if (refreshedRequest) {
+            setSelectedRequest(refreshedRequest);
+        }
     }
   };
   
+  // The rest of the component (handleOpenModal, handleCloseModal, render logic) remains exactly the same.
+  // ... (paste the rest of your MyRequests.tsx component code here) ...
   const handleOpenModal = (req: QuoteRequest) => {
     setSelectedRequest(req);
     setIsModalOpen(true);
@@ -86,6 +110,8 @@ const MyRequests: React.FC<MyRequestsProps> = ({ setAddNewRequestCallback }) => 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
+    // After closing modal, a quick refresh ensures consistency
+    fetchUserRequests();
   };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;

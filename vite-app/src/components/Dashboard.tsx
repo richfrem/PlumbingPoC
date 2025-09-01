@@ -1,6 +1,6 @@
 // vite-app/src/components/Dashboard.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
@@ -10,6 +10,7 @@ import { AlertTriangle } from 'lucide-react';
 import { getRequestStatusChipColor } from '../lib/statusColors';
 
 // Interfaces remain the same
+// ... (paste your interfaces here) ...
 export interface Quote { id: string; quote_amount: number; details: string; status: string; created_at: string; }
 export interface RequestNote { id: string; note: string; author_role: 'admin' | 'customer'; created_at: string; }
 export interface QuoteRequest {
@@ -31,7 +32,6 @@ export interface QuoteRequest {
     name: string;
     email: string;
     phone: string;
-    // Allow for other potential profile fields
     [key: string]: any; 
   } | null;
   service_address: string;
@@ -54,73 +54,83 @@ const Dashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
 
-  const fetchAllRequests = async () => {
-    if (!profile) {
+  // ** THE FIX - PART 1: Wrap fetch logic in useCallback for stable dependency **
+  const fetchAllRequests = useCallback(async () => {
+    if (!profile || profile.role !== 'admin') {
       setLoading(false);
       return;
     }
+    // Set loading to true only for the very first fetch
+    if (requests.length === 0) setLoading(true);
+
     try {
       let query = supabase
         .from('requests')
-        // THE FIX: Use an explicit inner join to robustly fetch the user profile.
-        .select(`
-          *, 
-          user_profiles!inner(name, email, phone), 
-          quote_attachments(*), 
-          quotes(*), 
-          request_notes(*), 
-          scheduled_start_date
-        `)
+        .select(`*, user_profiles!inner(name, email, phone), quote_attachments(*), quotes(*), request_notes(*), scheduled_start_date`)
         .order('created_at', { ascending: false });
 
-      // Non-admin users can only see their own requests.
-      if (profile.role !== 'admin') {
-        // Use user_id from the profile object for filtering.
-        query = query.eq('user_id', profile.user_id);
-      }
-
-      // Apply status filter if not 'all'.
       if (activeFilterStatus !== 'all') {
         query = query.eq('status', activeFilterStatus);
       }
 
       const { data, error: fetchError } = await query;
-
       if (fetchError) throw fetchError;
       setRequests((data as QuoteRequest[]) || []);
     } catch (err: any) {
-      setError("Failed to fetch quote requests. Please check permissions or network.");
+      setError("Failed to fetch quote requests.");
       console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
-  
+  }, [profile, activeFilterStatus, requests.length]); // Add dependencies
+
+  // Initial fetch
   useEffect(() => {
     fetchAllRequests();
-  }, [profile, activeFilterStatus]);
-  
+  }, [fetchAllRequests]);
+
+  // ** THE FIX - PART 2: Supabase Realtime Subscription **
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return;
+
+    const channel = supabase
+      .channel('dashboard-requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        (payload) => {
+          console.log('Realtime update on requests table:', payload);
+          fetchAllRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'request_notes' },
+        (payload) => {
+          console.log('Realtime update on notes table:', payload);
+          fetchAllRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile, fetchAllRequests]);
+
+
   const refreshRequestData = async () => {
-    if (!selectedRequest) return;
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('requests')
-        // ALSO FIX IT HERE for consistency when refreshing a single request.
-        .select(`*, user_profiles!inner(*), quote_attachments(*), quotes(*), request_notes(*), scheduled_start_date`)
-        .eq('id', selectedRequest.id)
-        .single();
-      
-      if (fetchError) throw fetchError;
-      if (data) {
-        const updatedRequest = data as QuoteRequest;
-        setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
-        setSelectedRequest(updatedRequest);
-      }
-    } catch (err) {
-      console.error("Error refreshing request data:", err);
+    await fetchAllRequests();
+    if (selectedRequest) {
+        const refreshedRequest = requests.find(r => r.id === selectedRequest.id);
+        if (refreshedRequest) {
+            setSelectedRequest(refreshedRequest);
+        }
     }
   };
 
+  // The rest of the component (handleRowClick, handleCloseModal, columns, render logic) remains exactly the same.
+  // ... (paste the rest of your Dashboard.tsx component code here) ...
   const handleRowClick = (params: any) => {
     const fullRequestData = requests.find(r => r.id === params.id);
     if (fullRequestData) {
@@ -132,6 +142,8 @@ const Dashboard: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
+    // After closing modal, a quick refresh ensures consistency
+    fetchAllRequests();
   };
 
   const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
@@ -170,45 +182,15 @@ const Dashboard: React.FC = () => {
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
             Plumber's Command Center
           </Typography>
-
-          {/* Status Filter Chips */}
           <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {allStatuses.map(status => (
-              <Chip
-                key={status}
-                label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                onClick={() => setActiveFilterStatus(status)}
-                color={status === 'all' ? 'default' : getRequestStatusChipColor(status)}
-                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
-                sx={{ textTransform: 'capitalize' }}
-              />
-            ))}
+            {allStatuses.map(status => ( <Chip key={status} label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} onClick={() => setActiveFilterStatus(status)} color={status === 'all' ? 'default' : getRequestStatusChipColor(status)} variant={activeFilterStatus === status ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize' }} /> ))}
           </Box>
-
           <Paper sx={{ height: 600, width: '100%' }}>
-            <DataGrid
-              rows={requests}
-              columns={columns}
-              onRowClick={handleRowClick}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-                sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] },
-              }}
-              pageSizeOptions={[10, 25, 50]}
-              sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }}
-            />
+            <DataGrid rows={requests} columns={columns} onRowClick={handleRowClick} initialState={{ pagination: { paginationModel: { pageSize: 10 } }, sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] }, }} pageSizeOptions={[10, 25, 50]} sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }} />
           </Paper>
         </Box>
       </Box>
-
-      {selectedRequest && (
-        <RequestDetailModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          request={selectedRequest}
-          onUpdateRequest={refreshRequestData}
-        />
-      )}
+      {selectedRequest && ( <RequestDetailModal isOpen={isModalOpen} onClose={handleCloseModal} request={selectedRequest} onUpdateRequest={refreshRequestData} /> )}
     </>
   );
 };

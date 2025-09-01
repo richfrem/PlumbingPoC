@@ -2,15 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { Box, Typography, Paper, Select, MenuItem, FormControl, InputLabel, TextField, IconButton, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { X as XIcon, User, Phone, MessageSquare, FilePlus, AlertTriangle, Zap } from 'lucide-react';
+import { X as XIcon, User, Phone, FilePlus, AlertTriangle, Zap } from 'lucide-react';
 import { QuoteRequest } from './Dashboard';
 import QuoteFormModal from './QuoteFormModal';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../lib/apiClient';
 import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../lib/statusColors';
 import CustomerInfoSection from './CustomerInfoSection';
+import CommunicationLog from './CommunicationLog';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -36,12 +38,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState(request?.scheduled_start_date || '');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [newNote, setNewNote] = useState("");
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
   const [selectedQuoteIdx, setSelectedQuoteIdx] = useState<number | null>(null);
   const [isTriaging, setIsTriaging] = useState(false);
 
+  // This effect ensures the modal's internal state is always in sync with the request prop
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
@@ -49,6 +51,44 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setScheduledDateChanged(false);
     }
   }, [request]);
+
+  // *** THE REAL-TIME UPGRADE FOR THE ENTIRE MODAL IS HERE ***
+  useEffect(() => {
+    if (!request?.id) return;
+
+    const channel = supabase
+      .channel(`request-details-${request.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on REQUEST detected!', payload);
+          onUpdateRequest(); // Tell the parent component to refetch all data
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quotes', filter: `request_id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on QUOTES detected!', payload);
+          onUpdateRequest();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quote_attachments', filter: `request_id=eq.${request.id}` },
+        (payload) => {
+          console.log('Realtime change on ATTACHMENTS detected!', payload);
+          onUpdateRequest();
+        }
+      )
+      .subscribe();
+
+    // Cleanup function to remove the channel when the modal is closed
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [request?.id, onUpdateRequest]);
 
   const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
     if (!request) return;
@@ -58,8 +98,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       if (date !== undefined) {
         payload.scheduled_start_date = date;
       }
+      // This API call will trigger the 'requests' table subscription above
       await apiClient.patch(`/requests/${request.id}/status`, payload);
-      onUpdateRequest();
+      // No need to call onUpdateRequest() here, the subscription will handle it.
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
@@ -69,10 +110,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
-    
     const utcDate = new Date(scheduledStartDate);
     await handleStatusUpdate('scheduled', utcDate.toISOString());
-    
     setScheduledDateChanged(false);
   };
   
@@ -80,24 +119,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     setIsUpdating(true);
     try {
+      // This API call triggers changes on both 'quotes' and 'requests' tables
       await apiClient.post(`/requests/${request.id}/quotes/${quoteId}/accept`);
-      onUpdateRequest();
     } catch (error) {
       console.error("Failed to accept quote:", error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !request) return;
-    setIsUpdating(true);
-    try {
-      await apiClient.post(`/requests/${request.id}/notes`, { note: newNote });
-      setNewNote("");
-      onUpdateRequest();
-    } catch (error) {
-      console.error("Failed to add note:", error);
     } finally {
       setIsUpdating(false);
     }
@@ -115,8 +140,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     setIsTriaging(true);
     try {
+      // This API call triggers an update on the 'requests' table
       await apiClient.post(`/triage/${request.id}`);
-      onUpdateRequest();
     } catch (error) {
       console.error("Failed to triage request:", error);
     } finally {
@@ -130,7 +155,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isReadOnly = ['completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
-  
   const allAttachments = request.quote_attachments || [];
 
   return (
@@ -157,66 +181,69 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         </Box>
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection
-              request={request}
-              isAdmin={isAdmin}
-              isDateEditable={true}
-              scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={(date) => {
-                setScheduledStartDate(date);
-                setScheduledDateChanged(true);
-              }}
-              currentStatus={currentStatus}
-              setCurrentStatus={setCurrentStatus}
-              isUpdating={isUpdating}
-              onSaveScheduledDate={handleSaveScheduledDate}
-              scheduledDateChanged={scheduledDateChanged}
-            />
-            
-            {isAdmin && request.triage_summary && (
-              <Paper variant="outlined">
-                <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
-                  <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Zap size={16} /> AI Triage Summary</Typography>
-                  <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
-                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
-                  {request.priority_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>)}
-                  {request.profitability_score != null && (<Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>)}
-                  {request.profitability_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>)}
-                </Box>
-              </Paper>
-            )}
+          <Grid container spacing={3}>
+            {/* --- LEFT COLUMN --- */}
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <CustomerInfoSection
+                  request={request}
+                  isAdmin={isAdmin}
+                  isDateEditable={true}
+                  scheduledStartDate={scheduledStartDate}
+                  setScheduledStartDate={(date) => {
+                    setScheduledStartDate(date);
+                    setScheduledDateChanged(true);
+                  }}
+                  currentStatus={currentStatus}
+                  setCurrentStatus={setCurrentStatus}
+                  isUpdating={isUpdating}
+                  onSaveScheduledDate={handleSaveScheduledDate}
+                  scheduledDateChanged={scheduledDateChanged}
+                />
+                
+                {isAdmin && request.triage_summary && (
+                  <Paper variant="outlined">
+                    <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Zap size={16} /> AI Triage Summary</Typography>
+                      <Typography variant="body1" sx={{ mt: 1 }}>{request.triage_summary}</Typography>
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>Priority Score: {request.priority_score}/10</Typography>
+                      {request.priority_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.priority_explanation}</Typography>)}
+                      {request.profitability_score != null && (<Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>Profitability Score: {request.profitability_score}/10</Typography>)}
+                      {request.profitability_explanation && (<Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>Explanation: {request.profitability_explanation}</Typography>)}
+                    </Box>
+                  </Paper>
+                )}
 
-            <Paper variant="outlined">
-              <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
-                <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>
-                <Typography variant="body1" sx={{ fontStyle: 'italic', mt: 1 }}>"{problemDescriptionAnswer?.answer || 'N/A'}"</Typography>
+                <Paper variant="outlined">
+                  <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AlertTriangle size={16} /> Reported Problem</Typography>
+                    <Typography variant="body1" sx={{ fontStyle: 'italic', mt: 1 }}>"{problemDescriptionAnswer?.answer || 'N/A'}"</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ p: 2 }}>
+                    <Grid container spacing={2}>
+                      {otherAnswers.map(ans => (<AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />))}
+                    </Grid>
+                  </Box>
+                </Paper>
+                
+                <AttachmentSection
+                  requestId={request.id}
+                  attachments={allAttachments}
+                  editable={!isReadOnly && (isAdmin || !request.quotes.some(q => q.status === 'accepted'))}
+                  onUpdate={onUpdateRequest}
+                />
               </Box>
-              <Divider />
-              <Box sx={{ p: 2 }}>
-                <Grid container spacing={2}>
-                  {otherAnswers.map(ans => (<AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />))}
-                </Grid>
-              </Box>
-            </Paper>
-            
-            <AttachmentSection
-              requestId={request.id}
-              attachments={allAttachments}
-              editable={!isReadOnly && isAdmin}
-              onUpdate={onUpdateRequest}
-            />
+            </Grid>
 
-            <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}><MessageSquare size={16} /> Communication Log</Typography>
-              <Box sx={{ overflowY: 'auto', p: 2, height: '250px' }}>
-                {request.request_notes.length > 0 ? request.request_notes.sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(note => (<Box key={note.id} sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}><Box><Paper elevation={0} sx={{ p: 1.5, bgcolor: note.author_role === 'admin' ? '#e3f2fd' : '#ede7f6', borderRadius: 2 }}><Typography variant="body2">{note.note}</Typography></Paper><Typography variant="caption" display="block" sx={{ px: 1, color: 'text.secondary', textAlign: note.author_role === 'admin' ? 'left' : 'right' }}>{note.author_role === 'admin' ? 'Admin' : 'Customer'} - {new Date(note.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Typography></Box></Box>)) : <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>No notes yet.</Typography>}
-              </Box>
-              <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}><TextField label="Add a note or message..." value={newNote} onChange={(e) => setNewNote(e.target.value)} fullWidth multiline maxRows={3} size="small" /><Button variant="contained" onClick={handleAddNote} disabled={isUpdating || !newNote.trim()}>Send</Button></Box>
-              </Box>
-            </Paper>
+            {/* --- RIGHT COLUMN --- */}
+            <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column' }}>
+              <CommunicationLog requestId={request.id} />
+            </Grid>
+          </Grid>
 
+          {/* --- QUOTES SECTION (Full Width Below Columns) --- */}
+          <Box sx={{ mt: 3 }}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><FilePlus size={16} /> Quotes</Typography>
               {request.quotes.length === 0 ? (
@@ -226,7 +253,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                   {request.quotes.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote, idx) => (
                     <ListItem key={quote.id || idx} disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                        {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && request.status !== 'accepted' && (
                           <Button variant="contained" size="small" color="success" onClick={() => handleAcceptQuote(quote.id)} disabled={isUpdating}>
                             Accept
                           </Button>

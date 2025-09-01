@@ -42,7 +42,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     { key: 'is_homeowner', question: 'Are you the homeowner?', choices: ['Yes', 'No'] },
     { key: 'problem_description', question: 'Please describe the general problem or need.', textarea: true },
     { key: 'preferred_timing', question: 'What is your preferred timing for the service? (e.g., "ASAP", "This week", "Next Monday afternoon")' },
-    { key: 'additional_notes', question: 'Additional notes (optional):', textarea: true },
+    { key: 'additional_notes', question: 'Additional notes (specify "none" if not applicable):', textarea: true },
   ];
 
   const [initialQuestions, setInitialQuestions] = useState<string[]>([]);

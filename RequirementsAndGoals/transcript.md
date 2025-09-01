@@ -18,7 +18,7 @@
 
 "This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
 
-**[ACTION]: Click "Request a Quote".**
+**[ACTION]: Click "Request a Quote".  This will ask a user to login so the quote request is associated with a person you can contact**
 
 "First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
 
