@@ -45,8 +45,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   useEffect(() => {
     if (request) {
       setCurrentStatus(request.status);
-      setScheduledStartDate(request.scheduled_start_date || '');
-      setScheduledDateChanged(false); // Reset changed status when request data changes
+      setScheduledStartDate(request.scheduled_start_date ? new Date(request.scheduled_start_date).toISOString().split('T')[0] : '');
+      setScheduledDateChanged(false);
     }
   }, [request]);
 
@@ -67,19 +67,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   };
 
-  // *** THE CORE FIX IS HERE ***
-  // This function is now fully implemented to handle the save action.
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
     
-    // The scheduledStartDate is a 'YYYY-MM-DD' string.
-    // To ensure the date is saved correctly without timezone issues,
-    // we treat it as a UTC date from the beginning.
-    const utcDate = new Date(scheduledStartDate + 'T00:00:00Z');
-
+    const utcDate = new Date(scheduledStartDate);
     await handleStatusUpdate('scheduled', utcDate.toISOString());
-    setScheduledDateChanged(false); // Reset the changed flag
-    onClose(); // Close the modal after saving
+    
+    setScheduledDateChanged(false);
   };
   
   const handleAcceptQuote = async (quoteId: string) => {
@@ -133,7 +127,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   if (!isOpen || !request) return null;
 
   const isAdmin = profile?.role === 'admin';
-  const isReadOnly = ['completed'].includes(request.status); // Simplified read-only logic
+  const isReadOnly = ['completed'].includes(request.status);
   const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
   const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
   
@@ -164,7 +158,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* *** PASS THE NEW PROPS DOWN TO THE CHILD *** */}
             <CustomerInfoSection
               request={request}
               isAdmin={isAdmin}
@@ -172,13 +165,13 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               scheduledStartDate={scheduledStartDate}
               setScheduledStartDate={(date) => {
                 setScheduledStartDate(date);
-                setScheduledDateChanged(true); // Set the flag when the date changes
+                setScheduledDateChanged(true);
               }}
               currentStatus={currentStatus}
               setCurrentStatus={setCurrentStatus}
               isUpdating={isUpdating}
-              onSaveScheduledDate={handleSaveScheduledDate} // Pass the save function
-              scheduledDateChanged={scheduledDateChanged}    // Pass the changed flag
+              onSaveScheduledDate={handleSaveScheduledDate}
+              scheduledDateChanged={scheduledDateChanged}
             />
             
             {isAdmin && request.triage_summary && (
@@ -244,7 +237,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                       </Box>
                     }>
                       <ListItemText
-                        primary={`Quote - ${quote.quote_amount.toFixed(2)}`}
+                        primary={`Quote - $${quote.quote_amount.toFixed(2)}`}
                         secondary={
                           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                             <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />

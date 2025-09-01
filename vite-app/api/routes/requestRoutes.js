@@ -33,11 +33,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
-
-// Changed from `upload.single('attachment')` to `upload.array('attachments', 10)`
-// This allows up to 10 files to be uploaded under the 'attachments' field name.
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
-
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---

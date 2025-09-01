@@ -328,7 +328,7 @@ const updateRequestStatus = async (req, res, next) => {
 
     const updatePayload = { status };
     if (scheduled_start_date) {
-      updatePayload.scheduled_start_date = scheduled_start_date;
+        updatePayload.scheduled_start_date = new Date(scheduled_start_date).toISOString();
     }
 
     const { data, error } = await supabase
