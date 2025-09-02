@@ -29,25 +29,62 @@ You have successfully forged a complete, end-to-end client management platform. 
 ### **Day 2: PACKAGE THE ASSET & HUNT (12 Hours)**
 
 **Objective:** Package your advanced POC into a compelling sales weapon and deploy it.
+https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
+**2. Update the "Operation Overmatch" Blueprint.**
+
+The blueprint's core tactic is sound, but the timing was too aggressive. We will update it to reflect the nature of the asset you have created.
+
+---
+
+### Updated `consulting_launch_blueprint.md`
+
+Here is the revised "Package the Asset" section. I have updated the time, refined the shot descriptions to match what you've recorded, and updated the email script.
 
 *   **Hours 1-4: Package the Asset**
-    *   `[ ]` **Record the "Full Arsenal" Demo (2 Minutes):** Use Loom or OBS. This must be a smooth, professional recording that tells a complete story.
-        *   **Shot 1: The Customer Experience (First 60 seconds)**
-            *   Show the professional landing page. A customer clicks "Request a Quote."
-            *   Show the customer logging in effortlessly with their **Google account**.
-            *   Show them navigating the AI-powered intake, answering questions, and **uploading a photo** of the issue.
+    *   `[✅]` **Record the "Full Arsenal" Product Tour (Target: ~5 Minutes):** Use Loom. The recording should be a smooth, professional walkthrough that tells a complete end-to-end story.
+        *   **Chapter 1: The Seamless Customer Experience**
+            *   Show the professional landing page and the "Request a Quote" flow.
+            *   Demonstrate the effortless login process (e.g., Google).
+            *   Walk through the intelligent, conversational AI intake, including answering questions and **uploading a photo** of the issue.
             *   Show the final, clean summary and the "Submitted" confirmation.
-        *   **Shot 2: The Owner's Experience (Next 60 seconds)**
-            *   Switch views to the **Admin Dashboard**. Show the new request appearing at the top of the list.
-            *   Click the "AI Triage" button. Show the **triage summary and priority score** appearing instantly. This is a key "wow" moment.
-            *   Open the request details. Show all the customer's answers, the uploaded photo, and the communication log.
-            *   Show yourself adding a quote and changing the status to "Quoted."
-            *   Briefly show the customer's "My Requests" view, now updated with the new quote and status.
-    *   `[ ]` **Host the Video:** Upload to YouTube/Vimeo as an "unlisted" link.
-    *   `[ ]` **Build the One-Page Showcase:** Use Carrd. The existing blueprint copy is perfect.
+        *   **Chapter 2: The Owner's Command Center**
+            *   Switch views to the **Admin Dashboard**. Show the new request appearing at the top **in real-time**.
+            *   Execute the **AI Triage**, explaining how it saves time by summarizing the job and assigning priority scores.
+            *   Open the request details. Tour the "Job Docket," showing all the customer's answers, the uploaded photo, and the communication log.
+            *   Demonstrate creating a quote and changing the job status.
+        *   **Chapter 3: The Real-time Client Portal**
+            *   Switch back to the customer's "My Requests" view and show the new quote and status appearing **instantly without a refresh**.
+            *   Demonstrate the live chat by sending a message from the admin and showing it appear immediately for the customer.
+    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5`
+    *   `[✅]` **Build the One-Page Showcase:** Use Carrd. The existing blueprint copy is perfect. https://plumbingai.carrd.co/
+
+---
 
 *   **Hours 5-12: Build Target List & Execute Outreach**
     *   `[ ]` This part of the plan remains unchanged. Compile the list of 50 businesses and execute the outreach using the existing, high-quality email script.
+
+### Upgraded Email Script (v6.1)
+
+This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
+
+> **Subject:** A full client portal for [Business Name]?
+>
+> Hi **[Contact Person Name]**,
+>
+> My name is [Your Name], a local tech consultant in Victoria. I specialize in building complete client management systems for trades businesses that automate everything from the first contact to the final quote.
+>
+> Instead of just a contact form, imagine a full "command center" that qualifies your leads with AI, organizes all job details, and lets you chat with clients in real-time.
+>
+> I made a 5-minute tour showing exactly how this end-to-end system works:
+>
+> **[Link to your Loom video]**
+>
+> Here’s the unique part: I'm looking to get some work done on my home (**[mention 1-2 specific services you want]**) and I'm interested in bartering my services for a project of similar value.
+>
+> If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
+>
+> Thanks,
+> [Your Name]
 
 ---
 

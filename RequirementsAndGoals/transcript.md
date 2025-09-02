@@ -1,4 +1,5 @@
 ### **"Full Arsenal" Demo Script (v1.0)**
+https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 
 **(Total Estimated Time: ~2 minutes)**
 
@@ -11,7 +12,6 @@
 **(Shot 1: Customer Experience - Start on your landing page)**
 "Hi, I wanted to show you a quick look at an AI-powered system I've built to help local trades businesses save time and win more jobs."
 "This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
-
 **[ACTION]: Click "Request a Quote".  This will ask a user to login so the quote request is associated with a person you can contact**
 "First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
 **[ACTION]: Click "Continue with Google" and quickly complete the login.**
@@ -26,11 +26,9 @@
 **[ACTION]: Upload your dummy `leak.jpg` file.**
 "Finally, the system gives them a clean summary to review. Once they confirm, the job is done for them, and you get a perfect lead."
 **[ACTION]: Click "Confirm & Submit Request". Show the "Thank you" screen.**
-
 ---
 **(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
 "Now, let's look at what you see as the business owner. This is your command center."
-
 **[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top.**
 "The new request from our customer appears instantly. But instead of just raw data, you have an AI partner."
 **[ACTION]: Click the "AI Triage" button for the new request. Let the results appear.**
@@ -41,7 +39,6 @@
 "From here, you can add your official quote and update the job status with a single click."
 **[ACTION]: Quickly create a simple quote. Change the status from "New" to "Quoted".**
 "The best part is, this is a full client portal. The customer can log back in anytime to see the status of their request and review the quote you just sent."
-
 **[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status and quote amount.**
 ---
 
