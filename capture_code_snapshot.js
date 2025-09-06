@@ -1,4 +1,4 @@
-// capture_code_snapshot.js (v3.2)
+// capture_code_snapshot.js (v3.3)
 
 const fs = require('fs');
 const path = require('path');
@@ -15,15 +15,15 @@ const excludeDirNames = new Set([
 ]);
 
 const excludeRelativePaths = [
-    '.github',
-    '.env'
+    '.github'
+    // REMOVED: '.env' - This was too broad and was incorrectly excluding .env.example
 ];
 
 const alwaysExcludeFiles = new Set([
     'all_markdown_and_code_snapshot_llm_distilled.txt',
     '.gitignore',
     '.DS_Store',
-    '.env', 
+    // REMOVED: '.env' - This is now handled by the more specific logic below
     'capture_code_snapshot.js'
 ]);
 
@@ -96,6 +96,14 @@ try {
                 traverseAndCapture(path.join(currentPath, item));
             }
         } else if (stats.isFile()) {
+            // *** NEW LOGIC: Specifically handle .env files ***
+            // This mirrors the behavior of the corrected .gitignore file.
+            // It ignores any file starting with '.env' unless it is exactly '.env.example'.
+            if (baseName.startsWith('.env') && baseName !== '.env.example') {
+                itemsSkipped++;
+                return;
+            }
+
             if (alwaysExcludeFiles.has(baseName) || !allowedExtensions.includes(path.extname(baseName).toLowerCase())) {
                 itemsSkipped++;
                 return;
@@ -124,4 +132,3 @@ try {
 } catch (err) {
     console.error(`[FATAL] An error occurred during snapshot generation: ${err.message}`);
 }
-

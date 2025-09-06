@@ -1,5 +1,3 @@
-
-
 # Plumbing Quote Intake Agent Prompt (v4): Fullstack Modular POC
 
 ## Role Assignment

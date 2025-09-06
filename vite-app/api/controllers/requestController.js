@@ -26,7 +26,7 @@ const getRequestById = async (req, res, next) => {
 };
 
 /**
- * Handles getting AI follow-up questions from GPT.
+ * Handles getting AI follow-up questions from GPT using a robust JSON contract.
  */
 const getGptFollowUp = async (req, res, next) => {
   try {
@@ -34,29 +34,68 @@ const getGptFollowUp = async (req, res, next) => {
     const isOtherCategory = category === 'other';
     const ambiguousKeywords = ['weird', 'strange', 'not sure', 'something else', 'intermittent', 'help'];
     const hasAmbiguousKeywords = problem_description && ambiguousKeywords.some(keyword => problem_description.toLowerCase().includes(keyword));
-    
+
+    // Efficiency Check: If the request is for a standard category and lacks ambiguous keywords,
+    // we can skip the AI call entirely, saving cost and latency.
     if (!isOtherCategory && !hasAmbiguousKeywords) {
       console.log('[API EFFICIENCY] Skipping GPT-4 call for standard, clear request.');
-      return res.json({ additionalQuestions: [] });
+      // Adhere to the contract even when skipping the call.
+      return res.json({ requiresFollowUp: false, questions: [] });
     }
-    
-    const prompt = `
-      You are a plumbing quote agent. Here are the user's answers for a ${category} quote:
-      ${clarifyingAnswers.map((item) => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n')}
-      Do you have any additional follow-up questions? If not, reply: "No, this is perfect. No additional questions required." If yes, list each follow-up question on a new line, starting each with a number (e.g., "1. What is...").
-    `;
 
-    const gptResponse = await axios.post('https://api.openai.com/v1/chat/completions', 
-      { model: 'gpt-4', messages: [{ role: 'user', content: prompt }], max_tokens: 200, temperature: 0.2 },
-      { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' } }
+    // New, more robust prompt
+const prompt = `
+  You are an expert plumbing quote agent. Your task is to determine if more information is needed from a customer based on their answers.
+
+  Analyze the conversation below for a "${category}" request:
+  ${clarifyingAnswers.map((item) => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n')}
+
+  Based *only* on the information provided, decide if you have enough detail to provide a preliminary quote.
+  - If the user's answers are clear and sufficient, no follow-up is needed.
+  - If there is ambiguity or missing critical information (e.g., location of a leak, type of fixture), you must ask clarifying questions.
+
+  Respond with a JSON object in the following format:
+  {
+    "requiresFollowUp": boolean,
+    "questions": ["question 1", "question 2", ...]
+  }
+
+  If no questions are needed, "questions" should be an empty array.
+`;
+
+    // The API call is now more robust.
+    const gptResponse = await axios.post('https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-1106-preview', // A model that reliably supports JSON mode
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 250,
+        temperature: 0.2,
+        response_format: { type: 'json_object' } // This enforces the JSON output contract.
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
     );
-    
-    const reply = gptResponse.data.choices[0].message.content.trim();
-    let additionalQuestions = [];
-    if (!/no additional questions required/i.test(reply)) {
-      additionalQuestions = reply.split('\n').map(q => q.trim()).filter(q => /^\d+\./.test(q)).map(q => q.replace(/^\d+\.\s*/, ''));
+
+    const replyContent = gptResponse.data.choices[0].message.content;
+
+    // The parsing logic is now simple, safe, and reliable.
+    try {
+      const parsedJson = JSON.parse(replyContent);
+      const additionalQuestions = (parsedJson.requiresFollowUp && Array.isArray(parsedJson.questions))
+        ? parsedJson.questions
+        : [];
+        
+      res.json({ additionalQuestions }); // The frontend expects `additionalQuestions` key
+
+    } catch (parseError) {
+      console.error("CRITICAL: Failed to parse JSON response from OpenAI:", replyContent, parseError);
+      // Fail gracefully: If parsing fails, assume no questions and proceed.
+      res.json({ additionalQuestions: [] });
     }
-    res.json({ additionalQuestions });
 
   } catch (err) {
     next(err);

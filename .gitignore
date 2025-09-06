@@ -1,16 +1,28 @@
-.env
+# Local environment variables - IGNORE ALL .env files...
+.env*
+# ... but DO NOT ignore the example file.
+!.env.example
+
+# Python / venv
 [venv/]
 .venv/
 __pycache__/
 *.pyc
+
+# Logs and databases
 *.log
 *.sqlite3
 *.db
 *.pkl
-*.env.*
+
+# Example/Reference directories
 EXAMPLE_UI_REFERENCE/
 EXAMPLE_UI_REFERENCE2/
+
+# Build artifacts
 vite-app/dist/
 node_modules
+
+# Agent-generated files (should not be in version control)
 agents/feedback/
 agents/screenshots/

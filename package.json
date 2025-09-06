@@ -6,7 +6,18 @@
     "dev": "vite vite-app",
     "build": "vite build vite-app",
     "preview": "vite preview vite-app",
-    "start:api": "node vite-app/api/server.js"
+    "start:api": "node vite-app/api/server.js",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:chromium": "BROWSERS_ENABLED=chromium playwright test",
+    "test:e2e:firefox": "BROWSERS_ENABLED=firefox playwright test",
+    "test:e2e:webkit": "BROWSERS_ENABLED=webkit playwright test",
+    "test:e2e:all": "BROWSERS_ENABLED=all playwright test"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -32,8 +43,16 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.0.0",
     "@types/react": "^19.1.10",
+    "@types/supertest": "^6.0.2",
+    "@vitest/ui": "^2.1.8",
+    "jsdom": "^25.0.1",
     "lucide-react": "^0.540.0",
-    "typescript": "^5.9.2"
+    "supertest": "^7.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^2.1.8"
   }
 }
