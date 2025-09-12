@@ -11,7 +11,7 @@ const distilledOutputFile = path.join(projectRoot, 'all_markdown_and_code_snapsh
 const excludeDirNames = new Set([
     'node_modules', '.next', '.git', '.cache', '.turbo', '.vscode', 'dist', 'build', 'coverage', 'out', 'tmp', 'temp', 'logs', '.idea', '.parcel-cache', '.storybook', '.husky', '.pnpm', '.yarn', '.svelte-kit', '.vercel', '.firebase', '.expo', '.expo-shared',
     '__pycache__', '.ipynb_checkpoints', '.tox', '.eggs', 'eggs', '.venv', 'venv', 'env',
-    '.svn', '.hg', '.bzr', 'agents/feedback', 'agents/screenshots'
+    '.svn', '.hg', '.bzr', 'agents/feedback', 'agents/screenshots', 'playwright-report', 'test-results', 'supabase/.temp'
 ]);
 
 const excludeRelativePaths = [
@@ -27,7 +27,7 @@ const alwaysExcludeFiles = new Set([
     'capture_code_snapshot.js'
 ]);
 
-const allowedExtensions = ['.md', '.js', '.ts', '.tsx', '.py', '.sql', '.json', '.yaml', '.yml', '.sh', '.jsx', '.css', '.scss', '.html'];
+const allowedExtensions = ['.md', '.js', '.ts', '.tsx', '.sh', '.sql'];
 // --- END CONFIGURATION ---
 
 const fileSeparatorStart = '--- START OF FILE';

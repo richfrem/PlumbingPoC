@@ -1,0 +1,230 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "AquaFlow Plumbing" [ref=e6] [cursor=pointer]:
+        - /url: /#
+        - img [ref=e7] [cursor=pointer]
+        - generic [ref=e9] [cursor=pointer]: AquaFlow Plumbing
+      - navigation [ref=e10]:
+        - link "Services" [ref=e11] [cursor=pointer]:
+          - /url: /#services
+        - link "About" [ref=e12] [cursor=pointer]:
+          - /url: /#about
+        - link "Reviews" [ref=e13] [cursor=pointer]:
+          - /url: /#testimonials
+        - link "Contact" [ref=e14] [cursor=pointer]:
+          - /url: /#contact
+        - link "Call Now" [ref=e15] [cursor=pointer]:
+          - /url: tel:555-123-4567
+          - img [ref=e16] [cursor=pointer]
+          - generic [ref=e18] [cursor=pointer]: Call Now
+        - button "Dashboard" [ref=e20] [cursor=pointer]:
+          - img [ref=e22] [cursor=pointer]
+          - generic [ref=e26] [cursor=pointer]: Dashboard
+          - img [ref=e27] [cursor=pointer]
+  - main [ref=e29]:
+    - generic [ref=e31]:
+      - heading "Plumber's Command Center" [level=4] [ref=e32]
+      - generic [ref=e33]:
+        - button "All Requests" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35] [cursor=pointer]: All Requests
+        - button "New" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37] [cursor=pointer]: New
+        - button "Viewed" [ref=e38] [cursor=pointer]:
+          - generic [ref=e39] [cursor=pointer]: Viewed
+        - button "Quoted" [ref=e40] [cursor=pointer]:
+          - generic [ref=e41] [cursor=pointer]: Quoted
+        - button "Accepted" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43] [cursor=pointer]: Accepted
+        - button "Scheduled" [ref=e44] [cursor=pointer]:
+          - generic [ref=e45] [cursor=pointer]: Scheduled
+        - button "Completed" [ref=e46] [cursor=pointer]:
+          - generic [ref=e47] [cursor=pointer]: Completed
+      - generic [ref=e49]:
+        - grid [ref=e50]:
+          - row "Priority Triage Summary Urgency Request Type Customer Name Received Sort Quote Amount Status Address" [ref=e51]:
+            - columnheader "Priority" [ref=e52] [cursor=pointer]:
+              - generic [ref=e54] [cursor=pointer]: Priority
+              - generic [ref=e55]:
+                - img
+            - columnheader "Triage Summary" [ref=e56] [cursor=pointer]:
+              - generic [ref=e58] [cursor=pointer]: Triage Summary
+              - generic [ref=e59]:
+                - img
+            - columnheader "Urgency" [ref=e60] [cursor=pointer]:
+              - generic [ref=e62] [cursor=pointer]: Urgency
+              - generic [ref=e63]:
+                - img
+            - columnheader "Request Type" [ref=e64] [cursor=pointer]:
+              - generic [ref=e66] [cursor=pointer]: Request Type
+              - generic [ref=e67]:
+                - img
+            - columnheader "Customer Name" [ref=e68] [cursor=pointer]:
+              - generic [ref=e70] [cursor=pointer]: Customer Name
+              - generic [ref=e71]:
+                - img
+            - columnheader "Received Sort" [ref=e72] [cursor=pointer]:
+              - generic [ref=e74] [cursor=pointer]: Received
+              - button "Sort" [ref=e76] [cursor=pointer]:
+                - img [ref=e77] [cursor=pointer]
+              - generic [ref=e79]:
+                - img
+            - columnheader "Quote Amount" [ref=e80] [cursor=pointer]:
+              - generic [ref=e82] [cursor=pointer]: Quote Amount
+              - generic [ref=e83]:
+                - img
+            - columnheader "Status" [ref=e84] [cursor=pointer]:
+              - generic [ref=e86] [cursor=pointer]: Status
+              - generic [ref=e87]:
+                - img
+            - columnheader "Address" [ref=e88] [cursor=pointer]:
+              - generic [ref=e90] [cursor=pointer]: Address
+              - generic [ref=e91]:
+                - img
+          - rowgroup [ref=e92]:
+            - row "Leak Repair Test User Updated 9/5/2025, 11:57:49 AM — new 123 Admin Test St, Vancouver, BC V1V1V1" [ref=e93]:
+              - gridcell [ref=e94]
+              - gridcell [ref=e95]
+              - gridcell [ref=e96]
+              - gridcell "Leak Repair" [ref=e97]
+              - gridcell "Test User Updated" [ref=e98]
+              - gridcell "9/5/2025, 11:57:49 AM" [ref=e99]
+              - gridcell "—" [ref=e100]
+              - gridcell "new" [ref=e101]:
+                - generic [ref=e103]: new
+              - gridcell "123 Admin Test St, Vancouver, BC V1V1V1" [ref=e104]
+            - row "Leak Repair Test User Updated 9/5/2025, 11:57:48 AM — new 123 Test St, Vancouver, BC V1V1V1" [ref=e105]:
+              - gridcell [ref=e106]
+              - gridcell [ref=e107]
+              - gridcell [ref=e108]
+              - gridcell "Leak Repair" [ref=e109]
+              - gridcell "Test User Updated" [ref=e110]
+              - gridcell "9/5/2025, 11:57:48 AM" [ref=e111]
+              - gridcell "—" [ref=e112]
+              - gridcell "new" [ref=e113]:
+                - generic [ref=e115]: new
+              - gridcell "123 Test St, Vancouver, BC V1V1V1" [ref=e116]
+            - row "Leak Repair Test User Updated 9/5/2025, 9:03:05 AM — new 123 Test St, Vancouver, BC V1V1V1" [ref=e117]:
+              - gridcell [ref=e118]
+              - gridcell [ref=e119]
+              - gridcell [ref=e120]
+              - gridcell "Leak Repair" [ref=e121]
+              - gridcell "Test User Updated" [ref=e122]
+              - gridcell "9/5/2025, 9:03:05 AM" [ref=e123]
+              - gridcell "—" [ref=e124]
+              - gridcell "new" [ref=e125]:
+                - generic [ref=e127]: new
+              - gridcell "123 Test St, Vancouver, BC V1V1V1" [ref=e128]
+            - row "Emergency Service Test User Updated 9/4/2025, 7:29:13 AM — new 3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e129]:
+              - gridcell [ref=e130]
+              - gridcell [ref=e131]
+              - gridcell [ref=e132]
+              - gridcell "Emergency Service" [ref=e133]
+              - gridcell "Test User Updated" [ref=e134]
+              - gridcell "9/4/2025, 7:29:13 AM" [ref=e135]
+              - gridcell "—" [ref=e136]
+              - gridcell "new" [ref=e137]:
+                - generic [ref=e139]: new
+              - gridcell "3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e140]
+            - row "Water Heater Install Test User Updated 9/4/2025, 12:25:58 AM — new 3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e141]:
+              - gridcell [ref=e142]
+              - gridcell [ref=e143]
+              - gridcell [ref=e144]
+              - gridcell "Water Heater Install" [ref=e145]
+              - gridcell "Test User Updated" [ref=e146]
+              - gridcell "9/4/2025, 12:25:58 AM" [ref=e147]
+              - gridcell "—" [ref=e148]
+              - gridcell "new" [ref=e149]:
+                - generic [ref=e151]: new
+              - gridcell "3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e152]
+            - row "Emergency Perimeter Drains Kassandra Jo 9/3/2025, 8:30:34 AM — new 1555 San Jan St, Saanich, BC V8N-2L4" [ref=e153]:
+              - gridcell [ref=e154]
+              - gridcell [ref=e155]
+              - gridcell "Emergency" [ref=e156]:
+                - generic [ref=e157]:
+                  - img [ref=e158]
+                  - generic [ref=e160]: Emergency
+              - gridcell "Perimeter Drains" [ref=e161]
+              - gridcell "Kassandra Jo" [ref=e162]
+              - gridcell "9/3/2025, 8:30:34 AM" [ref=e163]
+              - gridcell "—" [ref=e164]
+              - gridcell "new" [ref=e165]:
+                - generic [ref=e167]: new
+              - gridcell "1555 San Jan St, Saanich, BC V8N-2L4" [ref=e168]
+            - row "9 The service request is an urgent main line repair due to water pooling in the front yard of a residential property, with the homeowner having turned off the main water supply. Emergency Main Line Repair Kuma Booma 9/1/2025, 4:54:46 PM 5040.00 scheduled 4215 Shelbourne Street, Saanich, BC V8N-3E8" [ref=e169]:
+              - gridcell "9" [ref=e170]
+              - gridcell "The service request is an urgent main line repair due to water pooling in the front yard of a residential property, with the homeowner having turned off the main water supply." [ref=e171]
+              - gridcell "Emergency" [ref=e172]:
+                - generic [ref=e173]:
+                  - img [ref=e174]
+                  - generic [ref=e176]: Emergency
+              - gridcell "Main Line Repair" [ref=e177]
+              - gridcell "Kuma Booma" [ref=e178]
+              - gridcell "9/1/2025, 4:54:46 PM" [ref=e179]
+              - gridcell "5040.00" [ref=e180]
+              - gridcell "scheduled" [ref=e181]:
+                - generic [ref=e183]: scheduled
+              - gridcell "4215 Shelbourne Street, Saanich, BC V8N-3E8" [ref=e184]
+            - row "Emergency Perimeter Drains Kuma Booma 9/1/2025, 4:50:21 PM — new 4215 Shelbourne Street, Saanich, BC V8N-3E8" [ref=e185]:
+              - gridcell [ref=e186]
+              - gridcell [ref=e187]
+              - gridcell "Emergency" [ref=e188]:
+                - generic [ref=e189]:
+                  - img [ref=e190]
+                  - generic [ref=e192]: Emergency
+              - gridcell "Perimeter Drains" [ref=e193]
+              - gridcell "Kuma Booma" [ref=e194]
+              - gridcell "9/1/2025, 4:50:21 PM" [ref=e195]
+              - gridcell "—" [ref=e196]
+              - gridcell "new" [ref=e197]:
+                - generic [ref=e199]: new
+              - gridcell "4215 Shelbourne Street, Saanich, BC V8N-3E8" [ref=e200]
+            - row "Emergency Main Line Repair Richard Fremmerlid 8/30/2025, 1:29:43 PM 322.00 quoted 1517 San Juan Avenue, Saanich, BC V8N-2L4" [ref=e201]:
+              - gridcell [ref=e202]
+              - gridcell [ref=e203]
+              - gridcell "Emergency" [ref=e204]:
+                - generic [ref=e205]:
+                  - img [ref=e206]
+                  - generic [ref=e208]: Emergency
+              - gridcell "Main Line Repair" [ref=e209]
+              - gridcell "Richard Fremmerlid" [ref=e210]
+              - gridcell "8/30/2025, 1:29:43 PM" [ref=e211]
+              - gridcell "322.00" [ref=e212]
+              - gridcell "quoted" [ref=e213]:
+                - generic [ref=e215]: quoted
+              - gridcell "1517 San Juan Avenue, Saanich, BC V8N-2L4" [ref=e216]
+            - row "Perimeter Drains Test User Updated 8/30/2025, 12:36:15 PM — new 3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e217]:
+              - gridcell [ref=e218]
+              - gridcell [ref=e219]
+              - gridcell [ref=e220]
+              - gridcell "Perimeter Drains" [ref=e221]
+              - gridcell "Test User Updated" [ref=e222]
+              - gridcell "8/30/2025, 12:36:15 PM" [ref=e223]
+              - gridcell "—" [ref=e224]
+              - gridcell "new" [ref=e225]:
+                - generic [ref=e227]: new
+              - gridcell "3587 Blanshard St, saanich, BC V8Z-0B9" [ref=e228]
+        - generic [ref=e233]:
+          - paragraph [ref=e234]: "Rows per page:"
+          - generic [ref=e235]:
+            - 'combobox "Rows per page: 10" [ref=e236] [cursor=pointer]': "10"
+            - textbox: "10"
+            - img
+          - paragraph [ref=e237]: 1–10 of 14
+          - generic [ref=e238]:
+            - button "Go to previous page" [disabled]:
+              - img
+            - button "Go to next page" [ref=e239] [cursor=pointer]:
+              - img [ref=e240] [cursor=pointer]
+  - contentinfo [ref=e242]:
+    - generic [ref=e243]:
+      - generic [ref=e244]:
+        - img [ref=e245]
+        - generic [ref=e247]: AquaFlow Plumbing
+      - generic [ref=e248]:
+        - paragraph [ref=e249]: © 2025 AquaFlow Plumbing. All rights reserved.
+        - paragraph [ref=e250]: Licensed • Insured • Trusted
+```

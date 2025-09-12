@@ -4,12 +4,9 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 
 ## Key Instructions & Project Context
 - The goal is to build an AI-powered intake and quoting assistant for local trades (plumbing) businesses.
-- Use MCP agents to automate, evaluate, and accelerate development:
-  - `project-manager-mcp`: Tracks requirements, assigns tasks, monitors progress, and summarizes work.
-  - `ui-designer-mcp`: Evaluates UI/UX and suggests improvements.
-  - `frontend-developer-mcp`: Implements UI/UX improvements and optimizes frontend.
-  - `backend-architect-mcp`: Reviews backend, APIs, and database models.
-- Start with the project manager agent to organize and track all work.
+- **Updated Approach**: Using MCP agents primarily for E2E testing automation
+- Direct development workflow for core features and improvements
+- MCP agents for test automation and quality assurance
 - Update this checklist as tasks are completed or new ones are added.
 - Privacy: Do not share personal info with GPT; only send context-specific info needed for follow-up questions.
 - Minimize unnecessary GPT-4 API calls to reduce costs.
@@ -79,6 +76,8 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Correct RLS policies for `user_profiles` to allow admin access
 - [ ] Implement automated follow-up emails for quoted requests
 - [x] Add AI-powered triage summary and priority score to requests
+- [x] Implement structured JSON output for AI responses
+- [x] Add error handling for AI API failures
 - [ ] Review backend for scalability, security, and maintainability (agent-driven)
 - [ ] Configure Resend domain verification (manual step for user)
 
@@ -88,6 +87,19 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [ ] Move the follow-up email logic from the Express controller to the new Netlify function
 - [ ] Remove the old /api/follow-up route and controller
 - [x] Publish the POC to Netlify
+
+### Testing Infrastructure & Quality Assurance
+- [x] Setup Vitest for unit and integration testing
+- [x] Configure Playwright for E2E testing
+- [x] Create test directory structure (unit/, integration/, e2e/)
+- [x] Implement unit tests for utility functions (statusColors, serviceQuoteQuestions)
+- [x] Implement integration tests for API endpoints
+- [x] Implement E2E tests for critical user journeys
+- [x] Add AI component testing (OpenAI mocking)
+- [ ] Configure test coverage reporting
+- [ ] Integrate testing into CI/CD pipeline
+- [ ] Add performance testing for AI components
+- [ ] Implement visual regression testing
 
 ### Iteration & Progress Tracking
 - [x] Checklist created and updated for baseline

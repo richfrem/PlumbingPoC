@@ -7,9 +7,13 @@
     -   [Admin Role Check Function (`is_admin`)](#1b-admin-role-check-function-is_admin)
     -   [Storage Bucket: PlumbingPoCBucket](#1c-storage-bucket-plumbingpocbucket)
     -   [Row Level Security (RLS) Policies](#1d-row-level-security-rls-policies)
-2.  [Master SQL Setup Script](#2-master-sql-setup-script)
-3.  [Authentication Provider Configuration](#3-authentication-provider-configuration)
-4.  [Helpful CLI Commands & Queries](#4-helpful-cli-commands--queries)
+2.  [Database Schema Files](#2-database-schema-files)
+    -   [Complete Schema Dump (`schema.sql`)](#2a-complete-schema-dump-schemasql)
+    -   [Schema Generation Guide (`HowToGenerateSupabaseSchema.md`)](#2b-schema-generation-guide-howtogeneratesupabaseschemamd)
+    -   [Legacy SQL Setup Scripts (Deprecated)](#2c-legacy-sql-setup-scripts-deprecated)
+3.  [Master SQL Setup Script (For Manual Policy Updates)](#3-master-sql-setup-script-for-manual-policy-updates)
+4.  [Authentication Provider Configuration](#4-authentication-provider-configuration)
+5.  [Helpful CLI Commands & Queries](#5-helpful-cli-commands--queries)
 
 ---
 
@@ -139,7 +143,38 @@ RLS is **ENABLED** on all public tables. The security model is straightforward:
 -   **Regular users** can perform actions (create, read, update, delete) only on records they own (where `auth.uid() = user_id`).
 -   **Admins** (as determined by the `is_admin()` function) have unrestricted access to all records in all tables.
 
-### 2. Master SQL Setup Script
+### 2. Database Schema Files
+
+#### 2a. Complete Schema Dump (`schema.sql`)
+
+The `supabase/schema.sql` file is the authoritative, complete database schema generated using the Supabase CLI (`supabase db dump`). This file contains:
+
+- All table definitions with columns, constraints, and indexes
+- All functions, triggers, and policies
+- All extensions and publications
+- The complete, current state of the database structure
+
+**To recreate the database from scratch:**
+```bash
+supabase db dump -f supabase/schema.sql
+# Then restore with:
+psql -h your-db-host -U your-username -d your-database < supabase/schema.sql
+```
+
+**Important:** This file replaces all individual SQL setup files and should be used as the single source of truth for the database schema.
+
+#### 2b. Schema Generation Guide (`HowToGenerateSupabaseSchema.md`)
+
+The `supabase/HowToGenerateSupabaseSchema.md` file contains step-by-step instructions for generating the `schema.sql` file using the Supabase CLI. This ensures you always have an up-to-date, version-controlled copy of your database structure.
+
+### 3. Legacy SQL Setup Scripts (Deprecated)
+
+**Note:** The following SQL files are now deprecated and redundant since the complete schema is available in `schema.sql`. They are kept for historical reference only.
+
+- `SUPABASE_QUOTE_ATTACHMENTS_TABLE.sql` - Table creation for quote_attachments (now in schema.sql)
+- `SUPABASE_TABLES.sql` - Policy fixes and column additions (now in schema.sql)
+
+### 4. Master SQL Setup Script (For Manual Policy Updates)
 
 This single, idempotent script can be run in the Supabase SQL Editor to create the `is_admin` helper function and apply all current, correct security policies for every table.
 
@@ -203,7 +238,7 @@ CREATE POLICY "Enable all actions for admins" ON public.invoices FOR ALL USING (
 CREATE POLICY "Enable read for own invoices" ON public.invoices FOR SELECT USING (auth.uid() = user_id);
 ```
 
-### 3. Authentication Provider Configuration
+### 4. Authentication Provider Configuration
 
 #### 3a. Updating URLs
 - Site URL: `https://your-site-name.netlify.app/` (production) or `http://your-local-frontend-url/` (local)
@@ -273,7 +308,7 @@ URL:  https://entra.microsoft.com
 
 ---
 
-### 5. Supabase information
+### 5. Helpful CLI Commands & Queries
 
 #### supabase cli
 -- npx supabase login

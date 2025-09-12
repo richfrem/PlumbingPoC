@@ -12,6 +12,13 @@ vi.mock('openai', () => ({
   }))
 }));
 
+// Mock axios for getGptFollowUp
+vi.mock('axios', () => ({
+  default: {
+    post: vi.fn()
+  }
+}));
+
 describe('OpenAI Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -19,22 +26,24 @@ describe('OpenAI Integration Tests', () => {
 
   describe('GPT Follow-up Question Generation', () => {
     it('should generate follow-up questions for complex plumbing issues', async () => {
-      const mockResponse = {
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              requiresFollowUp: true,
-              questions: [
-                'When does the noise occur?',
-                'What type of noise is it?',
-                'Is the noise constant or intermittent?'
-              ]
-            })
-          }
-        }]
-      };
-
-      mockCreate.mockResolvedValueOnce(mockResponse);
+      // Mock axios before importing the controller
+      const mockAxios = vi.mocked(await import('axios'));
+      mockAxios.default.post.mockResolvedValueOnce({
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                requiresFollowUp: true,
+                questions: [
+                  'When does the noise occur?',
+                  'What type of noise is it?',
+                  'Is the noise constant or intermittent?'
+                ]
+              })
+            }
+          }]
+        }
+      });
 
       // Import the controller after mocking
       const { getGptFollowUp } = await import('../../../vite-app/api/controllers/requestController.js');
@@ -58,13 +67,22 @@ describe('OpenAI Integration Tests', () => {
 
       await getGptFollowUp(mockReq as any, mockRes as any, mockNext);
 
-      expect(mockCreate).toHaveBeenCalledWith({
-        model: 'gpt-4-1106-preview',
-        messages: [{ role: 'user', content: expect.stringContaining('Weird gurgling noise') }],
-        max_tokens: 250,
-        temperature: 0.2,
-        response_format: { type: 'json_object' }
-      });
+      expect(mockAxios.default.post).toHaveBeenCalledWith(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4-1106-preview',
+          messages: [{ role: 'user', content: expect.stringContaining('Weird gurgling noise') }],
+          max_tokens: 250,
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
       expect(mockRes.json).toHaveBeenCalledWith({
         additionalQuestions: [
@@ -238,6 +256,180 @@ describe('OpenAI Integration Tests', () => {
       // Complex categories should always use AI
       complexCategories.forEach(category => {
         expect(['other', 'emergency_service']).toContain(category);
+      });
+    });
+  
+    describe('AI Triage Analysis', () => {
+      it('should analyze request and provide triage summary with scores', async () => {
+        const mockResponse = {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                triage_summary: "Emergency leak requiring immediate attention",
+                priority_score: 9,
+                priority_explanation: "High urgency leak that could cause property damage",
+                profitability_score: 7,
+                profitability_explanation: "Standard repair with good profit margin"
+              })
+            }
+          }]
+        };
+  
+        mockCreate.mockResolvedValueOnce(mockResponse);
+  
+        // Mock Supabase
+        const mockSupabase = {
+          from: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'test-request-id',
+              problem_category: 'leak_repair',
+              answers: [
+                { question: 'What type of leak?', answer: 'Pipe burst' },
+                { question: 'Location of leak?', answer: 'Under sink' }
+              ]
+            },
+            error: null
+          }),
+          update: vi.fn().mockReturnThis()
+        };
+  
+        const mockUpdateResult = vi.fn().mockResolvedValue({ error: null });
+        mockSupabase.eq.mockReturnValueOnce(mockUpdateResult);
+  
+        vi.mock('../../../vite-app/api/config/supabase', () => ({
+          default: mockSupabase
+        }));
+  
+        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+  
+        const mockReq = { params: { requestId: 'test-request-id' } };
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn()
+        };
+  
+        await triageRequest(mockReq as any, mockRes as any);
+  
+        expect(mockCreate).toHaveBeenCalledWith({
+          model: 'gpt-4-1106-preview',
+          messages: [{ role: 'user', content: expect.stringContaining('leak_repair') }],
+          response_format: { type: 'json_object' }
+        });
+  
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          message: 'Triage complete.',
+          triage_summary: "Emergency leak requiring immediate attention",
+          priority_score: 9,
+          priority_explanation: "High urgency leak that could cause property damage",
+          profitability_score: 7,
+          profitability_explanation: "Standard repair with good profit margin"
+        });
+      });
+  
+      it('should handle OpenAI API errors during triage', async () => {
+        mockCreate.mockRejectedValueOnce(new Error('OpenAI API error'));
+  
+        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+  
+        const mockReq = { params: { requestId: 'test-request-id' } };
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn()
+        };
+  
+        await triageRequest(mockReq as any, mockRes as any);
+  
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          message: 'Internal Server Error'
+        });
+      });
+  
+      it('should handle malformed JSON responses from triage AI', async () => {
+        const mockResponse = {
+          choices: [{
+            message: {
+              content: '{ invalid json for triage }'
+            }
+          }]
+        };
+  
+        mockCreate.mockResolvedValueOnce(mockResponse);
+  
+        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+  
+        const mockReq = { params: { requestId: 'test-request-id' } };
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn()
+        };
+  
+        await triageRequest(mockReq as any, mockRes as any);
+  
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          message: 'Internal Server Error'
+        });
+      });
+  
+      it('should handle database errors during triage update', async () => {
+        const mockResponse = {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                triage_summary: "Test summary",
+                priority_score: 5,
+                priority_explanation: "Test explanation",
+                profitability_score: 6,
+                profitability_explanation: "Test profitability"
+              })
+            }
+          }]
+        };
+  
+        mockCreate.mockResolvedValueOnce(mockResponse);
+  
+        // Mock Supabase with update error
+        const mockSupabase = {
+          from: vi.fn().mockReturnThis(),
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'test-request-id',
+              problem_category: 'test',
+              answers: []
+            },
+            error: null
+          }),
+          update: vi.fn().mockReturnThis()
+        };
+
+        const mockUpdateError = vi.fn().mockResolvedValue({ error: new Error('Database update failed') });
+        mockSupabase.eq.mockReturnValueOnce(mockUpdateError);
+  
+        vi.mock('../../../vite-app/api/config/supabase', () => ({
+          default: mockSupabase
+        }));
+  
+        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+  
+        const mockReq = { params: { requestId: 'test-request-id' } };
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn()
+        };
+  
+        await triageRequest(mockReq as any, mockRes as any);
+  
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          message: 'Internal Server Error'
+        });
       });
     });
   });

@@ -40,7 +40,13 @@ This roadmap tracks our progress. We will validate each building block before mo
 ### Phase 3: Feature Integration (Future)
 - [ ] Combine validated building blocks into complete feature tests.
 
-### Phase 4: User Journey Assembly (Future)
+### Phase 4: AI Component Testing (New)
+- [ ] **Strategy Defined**: ADR-009 created for AI component testing approach.
+- [ ] **Mock Implementation**: OpenAI API calls mocked for deterministic testing.
+- [ ] **Contract Validation**: Test AI response parsing and error handling.
+- [ ] **Integration Complete**: AI tests integrated into CI/CD pipeline.
+
+### Phase 5: User Journey Assembly (Future)
 - [ ] Create end-to-end user experience tests from multiple features.
 
 ## 🛠️ Development Workflow

@@ -118,3 +118,13 @@ The **Quantum Diamond Framework** is defined across the following documents:
 *   **`01_Playbook_GenesisCycle.md`**: A tactical guide for product managers and designers on running the creative, human-AI collaborative cycle.
 *   **`02_Playbook_EngineeringCycle.md`**: A tactical guide for architects and engineers on building, testing, and deploying the AI feature with rigor.
 
+## Related Prompts and Resources
+
+For practical implementation examples and specialized prompts that demonstrate the framework in action:
+
+- **[Meta Agent Prompt](./meta-agent-prompt.md)**: A domain-specific prompt for building an AI-powered plumbing quote intake agent, showcasing the framework's application to real-world projects.
+- **[Master Prompt for Architecting Full Test Suite](./MasterPromptArchitectingFullTestSuite.md.md)**: Comprehensive guide for implementing multi-layered test suites aligned with the Engineering Cycle's validation principles.
+- **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for creating modular E2E test suites, complementing the framework's testing and validation phases.
+
+These prompts serve as reusable templates for future projects, illustrating how to apply the Quantum Diamond Framework to produce similar AI-native application outputs with consistent quality and structure.
+

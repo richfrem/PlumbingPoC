@@ -80,3 +80,15 @@ The final JSON should be rich with qualified data:
 - Professional imagery placeholders from Pexels or local assets
 - Clear call-to-action buttons throughout
 - Responsive grid layouts for all screen sizes
+
+## Related Prompts and Frameworks
+
+This prompt is designed to be reusable for similar AI-native application projects. For a comprehensive development methodology that integrates AI agents with engineering rigor, refer to the Quantum Diamond Framework:
+
+- **[Quantum Diamond AI Application Development Framework](./00_framework-overview.md)**: Overview of the two-cycle workflow for envisioning and building AI-native applications.
+- **[Genesis Cycle Playbook](./01_playbook-genesis-cycle.md)**: Tactical guide for the creative, human-AI collaborative phase.
+- **[Engineering Cycle Playbook](./02_playbook-engineering-cycle.md)**: Tactical guide for disciplined, architecture-first implementation.
+- **[Master Prompt for Architecting Full Test Suite](./MasterPromptArchitectingFullTestSuite.md.md)**: Comprehensive guide for building multi-layered test suites.
+- **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for creating modular E2E test suites with Playwright.
+
+These resources provide a structured approach to evolve this plumbing-specific POC into reusable templates for future projects producing similar outputs, such as intelligent chatbots, quoting systems, or service qualification agents.

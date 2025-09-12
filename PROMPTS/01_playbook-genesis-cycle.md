@@ -45,3 +45,15 @@ The Genesis Cycle is complete when you have produced the artifacts needed to kic
 *   ✅ A **Validated Vision Prototype** that has received positive feedback from key stakeholders.
 *   ✅ An **Initial AI Component Contract** (a simple doc outlining the prototype's inputs/outputs).
 
+## Related Prompts and Resources
+
+This playbook is part of the Quantum Diamond Framework. For complementary resources:
+
+- **[Quantum Diamond Framework Overview](./00_framework-overview.md)**: High-level methodology combining creative exploration with engineering rigor.
+- **[Engineering Cycle Playbook](./02_playbook-engineering-cycle.md)**: Next phase for disciplined implementation of the validated vision.
+- **[Meta Agent Prompt](./meta-agent-prompt.md)**: Example prompt for building AI-powered applications, demonstrating Genesis Cycle principles in a plumbing service context.
+- **[Master Prompt for Architecting Full Test Suite](./MasterPromptArchitectingFullTestSuite.md.md)**: Guide for implementing comprehensive testing aligned with the framework's validation phases.
+- **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for E2E testing, supporting the framework's quality assurance practices.
+
+These resources enable reuse of this playbook for future projects requiring similar creative AI-human collaboration phases.
+

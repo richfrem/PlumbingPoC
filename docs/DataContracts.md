@@ -30,22 +30,188 @@ The central entity in the application. Represents a single job from initial cust
 
 These contracts define the shape of data for requests and responses to our Node.js/Express API. The source code for these contracts is in `vite-app/api/validation/schemas.js`.
 
-### POST `/api/requests/submit`
+### Core Quote Intake Routes (`/api/requests`)
 
-This endpoint is used by the client to submit a new, fully-formed quote request.
+#### POST `/api/requests/gpt-follow-up`
+Generates AI-powered follow-up questions based on user answers.
 
-**Example Request Body (`application/json`):**
+**Request Body:**
 ```json
 {
   "clarifyingAnswers": [
-    { "question": "What is the property type?", "answer": "Residential" },
-    { "question": "Are you the homeowner?", "answer": "Yes" }
+    { "question": "string", "answer": "string" }
+  ],
+  "category": "string",
+  "problem_description": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "additionalQuestions": ["string"]
+}
+```
+
+#### POST `/api/requests/submit`
+Submits a new quote request.
+
+**Request Body:**
+```json
+{
+  "clarifyingAnswers": [
+    { "question": "string", "answer": "string" }
   ],
   "contactInfo": {
-    "name": "Jane Doe",
-    "email": "jane.doe@example.com",
-    "phone": "555-123-4567"
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "address": "string",
+    "city": "string",
+    "province": "string",
+    "postal_code": "string"
   },
-  "category": "leak_repair",
-  "isEmergency": true
+  "category": "string",
+  "isEmergency": boolean,
+  "property_type": "string",
+  "is_homeowner": boolean,
+  "problem_description": "string",
+  "preferred_timing": "string",
+  "additional_notes": "string"
 }
+```
+
+**Response:**
+```json
+{
+  "message": "Quote request submitted successfully.",
+  "request": { /* QuoteRequest object */ }
+}
+```
+
+#### POST `/api/requests/attachments`
+Uploads files attached to a request.
+
+**Request Body (FormData):**
+- `attachment`: File[]
+- `request_id`: string
+- `quote_id`: string (optional)
+
+**Response:**
+```json
+{
+  "message": "Attachments uploaded successfully.",
+  "attachments": [/* Attachment objects */]
+}
+```
+
+#### GET `/api/requests/storage-object/*`
+Retrieves a file from storage.
+
+**Response:** File stream
+
+### Client Portal & Admin Routes (`/api/requests`)
+
+#### POST `/api/requests/:id/notes`
+Adds a note to a request.
+
+**Request Body:**
+```json
+{
+  "note": "string"
+}
+```
+
+**Response:** Note object
+
+#### PATCH `/api/requests/:id/status`
+Updates request status (admin only).
+
+**Request Body:**
+```json
+{
+  "status": "string",
+  "scheduled_start_date": "string" // optional
+}
+```
+
+**Response:** Updated request object
+
+#### POST `/api/requests/:id/quotes`
+Creates a quote for a request (admin only).
+
+**Request Body:**
+```json
+{
+  "quote_amount": number,
+  "details": "string"
+}
+```
+
+**Response:** Quote object
+
+#### PUT `/api/requests/:id/quotes/:quoteId`
+Updates an existing quote (admin only).
+
+**Request Body:**
+```json
+{
+  "quote_amount": number,
+  "details": "string"
+}
+```
+
+**Response:** Updated quote object
+
+#### POST `/api/requests/:id/quotes/:quoteId/accept`
+Accepts a quote.
+
+**Response:**
+```json
+{
+  "message": "Quote accepted successfully."
+}
+```
+
+#### GET `/api/requests/:id`
+Retrieves a single request with all related data.
+
+**Response:** Full QuoteRequest object with joins
+
+### User Profile Routes (`/api`)
+
+#### GET `/api/profile`
+Gets the current user's profile.
+
+**Response:** User profile object
+
+#### POST `/api/profile`
+Creates a new user profile.
+
+**Request Body:** Profile data
+
+**Response:** Created profile object
+
+#### PUT `/api/profile`
+Updates the current user's profile.
+
+**Request Body:** Profile data
+
+**Response:** Updated profile object
+
+### AI Triage Routes (`/api/triage`)
+
+#### POST `/api/triage/:requestId`
+Performs AI-powered triage analysis (admin only).
+
+**Response:**
+```json
+{
+  "message": "Triage complete.",
+  "triage_summary": "string",
+  "priority_score": number,
+  "priority_explanation": "string",
+  "profitability_score": number,
+  "profitability_explanation": "string"
+}
+```

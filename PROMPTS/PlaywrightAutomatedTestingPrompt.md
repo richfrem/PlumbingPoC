@@ -173,4 +173,16 @@ Provide the updated Markdown content for the `README.md` file. Specifically, upd
 
 Now that we have a working test, let's refactor it to be more scalable using Playwright's custom fixtures. Propose a new file, `tests/fixtures.ts`, that extends the base `test` object to automatically provide initialized instances of our Page Objects and API client to every test. Then, refactor the test file from Step 5 to use these new fixtures. Explain how this approach reduces boilerplate and improves dependency management. After this, we would update the README again to check off the "Playwright Fixtures" item.
 
+## Related Prompts and Resources
+
+This specialized E2E testing prompt integrates with the Quantum Diamond Framework's validation phases. For comprehensive testing strategy:
+
+- **[Quantum Diamond Framework Overview](./00_framework-overview.md)**: Methodology emphasizing rigorous testing and validation.
+- **[Genesis Cycle Playbook](./01_playbook-genesis-cycle.md)**: Creative phase that informs test scenarios.
+- **[Engineering Cycle Playbook](./02_playbook-engineering-cycle.md)**: Structured phase where this prompt's testing approach is applied.
+- **[Meta Agent Prompt](./meta-agent-prompt.md)**: Example application demonstrating E2E testing in AI-native contexts.
+- **[Master Prompt for Architecting Full Test Suite](./MasterPromptArchitectingFullTestSuite.md.md)**: Broader testing framework that includes E2E testing as a component.
+
+These resources support reuse of this prompt for future projects requiring similar modular E2E test suite development.
+
 **[END PROMPT]**

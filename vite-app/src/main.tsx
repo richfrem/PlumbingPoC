@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import AuthModal from './features/auth/components/AuthModal';
 import QuoteAgentModal from './features/requests/components/QuoteAgentModal';
@@ -14,7 +15,7 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
-import { useRequests } from './features/requests/hooks/useRequests'; // Import the hook
+import { useRequestsQuery } from './features/requests/hooks/useRequestsQuery'; // Import the new hook
 import {
   Phone,
   Wrench,
@@ -27,7 +28,7 @@ const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
   
   // *** THE FIX: Data fetching is "lifted up" to this central component. ***
-  const { requests, loading, error, refreshRequests } = useRequests(profile?.role === 'admin' ? undefined : user?.id);
+  const { requests, loading, error, refetch } = useRequestsQuery(profile?.role === 'admin' ? undefined : user?.id);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -58,7 +59,7 @@ const AppContent: React.FC = () => {
   // *** THE FIX: This callback now has access to the central refresh function. ***
   const handleNewRequestSuccess = () => {
     console.log("New request submitted. Triggering a manual refresh.");
-    refreshRequests();
+    refetch();
   };
 
   const renderHomePage = () => (
@@ -97,13 +98,13 @@ const AppContent: React.FC = () => {
       </section>
 
       {user && !profileIncomplete && profile?.role !== 'admin' && (
-          // *** THE FIX: MyRequests now receives its data and functions as props. ***
-          <MyRequests 
-            requests={requests} 
-            loading={loading} 
-            error={error} 
-            refreshRequests={refreshRequests} 
-          />
+        // *** THE FIX: MyRequests now receives its data and functions as props. ***
+        <MyRequests
+          requests={requests}
+          loading={loading}
+          error={error}
+          refreshRequests={refetch}
+        />
       )}
       
       <ServicesSection />
@@ -154,11 +155,11 @@ const AppContent: React.FC = () => {
         <main className="pt-20 flex-grow">
           {route === '#/dashboard' ? (
             // *** THE FIX: Dashboard now receives its data and functions as props. ***
-            <Dashboard 
-              requests={requests} 
-              loading={loading} 
-              error={error} 
-              refreshRequests={refreshRequests} 
+            <Dashboard
+              requests={requests}
+              loading={loading}
+              error={error}
+              refreshRequests={refetch}
             />
           ) : renderHomePage()}
         </main>
@@ -217,11 +218,15 @@ const AppContent: React.FC = () => {
   );
 };
 
+const queryClient = new QueryClient();
+
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </QueryClientProvider>
     )
 }
 

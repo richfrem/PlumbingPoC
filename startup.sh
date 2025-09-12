@@ -10,15 +10,19 @@ is_port_free() {
   ! lsof -i :$1 >/dev/null 2>&1
 }
 
-# Check backend port
+# Kill any existing processes on the ports to ensure clean restart
+echo "Freeing ports $BACKEND_PORT and $FRONTEND_PORT..."
+kill $(lsof -t -i:$BACKEND_PORT) $(lsof -t -i:$FRONTEND_PORT) 2>/dev/null || true
+sleep 2  # Give processes time to shut down
+
+# Verify ports are now free
 if ! is_port_free $BACKEND_PORT; then
-  echo "Error: Backend port $BACKEND_PORT is in use. Please free it before starting."
+  echo "Error: Could not free backend port $BACKEND_PORT"
   exit 1
 fi
 
-# Check frontend port
 if ! is_port_free $FRONTEND_PORT; then
-  echo "Error: Frontend port $FRONTEND_PORT is in use. Please free it before starting."
+  echo "Error: Could not free frontend port $FRONTEND_PORT"
   exit 1
 fi
 
@@ -35,7 +39,7 @@ fi
 
 # Start frontend (Vite) in a new terminal
 echo "Starting frontend (Vite) on port $FRONTEND_PORT..."
-osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC/vite-app && PORT='$FRONTEND_PORT' npm run dev"'
+osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC && PORT='$FRONTEND_PORT' npm run dev"'
 sleep 2
 
 # Confirm frontend started

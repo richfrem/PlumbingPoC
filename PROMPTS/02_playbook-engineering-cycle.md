@@ -70,3 +70,15 @@ Build an automated "wall of tests" in CI. The change is not ready to merge until
 2.  **AI Component Health ("Golden Signals" of AIOps):** Monitor **cost**, **latency**, and **validation failure rate**.
 3.  **Output Drift:** Monitor the statistical properties of the AI's output.
 4.  **The Feedback Loop:** Insights from monitoring are the primary input for the next **Genesis Cycle**.
+
+## Related Prompts and Resources
+
+This playbook is part of the Quantum Diamond Framework. For supporting resources:
+
+- **[Quantum Diamond Framework Overview](./00_framework-overview.md)**: Complete methodology overview.
+- **[Genesis Cycle Playbook](./01_playbook-genesis-cycle.md)**: Preceding phase for creative exploration and validation.
+- **[Meta Agent Prompt](./meta-agent-prompt.md)**: Practical example of applying the Engineering Cycle to build production-ready AI features.
+- **[Master Prompt for Architecting Full Test Suite](./MasterPromptArchitectingFullTestSuite.md.md)**: Detailed guide for implementing the validation and testing phases described in this playbook.
+- **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for E2E testing, directly supporting the framework's quality assurance requirements.
+
+These resources facilitate reuse of this playbook for future projects requiring disciplined engineering of AI-native applications.

@@ -141,4 +141,16 @@ Provide the updated Markdown content for the root `tests/README.md`, checking of
 
 Propose a refactor of the E2E test from the previous task to use Playwright's custom fixtures. Explain the benefits and provide the updated code. After approval, provide a final update to the `tests/README.md` to check off the refactoring step.
 
+## Related Prompts and Resources
+
+This master prompt complements the Quantum Diamond Framework's testing and validation phases. For broader context:
+
+- **[Quantum Diamond Framework Overview](./00_framework-overview.md)**: Methodology that emphasizes rigorous testing as part of the Engineering Cycle.
+- **[Genesis Cycle Playbook](./01_playbook-genesis-cycle.md)**: Creative phase that feeds into the structured testing approach.
+- **[Engineering Cycle Playbook](./02_playbook-engineering-cycle.md)**: Detailed guide for the validation and testing stages this prompt supports.
+- **[Meta Agent Prompt](./meta-agent-prompt.md)**: Example of applying comprehensive testing to AI-native applications.
+- **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized E2E testing prompt that can be used alongside this master prompt for complete test coverage.
+
+These resources enable reuse of this prompt for future projects requiring similar multi-layered test suite architectures.
+
 **[END PROMPT]**

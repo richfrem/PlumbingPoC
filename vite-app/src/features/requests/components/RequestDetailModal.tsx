@@ -15,6 +15,7 @@ import AITriageSummary from './AITriageSummary';
 import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
+import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -25,10 +26,13 @@ interface RequestDetailModalProps {
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
   const { profile } = useAuth();
-  
+
+  // Mutations
+  const updateStatusMutation = useUpdateRequestStatus();
+  const acceptQuoteMutation = useAcceptQuote();
+  const triageMutation = useTriageRequest();
+
   // Local state is ONLY for UI interactions that are not driven by props.
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isTriaging, setIsTriaging] = useState(false);
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   
@@ -41,21 +45,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setScheduledStartDate(request.scheduled_start_date ? new Date(request.scheduled_start_date).toISOString().split('T')[0] : '');
       setScheduledDateChanged(false); // Reset tracking when new data arrives
     }
-  }, [request]); // This effect ONLY runs when the `request` prop itself changes.
+  }, [request?.scheduled_start_date]); // This effect ONLY runs when the `request` prop itself changes.
 
   const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
     if (!request) return;
-    setIsUpdating(true);
-    try {
-      const payload: { status: string; scheduled_start_date?: string | null } = { status: newStatus };
-      if (date !== undefined) payload.scheduled_start_date = date;
-      await apiClient.patch(`/requests/${request.id}/status`, payload);
-      onUpdateRequest(); // Signal to the parent to refresh its data
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    } finally {
-      setIsUpdating(false);
-    }
+    updateStatusMutation.mutate({ requestId: request.id, status: newStatus, scheduledStartDate: date ?? null });
   };
 
   const handleSaveScheduledDate = async () => {
@@ -66,28 +60,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
-    setIsUpdating(true);
-    try {
-      await apiClient.post(`/requests/${request.id}/quotes/${quoteId}/accept`);
-      onUpdateRequest();
-    } catch (error) {
-      console.error("Failed to accept quote:", error);
-    } finally {
-      setIsUpdating(false);
-    }
+    acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
   };
   
   const handleTriageRequest = async () => {
     if (!request) return;
-    setIsTriaging(true);
-    try {
-      await apiClient.post(`/triage/${request.id}`);
-      onUpdateRequest();
-    } catch (error) {
-      console.error("Failed to triage request:", error);
-    } finally {
-      setIsTriaging(false);
-    }
+    triageMutation.mutate(request.id);
   };
 
   if (!isOpen || !request) return null;
@@ -100,8 +78,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   
   const headerActions = (
     isAdmin && !request.triage_summary ? (
-      <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={isTriaging} sx={{ whiteSpace: 'nowrap' }} startIcon={<Zap />}>
-        {isTriaging ? 'Triaging...' : 'AI Triage'}
+      <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} sx={{ whiteSpace: 'nowrap' }} startIcon={<Zap />}>
+        {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
       </Button>
     ) : null
   );
@@ -114,17 +92,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection 
-              request={request} 
-              isAdmin={isAdmin} 
-              isDateEditable={true} 
-              scheduledStartDate={scheduledStartDate} 
+            <CustomerInfoSection
+              request={request}
+              isAdmin={isAdmin}
+              isDateEditable={true}
+              scheduledStartDate={scheduledStartDate}
               setScheduledStartDate={(date) => { setScheduledStartDate(date); setScheduledDateChanged(true); }}
-              currentStatus={request.status} 
+              currentStatus={request.status}
               setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
-              isUpdating={isUpdating} 
-              onSaveScheduledDate={handleSaveScheduledDate} 
-              scheduledDateChanged={scheduledDateChanged} 
+              isUpdating={updateStatusMutation.isPending}
+              onSaveScheduledDate={handleSaveScheduledDate}
+              scheduledDateChanged={scheduledDateChanged}
             />
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />
@@ -142,10 +120,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               onNoteAdded={onUpdateRequest}
             />
 
-            <QuoteList 
+            <QuoteList
               request={request}
               isReadOnly={isReadOnly}
-              isUpdating={isUpdating}
+              isUpdating={acceptQuoteMutation.isPending}
               onAcceptQuote={handleAcceptQuote}
               onUpdateRequest={onUpdateRequest}
             />
@@ -153,12 +131,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         </Box>
 
         <ModalFooter>
-          <RequestActions 
-            request={request} 
-            isAdmin={isAdmin} 
-            currentStatus={request.status} 
-            isUpdating={isUpdating} 
-            onStatusChange={(newStatus) => handleStatusUpdate(newStatus)} 
+          <RequestActions
+            request={request}
+            isAdmin={isAdmin}
+            currentStatus={request.status}
+            isUpdating={updateStatusMutation.isPending}
+            onStatusChange={(newStatus) => handleStatusUpdate(newStatus)}
           />
         </ModalFooter>
       </Paper>
