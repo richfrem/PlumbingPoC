@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-12T18:15:15.590Z
+Generated On: 2025-09-12T19:15:47.110Z
 
-# Mnemonic Weight (Token Count): ~140,568 tokens
+# Mnemonic Weight (Token Count): ~145,163 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -24,6 +24,7 @@ Generated On: 2025-09-12T18:15:15.590Z
   ./RequirementsAndGoals/ARCHITECTURAL_REFACTOR_MANDATE.md
   ./RequirementsAndGoals/PlumbingAgentRequirements.md
   ./RequirementsAndGoals/consulting_launch_blueprint.md
+  ./RequirementsAndGoals/email_template.md
   ./RequirementsAndGoals/transcript.md
   ./TASKS.md
   ./adrs/
@@ -74,7 +75,10 @@ Generated On: 2025-09-12T18:15:15.590Z
   ./capture_code_snapshot.js
   ./docs/
   ./docs/AIContracts.md
+  ./docs/ClientOnboardingPlan_Template.md
+  ./docs/Consultant_Onboarding_Checklist.md
   ./docs/DataContracts.md
+  ./docs/FutureRoadmap.md
   ./netlify/
   ./netlify/functions/
   ./netlify/functions/api.js
@@ -1773,6 +1777,69 @@ This version pre-frames the video length and emphasizes the end-to-end nature of
         7.  **Close the Deal:** Unchanged. Draft the agreement outlining the full scope.
 
 --- END OF FILE RequirementsAndGoals/consulting_launch_blueprint.md ---
+
+--- START OF FILE RequirementsAndGoals/email_template.md ---
+
+### **Final Email Template: Operation Overmatch (v4 - "Value First" Edition)**
+
+This is the definitive version. It leads with undeniable value.
+
+**Subject:** A better way to manage jobs at [Business Name]?
+
+**Hi [Owner's Name],**
+
+My name is [Your Name], and I'm a Victoria-based tech consultant. I build software for local trades businesses that solves the three biggest headaches I hear about: wasting time, losing jobs, and disorganized communication.
+
+I've built a complete "Command Center" platform that I believe can give you back hours every week.
+
+Instead of a long explanation, here’s a 7-minute video tour showing exactly how it works:
+
+**[Click Here to Watch the 7-Minute Demo](https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5)**
+
+---
+
+Here are the specific problems this system is built to solve, right now:
+
+*   **Problem: Wasting billable hours on unqualified leads?**
+    *   **✅ Solved.** An AI assistant asks all the right questions up front, delivering perfectly qualified leads directly to your dashboard. No more 15-minute phone calls just to get basic info.
+
+*   **Problem: Losing jobs because quoting is slow or details are scattered?**
+    *   **✅ Solved.** The Command Center organizes every detail—customer info, photos, and even an AI-generated summary—into one place. You can create and send professional quotes in minutes, not hours.
+
+*   **Problem: Juggling jobs across texts, emails, and a notepad?**
+    *   **✅ Solved.** This becomes your single source of truth. The platform includes a full client portal with a real-time communication log for every job, keeping everything organized and professional.
+
+---
+
+This platform is ready to go today, but it's also a foundation we can easily build on. Once the core system is in place, we can quickly enable features like **instant SMS alerts** for new leads, **automated quote follow-ups**, and **online credit card payments** via Stripe.
+
+**A Unique Opportunity:**
+
+I'm looking to trade value for value barter style here. My thoughts here.  I'll need a new hot water tank sometime in the near future, I would like to replace my existing electric tank with a new, on-demand gas water heater (likely a Rinnai unit).**
+
+I know a custom software system with this level of automation is a significant investment, typically in the $10,000-$15,000 range. A full gas heater conversion is likely a similarly valued project. Since you have access to wholesale pricing that I don't, this presents a unique opportunity for a high-value trade that could be a massive win for both of us.
+
+If you have 7 minutes to watch the video, I'm confident you'll see a tool that could become the engine for your business's growth for years to come.
+
+Would you be open to a quick chat about it?
+
+Thanks,
+
+**[Your Name]**
+[Link to your Carrd Landing Page]
+Victoria, B.C.
+
+---
+
+### **Why this "Value First" version is the best:**
+
+*   **Immediately Scannable:** The bullet points are the core of the email. A busy owner can scan them in 10 seconds and know *exactly* what you're offering and what problems you solve.
+*   **Problem/Solution Format:** This is a classic, powerful sales technique. It first validates their pain (`Problem: ...`) and then immediately provides the cure (`✅ Solved.`).
+*   **Stronger Hook:** It gets to the "what's in it for me" part much faster.
+*   **Confidence:** It demonstrates that you understand their business so well that you can articulate their primary pain points better than they can. This builds instant authority.
+
+This is the one. It's sharp, direct, and packed with value. It's ready to send.
+--- END OF FILE RequirementsAndGoals/email_template.md ---
 
 --- START OF FILE RequirementsAndGoals/transcript.md ---
 
@@ -3710,6 +3777,202 @@ These contracts define the interaction between our backend and the external Open
 ```
 --- END OF FILE docs/AIContracts.md ---
 
+--- START OF FILE docs/ClientOnboardingPlan_Template.md ---
+
+# Onboarding Plan & Cost Estimate for [Client Business Name]
+
+**Prepared by:** [Your Name]
+**Date:** YYYY-MM-DD
+
+## 1. Project Overview
+
+This document outlines the complete plan for deploying and customizing the AI-Powered Client Management Platform for **[Client Business Name]**. My goal is to deliver a **fully managed, turnkey system** that will serve as the core digital operations hub for your business.
+
+The platform includes:
+*   A professional, public-facing website on your own custom domain.
+*   An AI-powered conversational quote request system.
+*   A secure customer portal for clients to track their requests.
+*   A private "Command Center" for you to manage all jobs, quotes, and communication.
+
+## 2. Estimated Timeline
+
+The entire onboarding process, from our initial setup call to final handover and training, is estimated to take **3 to 5 business days**.
+
+| Phase | Description | Estimated Time |
+| :--- | :--- | :--- |
+| **Phase 1** | Guided Account Setup | 2-3 hours |
+| **Phase 2** | Platform Customization | 4-6 hours |
+| **Phase 3** | Deployment & Final Testing | 2 hours |
+| **Phase 4** | Training & Handover | 1 hour |
+| **Total** | **(Excluding contingency)** | **9 - 12 hours**|
+
+---
+
+## 3. Onboarding Process: My Turnkey Service
+
+This is a collaborative process where **I handle all the technical complexity for you.**
+
+### **Phase 1: Guided Account Setup**
+*   **Action:** We will schedule a **1-hour Onboarding Call**.
+*   **Your Role:** During this screen-share call, you will sign up for the necessary accounts using your business information. This is a crucial step that ensures **you have 100% ownership of your digital assets** and customer data from day one.
+*   **My Role:** I will guide you through every click, then you will grant me secure, delegated access so I can manage all the technical configuration on your behalf.
+
+### **Phase 2: Platform Customization**
+*   **Your Role:** Provide your business logo, a list of your services, and any text or photos you'd like on the website.
+*   **My Role:** I will integrate all your content and branding into the platform, customizing the look and feel to perfectly match your business.
+
+### **Phase 3: Deployment & Final Testing**
+*   **My Role:** I will handle the full technical deployment of the application to your custom domain. I will conduct a complete end-to-end test to ensure all features are working perfectly before we go live.
+
+### **Phase 4: Training & Handover**
+*   **Action:** We will schedule a final **1-hour Handover & Training Call**.
+*   **My Role:** I will walk you through your new Command Center and show you how simple it is to manage your business with this new tool.
+*   **Your Role:** Ask questions! My goal is for you to be completely comfortable and confident using your new system.
+
+---
+
+## 4. Estimated Ongoing Monthly Costs
+
+A key principle of a professional setup is that you own your own infrastructure. This gives you full control and transparency over costs. I've selected highly efficient, modern services that are very affordable. **I will manage all of these services for you.**
+
+| Service | Purpose | Estimated Monthly Cost (CAD) | Notes |
+| :--- | :--- | :--- | :--- |
+| **Netlify** | Website Hosting & Functions | ~$25 CAD (`$19 USD`) | The engine that runs your site and automation. |
+| **Supabase**| Database & File Storage | ~$35 CAD (`$25 USD`) | Securely stores all your customer and job data. |
+| **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
+| **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
+| **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
+| **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
+| **TOTAL** | | **~$75 - $90 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+
+*(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
+
+---
+
+## 5. (Optional) Future Growth: The Automation Engine
+
+Once the core platform is live, we can enable a suite of powerful automation features as part of an ongoing support relationship. These are not included in the initial setup but are easily added:
+
+*   **Instant SMS Alerts** via Twilio for new leads and accepted quotes.
+*   **Automated Email Follow-ups** for quotes that haven't been answered.
+*   **Online Invoice Payments** via Stripe integration.
+
+We can discuss these value-added services after your core system is up and running.
+--- END OF FILE docs/ClientOnboardingPlan_Template.md ---
+
+--- START OF FILE docs/Consultant_Onboarding_Checklist.md ---
+
+# Consultant's Onboarding Checklist
+
+**Client:** [Client Business Name]
+**Project Start Date:** YYYY-MM-DD
+
+---
+
+## Phase 0: Pre-Onboarding Preparation
+
+*   [ ] **Duplicate this checklist** and rename it for the new client (e.g., `ClientName_Onboarding.md`).
+*   [ ] **Create a new, clean branch** in the Git repository for the client's version of the code (`git checkout -b client/[client-name]`).
+*   [ ] **Prepare the `schema.sql` file.** Ensure it's the latest version from your main project.
+*   [ ] **Schedule the 1-hour "Account Setup & Onboarding Call"** with the client.
+
+---
+
+## Phase 1: Guided Account Setup (Live on call with client)
+
+The client should be sharing their screen for this entire phase. Your job is to guide them.
+
+*   **Domain Name:**
+    *   [ ] Guide client to purchase their domain name (e.g., from Namecheap or directly via Netlify).
+*   **Professional Email Hosting:**
+    *   [ ] Discuss the importance of a branded email (`info@clientdomain.com`).
+    *   [ ] Recommend Google Workspace or Microsoft 365.
+    *   [ ] Guide client through the signup process for their chosen provider.
+*   **Netlify Account:**
+    *   [ ] Guide client to sign up for a new Netlify account.
+    *   [ ] Guide client to upgrade to the **Pro Plan**.
+    *   [ ] Have client invite your email address (`your-consulting-email@gmail.com`) as a **Team Member**.
+*   **Supabase Account:**
+    *   [ ] Guide client to sign up for a new Supabase account.
+    *   [ ] Guide client to create a new **Organization** and **Project**.
+    *   [ ] Guide client to upgrade the project to the **Pro Plan**.
+    *   [ ] Have client invite your email address as an **Administrator** to the Organization.
+*   **OpenAI Account:**
+    *   [ ] Guide client to sign up for an OpenAI account.
+    *   [ ] Guide client to the API Keys section.
+    *   [ ] Have client generate a new API key.
+    *   [ ] **Crucially:** Instruct client to **immediately copy this key** and keep it safe (e.g., in their password manager).
+*   **Resend Account:**
+    *   [ ] Guide client to sign up for a Resend account.
+    *   [ ] **Crucially:** Guide them through the **domain verification process** within Resend.
+    *   [ ] Have client generate a new API key.
+    *   [ ] **Crucially:** Instruct client to **immediately copy this key**.
+
+---
+
+## Phase 2: Technical Configuration (Your independent work)
+
+*   **Supabase Configuration:**
+    *   [ ] Log in to the client's Supabase project (via your delegated access).
+    *   [ ] Go to the SQL Editor.
+    *   [ ] **Run the `schema.sql` script** to create all tables and RLS policies.
+    *   [ ] Create the `PlumbingPoCBucket` in Supabase Storage and apply the required storage policies (from `SUPABASE_DATABASE_AND_AUTH_SETUP.md`).
+    *   [ ] Navigate to Authentication -> Providers.
+    *   [ ] **Configure Google OAuth Provider:** Guide the client (on a call or via instructions) to create a Google Cloud OAuth client ID and provide you with the credentials to enter here. Add the new Supabase project's callback URL to their Google Cloud settings.
+    *   [ ] **Configure Azure OAuth Provider:** Repeat the process for Microsoft/Azure.
+    *   [ ] Navigate to Authentication -> URL Configuration and update the Site URL and Redirect URLs.
+    *   [ ] **Create the initial admin user account** for the client within the Supabase Auth dashboard. Manually update their role to `admin` in the `user_profiles` table.
+
+*   **Netlify Configuration:**
+    *   [ ] Log in to the client's Netlify account.
+    *   [ ] Create a "New site from Git" and connect it to your client-specific branch.
+    *   [ ] Configure the build settings (e.g., `npm run build`, `vite-app/dist`).
+    *   [ ] Go to Site Settings -> Build & Deploy -> Environment -> Environment variables.
+    *   [ ] **Add all necessary environment variables:**
+        *   `VITE_SUPABASE_URL` (from the new Supabase project)
+        *   `VITE_SUPABASE_ANON_KEY` (from the new Supabase project)
+        *   `SUPABASE_SERVICE_ROLE_KEY` (from the new Supabase project)
+        *   `OPENAI_API_KEY` (the key the client generated)
+        *   `RESEND_API_KEY` (the key the client generated)
+        *   `RESEND_FROM_EMAIL` (e.g., `contact@clientdomain.com`)
+        *   ... and any other variables your app requires.
+    *   [ ] Go to Domain management and add the client's custom domain.
+    *   [ ] Follow the steps to configure DNS (usually by pointing the domain's nameservers to Netlify).
+    *   [ ] **Add DNS records for Email Hosting:** Log in to the domain registrar/Netlify DNS panel and add the **MX, SPF, and DKIM records** provided by Google/Microsoft to direct email traffic correctly.
+
+---
+
+## Phase 3: Application Customization (Your code work)
+
+*   **Branding:**
+    *   [ ] Replace logo files in `vite-app/public/`.
+    *   [ ] Update the primary color theme in the Tailwind/MUI config.
+*   **Content:**
+    *   [ ] Update the `servicesData.ts` file with the client's services.
+    *   [ ] Update the `serviceQuoteQuestions.ts` file with any custom questions.
+    *   [ ] Update text content in landing page components (`AboutSection.tsx`, `ReviewsSection.tsx`, etc.).
+    *   [ ] Update business contact info (name, address, phone) throughout the app.
+*   **Commit and Push:**
+    *   [ ] Commit all customization changes to the client's Git branch.
+    *   [ ] Pushing the changes will trigger the first build on their Netlify account.
+
+---
+
+## Phase 4: Final Handoff
+
+*   **End-to-End Test:** Perform a full test on the live production URL.
+    *   [ ] Register a new test user.
+    *   [ ] Submit a quote request.
+    *   [ ] Log in as the admin.
+    *   [ ] Verify the new request appears in the Command Center.
+    *   [ ] Create a quote.
+    *   [ ] Verify the email notification was sent (check client's Resend logs).
+*   **Schedule the 1-hour "Training & Handover Call."**
+*   [ ] During the call, walk the client through the entire system.
+*   [ ] Send a follow-up email with links to their live site, a reminder of their monthly costs, and an offer for an ongoing support/maintenance plan.
+*   [ ] **Mark project as complete.**
+--- END OF FILE docs/Consultant_Onboarding_Checklist.md ---
+
 --- START OF FILE docs/DataContracts.md ---
 
 # PlumbingPOC: Data Contracts
@@ -3930,6 +4193,94 @@ Performs AI-powered triage analysis (admin only).
 }
 ```
 --- END OF FILE docs/DataContracts.md ---
+
+--- START OF FILE docs/FutureRoadmap.md ---
+
+# PlumbingPOC: Future Roadmap & High-Value Additions
+
+This document outlines planned and potential feature enhancements for the PlumbingPOC platform. These features are designed to be implemented as part of an ongoing "Automation & Growth Engine" package, transforming the core application into a proactive business tool.
+
+The architecture of the platform (using Netlify Functions and Supabase) makes adding these capabilities straightforward and cost-effective.
+
+---
+
+## 1. Instant SMS Notifications
+
+**Objective:** Provide immediate, high-signal alerts to both the business owner and the customer for critical events, enabling faster response times and a better customer experience.
+
+**Implementation Strategy:**
+*   **Technology:** Twilio API for SMS delivery.
+*   **Trigger:** Supabase Webhooks listening for database inserts on the `requests` and `request_notes` tables.
+*   **Logic:** A serverless **Netlify Function** (`/netlify/functions/send-sms.js`) will act as the webhook receiver. This function will contain the logic to determine *who* to notify and *what* the message should be, then make the API call to Twilio.
+
+**Key Notification Events:**
+*   **To Business Owner:**
+    *   `INSTANT`: New Quote Request Submitted.
+    *   `INSTANT`: Customer Accepts a Quote.
+*   **To Customer:**
+    *   `INSTANT`: New Quote is Ready for Review.
+    *   `INSTANT`: New Message from Admin in Communication Log.
+
+**Value Proposition:**
+*   **For the Owner:** Win more jobs by being the first to respond to new leads.
+*   **For the Customer:** Feel confident and informed with real-time updates.
+
+**Estimated Cost:** Very low. For a typical volume of 50-100 SMS messages per day, the cost via Twilio is approximately **$15-30 CAD/month**. The Netlify Function invocations fall well within the generous free tier.
+
+---
+
+## 2. Automated Follow-up System
+
+**Objective:** Prevent leads from going cold by automatically sending polite follow-up emails for quotes that have not been accepted after a set period.
+
+**Implementation Strategy:**
+*   **Technology:** Resend API (already integrated in `emailService.js`).
+*   **Trigger:** A **Netlify Scheduled Function**. This is a special type of function that Netlify can run automatically on a cron schedule (e.g., "every morning at 9 AM").
+*   **Logic:** The scheduled function will query the Supabase database for all requests with a `status` of 'quoted' where the quote was sent more than [e.g., 3 days] ago and no follow-up has been sent. It will then loop through the results and send a templated follow-up email.
+
+**Value Proposition:**
+*   **For the Owner:** Saves hours of administrative work and captures revenue that would otherwise be lost.
+
+---
+
+## 3. Online Invoice Payments (Stripe Integration)
+
+**Objective:** Streamline the payment process, get paid faster, and provide a professional, modern payment experience for customers.
+
+**Implementation Strategy:**
+*   **Technology:** Stripe API for payment processing.
+*   **Trigger:** An "Pay Invoice" button would appear in the customer's client portal when a job is marked as 'Completed'.
+*   **Logic:**
+    1.  A new Netlify Function (`/netlify/functions/create-payment-intent.js`) would be created.
+    2.  When the customer clicks "Pay Invoice," the frontend calls this function.
+    3.  The function communicates with the Stripe API to create a secure payment session.
+    4.  The frontend uses the information from Stripe to render a secure credit card input field (using `Stripe.js`).
+    5.  Upon successful payment, a Stripe webhook would hit another Netlify Function (`/netlify/functions/handle-payment-success.js`) to update the invoice status in the Supabase database.
+
+**Value Proposition:**
+*   **For the Owner:** Improves cash flow by reducing the time between invoicing and payment.
+*   **For the Customer:** A convenient and secure way to pay online.
+
+---
+
+## 4. Business Intelligence & Reporting
+
+**Objective:** Provide the business owner with valuable insights into their operations, helping them understand revenue, job profitability, and customer trends.
+
+**Implementation Strategy:**
+*   **Technology:** No new third-party services needed initially.
+*   **Logic:** A new, secure API endpoint (e.g., `/api/reports/export`) would be created in the existing Express API. This endpoint would query the Supabase database, aggregate data for a given date range, and generate a downloadable CSV file.
+
+**Key Metrics to Export:**
+*   Total number of requests.
+*   Conversion rate (quoted vs. accepted).
+*   Total revenue from completed jobs.
+*   Average job value.
+*   Breakdown of job types.
+
+**Value Proposition:**
+*   **For the Owner:** Make data-driven decisions to grow the business instead of relying on gut feeling.
+--- END OF FILE docs/FutureRoadmap.md ---
 
 --- START OF FILE netlify/functions/api.js ---
 
