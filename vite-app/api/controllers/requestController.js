@@ -107,12 +107,35 @@ const prompt = `
  */
 const submitQuoteRequest = async (req, res, next) => {
   try {
-    const { clarifyingAnswers, contactInfo, category, isEmergency, property_type, is_homeowner, problem_description, preferred_timing, additional_notes } = req.body;
-    
+    const {
+      clarifyingAnswers,
+      contactInfo,
+      category,
+      isEmergency,
+      property_type,
+      is_homeowner,
+      problem_description,
+      preferred_timing,
+      additional_notes,
+      service_address,
+      latitude,
+      longitude,
+      geocoded_address
+    } = req.body;
+
+    // --- DEBUGGING: Log what the backend is receiving ---
+    console.log("Backend received payload:", JSON.stringify({
+      service_address,
+      latitude,
+      longitude,
+      geocoded_address,
+      hasServiceAddressData: !!service_address || !!latitude || !!longitude || !!geocoded_address
+    }, null, 2));
+
     const requestData = {
       user_id: req.user.id,
       customer_name: contactInfo.name || null,
-      service_address: `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
+      service_address: service_address || `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
       contact_info: contactInfo.email || contactInfo.phone || null,
       problem_category: category,
       is_emergency: isEmergency === true,
@@ -123,8 +146,19 @@ const submitQuoteRequest = async (req, res, next) => {
       additional_notes: additional_notes || null,
       answers: clarifyingAnswers,
       status: 'new',
+      latitude: latitude || null,
+      longitude: longitude || null,
+      geocoded_address: geocoded_address || null,
     };
-    
+
+    // --- DEBUGGING: Log what will be inserted into database ---
+    console.log("Inserting into database:", JSON.stringify({
+      service_address: requestData.service_address,
+      latitude: requestData.latitude,
+      longitude: requestData.longitude,
+      geocoded_address: requestData.geocoded_address
+    }, null, 2));
+
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 

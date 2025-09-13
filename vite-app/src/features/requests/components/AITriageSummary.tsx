@@ -17,7 +17,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
 
   return (
     <Paper variant="outlined">
-      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
+      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'purple.400', bgcolor: 'purple.50' }}>
         <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Zap size={16} /> AI Triage Summary
         </Typography>

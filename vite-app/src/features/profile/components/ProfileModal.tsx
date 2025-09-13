@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../../../lib/apiClient';
 import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
-import { X as XIcon } from 'lucide-react';
+import { X as XIcon, User, MapPin } from 'lucide-react';
+import ModalHeader from '../../requests/components/ModalHeader';
+import ModalFooter from '../../requests/components/ModalFooter';
 
 interface ProfileModalProps {
   isClosable?: boolean;
@@ -57,6 +59,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (contextProfile) {
@@ -71,6 +74,87 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       setEmail(user.email);
     }
   }, [contextProfile, user]);
+
+  // Reset geocoding status when address fields change
+  useEffect(() => {
+    if (geocodingStatus === 'success' || geocodingStatus === 'error') {
+      setGeocodingStatus('idle');
+    }
+  }, [address, city, province, postalCode]);
+
+  const geocodeAddress = async () => {
+    if (!address.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
+      return null;
+    }
+
+    setGeocodingStatus('loading');
+
+    try {
+      const fullAddress = `${address}, ${city}, ${province} ${postalCode}, Canada`;
+      console.log('Geocoding profile address:', fullAddress);
+
+      // Load Google Maps API if not already loaded
+      if (!window.google || !window.google.maps) {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        console.log('Loading Google Maps API for profile geocoding');
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        await new Promise((resolve, reject) => {
+          script.onload = () => {
+            console.log('Google Maps API loaded for profile');
+            resolve(void 0);
+          };
+          script.onerror = (error) => {
+            console.error('Failed to load Google Maps API for profile:', error);
+            reject(error);
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      // Use Google Maps Geocoding service
+      const geocoder = new (window as any).google.maps.Geocoder();
+
+      return new Promise<{lat: number, lng: number, formattedAddress: string} | null>((resolve) => {
+        geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
+          console.log('Profile geocoding response:', {
+            status,
+            resultsCount: results?.length,
+            firstResult: results?.[0]?.formatted_address
+          });
+
+          if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+            const location = results[0].geometry.location;
+            const lat = location.lat();
+            const lng = location.lng();
+            const formattedAddress = results[0].formatted_address;
+
+            console.log('Profile geocoding successful:', { lat, lng, formattedAddress });
+            setGeocodingStatus('success');
+            resolve({ lat, lng, formattedAddress });
+          } else {
+            console.error('Profile geocoding failed with status:', status);
+            setGeocodingStatus('error');
+            resolve(null);
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error('Profile geocoding setup error:', error);
+      setGeocodingStatus('error');
+      return null;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,14 +178,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
     
     const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
 
-    const profilePayload = { 
-      name, 
+    // Geocode the address if it's complete
+    const geocodedData = await geocodeAddress();
+
+    const profilePayload = {
+      name,
       email, // Add email to payload for backend insertion
-      phone, 
-      province, 
-      city, 
-      address, 
-      postal_code: formattedPostalCode 
+      phone,
+      province,
+      city,
+      address,
+      postal_code: formattedPostalCode,
+      latitude: geocodedData?.lat || null,
+      longitude: geocodedData?.lng || null,
+      geocoded_address: geocodedData?.formattedAddress || null
     };
 
     try {
@@ -114,6 +204,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       }
 
       setSaveSuccess(true);
+      setGeocodingStatus('idle'); // Reset geocoding status
       setTimeout(() => {
         setSaveSuccess(false);
         // <-- THE FIX: Call onComplete if it exists, otherwise call onClose
@@ -126,6 +217,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
     } catch (err: any) {
       setSaveError(err.response?.data?.error || 'Failed to save profile. Please try again.');
+      setGeocodingStatus('idle'); // Reset on error
     } finally {
       setLoading(false);
     }
@@ -133,57 +225,360 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {contextProfile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
-            </Typography>
-            {isClosable && (
-              <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
-            )}
-          </Box>
-          <form onSubmit={handleSubmit}>
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
-              {/* Form fields remain the same */}
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Email" value={email} fullWidth disabled InputProps={{ sx: { height: 56, fontSize: '1rem' } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Name" value={name} onChange={e => setName(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <FormControl fullWidth required sx={{ height: 56 }}>
-                  <InputLabel id="province-select-label">Province</InputLabel>
-                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value as string)} sx={{ height: 56 }}>
-                    <MenuItem value=""><em>Select Province</em></MenuItem>
-                    {provinces.map(p => (<MenuItem key={p} value={p}>{p}</MenuItem>))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-            </Box>
-            <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              {saveError && (<Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>{saveError}</Typography>)}
-              {saveSuccess && (<Typography color="primary" sx={{ mb: 2, textAlign: 'center' }}>Profile saved!</Typography>)}
-              <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading || saveSuccess} sx={{ py: 1.5, fontSize: '1rem' }}>
-                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
-              </Button>
-              {showDebugPanel && <Box sx={{ mt: 3 }}><DebugOverlay /></Box>}
-            </Box>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.6)',
+        zIndex: 1200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          maxWidth: '700px',
+          width: '90%',
+          maxHeight: '85vh',
+          overflow: 'hidden',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '20px 24px',
+            borderBottom: '1px solid #e0e0e0',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            borderRadius: '12px 12px 0 0'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              📝 Update Your Profile
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: 'calc(85vh - 140px)' }}>
+            {/* Scrollable Content */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px'
+            }}>
+              {/* Contact Information Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                padding: '20px',
+                marginBottom: '20px',
+                borderRadius: '10px',
+                border: '1px solid #e1e8ed'
+              }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  color: '#2c3e50',
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  👤 Contact Information
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Email:</label>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        background: '#f8f9fa'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Name:</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="John Doe"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Phone:</label>
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="250-555-1234"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                      Format: 250-555-1234
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Address Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                padding: '20px',
+                borderRadius: '10px',
+                border: '1px solid #90caf9'
+              }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  color: '#1565c0',
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  📍 Service Address
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Province:</label>
+                    <select
+                      value={province}
+                      onChange={e => setProvince(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>City:</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                      placeholder="Victoria"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '5px',
+                    fontWeight: '500',
+                    color: '#555'
+                  }}>Street Address:</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="123 Main Street"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '5px',
+                    fontWeight: '500',
+                    color: '#555'
+                  }}>Postal Code:</label>
+                  <input
+                    type="text"
+                    value={postalCode}
+                    onChange={e => setPostalCode(e.target.value)}
+                    placeholder="V8N 2L4"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                    Format: V8N 2L4 or V8N-2L4
+                  </div>
+                </div>
+
+                {/* Geocoding Status */}
+                {geocodingStatus === 'loading' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '6px',
+                    color: '#856404',
+                    fontSize: '0.9rem'
+                  }}>
+                    🔍 Verifying address location...
+                  </div>
+                )}
+                {geocodingStatus === 'success' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#d4edda',
+                    border: '1px solid #c3e6cb',
+                    borderRadius: '6px',
+                    color: '#155724',
+                    fontSize: '0.9rem'
+                  }}>
+                    ✅ Address location verified and cached
+                  </div>
+                )}
+                {geocodingStatus === 'error' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '6px',
+                    color: '#721c24',
+                    fontSize: '0.9rem'
+                  }}>
+                    ⚠️ Address verification failed - coordinates will be calculated later
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer with Save Button */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e0e0e0',
+              background: '#f8f9fa',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '15px'
+            }}>
+              {saveError && (
+                <div style={{
+                  color: '#dc3545',
+                  fontSize: '0.9rem',
+                  textAlign: 'center',
+                  padding: '8px',
+                  background: '#f8d7da',
+                  borderRadius: '6px',
+                  width: '100%'
+                }}>
+                  {saveError}
+                </div>
+              )}
+              {saveSuccess && (
+                <div style={{
+                  color: '#28a745',
+                  fontSize: '0.9rem',
+                  textAlign: 'center',
+                  padding: '8px',
+                  background: '#d4edda',
+                  borderRadius: '6px',
+                  width: '100%'
+                }}>
+                  ✅ Profile saved successfully!
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loading || saveSuccess}
+                style={{
+                  background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '15px 40px',
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  borderRadius: '25px',
+                  cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
+                  width: '100%',
+                  maxWidth: '250px',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  if (!loading && !saveSuccess) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                {loading ? '⏳ SAVING...' : '💾 SAVE PROFILE'}
+              </button>
+            </div>
           </form>
-        </Paper>
+        </div>
       </div>
     </>
   );

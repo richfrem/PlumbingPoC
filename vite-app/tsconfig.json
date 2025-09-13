@@ -8,11 +8,11 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-  "module": "nodenext",
-  "moduleResolution": "nodenext",
+  "module": "ESNext",
+  "moduleResolution": "bundler",
   "allowSyntheticDefaultImports": true,
     "target": "esnext",
-    "types": [],
+    "types": ["vite/client", "@types/google.maps"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

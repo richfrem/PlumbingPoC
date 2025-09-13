@@ -16,6 +16,13 @@ COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
 
+CREATE EXTENSION IF NOT EXISTS "http" WITH SCHEMA "public";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
 
 
@@ -302,7 +309,12 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "priority_score" integer,
     "profitability_score" integer,
     "priority_explanation" "text",
-    "profitability_explanation" "text"
+    "profitability_explanation" "text",
+    "latitude" double precision,
+    "longitude" double precision,
+    "geocoded_address" "text",
+    CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
+    CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
 );
 
 
@@ -320,11 +332,26 @@ CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
     "city" "text",
     "postal_code" "text",
     "province" "text",
-    "role" "text" DEFAULT 'user'::"text" NOT NULL
+    "role" "text" DEFAULT 'user'::"text" NOT NULL,
+    "latitude" numeric(10,8),
+    "longitude" numeric(11,8),
+    "geocoded_address" "text"
 );
 
 
 ALTER TABLE "public"."user_profiles" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."user_profiles"."latitude" IS 'Cached latitude from Google Maps geocoding';
+
+
+
+COMMENT ON COLUMN "public"."user_profiles"."longitude" IS 'Cached longitude from Google Maps geocoding';
+
+
+
+COMMENT ON COLUMN "public"."user_profiles"."geocoded_address" IS 'Full formatted address from Google Maps';
+
 
 
 ALTER TABLE ONLY "public"."invoices"
@@ -367,6 +394,22 @@ CREATE INDEX "idx_quote_attachments_quote_id" ON "public"."quote_attachments" US
 
 
 CREATE INDEX "idx_quote_attachments_request_id" ON "public"."quote_attachments" USING "btree" ("request_id");
+
+
+
+CREATE INDEX "idx_requests_lat_lng" ON "public"."requests" USING "btree" ("latitude", "longitude");
+
+
+
+CREATE INDEX "idx_requests_latitude" ON "public"."requests" USING "btree" ("latitude");
+
+
+
+CREATE INDEX "idx_requests_longitude" ON "public"."requests" USING "btree" ("longitude");
+
+
+
+CREATE INDEX "idx_user_profiles_coordinates" ON "public"."user_profiles" USING "btree" ("latitude", "longitude");
 
 
 
@@ -720,6 +763,13 @@ GRANT ALL ON FUNCTION "public"."accept_quote_and_update_request"("p_request_id" 
 
 
 
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "postgres";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "anon";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "service_role";
@@ -729,6 +779,104 @@ GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "s
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "anon";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "anon";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "anon";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "service_role";
 
 
 
@@ -750,6 +898,13 @@ GRANT ALL ON FUNCTION "public"."set_quote_number"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "service_role";
@@ -759,6 +914,27 @@ GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "service
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "service_role";
 
 
 

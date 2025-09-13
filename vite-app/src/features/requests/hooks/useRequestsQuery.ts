@@ -6,17 +6,47 @@ import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
+  console.log('🔍 Fetching requests with userId:', userId);
+
   let query = supabase
     .from('requests')
-    .select(`*, user_profiles!inner(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
+    .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
     .order('created_at', { ascending: false });
 
   if (userId) {
+    console.log('🔍 Filtering by user_id:', userId);
     query = query.eq('user_id', userId);
+  } else {
+    console.log('🔍 Fetching ALL requests (admin mode)');
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+
+  if (error) {
+    console.error('❌ Admin Dashboard Fetch Error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw error;
+  }
+
+  console.log('✅ Admin Dashboard Fetched Data:', data?.length || 0, 'requests for userId:', userId);
+
+  if (data && data.length > 0) {
+    console.log('📋 First request sample:', {
+      id: data[0].id,
+      user_id: data[0].user_id,
+      status: data[0].status,
+      has_user_profile: !!data[0].user_profiles,
+      created_at: data[0].created_at
+    });
+  } else {
+    console.log('📋 No requests found in database');
+  }
+
   return (data as QuoteRequest[]) || [];
 };
 

@@ -1,6 +1,6 @@
 // vite-app/src/features/requests/components/QuoteFormModal.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
@@ -27,14 +27,15 @@ interface Item {
 }
 
 const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
-  const [goodUntil, setGoodUntil] = useState('');
-  const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
-  const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
-  const [notes, setNotes] = useState('');
-  const [newAttachments, setNewAttachments] = useState<File[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+   const firstFieldRef = useRef<HTMLInputElement>(null);
+   const [goodUntil, setGoodUntil] = useState('');
+   const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
+   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
+   const [notes, setNotes] = useState('');
+   const [newAttachments, setNewAttachments] = useState<File[]>([]);
+   const [saving, setSaving] = useState(false);
+   const [saveSuccess, setSaveSuccess] = useState(false);
+   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +61,13 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setNotes('');
         setGoodUntil('');
       }
+
+      // Auto-focus the first field when modal opens
+      setTimeout(() => {
+        if (firstFieldRef.current) {
+          firstFieldRef.current.focus();
+        }
+      }, 100);
     }
   }, [quote, isOpen]);
 
@@ -146,18 +154,24 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               setGoodUntil={setGoodUntil}
             />
 
-            <Paper variant="outlined" sx={{p: 2}}>
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Labor</Typography>
               {laborItems.map((item, idx) => (
                 <Grid container spacing={1} key={`labor-${idx}`} sx={{ mb: 1 }}>
-                  <Grid item xs={8}><TextField label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" /></Grid>
+                  <Grid item xs={8}>
+                    {idx === 0 ? (
+                      <TextField inputRef={firstFieldRef} label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" />
+                    ) : (
+                      <TextField label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" />
+                    )}
+                  </Grid>
                   <Grid item xs={4}><TextField label="Price" value={item.price} onChange={e => { const newItems = [...laborItems]; newItems[idx].price = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" type="number" InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} /></Grid>
                 </Grid>
               ))}
               {editable && <Button onClick={() => setLaborItems([...laborItems, { description: '', price: '' }])} sx={{ mb: 2, mt: 1 }}>Add Labor Item</Button>}
             </Paper>
 
-            <Paper variant="outlined" sx={{p: 2}}>
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Materials</Typography>
               {materialItems.map((item, idx) => (
                 <Grid container spacing={1} key={`material-${idx}`} sx={{ mb: 1 }}>
@@ -168,7 +182,9 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               {editable && <Button onClick={() => setMaterialItems([...materialItems, { description: '', price: '' }])} sx={{ mb: 2, mt: 1 }}>Add Material Item</Button>}
             </Paper>
 
-            <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
+              <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
+            </Paper>
 
             <AttachmentSection
               requestId={requestId}
@@ -181,11 +197,37 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               onRemovePendingFile={(index) => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
             />
 
-            <Box sx={{ textAlign: 'right', mt: 2 }}>
-              <Typography variant="body2" color="text.secondary">Subtotal: ${subtotal.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">GST (5%): ${gst.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">PST (7%): ${pst.toFixed(2)}</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>Total: ${totalPrice.toFixed(2)}</Typography>
+            {/* Summary Bar - Always visible pricing breakdown */}
+            <Box sx={{
+              p: 2,
+              bgcolor: 'grey.50',
+              borderRadius: 1,
+              border: 1,
+              borderColor: 'grey.200',
+              mt: 2
+            }}>
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2
+              }}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Subtotal: ${subtotal.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    GST (5%): ${gst.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    PST (7%): ${pst.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  Grand Total: ${totalPrice.toFixed(2)}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Box>

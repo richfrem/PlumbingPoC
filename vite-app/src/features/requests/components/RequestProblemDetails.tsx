@@ -28,7 +28,7 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
 
   return (
     <Paper variant="outlined">
-      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
+      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'orange.400', bgcolor: 'orange.50' }}>
         <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AlertTriangle size={16} /> Reported Problem
         </Typography>

@@ -28,7 +28,15 @@ const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
   
   // *** THE FIX: Data fetching is "lifted up" to this central component. ***
-  const { requests, loading, error, refetch } = useRequestsQuery(profile?.role === 'admin' ? undefined : user?.id);
+  const userIdForQuery = profile?.role === 'admin' ? undefined : user?.id;
+  console.log('🔍 User authentication check:', {
+    userId: user?.id,
+    profileRole: profile?.role,
+    isAdmin: profile?.role === 'admin',
+    userIdForQuery: userIdForQuery,
+    profileExists: !!profile
+  });
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -50,7 +58,7 @@ const AppContent: React.FC = () => {
     if (!user) {
       setShowAuthModal(true);
     } else if (profileIncomplete) {
-      // Profile modal is shown automatically
+      setShowProfileModal(true);
     } else {
       setShowAgentModal(true);
     }
@@ -64,37 +72,127 @@ const AppContent: React.FC = () => {
 
   const renderHomePage = () => (
     <>
-      <section className="pt-12 pb-20 bg-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-5xl font-bold leading-tight mb-6">Professional Plumbing Services You Can Trust</h1>
-            <p className="text-xl text-blue-100 mb-8">24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.</p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <button
-                className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-lg shadow"
-                onClick={handleOpenQuoteModal}
-              >
-                <span>Request a Quote</span>
-              </button>
-              <a href="tel:555-123-4567" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors text-lg flex items-center justify-center space-x-2 shadow">
-                <Phone className="w-5 h-5" />
-                <span>Call Now</span>
-              </a>
-            </div>
-          </div>
-          <div className="relative flex justify-center lg:justify-end">
-            <img src="/plumber.jpg" alt="Professional plumber at work" className="rounded-lg shadow-2xl w-full max-w-md object-cover" />
-            <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+      {user && profileIncomplete && (
+        <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
               </div>
-              <div>
-                <div className="font-semibold text-gray-900">Licensed & Insured</div>
-                <div className="text-gray-600">Fully certified professionals</div>
+              <div className="ml-3">
+                <p className="text-sm text-amber-800">
+                  Welcome! To request a quote, please complete your profile first.
+                </p>
+              </div>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="bg-amber-50 px-3 py-2 rounded-md text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 focus:ring-amber-600"
+                >
+                  Complete Profile
+                </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      <section className="relative pt-12 pb-20 text-white overflow-hidden">
+        {/* Aurora Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-purple-500/30"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="animate-fade-in-up">
+            <h1 className="text-5xl font-bold leading-tight mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              Professional Plumbing Services You Can Trust
+            </h1>
+            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+              24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.
+            </p>
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              <button
+                className="group bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 hover:scale-105 hover:shadow-xl transition-all duration-300 text-lg shadow-lg"
+                onClick={handleOpenQuoteModal}
+              >
+                <span className="group-hover:scale-105 transition-transform duration-300 inline-block">Request a Quote</span>
+              </button>
+              <a
+                href="tel:555-123-4567"
+                className="group border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center space-x-2 shadow-lg"
+              >
+                <Phone className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span>Call Now</span>
+              </a>
+            </div>
+          </div>
+          <div className="relative flex justify-center lg:justify-end animate-fade-in-up animation-delay-200">
+            <div className="relative">
+              <img
+                src="/plumber.jpg"
+                alt="Professional plumber at work"
+                className="rounded-lg shadow-2xl w-full max-w-md object-cover hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 animate-bounce-in animation-delay-500">
+                <div className="bg-green-100 p-3 rounded-full inline-flex items-center justify-center mb-2">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Licensed & Insured</div>
+                  <div className="text-gray-600 text-sm">Fully certified professionals</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom CSS for animations */}
+        <style>{`
+          @keyframes fade-in-up {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          @keyframes bounce-in {
+            0% {
+              opacity: 0;
+              transform: scale(0.3);
+            }
+            50% {
+              opacity: 1;
+              transform: scale(1.05);
+            }
+            70% {
+              transform: scale(0.9);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-fade-in-up {
+            animation: fade-in-up 0.8s ease-out forwards;
+          }
+          .animation-delay-200 {
+            animation-delay: 0.2s;
+          }
+          .animation-delay-500 {
+            animation-delay: 0.5s;
+          }
+          .animate-bounce-in {
+            animation: bounce-in 0.8s ease-out forwards;
+          }
+        `}</style>
       </section>
 
       {user && !profileIncomplete && profile?.role !== 'admin' && (
@@ -197,14 +295,8 @@ const AppContent: React.FC = () => {
       </div>
 
       {!user && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
-      
-      {user && profileIncomplete && (
-        <ProfileModal
-          onComplete={refreshProfile}
-        />
-      )}
 
-      {user && !profileIncomplete && showProfileModal && (
+      {user && showProfileModal && (
         <ProfileModal
           isClosable={true}
           onClose={() => setShowProfileModal(false)}

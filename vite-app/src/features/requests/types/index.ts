@@ -44,4 +44,7 @@ export interface QuoteRequest {
   priority_explanation: string | null;
   profitability_score: number | null;
   profitability_explanation: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  geocoded_address: string | null;
 }

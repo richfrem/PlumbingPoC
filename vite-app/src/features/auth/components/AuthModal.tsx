@@ -1,5 +1,7 @@
 import React from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import ModalHeader from '../../requests/components/ModalHeader';
+import { User, Mail, Lock } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,15 +12,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = React.useState(false);
   const [name, setName] = React.useState('');
   const [message, setMessage] = React.useState<string | null>(null);
+  const [messageType, setMessageType] = React.useState<'success' | 'error' | 'info'>('info');
   const [loading, setLoading] = React.useState(false);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 relative">
-        <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-700" onClick={onClose}>
-          &times;
-        </button>
-        <h2 className="text-2xl font-bold mb-4 text-blue-700">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+      <div className="bg-gray-50 rounded-xl shadow-2xl max-w-md w-full relative overflow-hidden">
+        <ModalHeader title={isSignUp ? 'Create Your Account' : 'Sign In to Your Portal'} onClose={onClose} />
+        <div className="p-8 space-y-6">
         <button
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full mb-4"
           onClick={async () => {
@@ -35,6 +36,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         >
           Continue with Microsoft
         </button>
+
+        {/* Divider with text */}
+        <div className="relative flex py-5 items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="flex-shrink mx-4 text-gray-500 text-sm">Or continue with</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+
         <form
           onSubmit={async e => {
             e.preventDefault();
@@ -47,16 +56,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) {
                   setMessage(error.message || 'Sign up failed.');
+                  setMessageType('error');
                 } else if (data.user) {
                   await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
                   setMessage('Sign up successful! Please check your email and click the confirmation link before signing in.');
+                  setMessageType('success');
                 }
               } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) {
                   setMessage(error.message || 'Sign in failed.');
+                  setMessageType('error');
                 } else {
                   setMessage('Sign in successful!');
+                  setMessageType('success');
                   setTimeout(() => {
                     setMessage(null);
                     onClose();
@@ -65,29 +78,53 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               }
             } catch (err: any) {
               setMessage(err.message || 'An error occurred.');
+              setMessageType('error');
             } finally {
               setLoading(false);
             }
           }}
         >
           {isSignUp && (
+            <div className="relative mb-3">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                name="name"
+                type="text"
+                placeholder="Full Name"
+                className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+            </div>
+          )}
+          <div className="relative mb-3">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
-              name="name"
-              type="text"
-              placeholder="Full Name"
-              className="border px-4 py-2 rounded w-full mb-2"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              name="email"
+              type="email"
+              placeholder="Email"
+              className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               required
             />
-          )}
-          <input name="email" type="email" placeholder="Email" className="border px-4 py-2 rounded w-full mb-2" required />
-          <input name="password" type="password" placeholder="Password" className="border px-4 py-2 rounded w-full mb-4" required />
+          </div>
+          <div className="relative mb-4">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              required
+            />
+          </div>
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full" disabled={loading}>
             {loading ? (isSignUp ? 'Signing Up...' : 'Signing In...') : (isSignUp ? 'Sign Up with Email' : 'Sign In with Email')}
           </button>
         {message && (
-          <div className="mt-2 text-center text-sm text-red-600">{message}</div>
+          <div className={`mt-2 text-center text-sm ${messageType === 'success' ? 'text-green-600' : messageType === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
+            {message}
+          </div>
         )}
         </form>
         <div className="mt-4 text-center">
@@ -102,6 +139,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

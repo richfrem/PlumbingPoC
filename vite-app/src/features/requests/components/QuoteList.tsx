@@ -68,7 +68,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
                   primaryTypographyProps={{ component: 'div' }}
                   primary={`Quote #${quote.quote_number} - $${quote.quote_amount.toFixed(2)}`}
                   secondary={
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                       <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
                       <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
                     </Box>

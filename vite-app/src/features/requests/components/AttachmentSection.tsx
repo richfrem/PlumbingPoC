@@ -164,7 +164,9 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="overline" color="text.secondary">Attachments</Typography>
+      <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paperclip size={16} /> Attachments
+      </Typography>
       {loading && <CircularProgress size={24} sx={{ mt: 1 }} />}
       <AttachmentGroup title="Customer Uploads (Request)" attachments={requestAttachments} imageUrls={allUrls} />
       {Object.entries(quotesWithAttachments).map(([qId, quoteAtts]) => (

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-12T19:27:02.424Z
+Generated On: 2025-09-13T01:38:15.500Z
 
-# Mnemonic Weight (Token Count): ~145,897 tokens
+# Mnemonic Weight (Token Count): ~164,296 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -99,12 +99,24 @@ Generated On: 2025-09-12T19:27:02.424Z
   ./supabase/.temp/project-ref
   ./supabase/.temp/rest-version
   ./supabase/.temp/storage-version
+  ./supabase/DeployingGeocodeInSupabase.md
   ./supabase/HowToGenerateSupabaseSchema.md
   ./supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md
   ./supabase/functions/
-  ./supabase/migrations/
-  ./supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql
+  ./supabase/functions/geocode/
+  ./supabase/functions/geocode/index.ts
   ./supabase/schema.sql
+  ./supabase/supabase/
+  ./supabase/supabase/.temp/
+  ./supabase/supabase/.temp/cli-latest
+  ./supabase/supabase/.temp/gotrue-version
+  ./supabase/supabase/.temp/pooler-url
+  ./supabase/supabase/.temp/postgres-version
+  ./supabase/supabase/.temp/project-ref
+  ./supabase/supabase/.temp/rest-version
+  ./supabase/supabase/.temp/storage-version
+  ./supabase/supabase/functions/
+  ./supabase/supabase/functions/index.ts
   ./tests/
   ./tests/README.md
   ./tests/e2e/
@@ -188,10 +200,14 @@ Generated On: 2025-09-12T19:27:02.424Z
   ./vite-app/api/validation/schemas.js
   ./vite-app/index.html
   ./vite-app/package-lock.json
+  ./vite-app/package.json
   ./vite-app/public/
   ./vite-app/public/plumber.jpg
   ./vite-app/src/
   ./vite-app/src/features/
+  ./vite-app/src/features/admin/
+  ./vite-app/src/features/admin/components/
+  ./vite-app/src/features/admin/components/MapView.tsx
   ./vite-app/src/features/auth/
   ./vite-app/src/features/auth/AuthContext.tsx
   ./vite-app/src/features/auth/components/
@@ -4496,6 +4512,231 @@ echo "Frontend: http://localhost:$FRONTEND_PORT"
 
 --- END OF FILE startup.sh ---
 
+--- START OF FILE supabase/DeployingGeocodeInSupabase.md ---
+
+# Deploying geocode for google in supabase
+open cli in terminal
+1. supabase login
+2. supabase link
+3. supabase functions deploy geocode
+will say something like
+Deployed Functions on project oxoiwzijacglgueemlva: geocode
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+
+4. Set Google Maps API Key in Supabase Secrets
+You need to add your Google Maps API key to Supabase secrets. You can do this through the Supabase Dashboard:
+Go to your project dashboard
+Navigate to Settings → Edge Functions
+Navigate to function secrets
+https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions/secrets
+Add a new secret:
+Name: GOOGLE_MAPS_API_KEY
+Value: Your Google Maps API key
+
+5. create the external function in supabase.  
+code for function see supabase/supabase/functions/index.ts
+call function "geocode"
+note can delete with "supabase functions delete geocode" in cli
+note can test new function in gui.
+Go to your Supabase Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+{
+  "requestId": "0c4714f8-df2e-41f1-9f60-615b78613cb6"
+} gives result {
+  "success": true,
+  "latitude": 48.4863665,
+  "longitude": -123.3338452,
+  "geocoded_address": "Victoria, BC V8N 2L4, Canada"
+}
+
+note can test new function via CLI curl command.
+curl -X POST 'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode' \
+  -H 'Authorization: Bearer $SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"requestId": "d1fde28a-2742-4c3a-8678-ee1e2143c713"}'
+
+verify was updated coordinates in supabase from the function call
+
+SELECT id, service_address, latitude, longitude, geocoded_address 
+FROM requests 
+WHERE id = '0c4714f8-df2e-41f1-9f60-615b78613cb6';
+
+should give something like 
+
+[
+  {
+    "id": "0c4714f8-df2e-41f1-9f60-615b78613cb6",
+    "service_address": "1555 San Jan St, Saanich, BC V8N-2L4",
+    "latitude": 48.4863665,
+    "longitude": -123.3338452,
+    "geocoded_address": "Victoria, BC V8N 2L4, Canada"
+  }
+]
+
+
+
+6. run this sql in supabase.  enable http extension for sql batch processing
+to update all the existing client coordinates from google geo api.
+
+-- Enable http extension
+CREATE EXTENSION IF NOT EXISTS http;
+
+-- Geocode all requests without coordinates
+DO $$
+DECLARE
+    current_id TEXT;
+    service_role_key TEXT := '$SUPABASE_SERVICE_ROLE_KEY'; -- Replace with your actual service role key or use env var
+BEGIN
+    FOR current_id IN
+        SELECT id FROM requests
+        WHERE latitude IS NULL OR longitude IS NULL
+        ORDER BY created_at DESC -- Process newest first
+    LOOP
+        -- Call geocoding function (ignore response to avoid field errors)
+        PERFORM http((
+            'POST',
+            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            ARRAY[
+                http_header('Authorization', 'Bearer ' || service_role_key),
+                http_header('Content-Type', 'application/json')
+            ],
+            'application/json',
+            json_build_object('requestId', current_id)::text
+        ));
+
+        RAISE NOTICE 'Processed request %', current_id;
+        PERFORM pg_sleep(0.2); -- Rate limiting to avoid overwhelming the API
+    END LOOP;
+
+    RAISE NOTICE 'Geocoding batch complete!';
+END $$;
+
+-- Alternative: Process in smaller batches for testing
+DO $$
+DECLARE
+    current_id TEXT;
+    service_role_key TEXT := '$SUPABASE_SERVICE_ROLE_KEY'; -- Replace with your actual service role key or use env var
+    counter INTEGER := 0;
+BEGIN
+    FOR current_id IN
+        SELECT id FROM requests
+        WHERE latitude IS NULL OR longitude IS NULL
+        ORDER BY created_at DESC
+        LIMIT 10 -- Process only 10 at a time for testing
+    LOOP
+        PERFORM http((
+            'POST',
+            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            ARRAY[
+                http_header('Authorization', 'Bearer ' || service_role_key),
+                http_header('Content-Type', 'application/json')
+            ],
+            'application/json',
+            json_build_object('requestId', current_id)::text
+        ));
+
+        counter := counter + 1;
+        RAISE NOTICE 'Processed % requests', counter;
+        PERFORM pg_sleep(0.2);
+    END LOOP;
+END $$;
+
+7. run this sql to geocode user profiles (not requests)
+-- Enable http extension for API calls
+CREATE EXTENSION IF NOT EXISTS http;
+
+-- Geocode specific user profiles from your list
+DO $$
+DECLARE
+    current_id TEXT;
+    service_role_key TEXT := '$SUPABASE_SERVICE_ROLE_KEY'; -- Replace with your actual service role key
+    profile_ids TEXT[] := ARRAY[
+        'd835339e-3752-4721-b0c8-e502c7986625',
+        'c544f7e9-6f7c-40d6-a499-2430716e33ce',
+        '55aea5b6-7bd5-4b10-8f37-229ac912e47f',
+        '142ca005-d98e-4694-a78d-ad711456cd9a',
+        'd8d2fc88-1a21-4b3b-9357-73a3f3ea0be0',
+        'd3d63f36-2c01-42f4-9522-081d8df4cc98',
+        'c3b0be81-e8be-44f5-856f-c85522ced738'
+    ];
+    i INTEGER := 1;
+BEGIN
+    -- Loop through each profile ID
+    WHILE i <= array_length(profile_ids, 1) LOOP
+        current_id := profile_ids[i];
+
+        -- Call geocoding function for this profile
+        PERFORM http((
+            'POST',
+            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            ARRAY[
+                http_header('Authorization', 'Bearer ' || service_role_key),
+                http_header('Content-Type', 'application/json')
+            ],
+            'application/json',
+            json_build_object('profileId', current_id)::text
+        ));
+
+        RAISE NOTICE 'Geocoded profile %: %', i, current_id;
+        PERFORM pg_sleep(0.2); -- Rate limiting
+
+        i := i + 1;
+    END LOOP;
+
+    RAISE NOTICE 'All 7 user profiles geocoded successfully!';
+END $$;
+
+-- Alternative: Geocode ALL user profiles (not just specific ones)
+DO $$
+DECLARE
+    current_id TEXT;
+    service_role_key TEXT := '$SUPABASE_SERVICE_ROLE_KEY';
+BEGIN
+    FOR current_id IN
+        SELECT id FROM user_profiles
+        WHERE latitude IS NULL OR longitude IS NULL
+        ORDER BY created_at DESC
+    LOOP
+        PERFORM http((
+            'POST',
+            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            ARRAY[
+                http_header('Authorization', 'Bearer ' || service_role_key),
+                http_header('Content-Type', 'application/json')
+            ],
+            'application/json',
+            json_build_object('profileId', current_id)::text
+        ));
+
+        RAISE NOTICE 'Geocoded profile: %', current_id;
+        PERFORM pg_sleep(0.2);
+    END LOOP;
+END $$;
+
+8. verify user profiles geocoding worked
+After running the SQL, you can verify the geocoding worked by checking:
+
+-- Check specific profiles from your list
+SELECT id, name, address, city, postal_code, latitude, longitude, geocoded_address
+FROM user_profiles
+WHERE id IN (
+    'd835339e-3752-4721-b0c8-e502c7986625',
+    'c544f7e9-6f7c-40d6-a499-2430716e33ce',
+    '55aea5b6-7bd5-4b10-8f37-229ac912e47f',
+    '142ca005-d98e-4694-a78d-ad711456cd9a',
+    'd8d2fc88-1a21-4b3b-9357-73a3f3ea0be0',
+    'd3d63f36-2c01-42f4-9522-081d8df4cc98',
+    'c3b0be81-e8be-44f5-856f-c85522ced738'
+);
+
+-- Check all geocoded profiles
+SELECT id, name, address, city, postal_code, latitude, longitude, geocoded_address
+FROM user_profiles
+WHERE latitude IS NOT NULL
+ORDER BY updated_at DESC
+LIMIT 10;
+
+--- END OF FILE supabase/DeployingGeocodeInSupabase.md ---
+
 --- START OF FILE supabase/HowToGenerateSupabaseSchema.md ---
 
 # **How to Generate a Reusable Database Schema (`schema.sql`)**
@@ -5043,11 +5284,194 @@ SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 _Last updated: August 21, 2025_
 --- END OF FILE supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
 
---- START OF FILE supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql ---
+--- START OF FILE supabase/functions/geocode/index.ts ---
 
-ALTER TABLE requests
-ADD COLUMN profitability_score INTEGER;
---- END OF FILE supabase/migrations/20250830004708_add_profitability_score_to_requests_table.sql ---
+// Setup type definitions for built-in Supabase Runtime APIs
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+interface GeocodeRequest {
+  address?: string;
+  requestId?: string;x
+  profileId?: string;
+}
+
+interface GeocodeResponse {
+  success: boolean;
+  latitude?: number;
+  longitude?: number;
+  formattedAddress?: string;
+  error?: string;
+}
+
+console.info('Universal geocoding function started');
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    const { address, requestId, profileId }: GeocodeRequest = await req.json();
+
+    // Get Supabase credentials
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+
+    if (!apiKey) {
+      return new Response(JSON.stringify({ success: false, error: 'Google Maps API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    let targetAddress = address;
+    let updateTable = '';
+    let updateId = '';
+
+    // Determine what to geocode based on input
+    if (requestId) {
+      // Geocode for a request
+      const fetchResponse = await fetch(`${supabaseUrl}/rest/v1/requests?id=eq.${requestId}&select=service_address`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!fetchResponse.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch request' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const requests = await fetchResponse.json();
+      if (!requests || requests.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: 'Request not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      targetAddress = requests[0].service_address;
+      updateTable = 'requests';
+      updateId = requestId;
+    } else if (profileId) {
+      // Geocode for a user profile
+      const fetchResponse = await fetch(`${supabaseUrl}/rest/v1/user_profiles?id=eq.${profileId}&select=address,city,province,postal_code`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!fetchResponse.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch profile' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const profiles = await fetchResponse.json();
+      if (!profiles || profiles.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: 'Profile not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const profile = profiles[0];
+      targetAddress = `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}`;
+      updateTable = 'user_profiles';
+      updateId = profileId;
+    } else if (!address) {
+      return new Response(JSON.stringify({ success: false, error: 'Either address, requestId, or profileId is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!targetAddress) {
+      return new Response(JSON.stringify({ success: false, error: 'No address found to geocode' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Call Google Maps Geocoding API
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(targetAddress)}&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Geocoding failed: ${data.status}`
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const result = data.results[0];
+    const location = result.geometry.location;
+    const formattedAddress = result.formatted_address;
+
+    // Update the appropriate table
+    if (updateTable && updateId) {
+      const updateResponse = await fetch(`${supabaseUrl}/rest/v1/${updateTable}?id=eq.${updateId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': supabaseServiceKey,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          latitude: location.lat,
+          longitude: location.lng,
+          geocoded_address: formattedAddress
+        })
+      });
+
+      if (!updateResponse.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Failed to update record' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    const res: GeocodeResponse = {
+      success: true,
+      latitude: location.lat,
+      longitude: location.lng,
+      formattedAddress,
+    };
+
+    return new Response(JSON.stringify(res), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message || 'Internal server error'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+});
+--- END OF FILE supabase/functions/geocode/index.ts ---
 
 --- START OF FILE supabase/schema.sql ---
 
@@ -5066,6 +5490,13 @@ SET row_security = off;
 
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
+
+
+
+CREATE EXTENSION IF NOT EXISTS "http" WITH SCHEMA "public";
+
+
+
 
 
 
@@ -5355,7 +5786,12 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "priority_score" integer,
     "profitability_score" integer,
     "priority_explanation" "text",
-    "profitability_explanation" "text"
+    "profitability_explanation" "text",
+    "latitude" double precision,
+    "longitude" double precision,
+    "geocoded_address" "text",
+    CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
+    CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
 );
 
 
@@ -5373,11 +5809,26 @@ CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
     "city" "text",
     "postal_code" "text",
     "province" "text",
-    "role" "text" DEFAULT 'user'::"text" NOT NULL
+    "role" "text" DEFAULT 'user'::"text" NOT NULL,
+    "latitude" numeric(10,8),
+    "longitude" numeric(11,8),
+    "geocoded_address" "text"
 );
 
 
 ALTER TABLE "public"."user_profiles" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."user_profiles"."latitude" IS 'Cached latitude from Google Maps geocoding';
+
+
+
+COMMENT ON COLUMN "public"."user_profiles"."longitude" IS 'Cached longitude from Google Maps geocoding';
+
+
+
+COMMENT ON COLUMN "public"."user_profiles"."geocoded_address" IS 'Full formatted address from Google Maps';
+
 
 
 ALTER TABLE ONLY "public"."invoices"
@@ -5420,6 +5871,22 @@ CREATE INDEX "idx_quote_attachments_quote_id" ON "public"."quote_attachments" US
 
 
 CREATE INDEX "idx_quote_attachments_request_id" ON "public"."quote_attachments" USING "btree" ("request_id");
+
+
+
+CREATE INDEX "idx_requests_lat_lng" ON "public"."requests" USING "btree" ("latitude", "longitude");
+
+
+
+CREATE INDEX "idx_requests_latitude" ON "public"."requests" USING "btree" ("latitude");
+
+
+
+CREATE INDEX "idx_requests_longitude" ON "public"."requests" USING "btree" ("longitude");
+
+
+
+CREATE INDEX "idx_user_profiles_coordinates" ON "public"."user_profiles" USING "btree" ("latitude", "longitude");
 
 
 
@@ -5773,6 +6240,13 @@ GRANT ALL ON FUNCTION "public"."accept_quote_and_update_request"("p_request_id" 
 
 
 
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "postgres";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "anon";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."bytea_to_text"("data" "bytea") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "service_role";
@@ -5782,6 +6256,104 @@ GRANT ALL ON FUNCTION "public"."delete_user_data"("target_user_id" "uuid") TO "s
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "anon";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http"("request" "public"."http_request") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_delete"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_get"("uri" character varying, "data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_head"("uri" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_header"("field" character varying, "value" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "anon";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_list_curlopt"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_patch"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_post"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_put"("uri" character varying, "content" character varying, "content_type" character varying) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "anon";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_reset_curlopt"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."http_set_curlopt"("curlopt" character varying, "value" character varying) TO "service_role";
 
 
 
@@ -5803,6 +6375,13 @@ GRANT ALL ON FUNCTION "public"."set_quote_number"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."text_to_bytea"("data" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "service_role";
@@ -5812,6 +6391,27 @@ GRANT ALL ON FUNCTION "public"."update_requests_updated_at_column"() TO "service
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_user_role_from_profile"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" "bytea") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("data" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "postgres";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "anon";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "service_role";
 
 
 
@@ -5929,6 +6529,188 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 RESET ALL;
 
 --- END OF FILE supabase/schema.sql ---
+
+--- START OF FILE supabase/supabase/functions/index.ts ---
+
+// Setup type definitions for built-in Supabase Runtime APIs
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+interface GeocodeRequest {
+  requestId: string;
+}
+
+interface GeocodeResponse {
+  success: boolean;
+  latitude?: number;
+  longitude?: number;
+  geocoded_address?: string;
+  error?: string;
+}
+
+console.info('Geocoding function started');
+
+Deno.serve(async (req: Request): Promise<Response> => {
+  try {
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        { 
+          status: 405, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Parse request body
+    const { requestId }: GeocodeRequest = await req.json();
+    
+    if (!requestId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'requestId is required' }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Get Supabase credentials from environment
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY')!;
+
+    if (!googleMapsApiKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Google Maps API key not configured' }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Fetch the request from database
+    const fetchRequestResponse = await fetch(`${supabaseUrl}/rest/v1/requests?id=eq.${requestId}&select=service_address`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!fetchRequestResponse.ok) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to fetch request' }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const requests = await fetchRequestResponse.json();
+    
+    if (!requests || requests.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Request not found' }),
+        { 
+          status: 404, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const serviceAddress = requests[0].service_address;
+    
+    if (!serviceAddress) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No service address found' }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Call Google Maps Geocoding API
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(serviceAddress)}&key=${googleMapsApiKey}`;
+    const geocodeResponse = await fetch(geocodeUrl);
+    const geocodeData = await geocodeResponse.json();
+
+    if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Geocoding failed: ${geocodeData.status}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const location = geocodeData.results[0].geometry.location;
+    const geocodedAddress = geocodeData.results[0].formatted_address;
+
+    // Update the request in database
+    const updateResponse = await fetch(`${supabaseUrl}/rest/v1/requests?id=eq.${requestId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        latitude: location.lat,
+        longitude: location.lng,
+        geocoded_address: geocodedAddress
+      })
+    });
+
+    if (!updateResponse.ok) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to update request' }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const response: GeocodeResponse = {
+      success: true,
+      latitude: location.lat,
+      longitude: location.lng,
+      geocoded_address: geocodedAddress
+    };
+
+    return new Response(
+      JSON.stringify(response),
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Internal server error' 
+      }),
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});
+--- END OF FILE supabase/supabase/functions/index.ts ---
 
 --- START OF FILE tests/README.md ---
 
@@ -11503,12 +12285,35 @@ const prompt = `
  */
 const submitQuoteRequest = async (req, res, next) => {
   try {
-    const { clarifyingAnswers, contactInfo, category, isEmergency, property_type, is_homeowner, problem_description, preferred_timing, additional_notes } = req.body;
-    
+    const {
+      clarifyingAnswers,
+      contactInfo,
+      category,
+      isEmergency,
+      property_type,
+      is_homeowner,
+      problem_description,
+      preferred_timing,
+      additional_notes,
+      service_address,
+      latitude,
+      longitude,
+      geocoded_address
+    } = req.body;
+
+    // --- DEBUGGING: Log what the backend is receiving ---
+    console.log("Backend received payload:", JSON.stringify({
+      service_address,
+      latitude,
+      longitude,
+      geocoded_address,
+      hasServiceAddressData: !!service_address || !!latitude || !!longitude || !!geocoded_address
+    }, null, 2));
+
     const requestData = {
       user_id: req.user.id,
       customer_name: contactInfo.name || null,
-      service_address: `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
+      service_address: service_address || `${contactInfo.address || ''}, ${contactInfo.city || ''}, ${contactInfo.province || ''} ${contactInfo.postal_code || ''}`.trim() || null,
       contact_info: contactInfo.email || contactInfo.phone || null,
       problem_category: category,
       is_emergency: isEmergency === true,
@@ -11519,8 +12324,19 @@ const submitQuoteRequest = async (req, res, next) => {
       additional_notes: additional_notes || null,
       answers: clarifyingAnswers,
       status: 'new',
+      latitude: latitude || null,
+      longitude: longitude || null,
+      geocoded_address: geocoded_address || null,
     };
-    
+
+    // --- DEBUGGING: Log what will be inserted into database ---
+    console.log("Inserting into database:", JSON.stringify({
+      service_address: requestData.service_address,
+      latitude: requestData.latitude,
+      longitude: requestData.longitude,
+      geocoded_address: requestData.geocoded_address
+    }, null, 2));
+
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 
@@ -12497,6 +13313,165 @@ module.exports = {
 };
 --- END OF FILE vite-app/api/validation/schemas.js ---
 
+--- START OF FILE vite-app/src/features/admin/components/MapView.tsx ---
+
+import React, { useState } from 'react';
+import { APIProvider, Map, AdvancedMarker, InfoWindow } from '@vis.gl/react-google-maps';
+import { Box, Paper, Typography, Button } from '@mui/material';
+import { QuoteRequest } from '../../requests/types';
+
+interface MapViewProps {
+  requests: QuoteRequest[];
+  onRequestSelect: (request: QuoteRequest) => void;
+}
+
+const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
+  const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
+
+  // Debug: Check API key
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+  console.log('MapView API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'UNDEFINED');
+
+  // Check if API key is available
+  if (!apiKey) {
+    return (
+      <Paper sx={{ height: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" color="error">
+            Google Maps API Key Missing
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please set VITE_GOOGLE_MAPS_API_KEY in your environment variables
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+
+  // Filter requests that have valid coordinates
+  const geocodedRequests = requests.filter(
+    request => request.latitude && request.longitude
+  );
+
+  // Helper function to get pin color based on status
+  const getPinColor = (status: string): string => {
+    switch (status) {
+      case 'new': return '#1976D2'; // Blue
+      case 'viewed': return '#FF9800'; // Orange
+      case 'quoted': return '#9C27B0'; // Purple
+      case 'accepted': return '#4CAF50'; // Green
+      case 'scheduled': return '#FF5722'; // Deep Orange
+      case 'completed': return '#607D8B'; // Blue Grey
+      default: return '#757575'; // Grey
+    }
+  };
+
+  const handleMarkerClick = (request: QuoteRequest) => {
+    setSelectedRequest(request);
+  };
+
+  const handleCloseInfoWindow = () => {
+    setSelectedRequest(null);
+  };
+
+  return (
+    <Paper sx={{ height: 600, width: '100%', position: 'relative' }}>
+      <APIProvider apiKey={apiKey}>
+        <Map
+          defaultCenter={{ lat: 48.4284, lng: -123.3656 }} // Victoria, BC coordinates
+          defaultZoom={10}
+          mapId="plumbing-requests-map"
+          style={{ width: '100%', height: '100%' }}
+        >
+          {geocodedRequests.map((request) => (
+            <AdvancedMarker
+              key={request.id}
+              position={{ lat: request.latitude!, lng: request.longitude! }}
+              onClick={() => handleMarkerClick(request)}
+            >
+              <Box
+                sx={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  backgroundColor: getPinColor(request.status),
+                  border: '2px solid white',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                  }}
+                />
+              </Box>
+            </AdvancedMarker>
+          ))}
+
+          {selectedRequest && (
+            <InfoWindow
+              position={{ lat: selectedRequest.latitude!, lng: selectedRequest.longitude! }}
+              onCloseClick={handleCloseInfoWindow}
+            >
+              <Box sx={{ p: 1, minWidth: 250 }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                  {selectedRequest.user_profiles?.name || selectedRequest.customer_name || 'Unknown Customer'}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  {selectedRequest.service_address}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                  Status: {selectedRequest.status}
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => {
+                    onRequestSelect(selectedRequest);
+                    handleCloseInfoWindow();
+                  }}
+                >
+                  View Full Job Docket
+                </Button>
+              </Box>
+            </InfoWindow>
+          )}
+        </Map>
+      </APIProvider>
+
+      {geocodedRequests.length === 0 && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <Typography variant="h6" color="text.secondary">
+            No geocoded requests to display
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Requests need latitude and longitude coordinates to appear on the map
+          </Typography>
+        </Box>
+      )}
+    </Paper>
+  );
+};
+
+export default MapView;
+--- END OF FILE vite-app/src/features/admin/components/MapView.tsx ---
+
 --- START OF FILE vite-app/src/features/auth/AuthContext.tsx ---
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -12604,6 +13579,8 @@ export const useAuth = () => {
 
 import React from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import ModalHeader from '../../requests/components/ModalHeader';
+import { User, Mail, Lock } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12614,15 +13591,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isSignUp, setIsSignUp] = React.useState(false);
   const [name, setName] = React.useState('');
   const [message, setMessage] = React.useState<string | null>(null);
+  const [messageType, setMessageType] = React.useState<'success' | 'error' | 'info'>('info');
   const [loading, setLoading] = React.useState(false);
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 relative">
-        <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-700" onClick={onClose}>
-          &times;
-        </button>
-        <h2 className="text-2xl font-bold mb-4 text-blue-700">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
+      <div className="bg-gray-50 rounded-xl shadow-2xl max-w-md w-full relative overflow-hidden">
+        <ModalHeader title={isSignUp ? 'Create Your Account' : 'Sign In to Your Portal'} onClose={onClose} />
+        <div className="p-8 space-y-6">
         <button
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full mb-4"
           onClick={async () => {
@@ -12639,6 +13615,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         >
           Continue with Microsoft
         </button>
+
+        {/* Divider with text */}
+        <div className="relative flex py-5 items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="flex-shrink mx-4 text-gray-500 text-sm">Or continue with</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+
         <form
           onSubmit={async e => {
             e.preventDefault();
@@ -12651,16 +13635,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) {
                   setMessage(error.message || 'Sign up failed.');
+                  setMessageType('error');
                 } else if (data.user) {
                   await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
                   setMessage('Sign up successful! Please check your email and click the confirmation link before signing in.');
+                  setMessageType('success');
                 }
               } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) {
                   setMessage(error.message || 'Sign in failed.');
+                  setMessageType('error');
                 } else {
                   setMessage('Sign in successful!');
+                  setMessageType('success');
                   setTimeout(() => {
                     setMessage(null);
                     onClose();
@@ -12669,29 +13657,53 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               }
             } catch (err: any) {
               setMessage(err.message || 'An error occurred.');
+              setMessageType('error');
             } finally {
               setLoading(false);
             }
           }}
         >
           {isSignUp && (
+            <div className="relative mb-3">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                name="name"
+                type="text"
+                placeholder="Full Name"
+                className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+            </div>
+          )}
+          <div className="relative mb-3">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
-              name="name"
-              type="text"
-              placeholder="Full Name"
-              className="border px-4 py-2 rounded w-full mb-2"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              name="email"
+              type="email"
+              placeholder="Email"
+              className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               required
             />
-          )}
-          <input name="email" type="email" placeholder="Email" className="border px-4 py-2 rounded w-full mb-2" required />
-          <input name="password" type="password" placeholder="Password" className="border px-4 py-2 rounded w-full mb-4" required />
+          </div>
+          <div className="relative mb-4">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              className="border border-gray-300 px-10 py-3 rounded-lg w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              required
+            />
+          </div>
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full" disabled={loading}>
             {loading ? (isSignUp ? 'Signing Up...' : 'Signing In...') : (isSignUp ? 'Sign Up with Email' : 'Sign In with Email')}
           </button>
         {message && (
-          <div className="mt-2 text-center text-sm text-red-600">{message}</div>
+          <div className={`mt-2 text-center text-sm ${messageType === 'success' ? 'text-green-600' : messageType === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
+            {message}
+          </div>
         )}
         </form>
         <div className="mt-4 text-center">
@@ -12706,6 +13718,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };
@@ -12979,21 +13992,66 @@ const ServicesSection: React.FC = () => (
         <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Professional Plumbing Services</h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">From emergency repairs to complete installations, we provide comprehensive plumbing solutions for homes and businesses.</p>
       </div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {services.map((service) => (
-          <div key={service.key} className="bg-white p-8 rounded-2xl shadow hover:shadow-lg transition-shadow duration-300 flex flex-col">
-            {/* The component now looks up the correct icon based on the string from the data file */}
-            <div className="mb-4">{iconComponents[service.icon]}</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{service.title}</h3>
-            <p className="text-gray-600 mb-4 flex-grow">{service.description}</p>
-            <ul className="space-y-2 mt-auto">
-              {service.features.map((feature, featureIndex) => (
-                <li key={featureIndex} className="flex items-center text-base text-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
+
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[200px]">
+        {/* Large featured service - spans 2 columns and 2 rows */}
+        {services[0] && (
+          <div className="md:col-span-2 lg:col-span-2 lg:row-span-2 bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="mb-4">{iconComponents[services[0].icon]}</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">{services[0].title}</h3>
+              <p className="text-gray-600 mb-6 flex-grow">{services[0].description}</p>
+              <ul className="space-y-3">
+                {services[0].features.map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-center text-base text-gray-700">
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Medium service - spans 2 columns */}
+        {services[1] && (
+          <div className="md:col-span-2 lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="mb-3">{iconComponents[services[1].icon]}</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{services[1].title}</h3>
+              <p className="text-gray-600 mb-4 text-sm flex-grow">{services[1].description}</p>
+              <ul className="space-y-2">
+                {services[1].features.slice(0, 2).map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-center text-sm text-gray-700">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Small service cards */}
+        {services.slice(2, 6).map((service, index) => (
+          <div key={service.key} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="mb-3">{iconComponents[service.icon]}</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{service.title}</h3>
+              <p className="text-gray-600 mb-4 text-sm flex-grow line-clamp-2">{service.description}</p>
+              <ul className="space-y-1">
+                {service.features.slice(0, 2).map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-center text-sm text-gray-700">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                    <span className="truncate">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         ))}
       </div>
@@ -13012,7 +14070,9 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../../../lib/apiClient';
 import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel, FormControl, CircularProgress, IconButton } from '@mui/material';
-import { X as XIcon } from 'lucide-react';
+import { X as XIcon, User, MapPin } from 'lucide-react';
+import ModalHeader from '../../requests/components/ModalHeader';
+import ModalFooter from '../../requests/components/ModalFooter';
 
 interface ProfileModalProps {
   isClosable?: boolean;
@@ -13065,6 +14125,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     if (contextProfile) {
@@ -13079,6 +14140,87 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       setEmail(user.email);
     }
   }, [contextProfile, user]);
+
+  // Reset geocoding status when address fields change
+  useEffect(() => {
+    if (geocodingStatus === 'success' || geocodingStatus === 'error') {
+      setGeocodingStatus('idle');
+    }
+  }, [address, city, province, postalCode]);
+
+  const geocodeAddress = async () => {
+    if (!address.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
+      return null;
+    }
+
+    setGeocodingStatus('loading');
+
+    try {
+      const fullAddress = `${address}, ${city}, ${province} ${postalCode}, Canada`;
+      console.log('Geocoding profile address:', fullAddress);
+
+      // Load Google Maps API if not already loaded
+      if (!window.google || !window.google.maps) {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        console.log('Loading Google Maps API for profile geocoding');
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        await new Promise((resolve, reject) => {
+          script.onload = () => {
+            console.log('Google Maps API loaded for profile');
+            resolve(void 0);
+          };
+          script.onerror = (error) => {
+            console.error('Failed to load Google Maps API for profile:', error);
+            reject(error);
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      // Use Google Maps Geocoding service
+      const geocoder = new (window as any).google.maps.Geocoder();
+
+      return new Promise<{lat: number, lng: number, formattedAddress: string} | null>((resolve) => {
+        geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
+          console.log('Profile geocoding response:', {
+            status,
+            resultsCount: results?.length,
+            firstResult: results?.[0]?.formatted_address
+          });
+
+          if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+            const location = results[0].geometry.location;
+            const lat = location.lat();
+            const lng = location.lng();
+            const formattedAddress = results[0].formatted_address;
+
+            console.log('Profile geocoding successful:', { lat, lng, formattedAddress });
+            setGeocodingStatus('success');
+            resolve({ lat, lng, formattedAddress });
+          } else {
+            console.error('Profile geocoding failed with status:', status);
+            setGeocodingStatus('error');
+            resolve(null);
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error('Profile geocoding setup error:', error);
+      setGeocodingStatus('error');
+      return null;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13102,14 +14244,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
     
     const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
 
-    const profilePayload = { 
-      name, 
+    // Geocode the address if it's complete
+    const geocodedData = await geocodeAddress();
+
+    const profilePayload = {
+      name,
       email, // Add email to payload for backend insertion
-      phone, 
-      province, 
-      city, 
-      address, 
-      postal_code: formattedPostalCode 
+      phone,
+      province,
+      city,
+      address,
+      postal_code: formattedPostalCode,
+      latitude: geocodedData?.lat || null,
+      longitude: geocodedData?.lng || null,
+      geocoded_address: geocodedData?.formattedAddress || null
     };
 
     try {
@@ -13122,6 +14270,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       }
 
       setSaveSuccess(true);
+      setGeocodingStatus('idle'); // Reset geocoding status
       setTimeout(() => {
         setSaveSuccess(false);
         // <-- THE FIX: Call onComplete if it exists, otherwise call onClose
@@ -13134,6 +14283,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
     } catch (err: any) {
       setSaveError(err.response?.data?.error || 'Failed to save profile. Please try again.');
+      setGeocodingStatus('idle'); // Reset on error
     } finally {
       setLoading(false);
     }
@@ -13141,57 +14291,360 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Paper elevation={24} sx={{ width: '95%', maxWidth: '600px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden', borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: '#fff', px: 3, py: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {contextProfile?.name ? 'Update Your Profile' : 'Complete Your Profile'}
-            </Typography>
-            {isClosable && (
-              <IconButton onClick={onClose} sx={{ color: '#fff' }}><XIcon size={24} /></IconButton>
-            )}
-          </Box>
-          <form onSubmit={handleSubmit}>
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
-              {/* Form fields remain the same */}
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Email" value={email} fullWidth disabled InputProps={{ sx: { height: 56, fontSize: '1rem' } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Name" value={name} onChange={e => setName(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth required error={!!phoneError} helperText={phoneError} InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <FormControl fullWidth required sx={{ height: 56 }}>
-                  <InputLabel id="province-select-label">Province</InputLabel>
-                  <Select labelId="province-select-label" value={province} label="Province" onChange={e => setProvince(e.target.value as string)} sx={{ height: 56 }}>
-                    <MenuItem value=""><em>Select Province</em></MenuItem>
-                    {provinces.map(p => (<MenuItem key={p} value={p}>{p}</MenuItem>))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="City" value={city} onChange={e => setCity(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <TextField label="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} fullWidth required InputProps={{ sx: { height: 56 } }} />
-              </Box>
-            </Box>
-            <Box sx={{ p: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              {saveError && (<Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>{saveError}</Typography>)}
-              {saveSuccess && (<Typography color="primary" sx={{ mb: 2, textAlign: 'center' }}>Profile saved!</Typography>)}
-              <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading || saveSuccess} sx={{ py: 1.5, fontSize: '1rem' }}>
-                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Save Profile'}
-              </Button>
-              {showDebugPanel && <Box sx={{ mt: 3 }}><DebugOverlay /></Box>}
-            </Box>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.6)',
+        zIndex: 1200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          maxWidth: '700px',
+          width: '90%',
+          maxHeight: '85vh',
+          overflow: 'hidden',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '20px 24px',
+            borderBottom: '1px solid #e0e0e0',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            borderRadius: '12px 12px 0 0'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              📝 Update Your Profile
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: 'calc(85vh - 140px)' }}>
+            {/* Scrollable Content */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px'
+            }}>
+              {/* Contact Information Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                padding: '20px',
+                marginBottom: '20px',
+                borderRadius: '10px',
+                border: '1px solid #e1e8ed'
+              }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  color: '#2c3e50',
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  👤 Contact Information
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Email:</label>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        background: '#f8f9fa'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Name:</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="John Doe"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Phone:</label>
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="250-555-1234"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                      Format: 250-555-1234
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Address Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                padding: '20px',
+                borderRadius: '10px',
+                border: '1px solid #90caf9'
+              }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  color: '#1565c0',
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  📍 Service Address
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>Province:</label>
+                    <select
+                      value={province}
+                      onChange={e => setProvince(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '5px',
+                      fontWeight: '500',
+                      color: '#555'
+                    }}>City:</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                      placeholder="Victoria"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '5px',
+                    fontWeight: '500',
+                    color: '#555'
+                  }}>Street Address:</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="123 Main Street"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '5px',
+                    fontWeight: '500',
+                    color: '#555'
+                  }}>Postal Code:</label>
+                  <input
+                    type="text"
+                    value={postalCode}
+                    onChange={e => setPostalCode(e.target.value)}
+                    placeholder="V8N 2L4"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                    Format: V8N 2L4 or V8N-2L4
+                  </div>
+                </div>
+
+                {/* Geocoding Status */}
+                {geocodingStatus === 'loading' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '6px',
+                    color: '#856404',
+                    fontSize: '0.9rem'
+                  }}>
+                    🔍 Verifying address location...
+                  </div>
+                )}
+                {geocodingStatus === 'success' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#d4edda',
+                    border: '1px solid #c3e6cb',
+                    borderRadius: '6px',
+                    color: '#155724',
+                    fontSize: '0.9rem'
+                  }}>
+                    ✅ Address location verified and cached
+                  </div>
+                )}
+                {geocodingStatus === 'error' && (
+                  <div style={{
+                    padding: '10px',
+                    background: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '6px',
+                    color: '#721c24',
+                    fontSize: '0.9rem'
+                  }}>
+                    ⚠️ Address verification failed - coordinates will be calculated later
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer with Save Button */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e0e0e0',
+              background: '#f8f9fa',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '15px'
+            }}>
+              {saveError && (
+                <div style={{
+                  color: '#dc3545',
+                  fontSize: '0.9rem',
+                  textAlign: 'center',
+                  padding: '8px',
+                  background: '#f8d7da',
+                  borderRadius: '6px',
+                  width: '100%'
+                }}>
+                  {saveError}
+                </div>
+              )}
+              {saveSuccess && (
+                <div style={{
+                  color: '#28a745',
+                  fontSize: '0.9rem',
+                  textAlign: 'center',
+                  padding: '8px',
+                  background: '#d4edda',
+                  borderRadius: '6px',
+                  width: '100%'
+                }}>
+                  ✅ Profile saved successfully!
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loading || saveSuccess}
+                style={{
+                  background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '15px 40px',
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  borderRadius: '25px',
+                  cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
+                  width: '100%',
+                  maxWidth: '250px',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  if (!loading && !saveSuccess) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                {loading ? '⏳ SAVING...' : '💾 SAVE PROFILE'}
+              </button>
+            </div>
           </form>
-        </Paper>
+        </div>
       </div>
     </>
   );
@@ -13220,7 +14673,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
 
   return (
     <Paper variant="outlined">
-      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'secondary.main', bgcolor: '#f3e5f5' }}>
+      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'purple.400', bgcolor: 'purple.50' }}>
         <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Zap size={16} /> AI Triage Summary
         </Typography>
@@ -13421,7 +14874,9 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="overline" color="text.secondary">Attachments</Typography>
+      <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paperclip size={16} /> Attachments
+      </Typography>
       {loading && <CircularProgress size={24} sx={{ mt: 1 }} />}
       <AttachmentGroup title="Customer Uploads (Request)" attachments={requestAttachments} imageUrls={allUrls} />
       {Object.entries(quotesWithAttachments).map(([qId, quoteAtts]) => (
@@ -13693,12 +15148,13 @@ export default CustomerInfoSection;
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Typography, CircularProgress, Paper, Chip } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Map, Table } from 'lucide-react';
 import { getRequestStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, Quote } from '../types';
+import MapView from '../../admin/components/MapView';
 
 interface DashboardProps {
   requests: QuoteRequest[];
@@ -13712,6 +15168,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
 
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
@@ -13748,15 +15205,39 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
   const columns: GridColDef[] = [
     { field: 'priority_score', headerName: 'Priority', width: 100, type: 'number' },
-    { field: 'triage_summary', headerName: 'Triage Summary', flex: 1 },
+    {
+      field: 'triage_summary',
+      headerName: 'Triage Summary',
+      flex: 1,
+      renderCell: (params) => (
+        <div style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '100%'
+        }}>
+          {params.value || '—'}
+        </div>
+      )
+    },
     { field: 'is_emergency', headerName: 'Urgency', width: 120,
       renderCell: (params) => ( params.value ? ( <Chip icon={<AlertTriangle size={14} />} label="Emergency" color="error" size="small" variant="outlined" /> ) : null ),
     },
-    { field: 'problem_category', headerName: 'Request Type', width: 180, 
-      valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A'
+    { field: 'problem_category', headerName: 'Request Type', width: 180,
+      valueFormatter: (value) => value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l:string) => l.toUpperCase()) : 'N/A',
+      renderCell: (params) => (
+        <span style={{ fontWeight: 500 }}>
+          {params.formattedValue}
+        </span>
+      )
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 180,
-      valueGetter: (value, row) => row.user_profiles?.name || row.customer_name || 'N/A'
+      valueGetter: (value, row) => row.user_profiles?.name || row.customer_name || 'N/A',
+      renderCell: (params) => (
+        <span style={{ fontWeight: 500 }}>
+          {params.value}
+        </span>
+      )
     },
     { field: 'created_at', headerName: 'Received', width: 180, type: 'dateTime', valueGetter: (value) => value ? new Date(value) : null },
     { field: 'quote_amount', headerName: 'Quote Amount', width: 130, type: 'number',
@@ -13777,15 +15258,72 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     <>
       <Box sx={{ bgcolor: '#f4f6f8', minHeight: 'calc(100vh - 80px)', p: { xs: 2, md: 4 } }}>
         <Box sx={{ maxWidth: '1200px', margin: 'auto' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-            Plumber's Command Center
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+              Plumber's Command Center
+            </Typography>
+            <ButtonGroup variant="outlined" size="small">
+              <Button
+                startIcon={<Table size={16} />}
+                variant={viewMode === 'table' ? 'contained' : 'outlined'}
+                onClick={() => setViewMode('table')}
+              >
+                Table
+              </Button>
+              <Button
+                startIcon={<Map size={16} />}
+                variant={viewMode === 'map' ? 'contained' : 'outlined'}
+                onClick={() => setViewMode('map')}
+              >
+                Map
+              </Button>
+            </ButtonGroup>
+          </Box>
           <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {allStatuses.map(status => ( <Chip key={status} label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} onClick={() => setActiveFilterStatus(status)} color={status === 'all' ? 'default' : getRequestStatusChipColor(status)} variant={activeFilterStatus === status ? 'filled' : 'outlined'} sx={{ textTransform: 'capitalize' }} /> ))}
           </Box>
-          <Paper sx={{ height: 600, width: '100%' }}>
-            <DataGrid rows={filteredRequests} columns={columns} onRowClick={handleRowClick} initialState={{ pagination: { paginationModel: { pageSize: 10 } }, sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] }, }} pageSizeOptions={[10, 25, 50]} sx={{ border: 0, '& .MuiDataGrid-columnHeaders': { backgroundColor: '#e3f2fd', fontSize: '1rem' }, '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 'bold' }, '& .MuiDataGrid-row:hover': { cursor: 'pointer', backgroundColor: '#f0f7ff' } }} />
-          </Paper>
+          {viewMode === 'table' ? (
+            <Paper sx={{ height: 600, width: '100%' }}>
+              <DataGrid
+                rows={filteredRequests}
+                columns={columns}
+                onRowClick={handleRowClick}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10 } },
+                  sorting: { sortModel: [{ field: 'created_at', sort: 'desc' }] },
+                }}
+                pageSizeOptions={[10, 25, 50]}
+                sx={{
+                  border: 0,
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: '#e3f2fd',
+                    fontSize: '1rem'
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    fontWeight: 'bold'
+                  },
+                  '& .MuiDataGrid-row': {
+                    minHeight: '60px !important', // Increase row height
+                    '&:hover': {
+                      cursor: 'pointer',
+                      backgroundColor: '#f0f7ff'
+                    }
+                  },
+                  '& .MuiDataGrid-cell': {
+                    padding: '12px 16px', // Add more padding to cells
+                  }
+                }}
+              />
+            </Paper>
+          ) : (
+            <MapView
+              requests={filteredRequests}
+              onRequestSelect={(request) => {
+                setSelectedRequest(request);
+                setIsModalOpen(true);
+              }}
+            />
+          )}
         </Box>
       </Box>
       {selectedRequest && ( 
@@ -13994,10 +15532,103 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../../../lib/serviceQuoteQuestions";
 import apiClient, { uploadAttachments } from "../../../lib/apiClient";
-import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert } from '@mui/material';
+import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
-import { X as XIcon } from 'lucide-react';
+import { X as XIcon, Wrench, User } from 'lucide-react';
 
+
+// Typing indicator component
+const TypingIndicator = () => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
+    <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.100' }}>
+      <Wrench size={16} />
+    </Avatar>
+    <Box sx={{
+      bgcolor: 'grey.100',
+      borderRadius: '18px',
+      px: 2,
+      py: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0.5
+    }}>
+      <Box sx={{
+        width: 4,
+        height: 4,
+        bgcolor: 'grey.500',
+        borderRadius: '50%',
+        animation: 'typing 1.4s infinite ease-in-out'
+      }} />
+      <Box sx={{
+        width: 4,
+        height: 4,
+        bgcolor: 'grey.500',
+        borderRadius: '50%',
+        animation: 'typing 1.4s infinite ease-in-out 0.2s'
+      }} />
+      <Box sx={{
+        width: 4,
+        height: 4,
+        bgcolor: 'grey.500',
+        borderRadius: '50%',
+        animation: 'typing 1.4s infinite ease-in-out 0.4s'
+      }} />
+    </Box>
+    <style>{`
+      @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-8px); }
+      }
+    `}</style>
+  </Box>
+);
+
+// Chat message bubble component
+const ChatBubble = ({ message, sender, isNew = false }: { message: string; sender: 'agent' | 'user'; isNew?: boolean }) => (
+  <Fade in={true} timeout={300}>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 1,
+      mb: 2,
+      justifyContent: sender === 'user' ? 'flex-end' : 'flex-start'
+    }}>
+      {sender === 'agent' && (
+        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+          <Wrench size={16} />
+        </Avatar>
+      )}
+      <Box sx={{
+        maxWidth: '70%',
+        bgcolor: sender === 'user' ? 'primary.main' : 'grey.100',
+        color: sender === 'user' ? 'white' : 'text.primary',
+        borderRadius: '18px',
+        px: 2,
+        py: 1,
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          width: 0,
+          height: 0,
+          border: '8px solid transparent',
+          top: '12px',
+          ...(sender === 'user'
+            ? { right: '-8px', borderTopColor: 'primary.main' }
+            : { left: '-8px', borderTopColor: 'grey.100' }
+          )
+        }
+      }}>
+        <Typography variant="body2">{message}</Typography>
+      </Box>
+      {sender === 'user' && (
+        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+          <User size={16} />
+        </Avatar>
+      )}
+    </Box>
+  </Fade>
+);
 
 // Diagnostic component (kept for development)
 const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCount, currentIndex }: { status: string; isEmergency: boolean | null; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
@@ -14022,6 +15653,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
   const [chatHistory, setChatHistory] = useState<Array<{ sender: string; message: string }>>([]);
   const [userInput, setUserInput] = useState("");
+  const pendingChoiceRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEmergency, setIsEmergency] = useState<boolean | null>(null);
   const [newAttachments, setNewAttachments] = useState<File[]>([]);
@@ -14041,6 +15673,12 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [allAnswers, setAllAnswers] = useState<string[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
+  const [useProfileAddress, setUseProfileAddress] = useState(true);
+  const [serviceAddress, setServiceAddress] = useState('');
+  const [serviceCity, setServiceCity] = useState('');
+  const [servicePostalCode, setServicePostalCode] = useState('');
+  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
@@ -14048,6 +15686,14 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  // Handle pending choice selection
+  useEffect(() => {
+    if (pendingChoiceRef.current && userInput === pendingChoiceRef.current) {
+      pendingChoiceRef.current = null;
+      handleSend();
+    }
+  }, [userInput]);
 
   const resetState = () => {
     setChatHistory([]);
@@ -14063,6 +15709,102 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     setCurrentQuestionIndex(0);
     setSelectedCategory(null);
     setErrorMessage("");
+    setUseProfileAddress(true);
+    setServiceAddress("");
+    setServiceCity("");
+    setServicePostalCode("");
+    setServiceCoordinates(null);
+    setGeocodingStatus('idle');
+  };
+
+  const geocodeServiceAddress = async () => {
+    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
+      return;
+    }
+
+    setGeocodingStatus('loading');
+
+    try {
+      const fullAddress = `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`;
+      console.log('Attempting to geocode:', fullAddress);
+
+      // Load Google Maps API if not already loaded
+      if (!window.google || !window.google.maps) {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        console.log('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        await new Promise((resolve, reject) => {
+          script.onload = () => {
+            console.log('Google Maps API loaded successfully');
+            resolve(void 0);
+          };
+          script.onerror = (error) => {
+            console.error('Failed to load Google Maps API:', error);
+            reject(error);
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      // Use Google Maps Geocoding service
+      const geocoder = new (window as any).google.maps.Geocoder();
+
+      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
+        console.log('Geocoding response:', {
+          status,
+          resultsCount: results?.length,
+          firstResult: results?.[0]?.formatted_address
+        });
+
+        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+          const location = results[0].geometry.location;
+          const lat = location.lat();
+          const lng = location.lng();
+
+          console.log('Geocoding successful:', { lat, lng, formattedAddress: results[0].formatted_address });
+
+          setServiceCoordinates({ lat, lng });
+          setGeocodingStatus('success');
+        } else {
+          console.error('Geocoding failed with status:', status);
+
+          // Provide more specific error messages
+          let errorMessage = 'Could not verify address';
+          switch (status) {
+            case (window as any).google.maps.GeocoderStatus.ZERO_RESULTS:
+              errorMessage = 'Address not found - please check spelling and try again';
+              break;
+            case (window as any).google.maps.GeocoderStatus.OVER_QUERY_LIMIT:
+              errorMessage = 'Too many requests - please try again later';
+              break;
+            case (window as any).google.maps.GeocoderStatus.REQUEST_DENIED:
+              errorMessage = 'Geocoding service unavailable - please check API key permissions';
+              break;
+            case (window as any).google.maps.GeocoderStatus.INVALID_REQUEST:
+              errorMessage = 'Invalid address format - please check and try again';
+              break;
+            default:
+              errorMessage = `Geocoding failed (${status}) - please check spelling`;
+          }
+
+          setGeocodingStatus('error');
+        }
+      });
+
+    } catch (error) {
+      console.error('Geocoding setup error:', error);
+      setGeocodingStatus('error');
+    }
   };
 
   useEffect(() => {
@@ -14157,14 +15899,80 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   
   const handleSubmitQuote = async () => {
     if (!profile || !selectedCategory || !user) return;
+
+
     setLoading(true);
     setErrorMessage("");
 
     try {
         const allQuestions = [...initialQuestions, ...followUpQuestions];
         const structuredAnswers = allQuestions.map((question, index) => ({ question: question, answer: allAnswers[index] || '(No answer provided)' }));
-        const payload = { clarifyingAnswers: structuredAnswers, contactInfo: profile, category: selectedCategory.key, isEmergency: isEmergency, ...genericAnswers };
-        
+
+        // --- START: Replace the existing serviceAddressData block with this ---
+
+        let serviceAddressData: {
+          service_address: string;
+          latitude: number | null;
+          longitude: number | null;
+          geocoded_address: string | null;
+        } | null = null;
+
+        // SCENARIO A: Use Profile Address
+        if (useProfileAddress) {
+            if (!profile?.address) {
+                setErrorMessage("Your profile address is incomplete. Please update it or provide a different service address.");
+                setLoading(false);
+                return;
+            }
+            console.log("DEBUG: Using profile address for submission.");
+            serviceAddressData = {
+                service_address: `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}`,
+                latitude: (profile as any).latitude || null,
+                longitude: (profile as any).longitude || null,
+                geocoded_address: (profile as any).geocoded_address || null
+            };
+        }
+        // SCENARIO B: Use Different Service Address
+        else {
+            if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
+                setErrorMessage("Please fill out all fields for the different service address.");
+                setLoading(false);
+                return;
+            }
+            if (!serviceCoordinates) {
+                setErrorMessage("Please click 'Verify Address' for the new service location before submitting.");
+                setLoading(false);
+                return;
+            }
+            console.log("DEBUG: Using DIFFERENT service address for submission.");
+            serviceAddressData = {
+                service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+                latitude: serviceCoordinates.lat,
+                longitude: serviceCoordinates.lng,
+                geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
+            };
+        }
+
+        if (!serviceAddressData) {
+            setErrorMessage("A valid service address is required.");
+            setLoading(false);
+            return;
+        }
+
+        // --- END: Replacement block ---
+
+        const payload = {
+          clarifyingAnswers: structuredAnswers,
+          contactInfo: profile,
+          category: selectedCategory.key,
+          isEmergency: isEmergency,
+          ...genericAnswers,
+          ...serviceAddressData
+        };
+
+        // --- DEBUGGING: Log the payload being sent to backend ---
+        console.log("Submitting payload to backend:", JSON.stringify(payload, null, 2));
+
         const { data: result } = await apiClient.post('/requests/submit', payload);
         const newRequest = result.request;
         const newRequestId = newRequest?.id;
@@ -14212,19 +16020,35 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         case 'AWAITING_GPT':
           return (
             <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 3, pt: 1 }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', background: '#f8f8f8', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
-                {chatHistory.map((msg, idx) => ( <div key={idx} style={{ textAlign: msg.sender === 'user' ? 'right' : 'left', margin: '8px 0' }}> <span style={{ background: msg.sender === 'user' ? '#e0f7fa' : '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>{msg.message}</span> </div> ))}
-                {status === 'AWAITING_GPT' && ( <div style={{ textAlign: 'left', margin: '8px 0' }}> <span style={{ background: '#fff', padding: '6px 12px', borderRadius: 6, display: 'inline-block', fontStyle: 'italic', color: '#777' }}> Thinking... </span> </div> )}
+              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', background: '#f8f8f8', padding: '16px', borderRadius: '12px', marginBottom: '12px', minHeight: '200px' }}>
+                {chatHistory.map((msg, idx) => (
+                  <ChatBubble key={idx} message={msg.message} sender={msg.sender as 'agent' | 'user'} />
+                ))}
+                {status === 'AWAITING_GPT' && <TypingIndicator />}
                 <div ref={chatEndRef} />
               </Box>
-              <Box sx={{ flexShrink: 0 }}>
+              <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50', p: 2 }}>
                 {status === 'SELECTING_CATEGORY' && (
-                  <div>
-                    <Typography sx={{ fontWeight: 500, mb: 1 }}>Select a service type:</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {SERVICE_QUOTE_CATEGORIES.map((cat) => ( <Button key={cat.key} variant="contained" onClick={() => handleSelectCategory(cat)}>{cat.label}</Button> ))}
+                  <Box>
+                    <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>Select a service type:</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {SERVICE_QUOTE_CATEGORIES.map((cat) => (
+                        <Button
+                          key={cat.key}
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleSelectCategory(cat)}
+                          sx={{
+                            borderRadius: '20px',
+                            textTransform: 'none',
+                            '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                          }}
+                        >
+                          {cat.label}
+                        </Button>
+                      ))}
                     </Box>
-                  </div>
+                  </Box>
                 )}
                 {['INITIAL_QUESTIONS', 'FOLLOW_UP_QUESTIONS'].includes(status) && (
                   <form onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
@@ -14234,54 +16058,374 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                         const currentGenericQuestion = isGenericPhase ? GENERIC_QUESTIONS[currentQuestionIndex] : null;
 
                         if (currentGenericQuestion && currentGenericQuestion.choices) {
-                            inputControl = ( <FormControl fullWidth> <InputLabel>{currentGenericQuestion.question}</InputLabel> <Select value={userInput} label={currentGenericQuestion.question} onChange={e => setUserInput(e.target.value)}> {currentGenericQuestion.choices.map(choice => ( <MenuItem key={choice} value={choice}>{choice}</MenuItem> ))} </Select> </FormControl> );
+                            return (
+                              <Box>
+                                <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>
+                                  {currentGenericQuestion.question}
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                  {currentGenericQuestion.choices.map(choice => (
+                                    <Button
+                                      key={choice}
+                                      variant="outlined"
+                                      size="small"
+                                      onClick={() => {
+                                        pendingChoiceRef.current = choice;
+                                        setUserInput(choice);
+                                      }}
+                                      sx={{
+                                        borderRadius: '20px',
+                                        textTransform: 'none',
+                                        '&:hover': { bgcolor: 'primary.main', color: 'white' }
+                                      }}
+                                    >
+                                      {choice}
+                                    </Button>
+                                  ))}
+                                </Box>
+                              </Box>
+                            );
                         } else {
                             const isTextarea = currentGenericQuestion?.textarea === true;
-                            inputControl = ( <TextField value={userInput} onChange={e => setUserInput(e.target.value)} placeholder="Type your answer..." fullWidth multiline={isTextarea} rows={isTextarea ? 3 : 1} /> );
+                            inputControl = (
+                              <TextField
+                                value={userInput}
+                                onChange={e => setUserInput(e.target.value)}
+                                placeholder="Type your answer..."
+                                fullWidth
+                                multiline={isTextarea}
+                                rows={isTextarea ? 3 : 1}
+                                variant="outlined"
+                                sx={{ bgcolor: 'white', borderRadius: 1 }}
+                              />
+                            );
+                            const questionText = status === 'INITIAL_QUESTIONS'
+                              ? initialQuestions[currentQuestionIndex]
+                              : followUpQuestions[currentQuestionIndex - initialQuestions.length];
+
+                            return (
+                              <Box>
+                                <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>
+                                  {questionText || 'Your answer:'}
+                                </Typography>
+                                {inputControl}
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                  <Button
+                                    type="submit"
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={loading || userInput.trim() === ''}
+                                    sx={{ borderRadius: '20px', px: 3 }}
+                                  >
+                                    {loading ? 'Sending...' : 'Send'}
+                                  </Button>
+                                </Box>
+                              </Box>
+                            );
                         }
-                        return inputControl;
                     })()}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button type="submit" variant="contained" color="primary" disabled={loading || userInput.trim() === ''}>{loading ? '...' : 'Send'}</Button>
-                    </Box>
                   </form>
                 )}
               </Box>
             </Box>
           );
         case 'SUMMARY':
-          const allQuestions = [...initialQuestions, ...followUpQuestions];
-          const summaryAnswers = allQuestions.map((question, index) => ({ question, answer: allAnswers[index] || '(No answer provided)' }));
-          return (
-            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Please confirm your details:</Typography>
-                  {isEmergency && <Typography color="error" variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>EMERGENCY REQUEST</Typography>}
-                  <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-                    <Typography variant="overline" display="block" gutterBottom>Service Type</Typography>
-                    <Typography>{selectedCategory?.label}</Typography>
-                  </Paper>
-                  <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-                    <Typography variant="overline" display="block" gutterBottom>Your Answers</Typography>
-                    {summaryAnswers.map((item, i) => ( <Box key={i} sx={{ mb: 1.5 }}> <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.question}</Typography> <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>&bull; {item.answer}</Typography> </Box> ))}
-                  </Paper>
-                  {profile && ( <Paper variant="outlined" sx={{ p: 2, mb: 2 }}> <Typography variant="overline" display="block" gutterBottom>Contact Information</Typography> <div><b>Name:</b> {profile.name}</div> <div><b>Email:</b> {profile.email}</div> <div><b>Phone:</b> {profile.phone}</div> <div><b>Address:</b> {profile.address}, {profile.city}, {profile.province} {profile.postal_code}</div> </Paper> )}
-                  <AttachmentSection
-                    requestId="new-request"
-                    attachments={[]}
-                    pendingFiles={newAttachments}
-                    editable={true}
-                    onUpdate={() => {}}
-                    onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
-                    onRemovePendingFile={handleRemovePendingFile}
-                  />
-              </Box>
-              {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
-              <Box sx={{ flexShrink: 0, p: 3, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                <Button variant="contained" color="primary" fullWidth onClick={handleSubmitQuote} disabled={loading}>{loading ? 'Submitting...' : 'Confirm & Submit Request'}</Button>
-              </Box>
-            </Box>
-          );
+           const allQuestions = [...initialQuestions, ...followUpQuestions];
+           const summaryAnswers = allQuestions.map((question, index) => ({ question, answer: allAnswers[index] || '(No answer provided)' }));
+           return (
+             <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+               <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
+                   <Box sx={{ textAlign: 'center', mb: 3 }}>
+                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
+                       Please review your request
+                     </Typography>
+                     {isEmergency && (
+                       <Box sx={{
+                         bgcolor: 'error.main',
+                         color: 'white',
+                         px: 2,
+                         py: 1,
+                         borderRadius: 2,
+                         display: 'inline-block',
+                         fontWeight: 'bold',
+                         fontSize: '0.9rem'
+                       }}>
+                         🚨 EMERGENCY REQUEST
+                       </Box>
+                     )}
+                   </Box>
+
+                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                     {/* Service Details Card */}
+                     <Paper sx={{
+                       p: 3,
+                       borderRadius: 2,
+                       border: '1px solid',
+                       borderColor: 'divider',
+                       bgcolor: 'grey.50'
+                     }}>
+                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                         Service Details
+                       </Typography>
+                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                         <Wrench size={20} />
+                         <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                           {selectedCategory?.label}
+                         </Typography>
+                       </Box>
+                     </Paper>
+
+                     {/* Your Answers Card */}
+                     <Paper sx={{
+                       p: 3,
+                       borderRadius: 2,
+                       border: '1px solid',
+                       borderColor: 'divider'
+                     }}>
+                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                         Your Answers
+                       </Typography>
+                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                         {summaryAnswers.map((item, i) => (
+                           <Box key={i} sx={{
+                             p: 2,
+                             bgcolor: 'grey.50',
+                             borderRadius: 1,
+                             border: '1px solid',
+                             borderColor: 'grey.200'
+                           }}>
+                             <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+                               {item.question}
+                             </Typography>
+                             <Typography variant="body2" sx={{ color: 'text.secondary', pl: 1 }}>
+                               {item.answer}
+                             </Typography>
+                           </Box>
+                         ))}
+                       </Box>
+                     </Paper>
+
+                     {/* Service Address Card */}
+                     <Paper sx={{
+                       p: 3,
+                       borderRadius: 2,
+                       border: '1px solid',
+                       borderColor: 'divider'
+                     }}>
+                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                         Service Location
+                       </Typography>
+                       <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                         Where do you need the plumbing service performed?
+                       </Typography>
+
+                       {/* Address Option Toggle */}
+                       <Box sx={{ mb: 3 }}>
+                         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                           <Button
+                             variant={useProfileAddress ? "contained" : "outlined"}
+                             size="small"
+                             onClick={() => {
+                               setUseProfileAddress(true);
+                               setServiceAddress("");
+                               setServiceCity("");
+                               setServicePostalCode("");
+                               setServiceCoordinates(null);
+                               setGeocodingStatus('idle');
+                             }}
+                             sx={{ flex: 1 }}
+                           >
+                             Use My Address
+                           </Button>
+                           <Button
+                             variant={!useProfileAddress ? "contained" : "outlined"}
+                             size="small"
+                             onClick={() => setUseProfileAddress(false)}
+                             sx={{ flex: 1 }}
+                           >
+                             Different Address
+                           </Button>
+                         </Box>
+
+                         {useProfileAddress ? (
+                             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                               <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
+                                 Service will be at your registered address:
+                               </Typography>
+                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                 {profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : 'Loading...'}
+                               </Typography>
+                               {(profile as any) && (!(profile as any).latitude || !(profile as any).longitude) && (
+                                 <Typography variant="body2" sx={{ color: 'warning.main', fontSize: '0.8rem', mt: 1 }}>
+                                   📍 Address coordinates will be calculated when request is submitted
+                                 </Typography>
+                               )}
+                               {(profile as any) && (profile as any).latitude && (profile as any).longitude && (
+                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem', mt: 1 }}>
+                                   ✅ Address location verified and cached
+                                 </Typography>
+                               )}
+                             </Box>
+                         ) : (
+                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                             <TextField
+                               label="Street Address"
+                               value={serviceAddress}
+                               onChange={(e) => setServiceAddress(e.target.value)}
+                               fullWidth
+                               size="small"
+                               placeholder="123 Main Street"
+                             />
+                             <Box sx={{ display: 'flex', gap: 2 }}>
+                               <TextField
+                                 label="City"
+                                 value={serviceCity}
+                                 onChange={(e) => setServiceCity(e.target.value)}
+                                 fullWidth
+                                 size="small"
+                                 placeholder="Victoria"
+                               />
+                               <TextField
+                                 label="Postal Code"
+                                 value={servicePostalCode}
+                                 onChange={(e) => setServicePostalCode(e.target.value)}
+                                 size="small"
+                                 placeholder="V8W 1A1"
+                                 sx={{ minWidth: 120 }}
+                               />
+                             </Box>
+                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                               <Button
+                                 variant="outlined"
+                                 size="small"
+                                 onClick={geocodeServiceAddress}
+                                 disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
+                                 sx={{ minWidth: 100 }}
+                               >
+                                 {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
+                               </Button>
+                               {geocodingStatus === 'success' && (
+                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
+                                   ✓ Address verified and located on map
+                                 </Typography>
+                               )}
+                               {geocodingStatus === 'error' && (
+                                 <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                                   ✗ Could not verify address - please check spelling
+                                 </Typography>
+                               )}
+                             </Box>
+                           </Box>
+                         )}
+                       </Box>
+                     </Paper>
+
+                     {/* Contact Information Card */}
+                     {profile && (
+                       <Paper sx={{
+                         p: 3,
+                         borderRadius: 2,
+                         border: '1px solid',
+                         borderColor: 'divider'
+                       }}>
+                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                           Contact Information
+                         </Typography>
+                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                           <Box sx={{ display: 'flex', gap: 1 }}>
+                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Name:</Typography>
+                             <Typography variant="body2">{profile.name}</Typography>
+                           </Box>
+                           <Box sx={{ display: 'flex', gap: 1 }}>
+                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Email:</Typography>
+                             <Typography variant="body2">{profile.email}</Typography>
+                           </Box>
+                           <Box sx={{ display: 'flex', gap: 1 }}>
+                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Phone:</Typography>
+                             <Typography variant="body2">{profile.phone}</Typography>
+                           </Box>
+                           <Box sx={{ display: 'flex', gap: 1 }}>
+                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Address:</Typography>
+                             <Typography variant="body2">{profile.address}, {profile.city}, {profile.province} {profile.postal_code}</Typography>
+                           </Box>
+                         </Box>
+                       </Paper>
+                     )}
+
+                     {/* Attachments Section */}
+                     <Paper sx={{
+                       p: 3,
+                       borderRadius: 2,
+                       border: '1px solid',
+                       borderColor: 'divider',
+                       bgcolor: 'grey.50'
+                     }}>
+                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                         <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                           Attachments
+                         </Typography>
+                         <Button
+                           variant="contained"
+                           color="secondary"
+                           size="small"
+                           startIcon={<span>+</span>}
+                           sx={{ borderRadius: '20px' }}
+                           onClick={() => document.getElementById('attachment-file-input')?.click()}
+                         >
+                           Add Files
+                         </Button>
+                         <input
+                           id="attachment-file-input"
+                           type="file"
+                           hidden
+                           multiple
+                           onChange={(event) => {
+                             const files = event.target.files;
+                             if (files && files.length > 0) {
+                               setNewAttachments(prev => [...prev, ...Array.from(files)]);
+                               event.target.value = ''; // Reset input
+                             }
+                           }}
+                         />
+                       </Box>
+                       <AttachmentSection
+                         requestId="new-request"
+                         attachments={[]}
+                         pendingFiles={newAttachments}
+                         editable={true}
+                         onUpdate={() => {}}
+                         onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
+                         onRemovePendingFile={handleRemovePendingFile}
+                       />
+                     </Paper>
+                   </Box>
+               </Box>
+               {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
+               <Box sx={{ flexShrink: 0, p: 3, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+                 <Button
+                   variant="contained"
+                   color="primary"
+                   fullWidth
+                   onClick={handleSubmitQuote}
+                   disabled={loading}
+                   sx={{
+                     py: 1.5,
+                     fontSize: '1.1rem',
+                     fontWeight: 600,
+                     borderRadius: '12px',
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                     '&:hover': {
+                       boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+                       transform: 'translateY(-1px)'
+                     },
+                     transition: 'all 0.2s ease-in-out'
+                   }}
+                 >
+                   {loading ? 'Submitting...' : 'Confirm & Submit Request'}
+                 </Button>
+               </Box>
+             </Box>
+           );
         case 'SUBMITTED':
           return (
             <Box sx={{ textAlign: 'center', p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -14323,7 +16467,7 @@ export default QuoteAgentModal;
 
 // vite-app/src/features/requests/components/QuoteFormModal.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
@@ -14350,14 +16494,15 @@ interface Item {
 }
 
 const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
-  const [goodUntil, setGoodUntil] = useState('');
-  const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
-  const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
-  const [notes, setNotes] = useState('');
-  const [newAttachments, setNewAttachments] = useState<File[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+   const firstFieldRef = useRef<HTMLInputElement>(null);
+   const [goodUntil, setGoodUntil] = useState('');
+   const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
+   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
+   const [notes, setNotes] = useState('');
+   const [newAttachments, setNewAttachments] = useState<File[]>([]);
+   const [saving, setSaving] = useState(false);
+   const [saveSuccess, setSaveSuccess] = useState(false);
+   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -14383,6 +16528,13 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setNotes('');
         setGoodUntil('');
       }
+
+      // Auto-focus the first field when modal opens
+      setTimeout(() => {
+        if (firstFieldRef.current) {
+          firstFieldRef.current.focus();
+        }
+      }, 100);
     }
   }, [quote, isOpen]);
 
@@ -14469,18 +16621,24 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               setGoodUntil={setGoodUntil}
             />
 
-            <Paper variant="outlined" sx={{p: 2}}>
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Labor</Typography>
               {laborItems.map((item, idx) => (
                 <Grid container spacing={1} key={`labor-${idx}`} sx={{ mb: 1 }}>
-                  <Grid item xs={8}><TextField label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" /></Grid>
+                  <Grid item xs={8}>
+                    {idx === 0 ? (
+                      <TextField inputRef={firstFieldRef} label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" />
+                    ) : (
+                      <TextField label="Description" value={item.description} onChange={e => { const newItems = [...laborItems]; newItems[idx].description = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" />
+                    )}
+                  </Grid>
                   <Grid item xs={4}><TextField label="Price" value={item.price} onChange={e => { const newItems = [...laborItems]; newItems[idx].price = e.target.value; setLaborItems(newItems); }} fullWidth disabled={!editable} size="small" type="number" InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} /></Grid>
                 </Grid>
               ))}
               {editable && <Button onClick={() => setLaborItems([...laborItems, { description: '', price: '' }])} sx={{ mb: 2, mt: 1 }}>Add Labor Item</Button>}
             </Paper>
 
-            <Paper variant="outlined" sx={{p: 2}}>
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Itemized Materials</Typography>
               {materialItems.map((item, idx) => (
                 <Grid container spacing={1} key={`material-${idx}`} sx={{ mb: 1 }}>
@@ -14491,7 +16649,9 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               {editable && <Button onClick={() => setMaterialItems([...materialItems, { description: '', price: '' }])} sx={{ mb: 2, mt: 1 }}>Add Material Item</Button>}
             </Paper>
 
-            <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
+            <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
+              <TextField label="Notes / Clarifications" value={notes} onChange={e => setNotes(e.target.value)} fullWidth multiline rows={3} disabled={!editable} />
+            </Paper>
 
             <AttachmentSection
               requestId={requestId}
@@ -14504,11 +16664,37 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               onRemovePendingFile={(index) => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
             />
 
-            <Box sx={{ textAlign: 'right', mt: 2 }}>
-              <Typography variant="body2" color="text.secondary">Subtotal: ${subtotal.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">GST (5%): ${gst.toFixed(2)}</Typography>
-              <Typography variant="body2" color="text.secondary">PST (7%): ${pst.toFixed(2)}</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>Total: ${totalPrice.toFixed(2)}</Typography>
+            {/* Summary Bar - Always visible pricing breakdown */}
+            <Box sx={{
+              p: 2,
+              bgcolor: 'grey.50',
+              borderRadius: 1,
+              border: 1,
+              borderColor: 'grey.200',
+              mt: 2
+            }}>
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2
+              }}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Subtotal: ${subtotal.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    GST (5%): ${gst.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    PST (7%): ${pst.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  Grand Total: ${totalPrice.toFixed(2)}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Box>
@@ -14607,7 +16793,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
                   primaryTypographyProps={{ component: 'div' }}
                   primary={`Quote #${quote.quote_number} - $${quote.quote_amount.toFixed(2)}`}
                   secondary={
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                       <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
                       <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
                     </Box>
@@ -14884,7 +17070,7 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
 
   return (
     <Paper variant="outlined">
-      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'warning.main', bgcolor: '#fff3e0' }}>
+      <Box sx={{ p: 2, borderLeft: 4, borderColor: 'orange.400', bgcolor: 'orange.50' }}>
         <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AlertTriangle size={16} /> Reported Problem
         </Typography>
@@ -15051,17 +17237,47 @@ import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
+  console.log('🔍 Fetching requests with userId:', userId);
+
   let query = supabase
     .from('requests')
-    .select(`*, user_profiles!inner(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
+    .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
     .order('created_at', { ascending: false });
 
   if (userId) {
+    console.log('🔍 Filtering by user_id:', userId);
     query = query.eq('user_id', userId);
+  } else {
+    console.log('🔍 Fetching ALL requests (admin mode)');
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+
+  if (error) {
+    console.error('❌ Admin Dashboard Fetch Error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw error;
+  }
+
+  console.log('✅ Admin Dashboard Fetched Data:', data?.length || 0, 'requests for userId:', userId);
+
+  if (data && data.length > 0) {
+    console.log('📋 First request sample:', {
+      id: data[0].id,
+      user_id: data[0].user_id,
+      status: data[0].status,
+      has_user_profile: !!data[0].user_profiles,
+      created_at: data[0].created_at
+    });
+  } else {
+    console.log('📋 No requests found in database');
+  }
+
   return (data as QuoteRequest[]) || [];
 };
 
@@ -15162,6 +17378,9 @@ export interface QuoteRequest {
   priority_explanation: string | null;
   profitability_score: number | null;
   profitability_explanation: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  geocoded_address: string | null;
 }
 
 --- END OF FILE vite-app/src/features/requests/types/index.ts ---
@@ -15431,7 +17650,15 @@ const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
   
   // *** THE FIX: Data fetching is "lifted up" to this central component. ***
-  const { requests, loading, error, refetch } = useRequestsQuery(profile?.role === 'admin' ? undefined : user?.id);
+  const userIdForQuery = profile?.role === 'admin' ? undefined : user?.id;
+  console.log('🔍 User authentication check:', {
+    userId: user?.id,
+    profileRole: profile?.role,
+    isAdmin: profile?.role === 'admin',
+    userIdForQuery: userIdForQuery,
+    profileExists: !!profile
+  });
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -15453,7 +17680,7 @@ const AppContent: React.FC = () => {
     if (!user) {
       setShowAuthModal(true);
     } else if (profileIncomplete) {
-      // Profile modal is shown automatically
+      setShowProfileModal(true);
     } else {
       setShowAgentModal(true);
     }
@@ -15467,37 +17694,127 @@ const AppContent: React.FC = () => {
 
   const renderHomePage = () => (
     <>
-      <section className="pt-12 pb-20 bg-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-5xl font-bold leading-tight mb-6">Professional Plumbing Services You Can Trust</h1>
-            <p className="text-xl text-blue-100 mb-8">24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.</p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <button
-                className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-lg shadow"
-                onClick={handleOpenQuoteModal}
-              >
-                <span>Request a Quote</span>
-              </button>
-              <a href="tel:555-123-4567" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors text-lg flex items-center justify-center space-x-2 shadow">
-                <Phone className="w-5 h-5" />
-                <span>Call Now</span>
-              </a>
-            </div>
-          </div>
-          <div className="relative flex justify-center lg:justify-end">
-            <img src="/plumber.jpg" alt="Professional plumber at work" className="rounded-lg shadow-2xl w-full max-w-md object-cover" />
-            <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+      {user && profileIncomplete && (
+        <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
               </div>
-              <div>
-                <div className="font-semibold text-gray-900">Licensed & Insured</div>
-                <div className="text-gray-600">Fully certified professionals</div>
+              <div className="ml-3">
+                <p className="text-sm text-amber-800">
+                  Welcome! To request a quote, please complete your profile first.
+                </p>
+              </div>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="bg-amber-50 px-3 py-2 rounded-md text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 focus:ring-amber-600"
+                >
+                  Complete Profile
+                </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      <section className="relative pt-12 pb-20 text-white overflow-hidden">
+        {/* Aurora Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-purple-500/30"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="animate-fade-in-up">
+            <h1 className="text-5xl font-bold leading-tight mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              Professional Plumbing Services You Can Trust
+            </h1>
+            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+              24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.
+            </p>
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              <button
+                className="group bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 hover:scale-105 hover:shadow-xl transition-all duration-300 text-lg shadow-lg"
+                onClick={handleOpenQuoteModal}
+              >
+                <span className="group-hover:scale-105 transition-transform duration-300 inline-block">Request a Quote</span>
+              </button>
+              <a
+                href="tel:555-123-4567"
+                className="group border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center space-x-2 shadow-lg"
+              >
+                <Phone className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span>Call Now</span>
+              </a>
+            </div>
+          </div>
+          <div className="relative flex justify-center lg:justify-end animate-fade-in-up animation-delay-200">
+            <div className="relative">
+              <img
+                src="/plumber.jpg"
+                alt="Professional plumber at work"
+                className="rounded-lg shadow-2xl w-full max-w-md object-cover hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 animate-bounce-in animation-delay-500">
+                <div className="bg-green-100 p-3 rounded-full inline-flex items-center justify-center mb-2">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Licensed & Insured</div>
+                  <div className="text-gray-600 text-sm">Fully certified professionals</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom CSS for animations */}
+        <style>{`
+          @keyframes fade-in-up {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          @keyframes bounce-in {
+            0% {
+              opacity: 0;
+              transform: scale(0.3);
+            }
+            50% {
+              opacity: 1;
+              transform: scale(1.05);
+            }
+            70% {
+              transform: scale(0.9);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-fade-in-up {
+            animation: fade-in-up 0.8s ease-out forwards;
+          }
+          .animation-delay-200 {
+            animation-delay: 0.2s;
+          }
+          .animation-delay-500 {
+            animation-delay: 0.5s;
+          }
+          .animate-bounce-in {
+            animation: bounce-in 0.8s ease-out forwards;
+          }
+        `}</style>
       </section>
 
       {user && !profileIncomplete && profile?.role !== 'admin' && (
@@ -15600,14 +17917,8 @@ const AppContent: React.FC = () => {
       </div>
 
       {!user && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
-      
-      {user && profileIncomplete && (
-        <ProfileModal
-          onComplete={refreshProfile}
-        />
-      )}
 
-      {user && !profileIncomplete && showProfileModal && (
+      {user && showProfileModal && (
         <ProfileModal
           isClosable={true}
           onClose={() => setShowProfileModal(false)}
