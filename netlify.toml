@@ -1,10 +1,10 @@
 # netlify.toml (v3 - Root Configuration)
 
 [build]
-  base = "." # Explicitly set base to the root of the repository
-  command = "npm run build" # Reverted command
+  base = "." # Repository root
+  command = "npm run build"
   publish = "vite-app/dist/"
-  functions = "netlify/functions/"
+  functions = "vite-app/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
   SECRETS_SCAN_ENABLED = false
   SECRETS_SCAN_OMIT_PATHS = [

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-13T23:02:01.380Z
+Generated On: 2025-09-13T23:27:27.180Z
 
-# Mnemonic Weight (Token Count): ~170,704 tokens
+# Mnemonic Weight (Token Count): ~170,706 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -89,10 +89,6 @@ Generated On: 2025-09-13T23:02:01.380Z
   ./docs/FutureRoadmap.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
-  ./netlify/
-  ./netlify/functions/
-  ./netlify/functions/api.js
-  ./netlify/functions/send-sms.js
   ./netlify.toml
   ./package-lock.json
   ./package.json
@@ -210,6 +206,9 @@ Generated On: 2025-09-13T23:02:01.380Z
   ./vite-app/api/validation/
   ./vite-app/api/validation/schemas.js
   ./vite-app/index.html
+  ./vite-app/netlify/
+  ./vite-app/netlify/api.js
+  ./vite-app/netlify/send-sms.js
   ./vite-app/package-lock.json
   ./vite-app/package.json
   ./vite-app/public/
@@ -4696,72 +4695,6 @@ This is the final and most important step. It securely provides the credentials 
 
 Your work is now done. Provide this guide and the following technical specification to your developer. They will have everything they need to implement the feature. You may need to redeploy your site for the new environment variables to take effect.
 --- END OF FILE docs/TWILIO_AND_NETLIFY_SETUP.md ---
-
---- START OF FILE netlify/functions/api.js ---
-
-// vite-app/netlify/functions/api.js
-
-const serverless = require('serverless-http');
-// This line imports the Express app you just refactored.
-const app = require('../../vite-app/api/server');
-
-// This wraps your Express app for Netlify and exports it as a handler.
-module.exports.handler = serverless(app);
-
---- END OF FILE netlify/functions/api.js ---
-
---- START OF FILE netlify/functions/send-sms.js ---
-
-// netlify/functions/send-sms.js
-
-const twilio = require('twilio');
-
-exports.handler = async function(event) {
-  // 1. Security Check: Only allow POST requests with the correct secret header.
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-  const providedSecret = event.headers['x-netlify-function-secret'];
-  if (providedSecret !== process.env.NETLIFY_FUNCTION_SECRET) {
-    console.warn('Unauthorized attempt to trigger SMS function.');
-    return { statusCode: 401, body: 'Unauthorized' };
-  }
-
-  // 2. Get Twilio credentials from Netlify environment variables.
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromPhone = process.env.TWILIO_PHONE_NUMBER;
-
-  if (!accountSid || !authToken || !fromPhone) {
-    console.error('Twilio environment variables are not configured in Netlify.');
-    return { statusCode: 500, body: 'SMS service is not configured.' };
-  }
-
-  const client = twilio(accountSid, authToken);
-
-  try {
-    // 3. Parse the incoming request to get the recipient and message.
-    const { to, body } = JSON.parse(event.body);
-    if (!to || !body) {
-      return { statusCode: 400, body: 'Missing "to" or "body" in request.' };
-    }
-
-    // 4. Send the SMS message using Twilio regular messaging.
-    const smsResponse = await client.messages.create({
-      body: body,
-      from: fromPhone,
-      to: to, // Must be in E.164 format (e.g., "+12505551234")
-    });
-
-    console.log(`SMS sent successfully to ${to}. SID: ${smsResponse.sid}`);
-    return { statusCode: 200, body: JSON.stringify({ success: true, sid: smsResponse.sid }) };
-
-  } catch (error) {
-    console.error('Error sending SMS via Twilio:', error);
-    return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
-  }
-};
---- END OF FILE netlify/functions/send-sms.js ---
 
 --- START OF FILE playwright.config.ts ---
 
@@ -13900,6 +13833,72 @@ module.exports = {
   updateStatusSchema,
 };
 --- END OF FILE vite-app/api/validation/schemas.js ---
+
+--- START OF FILE vite-app/netlify/api.js ---
+
+// vite-app/netlify/functions/api.js
+
+const serverless = require('serverless-http');
+// This line imports the Express app you just refactored.
+const app = require('../../vite-app/api/server');
+
+// This wraps your Express app for Netlify and exports it as a handler.
+module.exports.handler = serverless(app);
+
+--- END OF FILE vite-app/netlify/api.js ---
+
+--- START OF FILE vite-app/netlify/send-sms.js ---
+
+// netlify/functions/send-sms.js
+
+const twilio = require('twilio');
+
+exports.handler = async function(event) {
+  // 1. Security Check: Only allow POST requests with the correct secret header.
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+  const providedSecret = event.headers['x-netlify-function-secret'];
+  if (providedSecret !== process.env.NETLIFY_FUNCTION_SECRET) {
+    console.warn('Unauthorized attempt to trigger SMS function.');
+    return { statusCode: 401, body: 'Unauthorized' };
+  }
+
+  // 2. Get Twilio credentials from Netlify environment variables.
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromPhone = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !fromPhone) {
+    console.error('Twilio environment variables are not configured in Netlify.');
+    return { statusCode: 500, body: 'SMS service is not configured.' };
+  }
+
+  const client = twilio(accountSid, authToken);
+
+  try {
+    // 3. Parse the incoming request to get the recipient and message.
+    const { to, body } = JSON.parse(event.body);
+    if (!to || !body) {
+      return { statusCode: 400, body: 'Missing "to" or "body" in request.' };
+    }
+
+    // 4. Send the SMS message using Twilio regular messaging.
+    const smsResponse = await client.messages.create({
+      body: body,
+      from: fromPhone,
+      to: to, // Must be in E.164 format (e.g., "+12505551234")
+    });
+
+    console.log(`SMS sent successfully to ${to}. SID: ${smsResponse.sid}`);
+    return { statusCode: 200, body: JSON.stringify({ success: true, sid: smsResponse.sid }) };
+
+  } catch (error) {
+    console.error('Error sending SMS via Twilio:', error);
+    return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
+  }
+};
+--- END OF FILE vite-app/netlify/send-sms.js ---
 
 --- START OF FILE vite-app/src/features/admin/components/MapView.tsx ---
 
