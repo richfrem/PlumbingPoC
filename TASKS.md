@@ -73,6 +73,11 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Implement email notifications for new notes in communication log
 - [x] Add RESEND_ENABLED feature flag for email sending
 - [x] Include link to request in notification emails
+- [x] **NEW:** Implement SMS notifications for new quote requests (Twilio + Netlify Functions)
+- [x] **NEW:** Implement SMS notifications for quote acceptances (Twilio + Netlify Functions)
+- [x] **NEW:** Create secure Netlify Function for SMS delivery (`send-sms.js`)
+- [x] **NEW:** Create SMS orchestration service (`smsService.js`) with admin phone number retrieval
+- [x] **NEW:** Integrate SMS notifications into request controller for real-time alerts
 - [x] Correct RLS policies for `user_profiles` to allow admin access
 - [x] **NEW:** Geocoding data persistence (latitude, longitude, geocoded_address in requests table)
 - [x] **NEW:** Google Maps JavaScript API integration for map visualization
@@ -129,6 +134,8 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - **NEW:** Interactive Map View for job location visualization and dispatch optimization with Google Maps integration.
 - **NEW:** Address geocoding during quote submission with Google Geocoding API and data persistence.
 - **NEW:** Status-based map markers with clustering, info windows, and Table/Map toggle in admin dashboard.
+- **NEW:** Real-time SMS notifications for administrators on new quote requests and quote acceptances using Twilio + Netlify Functions.
+- **NEW:** Secure serverless SMS delivery architecture with isolated credentials and non-blocking API calls.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).

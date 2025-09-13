@@ -26,3 +26,5 @@ node_modules
 # Agent-generated files (should not be in version control)
 agents/feedback/
 agents/screenshots/
+# Local Netlify folder
+.netlify

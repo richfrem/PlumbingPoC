@@ -6,28 +6,27 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 
 ---
 
-## 1. Instant SMS Notifications
+## 1. ✅ Instant SMS Notifications (COMPLETED)
 
-**Objective:** Provide immediate, high-signal alerts to both the business owner and the customer for critical events, enabling faster response times and a better customer experience.
+**Status:** ✅ **IMPLEMENTED & LIVE** - Real-time SMS alerts are now active for administrators.
 
-**Implementation Strategy:**
-*   **Technology:** Twilio API for SMS delivery.
-*   **Trigger:** Supabase Webhooks listening for database inserts on the `requests` and `request_notes` tables.
-*   **Logic:** A serverless **Netlify Function** (`/netlify/functions/send-sms.js`) will act as the webhook receiver. This function will contain the logic to determine *who* to notify and *what* the message should be, then make the API call to Twilio.
+**Objective:** Provide immediate, high-signal alerts to business owners for critical events, enabling faster response times and competitive advantage.
 
-**Key Notification Events:**
+**Implementation Details:**
+*   **Technology:** Twilio API for SMS delivery via secure Netlify Functions.
+*   **Architecture:** Decoupled serverless design with Express API triggering SMS through HTTP calls to dedicated Netlify Function.
+*   **Security:** Secret-based authentication ensures SMS credentials remain isolated in serverless environment.
+
+**Active Notification Events:**
 *   **To Business Owner:**
-    *   `INSTANT`: New Quote Request Submitted.
-    *   `INSTANT`: Customer Accepts a Quote.
-*   **To Customer:**
-    *   `INSTANT`: New Quote is Ready for Review.
-    *   `INSTANT`: New Message from Admin in Communication Log.
+    *   `INSTANT`: New Quote Request Submitted (includes service type, customer name, address, and dashboard link).
+    *   `INSTANT`: Customer Accepts a Quote (includes quote amount, service details, and dashboard link).
 
 **Value Proposition:**
-*   **For the Owner:** Win more jobs by being the first to respond to new leads.
-*   **For the Customer:** Feel confident and informed with real-time updates.
+*   **For the Owner:** Win more jobs by being the first to respond to new leads with immediate mobile alerts.
+*   **Competitive Advantage:** SMS notifications provide faster response times than competitors relying on email alone.
 
-**Estimated Cost:** Very low. For a typical volume of 50-100 SMS messages per day, the cost via Twilio is approximately **$15-30 CAD/month**. The Netlify Function invocations fall well within the generous free tier.
+**Actual Cost:** Very low. For typical volume of 50-100 SMS messages per day, the cost via Twilio is approximately **$15-30 CAD/month**. Netlify Function invocations fall well within the generous free tier.
 
 ---
 

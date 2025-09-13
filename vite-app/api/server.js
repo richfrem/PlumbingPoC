@@ -31,6 +31,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api', userRoutes);
 
+
 // A simple health check route to ensure the server is up
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'API is healthy' });
@@ -46,6 +47,16 @@ app.use((err, req, res, next) => {
 });
 
 // --- Server Start & Export ---
+
+// Add a simple test route to verify the server is working
+app.get('/api/test-server', (req, res) => {
+  console.log('🧪 SERVER TEST: /api/test-server endpoint called');
+  res.json({
+    message: 'Server is working!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Export the app for serverless environments
 module.exports = app;

@@ -13,6 +13,7 @@ The platform includes:
 *   A secure customer portal for clients to track their requests.
 *   A private "Command Center" for you to manage all jobs, quotes, and communication.
 *   **NEW:** An interactive Map View for visualizing job locations and optimizing dispatch routes.
+*   **NEW:** Real-time SMS notifications for administrators on new quote requests and accepted quotes.
 
 ## 2. Estimated Timeline
 
@@ -62,9 +63,10 @@ A key principle of a professional setup is that you own your own infrastructure.
 | **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
 | **Google Maps** | Interactive Map View | ~$5 - $15 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
 | **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
+| **Twilio** | SMS Notifications | ~$15-30 CAD | For sending real-time SMS alerts to admin on new quote requests and approved quotes. |
 | **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
 | **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
-| **TOTAL** | | **~$80 - $105 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+| **TOTAL** | | **~$95 - $135 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
 
 *(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
 
@@ -90,12 +92,21 @@ This feature is included in your base package at no additional cost!
 
 ---
 
-## 6. (Optional) Future Growth: The Automation Engine
+## 6. ✅ Included Features: SMS Notifications & Automation
 
-Once the core platform is live, we can enable a suite of powerful automation features as part of an ongoing support relationship. These are not included in the initial setup but are easily added:
+Your platform now includes **real-time SMS notifications** as part of the base package! Administrators receive instant mobile alerts for:
 
-*   **Instant SMS Alerts** via Twilio for new leads and accepted quotes.
+*   **New Quote Requests** - Immediate notification with service type, customer details, and address
+*   **Accepted Quotes** - Real-time alerts when customers approve quotes with amount and service details
+
+This gives you a competitive advantage by enabling faster response times to new leads.
+
+### (Optional) Future Growth: Additional Automation
+
+Once your core platform is live, we can add these powerful automation features as part of an ongoing support relationship:
+
 *   **Automated Email Follow-ups** for quotes that haven't been answered.
 *   **Online Invoice Payments** via Stripe integration.
+*   **Advanced Analytics & Reporting** for business intelligence.
 
 We can discuss these value-added services after your core system is up and running.

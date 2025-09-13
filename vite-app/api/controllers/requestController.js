@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
+const smsService = require('../services/smsService');
 
 /**
  * Handles fetching a request by ID, including user profile info and all related tables.
@@ -123,14 +124,6 @@ const submitQuoteRequest = async (req, res, next) => {
       geocoded_address
     } = req.body;
 
-    // --- DEBUGGING: Log what the backend is receiving ---
-    console.log("Backend received payload:", JSON.stringify({
-      service_address,
-      latitude,
-      longitude,
-      geocoded_address,
-      hasServiceAddressData: !!service_address || !!latitude || !!longitude || !!geocoded_address
-    }, null, 2));
 
     const requestData = {
       user_id: req.user.id,
@@ -151,19 +144,14 @@ const submitQuoteRequest = async (req, res, next) => {
       geocoded_address: geocoded_address || null,
     };
 
-    // --- DEBUGGING: Log what will be inserted into database ---
-    console.log("Inserting into database:", JSON.stringify({
-      service_address: requestData.service_address,
-      latitude: requestData.latitude,
-      longitude: requestData.longitude,
-      geocoded_address: requestData.geocoded_address
-    }, null, 2));
 
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 
     await emailService.sendRequestSubmittedEmail(data);
-    
+
+    smsService.sendNewRequestNotification(data);
+
     res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
   } catch (err) {
     next(err);
@@ -373,18 +361,37 @@ const acceptQuote = async (req, res, next) => {
   try {
     const { id, quoteId } = req.params;
 
-    const { error } = await supabase.rpc('accept_quote_and_update_request', {
+    // 1. Run the existing stored procedure to update database state
+    const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
       p_request_id: id,
       p_quote_id: quoteId,
     });
+    if (rpcError) throw rpcError;
 
-    if (error) throw error;
+    // 2. Fetch all necessary data for notifications in a single block
+    const { data: requestData, error: requestError } = await supabase
+      .from('requests')
+      .select('*, user_profiles(name)')
+      .eq('id', id)
+      .single();
 
-    const { data: requestData } = await supabase.from('requests').select('*').eq('id', id).single();
-    if (requestData) {
+    const { data: quoteData, error: quoteError } = await supabase
+      .from('quotes')
+      .select('quote_amount')
+      .eq('id', quoteId)
+      .single();
+
+    // 3. Send notifications if data was fetched successfully
+    if (requestError || quoteError) {
+      console.error("Could not fetch data for notifications, but quote was accepted.", requestError || quoteError);
+    } else if (requestData && quoteData) {
+      // Send the existing status update email
       await emailService.sendStatusUpdateEmail(requestData);
+      // Send the new SMS notification to admins
+      smsService.sendQuoteAcceptedNotification(requestData, quoteData);
     }
 
+    // 4. Send success response to the client
     res.status(200).json({ message: 'Quote accepted successfully.' });
   } catch (err) {
     next(err);

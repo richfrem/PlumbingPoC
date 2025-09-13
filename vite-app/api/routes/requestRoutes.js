@@ -33,6 +33,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+
+// --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 

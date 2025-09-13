@@ -19,6 +19,7 @@ We will use **Netlify** as our primary platform for hosting the frontend, deploy
     *   **Unified Full-Stack Hosting:** The platform is purpose-built to host static site assets and manage serverless functions in a single, cohesive environment. The proxying of `/api` requests to the serverless function is handled automatically, simplifying configuration.
     *   **Zero-Ops & Scalability:** Netlify is a fully managed platform, eliminating the need for us to provision, manage, or scale servers. It handles the CDN for the frontend and the execution environment for the backend functions.
     *   **Generous Free Tier:** The free tier is sufficient for development, prototyping, and small-scale production use, making it highly cost-effective.
+    *   **SMS Notification Support:** Netlify Functions have been successfully implemented to handle SMS notifications via Twilio integration, providing a secure, serverless solution for real-time admin alerts on new quote requests and quote acceptances.
 
 *   **Cons:**
     *   **Serverless Function Limitations:** Netlify Functions have constraints on execution time (e.g., 10 seconds on the free tier). This is a critical consideration for our AI API calls, which could time out if the external LLM is slow. This risk must be monitored.

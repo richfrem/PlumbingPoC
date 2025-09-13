@@ -1,7 +1,6 @@
-### **"Full Arsenal" Demo Script (v1.1 - Map View Edition)**
-https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
+### **"Full Arsenal" Demo Script (v1.2 - Final Polish)**
 
-**(Total Estimated Time: ~2.5 minutes)**
+**Total Estimated Time:** ~2.5 - 3.5 minutes
 
 **Instructions:**
 *   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
@@ -13,7 +12,7 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 **(Shot 1: Customer Experience - Start on your landing page)**
 "Hi, I wanted to show you a quick look at an AI-powered system I've built to help local trades businesses save time and win more jobs."
 "This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
-**[ACTION]: Click "Request a Quote".  This will ask a user to login so the quote request is associated with a person you can contact**
+**[ACTION]: Click "Request a Quote".**
 "First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
 **[ACTION]: Click "Continue with Google" and quickly complete the login.**
 "Once they're in, they start a conversation with your AI assistant. The assistant's first job is to understand exactly what they need."
@@ -24,34 +23,42 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 "Right now, the AI is analyzing the customer's answers. It understands the context and generates intelligent, follow-up questions to get all the details you'd normally have to ask over the phone."
 **[ACTION]: Show the new AI-generated questions appearing. Answer them.**
 "The customer can also upload photos of the problem area directly from their phone or computer, which gives you eyes on the job before you even send a quote."
-**[ACTION]: Upload your dummy `leak.jpg` file.**
+**[ACTION]: Upload a dummy photo file.**
 "Finally, the system gives them a clean summary to review. Once they confirm, the job is done for them, and you get a perfect lead."
 **[ACTION]: Click "Confirm & Submit Request". Show the "Thank you" screen.**
+"Right at this moment, you're getting an instant SMS alert on your phone about this new lead, so you can respond immediately while it's still hot."
 ---
 **(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
 "Now, let's look at what you see as the business owner. This is your command center."
-**[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top.**
-"The new request from our customer appears instantly. But here's where it gets really powerful - you can visualize all your jobs geographically."
+**[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top of the Table View.**
+"The new request from our customer appears instantly at the top of your job list. You can see all your jobs here, but the real power comes from visualizing them."
 **[ACTION]: Click the "Map" toggle at the top of the dashboard to switch to Map View.**
-"With one click, you can see all your jobs plotted on an interactive map. Color-coded pins show job status, and you can instantly see which jobs are nearby to optimize your daily route."
-**[ACTION]: Click on a pin to show the info window with job details. Zoom in/out to show clustering of nearby jobs.**
-"This saves you 20-40% on drive time by helping you plan efficient routes and spot nearby jobs you might otherwise miss."
-**[ACTION]: Click back to "Table" view to return to the list.**
-"But instead of just raw data, you have an AI partner."
-**[ACTION]: Click the "AI Triage" button for the new request. Let the results appear.**
-"With one click, your AI assistant analyzes the entire request and gives you a triage summary, a priority score, and even a profitability score, so you know exactly which jobs to focus on first."
-**[ACTION]: Click on the request to open the Job Docket modal.**
-"Inside the docket, you have everything you need, perfectly organized: all the customer's answers, the photos they sent, and a full communication log."
-**[ACTION]: Scroll down, showing the different sections.**
-"From here, you can add your official quote and update the job status with a single click."
+"With one click, your entire workload is plotted on a map. **No more manually typing addresses into Google Maps at the end of the day.**"
+**[ACTION]: Zoom in and out on the map to show how the pins cluster together.**
+"You can instantly see which jobs are in the same neighborhood so you can plan the most efficient route. **This is how you turn wasted drive time back into billable hours.**"
+**[ACTION]: Click on one of the new pins to open the info window.**
+"And from the map, you can get a quick look at the job details and jump right into the full docket."
+**[ACTION]: Click the "View Full Job Docket" button from inside the map's info window. This should open the modal directly.**
+"Inside the docket, everything is perfectly organized. But before you even read the details, you have an AI partner."
+**[ACTION]: Click the "AI Triage" button. Let the results appear.**
+"With one click, your AI assistant analyzes the entire request and gives you a triage summary and a priority score, so you know instantly if this is a high-value job that needs your attention now."
+**[ACTION]: Scroll down through the Job Docket modal, showing the organized sections: customer answers, photos, etc.**
+"You've got everything you need right here—no more juggling texts, emails, or notepads. From here, you can add your official quote..."
 **[ACTION]: Quickly create a simple quote. Change the status from "New" to "Quoted".**
-"The best part is, this is a full client portal. The customer can log back in anytime to see the status of their request and review the quote you just sent."
-**[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status and quote amount.**
+"...and with that, a professional quote is sent, and the customer is notified. The whole process, from new lead to quote sent, takes about 90 seconds."
+**[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status appearing instantly.**
+"And the customer sees that update in their portal in real-time, which gives them the confidence that you're on top of it."
+"When the customer accepts your quote, you'll get another SMS alert instantly, so you can start scheduling the job right away."
 ---
 
 **(Final Shot: Back on Admin View, ready to close)**
 **YOU:**
-"So, in under two minutes, the system handled a new lead, qualified them with AI, showed you how to optimize your routes with the interactive map, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
+"So, in under three minutes, the system:
+- **Handled a new lead** with an AI assistant,
+- **Sent you an instant SMS alert** about the new opportunity,
+- **Showed you exactly where it is** on a map to optimize your route,
+- **Analyzed and prioritized it for you** with AI Triage,
+- And let you send a **professional quote in seconds**... all without a single back-and-forth phone call."
 "This is the kind of tool that saves hours every week on both customer calls and drive time, putting you ahead of the competition."
 
 **(End Recording)**
