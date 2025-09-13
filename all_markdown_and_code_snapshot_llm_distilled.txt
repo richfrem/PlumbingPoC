@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-13T01:38:15.500Z
+Generated On: 2025-09-13T01:48:44.931Z
 
-# Mnemonic Weight (Token Count): ~164,296 tokens
+# Mnemonic Weight (Token Count): ~165,297 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -1809,9 +1809,11 @@ My name is [Your Name], and I'm a Victoria-based tech consultant. I build softwa
 
 I've built a complete "Command Center" platform that I believe can give you back hours every week.
 
-Instead of a long explanation, here’s a 7-minute video tour showing exactly how it works:
+Instead of a long explanation, here’s a 7-minute video tour showing exactly how it works, including the new interactive Map View for route optimization:
 
 **[Click Here to Watch the 7-Minute Demo](https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5)**
+
+*Video includes: AI-powered quote intake, interactive Map View with job locations, route optimization, and the complete Command Center workflow*
 
 ---
 
@@ -1823,8 +1825,8 @@ Here are the specific problems this system is built to solve, right now:
 *   **Problem: Losing jobs because quoting is slow or details are scattered?**
     *   **✅ Solved.** The Command Center organizes every detail—customer info, photos, and even an AI-generated summary—into one place. You can create and send professional quotes in minutes, not hours.
 
-*   **Problem: Juggling jobs across texts, emails, and a notepad?**
-    *   **✅ Solved.** This becomes your single source of truth. The platform includes a full client portal with a real-time communication log for every job, keeping everything organized and professional.
+*   **Problem: Wasting hours driving between jobs and planning inefficient routes?**
+    *   **✅ Solved.** The interactive Map View plots all your jobs geographically with color-coded pins. Instantly see nearby jobs, optimize your daily route, and cut drive time by 20-40%. It's like having a dispatch system that saves you fuel and gets you home earlier every day.
 
 ---
 
@@ -1855,20 +1857,28 @@ Victoria, B.C.
 *   **Stronger Hook:** It gets to the "what's in it for me" part much faster.
 *   **Confidence:** It demonstrates that you understand their business so well that you can articulate their primary pain points better than they can. This builds instant authority.
 
-This is the one. It's sharp, direct, and packed with value. It's ready to send.
+### **🎯 UPDATED FOR MAP VIEW FEATURE:**
+
+*   **New Video Required:** Record a new 7-minute demo showcasing the interactive Map View feature
+*   **Update Loom Link:** Replace the current link with the new video URL
+*   **Highlight Route Optimization:** Emphasize the 20-40% drive time savings in the video
+*   **Show Real Workflow:** Demonstrate switching between Table and Map views in the Command Center
+
+This version is now optimized for the Map View feature. Record the new video and update the Loom link before sending!
 --- END OF FILE RequirementsAndGoals/email_template.md ---
 
 --- START OF FILE RequirementsAndGoals/transcript.md ---
 
-### **"Full Arsenal" Demo Script (v1.0)**
+### **"Full Arsenal" Demo Script (v1.1 - Map View Edition)**
 https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 
-**(Total Estimated Time: ~2 minutes)**
+**(Total Estimated Time: ~2.5 minutes)**
 
 **Instructions:**
 *   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
 *   Speak clearly and naturally. Imagine you're showing this to a friend who runs a plumbing business.
 *   Follow the **[ACTION]** cues precisely.
+*   **NEW:** Include the Map View demonstration in the admin section to showcase route optimization.
 ---
 **(Start Recording)**
 **(Shot 1: Customer Experience - Start on your landing page)**
@@ -1892,7 +1902,13 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 **(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
 "Now, let's look at what you see as the business owner. This is your command center."
 **[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top.**
-"The new request from our customer appears instantly. But instead of just raw data, you have an AI partner."
+"The new request from our customer appears instantly. But here's where it gets really powerful - you can visualize all your jobs geographically."
+**[ACTION]: Click the "Map" toggle at the top of the dashboard to switch to Map View.**
+"With one click, you can see all your jobs plotted on an interactive map. Color-coded pins show job status, and you can instantly see which jobs are nearby to optimize your daily route."
+**[ACTION]: Click on a pin to show the info window with job details. Zoom in/out to show clustering of nearby jobs.**
+"This saves you 20-40% on drive time by helping you plan efficient routes and spot nearby jobs you might otherwise miss."
+**[ACTION]: Click back to "Table" view to return to the list.**
+"But instead of just raw data, you have an AI partner."
 **[ACTION]: Click the "AI Triage" button for the new request. Let the results appear.**
 "With one click, your AI assistant analyzes the entire request and gives you a triage summary, a priority score, and even a profitability score, so you know exactly which jobs to focus on first."
 **[ACTION]: Click on the request to open the Job Docket modal.**
@@ -1906,8 +1922,8 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 
 **(Final Shot: Back on Admin View, ready to close)**
 **YOU:**
-"So, in under two minutes, the system handled a new lead, qualified them with AI, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
-"This is the kind of tool that saves hours every week and puts you ahead of the competition."
+"So, in under two minutes, the system handled a new lead, qualified them with AI, showed you how to optimize your routes with the interactive map, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
+"This is the kind of tool that saves hours every week on both customer calls and drive time, putting you ahead of the competition."
 
 **(End Recording)**
 --- END OF FILE RequirementsAndGoals/transcript.md ---
@@ -1990,6 +2006,9 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Add RESEND_ENABLED feature flag for email sending
 - [x] Include link to request in notification emails
 - [x] Correct RLS policies for `user_profiles` to allow admin access
+- [x] **NEW:** Geocoding data persistence (latitude, longitude, geocoded_address in requests table)
+- [x] **NEW:** Google Maps JavaScript API integration for map visualization
+- [x] **NEW:** Address geocoding during quote submission with Google Geocoding API
 - [ ] Implement automated follow-up emails for quoted requests
 - [x] Add AI-powered triage summary and priority score to requests
 - [x] Implement structured JSON output for AI responses
@@ -2039,6 +2058,9 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - **New:** Full email notification system for key events (request submission, status changes, quote additions, new notes) with a feature flag and direct links.
 - **New:** Dashboard now correctly filters requests for regular users.
 - **New:** Corrected RLS policies to ensure admins can view all user profiles, resolving a critical data access issue.
+- **NEW:** Interactive Map View for job location visualization and dispatch optimization with Google Maps integration.
+- **NEW:** Address geocoding during quote submission with Google Geocoding API and data persistence.
+- **NEW:** Status-based map markers with clustering, info windows, and Table/Map toggle in admin dashboard.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).
@@ -3862,6 +3884,7 @@ The platform includes:
 *   An AI-powered conversational quote request system.
 *   A secure customer portal for clients to track their requests.
 *   A private "Command Center" for you to manage all jobs, quotes, and communication.
+*   **NEW:** An interactive Map View for visualizing job locations and optimizing dispatch routes.
 
 ## 2. Estimated Timeline
 
@@ -3909,16 +3932,37 @@ A key principle of a professional setup is that you own your own infrastructure.
 | **Netlify** | Website Hosting & Functions | ~$25 CAD (`$19 USD`) | The engine that runs your site and automation. |
 | **Supabase**| Database & File Storage | ~$35 CAD (`$25 USD`) | Securely stores all your customer and job data. |
 | **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
+| **Google Maps** | Interactive Map View | ~$5 - $15 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
 | **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
 | **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
 | **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
-| **TOTAL** | | **~$75 - $90 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+| **TOTAL** | | **~$80 - $105 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
 
 *(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
 
 ---
 
-## 5. (Optional) Future Growth: The Automation Engine
+## 5. New Feature: Interactive Map View
+
+**Exclusive to your platform:** An advanced Map View feature that transforms how you manage your daily operations!
+
+### **What it does:**
+*   **Visual Job Dispatch:** See all your jobs plotted on an interactive map
+*   **Route Optimization:** Instantly identify nearby jobs to minimize travel time
+*   **Status Tracking:** Color-coded pins show job status at a glance
+*   **Smart Clustering:** Automatically groups nearby jobs when zoomed out
+*   **Click to Details:** Click any pin to see full job information
+
+### **Business Impact:**
+*   **Save Time:** Reduce drive time by 20-40% through better route planning
+*   **Increase Efficiency:** Handle more jobs per day with optimized scheduling
+*   **Professional Tool:** Impress clients with your advanced dispatch system
+
+This feature is included in your base package at no additional cost!
+
+---
+
+## 6. (Optional) Future Growth: The Automation Engine
 
 Once the core platform is live, we can enable a suite of powerful automation features as part of an ongoing support relationship. These are not included in the initial setup but are easily added:
 
@@ -3976,6 +4020,15 @@ The client should be sharing their screen for this entire phase. Your job is to 
     *   [ ] **Crucially:** Guide them through the **domain verification process** within Resend.
     *   [ ] Have client generate a new API key.
     *   [ ] **Crucially:** Instruct client to **immediately copy this key**.
+*   **Google Cloud Account (for Maps):**
+    *   [ ] Guide client to sign up for a Google Cloud account (if they don't have one).
+    *   [ ] Guide client to create a new project or use an existing one.
+    *   [ ] Navigate to **APIs & Services** → **Library**.
+    *   [ ] Enable the **Maps JavaScript API** and **Geocoding API**.
+    *   [ ] Navigate to **APIs & Services** → **Credentials**.
+    *   [ ] Create a new **API Key**.
+    *   [ ] **Crucially:** Instruct client to **immediately copy this API key**.
+    *   [ ] Guide client to restrict the API key (Application restrictions: HTTP referrers, API restrictions: Maps JavaScript API + Geocoding API).
 
 ---
 
@@ -4002,6 +4055,7 @@ The client should be sharing their screen for this entire phase. Your job is to 
         *   `VITE_SUPABASE_ANON_KEY` (from the new Supabase project)
         *   `SUPABASE_SERVICE_ROLE_KEY` (from the new Supabase project)
         *   `OPENAI_API_KEY` (the key the client generated)
+        *   `VITE_GOOGLE_MAPS_API_KEY` (the Google Maps API key the client generated)
         *   `RESEND_API_KEY` (the key the client generated)
         *   `RESEND_FROM_EMAIL` (e.g., `contact@clientdomain.com`)
         *   ... and any other variables your app requires.
@@ -4031,9 +4085,12 @@ The client should be sharing their screen for this entire phase. Your job is to 
 
 *   **End-to-End Test:** Perform a full test on the live production URL.
     *   [ ] Register a new test user.
-    *   [ ] Submit a quote request.
+    *   [ ] Submit a quote request with a valid address (e.g., "123 Main Street, Victoria, BC V8W 1A1").
+    *   [ ] Verify the address geocoding works (should show "Address verified and located on map").
     *   [ ] Log in as the admin.
-    *   [ ] Verify the new request appears in the Command Center.
+    *   [ ] Verify the new request appears in the Command Center with latitude/longitude data.
+    *   [ ] Switch to Map View and verify the job appears as a pin on the map.
+    *   [ ] Click the pin to see the job details info window.
     *   [ ] Create a quote.
     *   [ ] Verify the email notification was sent (check client's Resend logs).
 *   **Schedule the 1-hour "Training & Handover Call."**

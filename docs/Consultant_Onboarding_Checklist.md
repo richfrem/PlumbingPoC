@@ -43,6 +43,15 @@ The client should be sharing their screen for this entire phase. Your job is to 
     *   [ ] **Crucially:** Guide them through the **domain verification process** within Resend.
     *   [ ] Have client generate a new API key.
     *   [ ] **Crucially:** Instruct client to **immediately copy this key**.
+*   **Google Cloud Account (for Maps):**
+    *   [ ] Guide client to sign up for a Google Cloud account (if they don't have one).
+    *   [ ] Guide client to create a new project or use an existing one.
+    *   [ ] Navigate to **APIs & Services** → **Library**.
+    *   [ ] Enable the **Maps JavaScript API** and **Geocoding API**.
+    *   [ ] Navigate to **APIs & Services** → **Credentials**.
+    *   [ ] Create a new **API Key**.
+    *   [ ] **Crucially:** Instruct client to **immediately copy this API key**.
+    *   [ ] Guide client to restrict the API key (Application restrictions: HTTP referrers, API restrictions: Maps JavaScript API + Geocoding API).
 
 ---
 
@@ -69,6 +78,7 @@ The client should be sharing their screen for this entire phase. Your job is to 
         *   `VITE_SUPABASE_ANON_KEY` (from the new Supabase project)
         *   `SUPABASE_SERVICE_ROLE_KEY` (from the new Supabase project)
         *   `OPENAI_API_KEY` (the key the client generated)
+        *   `VITE_GOOGLE_MAPS_API_KEY` (the Google Maps API key the client generated)
         *   `RESEND_API_KEY` (the key the client generated)
         *   `RESEND_FROM_EMAIL` (e.g., `contact@clientdomain.com`)
         *   ... and any other variables your app requires.
@@ -98,9 +108,12 @@ The client should be sharing their screen for this entire phase. Your job is to 
 
 *   **End-to-End Test:** Perform a full test on the live production URL.
     *   [ ] Register a new test user.
-    *   [ ] Submit a quote request.
+    *   [ ] Submit a quote request with a valid address (e.g., "123 Main Street, Victoria, BC V8W 1A1").
+    *   [ ] Verify the address geocoding works (should show "Address verified and located on map").
     *   [ ] Log in as the admin.
-    *   [ ] Verify the new request appears in the Command Center.
+    *   [ ] Verify the new request appears in the Command Center with latitude/longitude data.
+    *   [ ] Switch to Map View and verify the job appears as a pin on the map.
+    *   [ ] Click the pin to see the job details info window.
     *   [ ] Create a quote.
     *   [ ] Verify the email notification was sent (check client's Resend logs).
 *   **Schedule the 1-hour "Training & Handover Call."**

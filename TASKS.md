@@ -74,6 +74,9 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] Add RESEND_ENABLED feature flag for email sending
 - [x] Include link to request in notification emails
 - [x] Correct RLS policies for `user_profiles` to allow admin access
+- [x] **NEW:** Geocoding data persistence (latitude, longitude, geocoded_address in requests table)
+- [x] **NEW:** Google Maps JavaScript API integration for map visualization
+- [x] **NEW:** Address geocoding during quote submission with Google Geocoding API
 - [ ] Implement automated follow-up emails for quoted requests
 - [x] Add AI-powered triage summary and priority score to requests
 - [x] Implement structured JSON output for AI responses
@@ -123,6 +126,9 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - **New:** Full email notification system for key events (request submission, status changes, quote additions, new notes) with a feature flag and direct links.
 - **New:** Dashboard now correctly filters requests for regular users.
 - **New:** Corrected RLS policies to ensure admins can view all user profiles, resolving a critical data access issue.
+- **NEW:** Interactive Map View for job location visualization and dispatch optimization with Google Maps integration.
+- **NEW:** Address geocoding during quote submission with Google Geocoding API and data persistence.
+- **NEW:** Status-based map markers with clustering, info windows, and Table/Map toggle in admin dashboard.
 
 **Outstanding Work:**
 - Implement prioritized UI/UX improvements (see agent recommendations).

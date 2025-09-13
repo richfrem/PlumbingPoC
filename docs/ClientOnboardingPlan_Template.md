@@ -12,6 +12,7 @@ The platform includes:
 *   An AI-powered conversational quote request system.
 *   A secure customer portal for clients to track their requests.
 *   A private "Command Center" for you to manage all jobs, quotes, and communication.
+*   **NEW:** An interactive Map View for visualizing job locations and optimizing dispatch routes.
 
 ## 2. Estimated Timeline
 
@@ -59,16 +60,37 @@ A key principle of a professional setup is that you own your own infrastructure.
 | **Netlify** | Website Hosting & Functions | ~$25 CAD (`$19 USD`) | The engine that runs your site and automation. |
 | **Supabase**| Database & File Storage | ~$35 CAD (`$25 USD`) | Securely stores all your customer and job data. |
 | **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
+| **Google Maps** | Interactive Map View | ~$5 - $15 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
 | **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
 | **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
 | **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
-| **TOTAL** | | **~$75 - $90 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+| **TOTAL** | | **~$80 - $105 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
 
 *(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
 
 ---
 
-## 5. (Optional) Future Growth: The Automation Engine
+## 5. New Feature: Interactive Map View
+
+**Exclusive to your platform:** An advanced Map View feature that transforms how you manage your daily operations!
+
+### **What it does:**
+*   **Visual Job Dispatch:** See all your jobs plotted on an interactive map
+*   **Route Optimization:** Instantly identify nearby jobs to minimize travel time
+*   **Status Tracking:** Color-coded pins show job status at a glance
+*   **Smart Clustering:** Automatically groups nearby jobs when zoomed out
+*   **Click to Details:** Click any pin to see full job information
+
+### **Business Impact:**
+*   **Save Time:** Reduce drive time by 20-40% through better route planning
+*   **Increase Efficiency:** Handle more jobs per day with optimized scheduling
+*   **Professional Tool:** Impress clients with your advanced dispatch system
+
+This feature is included in your base package at no additional cost!
+
+---
+
+## 6. (Optional) Future Growth: The Automation Engine
 
 Once the core platform is live, we can enable a suite of powerful automation features as part of an ongoing support relationship. These are not included in the initial setup but are easily added:
 

@@ -1,12 +1,13 @@
-### **"Full Arsenal" Demo Script (v1.0)**
+### **"Full Arsenal" Demo Script (v1.1 - Map View Edition)**
 https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 
-**(Total Estimated Time: ~2 minutes)**
+**(Total Estimated Time: ~2.5 minutes)**
 
 **Instructions:**
 *   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
 *   Speak clearly and naturally. Imagine you're showing this to a friend who runs a plumbing business.
 *   Follow the **[ACTION]** cues precisely.
+*   **NEW:** Include the Map View demonstration in the admin section to showcase route optimization.
 ---
 **(Start Recording)**
 **(Shot 1: Customer Experience - Start on your landing page)**
@@ -30,7 +31,13 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 **(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
 "Now, let's look at what you see as the business owner. This is your command center."
 **[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top.**
-"The new request from our customer appears instantly. But instead of just raw data, you have an AI partner."
+"The new request from our customer appears instantly. But here's where it gets really powerful - you can visualize all your jobs geographically."
+**[ACTION]: Click the "Map" toggle at the top of the dashboard to switch to Map View.**
+"With one click, you can see all your jobs plotted on an interactive map. Color-coded pins show job status, and you can instantly see which jobs are nearby to optimize your daily route."
+**[ACTION]: Click on a pin to show the info window with job details. Zoom in/out to show clustering of nearby jobs.**
+"This saves you 20-40% on drive time by helping you plan efficient routes and spot nearby jobs you might otherwise miss."
+**[ACTION]: Click back to "Table" view to return to the list.**
+"But instead of just raw data, you have an AI partner."
 **[ACTION]: Click the "AI Triage" button for the new request. Let the results appear.**
 "With one click, your AI assistant analyzes the entire request and gives you a triage summary, a priority score, and even a profitability score, so you know exactly which jobs to focus on first."
 **[ACTION]: Click on the request to open the Job Docket modal.**
@@ -44,7 +51,7 @@ https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
 
 **(Final Shot: Back on Admin View, ready to close)**
 **YOU:**
-"So, in under two minutes, the system handled a new lead, qualified them with AI, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
-"This is the kind of tool that saves hours every week and puts you ahead of the competition."
+"So, in under two minutes, the system handled a new lead, qualified them with AI, showed you how to optimize your routes with the interactive map, triaged the job for you, and organized everything into a simple command center, all without a single phone call."
+"This is the kind of tool that saves hours every week on both customer calls and drive time, putting you ahead of the competition."
 
 **(End Recording)**
