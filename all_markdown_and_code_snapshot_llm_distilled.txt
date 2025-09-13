@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-13T23:32:34.088Z
+Generated On: 2025-09-13T23:36:27.508Z
 
-# Mnemonic Weight (Token Count): ~170,706 tokens
+# Mnemonic Weight (Token Count): ~170,720 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -207,8 +207,9 @@ Generated On: 2025-09-13T23:32:34.088Z
   ./vite-app/api/validation/schemas.js
   ./vite-app/index.html
   ./vite-app/netlify/
-  ./vite-app/netlify/api.js
-  ./vite-app/netlify/send-sms.js
+  ./vite-app/netlify/functions/
+  ./vite-app/netlify/functions/api.js
+  ./vite-app/netlify/functions/send-sms.js
   ./vite-app/package-lock.json
   ./vite-app/package.json
   ./vite-app/public/
@@ -13834,20 +13835,20 @@ module.exports = {
 };
 --- END OF FILE vite-app/api/validation/schemas.js ---
 
---- START OF FILE vite-app/netlify/api.js ---
+--- START OF FILE vite-app/netlify/functions/api.js ---
 
 // vite-app/netlify/functions/api.js
 
 const serverless = require('serverless-http');
 // This line imports the Express app you just refactored.
-const app = require('../../vite-app/api/server');
+const app = require('../../../vite-app/api/server');
 
 // This wraps your Express app for Netlify and exports it as a handler.
 module.exports.handler = serverless(app);
 
---- END OF FILE vite-app/netlify/api.js ---
+--- END OF FILE vite-app/netlify/functions/api.js ---
 
---- START OF FILE vite-app/netlify/send-sms.js ---
+--- START OF FILE vite-app/netlify/functions/send-sms.js ---
 
 // netlify/functions/send-sms.js
 
@@ -13898,7 +13899,7 @@ exports.handler = async function(event) {
     return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
   }
 };
---- END OF FILE vite-app/netlify/send-sms.js ---
+--- END OF FILE vite-app/netlify/functions/send-sms.js ---
 
 --- START OF FILE vite-app/src/features/admin/components/MapView.tsx ---
 
