@@ -53,14 +53,23 @@ const getAdminPhoneNumbers = async () => {
 
 // Makes a direct call to Twilio API to send SMS
 const triggerSms = async (to, body) => {
+  console.log(`🔍 SMS DEBUG: Attempting to send SMS to: ${to}`);
+  console.log(`🔍 SMS DEBUG: From number: ${fromPhone}`);
+  console.log(`🔍 SMS DEBUG: Message length: ${body.length} characters`);
+
   if (!accountSid || !authToken || !fromPhone) {
-    console.error('Twilio credentials not configured. Cannot send SMS.');
+    console.error('❌ SMS ERROR: Twilio credentials not configured');
+    console.error('❌ SMS ERROR: accountSid:', !!accountSid);
+    console.error('❌ SMS ERROR: authToken:', !!authToken);
+    console.error('❌ SMS ERROR: fromPhone:', !!fromPhone);
     return;
   }
 
   try {
     // Import Twilio client
     const twilio = require('twilio')(accountSid, authToken);
+
+    console.log('📤 SMS DEBUG: Calling Twilio API...');
 
     // Send SMS directly
     const smsResponse = await twilio.messages.create({
@@ -69,9 +78,14 @@ const triggerSms = async (to, body) => {
       to: to
     });
 
-    console.log(`SMS sent successfully to ${to}. SID: ${smsResponse.sid}`);
+    console.log(`✅ SMS SUCCESS: Sent to ${to}. SID: ${smsResponse.sid}`);
+    console.log(`📊 SMS STATUS: ${smsResponse.status}`);
+    console.log(`💰 SMS COST: ${smsResponse.price || 'N/A'}`);
   } catch (error) {
-    console.error(`Failed to send SMS to ${to}:`, error.message);
+    console.error(`❌ SMS FAILED: To ${to}`);
+    console.error(`❌ SMS ERROR:`, error.message);
+    console.error(`❌ SMS ERROR CODE:`, error.code);
+    console.error(`❌ SMS ERROR STATUS:`, error.status);
   }
 };
 
