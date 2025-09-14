@@ -22,7 +22,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full flex items-center justify-center">
           <User className="w-4 h-4 text-white" />
         </div>
-        <div className="text-left hidden sm:block">
+        <div className="text-left">
           <span className="text-sm font-medium text-white">Dashboard</span>
         </div>
         <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -46,8 +46,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
                     setIsOpen(false);
                     if (onNavigateToDashboard) {
                       onNavigateToDashboard();
-                    } else {
-                      window.location.hash = '#/dashboard';
                     }
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"

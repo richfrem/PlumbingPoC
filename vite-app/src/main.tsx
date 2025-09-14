@@ -274,7 +274,7 @@ const AppContent: React.FC = () => {
                       }}
                       onNavigateToDashboard={() => {
                         // Navigate to dashboard and close mobile menu
-                        window.location.hash = '#/dashboard';
+                        setRoute('#/dashboard');
                         setIsMenuOpen(false);
                       }}
                     />

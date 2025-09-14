@@ -510,7 +510,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
               </div>
             </div>
 
-            {/* Footer with Save and Close Buttons */}
+            {/* Footer with Save and Cancel Buttons */}
             <div style={{
               padding: '20px 24px',
               borderTop: '1px solid #e0e0e0',
@@ -552,10 +552,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
                 display: 'flex',
                 gap: '12px',
                 width: '100%',
-                maxWidth: '300px',
+                maxWidth: '350px',
                 justifyContent: 'center'
               }}>
-                {/* Close Button */}
+                {/* Cancel Button - Only show if closable */}
                 {isClosable && (
                   <button
                     type="button"
@@ -585,7 +585,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    ❌ CLOSE
+                    ❌ CANCEL
                   </button>
                 )}
 
@@ -617,7 +617,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
                     e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
                   }}
                 >
-                  {loading ? '⏳ SAVING...' : '💾 SAVE'}
+                  {loading ? '⏳ SAVING...' : '💾 SAVE PROFILE'}
                 </button>
               </div>
             </div>
