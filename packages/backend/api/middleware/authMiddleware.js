@@ -1,28 +1,15 @@
-// /middleware/authMiddleware.js
-/*
-This file isolates all authentication and authorization logic. It's clean,
-reusable, and easy to update if your permission rules change.
-*/
+// packages/backend/api/middleware/authMiddleware.js
 import { createClient } from '@supabase/supabase-js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
-// ESM equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables synchronously
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import supabase from '../config/supabase.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-// Create a Supabase client specifically for authentication using the Anon Key
-const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Supabase URL or Anon Key is missing. Check environment variables.");
+}
 
-// The main Supabase client (using Service Role Key) is still imported for other operations if needed
-import supabase from '../config/supabase.js'; // This client is initialized with SUPABASE_SERVICE_ROLE_KEY
+const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Middleware to verify a user's JWT token from the Authorization header.
