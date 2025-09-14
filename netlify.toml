@@ -19,4 +19,24 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
 
+# ===================================================================
+# THE DEFINITIVE FIX: Function Bundler Configuration
+# ===================================================================
+# This tells Netlify's bundler how to handle our backend function.
+[functions]
+  # Apply these rules to our main API function.
+  "api-mjs" = {
+    # Tell the bundler to NOT bundle these specific packages.
+    # Instead, Netlify will include them in the function's node_modules
+    # so they can be required/imported at runtime, just like in local dev.
+    external_node_modules = [
+      "express",
+      "cors",
+      "serverless-http",
+      "dotenv",
+      "supabase",
+      "@supabase/supabase-js"
+    ]
+  }
+
 # Removed [secrets] section and all secrets scanning related settings
