@@ -1,17 +1,16 @@
-// packages/backend/api/server.js (v4.1 - Centralized Config)
+// packages/backend/api/server.js (v4.2 - Final Syntax Fix)
 import express from 'express';
 import cors from 'cors';
 
-// This is the ONLY place where we check the environment.
+// Conditionally require and configure dotenv ONLY for local development.
 if (!process.env.NETLIFY) {
-  // If we are NOT on Netlify, we are running locally.
-  // Therefore, we need to load variables from the .env file.
-  const dotenv = await import('dotenv');
-  dotenv.config({ path: '../../.env' }); // Be explicit about the path from this file's location
+  // Use a standard require for compatibility.
+  // This block will not run in the Netlify environment.
+  const dotenv = require('dotenv');
+  dotenv.config({ path: '../../.env' });
 }
 
-// All subsequent imports will now have access to process.env variables,
-// whether they were injected by Netlify or loaded by dotenv.
+// All subsequent imports will now have access to process.env variables.
 import requestRoutes from './routes/requestRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import followUpRoutes from './routes/followUpRoutes.js';
