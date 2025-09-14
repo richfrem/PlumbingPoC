@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T02:53:52.363Z
+Generated On: 2025-09-14T02:58:06.062Z
 
-# Mnemonic Weight (Token Count): ~172,949 tokens
+# Mnemonic Weight (Token Count): ~173,139 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -14244,14 +14244,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔐 AuthContext: Getting initial session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('❌ AuthContext: Session error:', error);
+      } else {
+        console.log('✅ AuthContext: Session retrieved:', !!session, 'User:', !!session?.user);
+      }
+
       setUser(session?.user ?? null);
       setLoading(false);
     };
 
     getInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 AuthContext: Auth state changed:', event, 'User:', !!session?.user);
       setUser(session?.user ?? null);
     });
 
@@ -18175,14 +18184,28 @@ const apiClient = axios.create({
 // Axios interceptor to automatically add the auth token to every request
 apiClient.interceptors.request.use(
   async (config) => {
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+      if (error) {
+        console.error('❌ API Client: Session retrieval error:', error);
+        return config;
+      }
+
+      if (session?.access_token) {
+        console.log('✅ API Client: Adding JWT token to request');
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      } else {
+        console.warn('⚠️ API Client: No session or access token found');
+      }
+    } catch (error) {
+      console.error('❌ API Client: Exception getting session:', error);
     }
+
     return config;
   },
   (error) => {
+    console.error('❌ API Client: Request interceptor error:', error);
     return Promise.reject(error);
   }
 );

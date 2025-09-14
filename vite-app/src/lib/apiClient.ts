@@ -11,14 +11,28 @@ const apiClient = axios.create({
 // Axios interceptor to automatically add the auth token to every request
 apiClient.interceptors.request.use(
   async (config) => {
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+      if (error) {
+        console.error('❌ API Client: Session retrieval error:', error);
+        return config;
+      }
+
+      if (session?.access_token) {
+        console.log('✅ API Client: Adding JWT token to request');
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      } else {
+        console.warn('⚠️ API Client: No session or access token found');
+      }
+    } catch (error) {
+      console.error('❌ API Client: Exception getting session:', error);
     }
+
     return config;
   },
   (error) => {
+    console.error('❌ API Client: Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
