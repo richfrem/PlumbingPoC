@@ -1,4 +1,4 @@
-// packages/backend/api/server.js (v2.5 - Final Netlify Fix)
+// packages/backend/api/server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -10,9 +10,7 @@ import triageRoutes from './routes/triageRoutes.js';
 // --- Basic Setup ---
 const app = express();
 
-// THE FIX: Simply call dotenv.config(). The Netlify build environment
-// will automatically find the .env file at the repository root.
-// The complex pathing logic is no longer needed and was causing the crash.
+// Load environment variables
 dotenv.config();
 
 const PORT = process.env.BACKEND_PORT || 3000;
@@ -46,7 +44,7 @@ app.use((err, req, res, next) => {
 // --- Server Start & Export ---
 export default app;
 
-// This block for local development remains unchanged.
+// Start the server only if the file is run directly (for local development)
 if (import.meta.url.startsWith('file:')) {
   const modulePath = new URL(import.meta.url).pathname;
   if (process.argv[1] === modulePath) {
