@@ -27,8 +27,12 @@ import {
 const AppContent: React.FC = () => {
   const { user, profile, profileIncomplete, refreshProfile } = useAuth();
   
-  // *** THE FIX: Data fetching is "lifted up" to this central component. ***
-  const userIdForQuery = profile?.role === 'admin' ? undefined : user?.id;
+  // THE FIX: This logic is now robust.
+  // 1. We check if a profile exists and if the role is 'admin'.
+  // 2. If it's an admin, userIdForQuery is `undefined` (fetch all).
+  // 3. Otherwise, it's a regular user, so we MUST pass their `user.id`.
+  const userIdForQuery = profile && profile.role === 'admin' ? undefined : user?.id;
+
   console.log('🔍 User authentication check:', {
     userId: user?.id,
     profileRole: profile?.role,
@@ -36,7 +40,10 @@ const AppContent: React.FC = () => {
     userIdForQuery: userIdForQuery,
     profileExists: !!profile
   });
-  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery);
+
+  // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
+  // This tells React Query to re-run the query when the user logs in.
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -231,7 +238,14 @@ const AppContent: React.FC = () => {
                 <span>Call Now</span>
               </a>
               {user ? (
-                <UserMenu onOpenProfile={() => setShowProfileModal(true)} />
+                <UserMenu
+                  onOpenProfile={() => setShowProfileModal(true)}
+                  onNavigateToDashboard={() => {
+                    console.log('🚀 Desktop UserMenu: Navigating to dashboard');
+                    setRoute('#/dashboard');
+                    console.log('✅ Desktop UserMenu: Route set to:', '#/dashboard');
+                  }}
+                />
               ) : (
                 <button
                   className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2 ml-2"

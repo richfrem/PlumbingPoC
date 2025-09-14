@@ -2,37 +2,26 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import apiClient from '../../../lib/apiClient';
 import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
-  console.log('🔍 Fetching requests with userId:', userId);
-
-  // Use API endpoint instead of direct Supabase query for proper permission handling
-  const apiUrl = '/api/requests';  // API handles user filtering based on authentication
-
-  console.log('🔍 API URL:', apiUrl, 'for userId:', userId);
+  // The userId parameter is now handled by the backend based on the authenticated user's token.
+  console.log(`🔍 Fetching requests for authenticated user (ID: ${userId || 'admin'})`);
 
   try {
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Auth headers are handled by the browser for same-origin requests
-      },
-      credentials: 'include', // Include cookies for authentication
-    });
+    // Use apiClient.get() instead of fetch() - this ensures JWT token is automatically included
+    const response = await apiClient.get<QuoteRequest[]>('/requests');
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ API Fetched Data:', data?.length || 0, 'requests for userId:', userId);
+    // The response data is directly available on response.data (already parsed JSON)
+    const data = response.data;
+    console.log(`✅ API Fetched Data: ${data?.length || 0} requests.`);
     return data || [];
+
   } catch (error) {
     console.error('❌ API Fetch Error:', error);
+    // Re-throw the error so React Query can handle it
     throw error;
   }
 
@@ -42,11 +31,14 @@ const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
   return [];
 };
 
-export function useRequestsQuery(userId?: string) {
+export function useRequestsQuery(userId?: string, user?: any) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['requests', userId],
+    // THE FIX: Include user?.id in queryKey for proper cache invalidation
+    // This tells TanStack Query that the identity of the user is fundamental to this data request
+    // When a user logs in, user.id changes from null to a UUID, forcing automatic refetch
+    queryKey: ['requests', userId, user?.id],
     queryFn: () => fetchRequests(userId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,

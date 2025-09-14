@@ -11,6 +11,15 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
 
+  console.log('👤 UserMenu Debug:', {
+    userId: user?.id,
+    userEmail: user?.email,
+    profileRole: profile?.role,
+    profileName: profile?.name,
+    isAdmin: profile?.role === 'admin',
+    hasNavigateCallback: !!onNavigateToDashboard
+  });
+
   if (!user) return null;
 
   return (
@@ -40,20 +49,32 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
               </div>
             </div>
             <div className="py-1">
-              {profile && profile.role === 'admin' && (
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (onNavigateToDashboard) {
-                      onNavigateToDashboard();
-                    }
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Command Center
-                </button>
-              )}
+              {(() => {
+                console.log('🔍 Command Center render check:', {
+                  hasProfile: !!profile,
+                  profileRole: profile?.role,
+                  isAdmin: profile?.role === 'admin',
+                  shouldShowCommandCenter: profile && profile.role === 'admin'
+                });
+                return profile && profile.role === 'admin' && (
+                  <button
+                    onClick={() => {
+                      console.log('🚀 Command Center clicked!');
+                      setIsOpen(false);
+                      if (onNavigateToDashboard) {
+                        console.log('✅ Calling onNavigateToDashboard callback');
+                        onNavigateToDashboard();
+                      } else {
+                        console.log('❌ No onNavigateToDashboard callback provided');
+                      }
+                    }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Command Center
+                  </button>
+                );
+              })()}
               <button
                 onClick={() => {
                   onOpenProfile();

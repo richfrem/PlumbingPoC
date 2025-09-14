@@ -4,9 +4,14 @@
 #   --netlify: Use netlify dev for full environment (includes functions for SMS testing)
 #   --help: Show this help message
 
-# Configurable ports
-BACKEND_PORT=3000
-FRONTEND_PORT=5173
+# Load environment variables from .env
+set -a
+source .env
+set +a
+
+# Configurable ports (now loaded from .env)
+BACKEND_PORT=${BACKEND_PORT:-3000}
+FRONTEND_PORT=${FRONTEND_PORT:-5173}
 
 # Parse command line arguments
 USE_NETLIFY=false
@@ -43,7 +48,7 @@ if [[ "$USE_NETLIFY" == true ]]; then
 
     # Start backend API (Express/Node) in a new terminal
     echo "Starting backend API on port $BACKEND_PORT..."
-    osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC/vite-app/api && PORT='$BACKEND_PORT' node server.js"'
+    osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC/vite-app/api && BACKEND_PORT='$BACKEND_PORT' node server.js"'
     sleep 2
 
     # Start frontend (Vite) in a new terminal
@@ -81,7 +86,7 @@ else
 
     # Start backend API (Express/Node) in a new terminal
     echo "Starting backend API on port $BACKEND_PORT..."
-    osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC/vite-app/api && PORT='$BACKEND_PORT' node server.js"'
+    osascript -e 'tell application "Terminal" to do script "cd ~/Projects/PlumbingPOC/vite-app/api && BACKEND_PORT='$BACKEND_PORT' node server.js"'
     sleep 2
 
     # Confirm backend started
