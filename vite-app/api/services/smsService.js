@@ -120,12 +120,24 @@ exports.sendNewRequestNotification = async (request) => {
     }
   }
 
-  console.log('📱 SMS SERVICE: Will send SMS to:', numbersToNotify);
-
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}`;
-  const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
+  console.log('📱 SMS SERVICE: Constructing message...');
+  console.log('📱 SMS SERVICE: request.id:', request.id);
+  console.log('📱 SMS SERVICE: request.problem_category:', request.problem_category);
+  console.log('📱 SMS SERVICE: request.customer_name:', request.customer_name);
+  console.log('📱 SMS SERVICE: request.service_address:', request.service_address);
+  console.log('📱 SMS SERVICE: requestUrl:', requestUrl);
 
-  numbersToNotify.forEach(number => triggerSms(number, messageBody));
+  const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
+  console.log('📱 SMS SERVICE: Message body constructed:', messageBody.substring(0, 50) + '...');
+  console.log('📱 SMS SERVICE: Message body length:', messageBody.length);
+
+  console.log('📱 SMS SERVICE: About to call triggerSms...');
+  numbersToNotify.forEach((number, index) => {
+    console.log(`📱 SMS SERVICE: Calling triggerSms for number ${index + 1}: ${number}`);
+    triggerSms(number, messageBody);
+  });
+  console.log('📱 SMS SERVICE: All triggerSms calls completed');
 };
 
 // SCENARIO 2: Quote Accepted by Customer

@@ -381,6 +381,33 @@ const updateQuote = async (req, res, next) => {
 const acceptQuote = async (req, res, next) => {
   try {
     const { id, quoteId } = req.params;
+    const userId = req.user.id;
+
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    // If not admin, verify user owns this request
+    if (!isAdmin) {
+      const { data: requestData, error: requestError } = await supabase
+        .from('requests')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+      if (requestError || !requestData) {
+        return res.status(404).json({ error: 'Request not found.' });
+      }
+
+      if (requestData.user_id !== userId) {
+        return res.status(403).json({ error: 'You can only accept quotes for your own requests.' });
+      }
+    }
 
     // 1. Run the existing stored procedure to update database state
     const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
