@@ -15,13 +15,17 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboard
  * For testing with an unverified domain, the 'to' address must be your verified Resend account email.
  */
 const sendEmail = async ({ to, subject, html }) => {
+  console.log(`📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
+  console.log(`📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
+  console.log(`📧 EMAIL DEBUG: Subject: ${subject}`);
+
   if (!RESEND_ENABLED) {
-    console.log('Resend is disabled. Email not sent.');
+    console.log('❌ EMAIL DISABLED: Resend is disabled. Email not sent.');
     return { data: { message: 'Resend disabled' } };
   }
 
   try {
-    console.log(`Attempting to send email to: ${to}`);
+    console.log('📤 EMAIL DEBUG: Calling Resend API...');
     const { data, error } = await resend.emails.send({
       from: RESEND_FROM_EMAIL, // Use configurable from address
       to,
@@ -30,14 +34,14 @@ const sendEmail = async ({ to, subject, html }) => {
     });
 
     if (error) {
-      console.error('Resend Error:', error);
+      console.error('❌ EMAIL ERROR: Resend Error:', error);
       return { error };
     }
 
-    console.log('Email sent successfully:', data);
+    console.log('✅ EMAIL SUCCESS: Email sent successfully:', data);
     return { data };
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('❌ EMAIL FAILED: Failed to send email:', error);
     return { error };
   }
 };
