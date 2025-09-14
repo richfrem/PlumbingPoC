@@ -23,12 +23,12 @@ This refactoring is guided by the following principles:
 The current `src/` directory will be reorganized into a feature-based structure.
 
 **Action:**
-Restructure the `vite-app/src/` directory to match the following target layout. You will need to create new directories and move existing files accordingly. Update all import paths across the application to reflect the new file locations.
+Restructure the `packages/frontend/src/` directory to match the following target layout. You will need to create new directories and move existing files accordingly. Update all import paths across the application to reflect the new file locations.
 
 **Target Directory Structure:**
 
 ```
-vite-app/src/
+packages/frontend/src/
 ├── features/
 │   ├── auth/
 │   │   ├── components/
@@ -65,12 +65,12 @@ vite-app/src/
 ## III. Mandate 2: Create the `useRequests` Custom Hook
 
 **Action:**
-Create a new file at `vite-app/src/features/requests/hooks/useRequests.ts`. This hook will encapsulate all data fetching and real-time subscription logic for quote requests.
+Create a new file at `packages/frontend/src/features/requests/hooks/useRequests.ts`. This hook will encapsulate all data fetching and real-time subscription logic for quote requests.
 
 **`useRequests.ts` Implementation:**
 
 ```typescript
-// vite-app/src/features/requests/hooks/useRequests.ts
+// packages/frontend/src/features/requests/hooks/useRequests.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
@@ -141,12 +141,12 @@ export function useRequests(userId?: string) {
 ## IV. Mandate 3: Centralize Type Definitions
 
 **Action:**
-Create a new file at `vite-app/src/features/requests/types/index.ts`. Move all request-related TypeScript interfaces (`QuoteRequest`, `Quote`, `RequestNote`) from `Dashboard.tsx` into this new file and export them.
+Create a new file at `packages/frontend/src/features/requests/types/index.ts`. Move all request-related TypeScript interfaces (`QuoteRequest`, `Quote`, `RequestNote`) from `Dashboard.tsx` into this new file and export them.
 
 **`features/requests/types/index.ts` Implementation:**
 
 ```typescript
-// vite-app/src/features/requests/types/index.ts
+// packages/frontend/src/features/requests/types/index.ts
 
 export interface Quote { 
   id: string; 

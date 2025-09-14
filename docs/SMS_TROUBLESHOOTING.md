@@ -17,8 +17,8 @@ This document chronicles the troubleshooting process for implementing Twilio SMS
 **Root Cause:** Wrong .env file path in server.js
 **Solution:**
 ```javascript
-// In vite-app/api/server.js
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+// In packages/backend/api/server.js
+import('dotenv').then(dotenv => dotenv.config({ path: path.resolve(__dirname, '../../../.env') }));
 ```
 **Fixed:** Environment variables now load correctly from root .env file
 
@@ -26,7 +26,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 **Problem:** Frontend making API calls to wrong port in Netlify dev mode
 **Symptoms:** 401 Unauthorized errors, API calls going to localhost:5173 instead of 8888
 **Root Cause:** Vite dev server proxying API calls to localhost:3000
-**Solution:** Modified `vite-app/vite.config.js` to disable proxy in Netlify mode:
+**Solution:** Modified `packages/frontend/vite.config.js` to disable proxy in Netlify mode:
 ```javascript
 const isNetlifyDev = process.env.NETLIFY_DEV || process.env.NETLIFY;
 return {
@@ -93,7 +93,7 @@ const formattedNumbers = data.map(admin => {
 ## Test SMS Implementation
 Created standalone test endpoint for SMS verification:
 ```javascript
-// In vite-app/api/server.js
+// In packages/backend/api/server.js
 app.post('/api/test-sms', (req, res) => {
   const smsService = require('./services/smsService');
   const testRequest = {

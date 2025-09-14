@@ -17,26 +17,36 @@ Beyond intelligent lead qualification, it provides a secure command center for b
 
 ## Project Structure
 
-The repository is organized for clarity and professional development standards, featuring a modern feature-based UI architecture.
+The repository follows a modern monorepo architecture with separate packages for frontend and backend services, organized for clarity and professional development standards.
 
 ```
 .
+├── packages/
+│   ├── frontend/         # React/Vite application
+│   │   ├── src/          # React components and logic (TSX)
+│   │   │   ├── features/ # Feature-based architecture
+│   │   │   │   ├── auth/
+│   │   │   │   ├── profile/
+│   │   │   │   └── requests/ # Components, hooks, and types co-located
+│   │   │   └── lib/      # Shared libraries (Supabase client, API client)
+│   │   ├── public/       # Static assets (images, etc.)
+│   │   ├── index.html    # Main HTML template
+│   │   ├── vite.config.js
+│   │   └── package.json  # Frontend dependencies
+│   └── backend/          # Node.js/Express API
+│       ├── api/          # Express server and routes
+│       │   ├── controllers/
+│       │   ├── middleware/
+│       │   ├── routes/
+│       │   ├── services/
+│       │   └── server.js
+│       ├── netlify/
+│       │   └── functions/ # Serverless functions
+│       └── package.json  # Backend dependencies
 ├── PROMPTS/              # Prompt engineering & agent logic
 ├── supabase/
-│   └── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide for Supabase
-├── vite-app/
-│   ├── public/           # Static assets (images, etc.)
-│   ├── src/              # Frontend React application (TSX)
-│   │   ├── features/
-│   │   │   ├── auth/
-│   │   │   ├── profile/
-│   │   │   └── requests/ # Components, hooks, and types for a feature are co-located
-│   │   └── lib/          # Shared libraries (Supabase client, API client)
-│   └── api/              # Backend API (Express/Node)
-│       ├── controllers/
-│       ├── middleware/
-│       ├── routes/
-│       └── server.js
+│   └── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide
+├── package.json          # Root workspace configuration
 └── ...
 ```
 
@@ -63,13 +73,13 @@ The repository is organized for clarity and professional development standards, 
     Follow the detailed instructions in `supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md`. This guide contains the master SQL script to create all tables, set up the real-time publications, and apply the necessary Row Level Security (RLS) policies.
 
 3.  **Set Up Environment Variables:**
-    Navigate to the `vite-app/` directory, create a copy of `.env.example` named `.env`, and fill in your Supabase and OpenAI API keys.
+    From the project root, create a copy of `.env.example` named `.env`, and fill in your Supabase and OpenAI API keys.
 
 4.  **Install Dependencies:**
     ```sh
-    cd vite-app
     npm install
     ```
+    This will install dependencies for all packages in the workspace.
 
 ### 3. Running the Application
 
@@ -86,19 +96,19 @@ This script will start both services in the background and provide you with the 
 #### Manual Method
 
 1.  **Start the Backend API Server:**
-    In your first terminal, from the `vite-app/` directory:
+    From the project root directory:
     ```sh
-    npm run start:api
+    npm run dev:backend
     ```
 
 2.  **Start the Frontend Vite Server:**
-    In a second terminal, from the `vite-app/` directory:
+    In a second terminal, from the project root directory:
     ```sh
-    npm run dev
+    npm run dev:frontend
     ```
 
 3.  **Access the App:**
-    Open your browser and navigate to the frontend URL provided by Vite.
+    Open your browser and navigate to the frontend URL provided by Vite (usually http://localhost:5173).
 
 ---
 

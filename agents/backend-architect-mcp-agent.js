@@ -21,7 +21,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
-const { editableFileManifest } = require('./projectFileManifest.ts'); // <-- IMPORT THE MANIFEST
+const { editableFileManifest } = require('./projectFileManifest.js'); // <-- IMPORT THE MANIFEST
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
@@ -41,13 +41,14 @@ async function reviewBackend() {
 
   try {
     const projectRoot = path.resolve(__dirname, '..');
-    const dbSchemaPath = path.join(projectRoot, 'SUPABASE_TABLES.sql');
-    const apiRoutesDir = path.join(projectRoot, 'vite-app', 'api', 'routes');
+    const dbSchemaPath = path.join(projectRoot, 'supabase', 'SUPABASE_TABLES.sql');
+    const apiRoutesDir = path.join(projectRoot, 'packages', 'backend', 'api', 'routes');
 
     if (!fs.existsSync(dbSchemaPath) || !fs.existsSync(apiRoutesDir)) {
       console.error(`Error: Could not find required backend files.`);
       console.error(`Checked for: ${dbSchemaPath}`);
       console.error(`Checked for: ${apiRoutesDir}`);
+      console.error(`Note: Database schema should be in supabase/ directory, API routes in packages/backend/api/routes/`);
       return;
     }
 
@@ -90,7 +91,7 @@ async function reviewBackend() {
       ${dbSchemaContent}
       \`\`\`
 
-      **API Route Definitions (from vite-app/api/routes/):**
+      **API Route Definitions (from packages/backend/api/routes/):**
       \`\`\`javascript
       ${apiRoutesContent}
       \`\`\`

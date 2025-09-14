@@ -71,7 +71,7 @@ The client should be sharing their screen for this entire phase. Your job is to 
 *   **Netlify Configuration:**
     *   [ ] Log in to the client's Netlify account.
     *   [ ] Create a "New site from Git" and connect it to your client-specific branch.
-    *   [ ] Configure the build settings (e.g., `npm run build`, `vite-app/dist`).
+    *   [ ] Configure the build settings (e.g., `npm run build`, `packages/frontend/dist`).
     *   [ ] Go to Site Settings -> Build & Deploy -> Environment -> Environment variables.
     *   [ ] **Add all necessary environment variables:**
         *   `VITE_SUPABASE_URL` (from the new Supabase project)
@@ -91,12 +91,12 @@ The client should be sharing their screen for this entire phase. Your job is to 
 ## Phase 3: Application Customization (Your code work)
 
 *   **Branding:**
-    *   [ ] Replace logo files in `vite-app/public/`.
+    *   [ ] Replace logo files in `packages/frontend/public/`.
     *   [ ] Update the primary color theme in the Tailwind/MUI config.
 *   **Content:**
-    *   [ ] Update the `servicesData.ts` file with the client's services.
-    *   [ ] Update the `serviceQuoteQuestions.ts` file with any custom questions.
-    *   [ ] Update text content in landing page components (`AboutSection.tsx`, `ReviewsSection.tsx`, etc.).
+    *   [ ] Update the `packages/frontend/src/lib/servicesData.ts` file with the client's services.
+    *   [ ] Update the `packages/frontend/src/lib/serviceQuoteQuestions.ts` file with any custom questions.
+    *   [ ] Update text content in landing page components (`packages/frontend/src/features/landing/components/AboutSection.tsx`, `packages/frontend/src/features/landing/components/ReviewsSection.tsx`, etc.).
     *   [ ] Update business contact info (name, address, phone) throughout the app.
 *   **Commit and Push:**
     *   [ ] Commit all customization changes to the client's Git branch.

@@ -1,18 +1,32 @@
 #!/bin/bash
 # Shutdown script for PlumbingPOC: stops backend and frontend processes and closes terminal windows
 
-# Configurable ports (must match startup.sh)
-BACKEND_PORT=3000
-FRONTEND_PORT=5173
+# Load environment variables from .env if it exists
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
 
-echo "Stopping PlumbingPOC services..."
+# Configurable ports (loaded from .env or defaults)
+BACKEND_PORT=${BACKEND_PORT:-3000}
+FRONTEND_PORT=${FRONTEND_PORT:-5173}
+
+echo -e "\033[0;31m🛑\033[0m Stopping PlumbingPOC services..."
+echo -e "\033[0;31m═══\033[0m═══════════════════════════════════════════════"
 
 # Kill processes on the ports
-echo "Killing processes on ports $BACKEND_PORT and $FRONTEND_PORT..."
-kill $(lsof -t -i:$BACKEND_PORT) $(lsof -t -i:$FRONTEND_PORT) 2>/dev/null || echo "No processes found on specified ports"
+echo -e "\033[0;33m⚡\033[0m Killing processes on ports $BACKEND_PORT and $FRONTEND_PORT..."
+kill $(lsof -t -i:$BACKEND_PORT) $(lsof -t -i:$FRONTEND_PORT) 2>/dev/null || echo -e "\033[0;32m✓\033[0m No processes found on specified ports"
+
+# Kill npm processes
+echo -e "\033[0;33m⚡\033[0m Killing npm and node processes..."
+pkill -f "npm run dev" 2>/dev/null || true
+pkill -f "vite" 2>/dev/null || true
+pkill -f "node packages/backend/api/server.js" 2>/dev/null || true
 
 # Close Terminal windows that contain the specific processes
-echo "Closing associated Terminal windows..."
+echo -e "\033[0;33m⚡\033[0m Closing associated Terminal windows..."
 osascript -e '
 tell application "Terminal"
     set windowList to windows
@@ -22,7 +36,7 @@ tell application "Terminal"
             repeat with aTab in tabList
                 set tabProcesses to processes of aTab
                 repeat with aProcess in tabProcesses
-                    if aProcess contains "node server.js" or aProcess contains "npm run dev" or aProcess contains "vite" then
+                    if aProcess contains "node api/server.js" or aProcess contains "npm run dev" or aProcess contains "vite" or aProcess contains "startup.sh" then
                         tell aTab to close
                         exit repeat
                     end if
@@ -31,6 +45,6 @@ tell application "Terminal"
         end try
     end repeat
 end tell
-'
+' 2>/dev/null || echo -e "\033[0;32m✓\033[0m Terminal cleanup completed"
 
 echo "Shutdown complete."

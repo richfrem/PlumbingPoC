@@ -16,7 +16,7 @@ We will use **React (with TypeScript)** as the frontend framework, powered by th
 
 *   **Pros:**
     *   **Massive Ecosystem:** React has the largest ecosystem of libraries and tools, which accelerated development. We leveraged this for UI components (`@mui/material`), icons (`lucide-react`), and routing.
-    *   **Component-Based Architecture:** This paradigm allows for the creation of reusable and encapsulated UI components, a practice excellently demonstrated by the feature-based structure in `vite-app/src/features/`.
+    *   **Component-Based Architecture:** This paradigm allows for the creation of reusable and encapsulated UI components, a practice excellently demonstrated by the feature-based structure in `packages/frontend/src/features/`.
     *   **Strong Talent Pool:** React is the most popular frontend framework, making it easy to find developers and community support.
     *   **Exceptional Developer Experience:** Vite provides near-instant Hot Module Replacement (HMR) and a simplified configuration, which was critical for the rapid prototyping of the "Genesis Cycle".
 

@@ -10,7 +10,7 @@ The application needs to send transactional emails to users for critical events,
 
 ## Decision
 
-We will use **Resend** as our transactional email service provider, integrated via its official `resend` npm package in `vite-app/api/services/emailService.js`.
+We will use **Resend** as our transactional email service provider, integrated via its official `resend` npm package in `packages/backend/api/services/emailService.js`.
 
 ## Consequences
 

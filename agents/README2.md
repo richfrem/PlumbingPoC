@@ -18,10 +18,10 @@ These steps only need to be performed once to prepare your environment.
 Install all necessary Node.js packages by running the following command from the **project root directory** (`PlumbingPOC/`):
 
 ```bash
-npm install playwright @google/generative-ai --legacy-peer-deps dotenv
+npm install
 ```
 
-This command installs:
+The agents use the following key dependencies (already included in the monorepo):
 *   `playwright`: For browser automation.
 *   `@google/generative-ai`: For integrating with the Gemini API.
 *   `dotenv`: For loading environment variables from the `.env` file.

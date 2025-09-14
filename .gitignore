@@ -20,7 +20,8 @@ EXAMPLE_UI_REFERENCE/
 EXAMPLE_UI_REFERENCE2/
 
 # Build artifacts
-vite-app/dist/
+packages/frontend/dist/
+packages/backend/dist/
 node_modules
 
 # Agent-generated files (should not be in version control)

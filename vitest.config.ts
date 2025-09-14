@@ -25,10 +25,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './vite-app/src'),
-      '@api': path.resolve(__dirname, './vite-app/api'),
-      '@lib': path.resolve(__dirname, './vite-app/src/lib'),
-      '@features': path.resolve(__dirname, './vite-app/src/features'),
+      '@': path.resolve(__dirname, './packages/frontend/src'),
+      '@api': path.resolve(__dirname, './packages/backend/api'),
+      '@lib': path.resolve(__dirname, './packages/frontend/src/lib'),
+      '@features': path.resolve(__dirname, './packages/frontend/src/features'),
     },
   },
 });

@@ -9,7 +9,7 @@ This plan outlines the highest-impact tasks to transition the PlumbingPOC applic
     *   **Justification:** This is the highest priority. No further refactoring should proceed without a safety net to prevent regressions.
 
 2.  **Harden the AI Follow-Up Question Agent:**
-    *   **Action:** Refactor the `getGptFollowUp` controller in `vite-app/api/controllers/requestController.js`.
+    *   **Action:** Refactor the `getGptFollowUp` controller in `packages/backend/api/controllers/requestController.js`.
     *   **Task:** Update the OpenAI prompt to request a structured JSON output (`{ "requiresFollowUp": boolean, "questions": [...] }`).
     *   **Task:** Use `response_format: { type: 'json_object' }` in the API call and replace the brittle string-splitting logic with `JSON.parse`.
     *   **Justification:** This fixes the most fragile component in the system and eliminates a likely source of production errors.

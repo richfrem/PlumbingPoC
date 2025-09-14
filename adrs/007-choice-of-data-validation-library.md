@@ -10,7 +10,7 @@ To ensure the integrity and security of our backend API, all incoming data from 
 
 ## Decision
 
-We will use **Zod** as the data validation library for our Node.js/Express backend. All schemas will be defined in `vite-app/api/validation/schemas.js` and applied via a reusable middleware.
+We will use **Zod** as the data validation library for our Node.js/Express backend. All schemas will be defined in `packages/backend/api/validation/schemas.js` and applied via a reusable middleware.
 
 ## Consequences
 

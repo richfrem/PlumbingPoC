@@ -46,7 +46,7 @@ describe('OpenAI Integration Tests', () => {
       });
 
       // Import the controller after mocking
-      const { getGptFollowUp } = await import('../../../vite-app/api/controllers/requestController.js');
+      const { getGptFollowUp } = await import('../../../packages/backend/api/controllers/requestController.js');
 
       const testData = {
         clarifyingAnswers: [
@@ -94,7 +94,7 @@ describe('OpenAI Integration Tests', () => {
     });
 
     it('should skip AI call for standard categories without ambiguous keywords', async () => {
-      const { getGptFollowUp } = await import('../../../vite-app/api/controllers/requestController.js');
+      const { getGptFollowUp } = await import('../../../packages/backend/api/controllers/requestController.js');
 
       const testData = {
         clarifyingAnswers: [
@@ -127,7 +127,7 @@ describe('OpenAI Integration Tests', () => {
         new Error('OpenAI API rate limit exceeded')
       );
 
-      const { getGptFollowUp } = await import('../../../vite-app/api/controllers/requestController.js');
+      const { getGptFollowUp } = await import('../../../packages/backend/api/controllers/requestController.js');
 
       const testData = {
         clarifyingAnswers: [
@@ -164,7 +164,7 @@ describe('OpenAI Integration Tests', () => {
 
       mockCreate.mockResolvedValueOnce(mockResponse);
 
-      const { getGptFollowUp } = await import('../../../vite-app/api/controllers/requestController.js');
+      const { getGptFollowUp } = await import('../../../packages/backend/api/controllers/requestController.js');
 
       const testData = {
         clarifyingAnswers: [
@@ -299,11 +299,11 @@ describe('OpenAI Integration Tests', () => {
         const mockUpdateResult = vi.fn().mockResolvedValue({ error: null });
         mockSupabase.eq.mockReturnValueOnce(mockUpdateResult);
   
-        vi.mock('../../../vite-app/api/config/supabase', () => ({
+        vi.mock('../../../packages/backend/api/config/supabase', () => ({
           default: mockSupabase
         }));
   
-        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+        const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
@@ -333,7 +333,7 @@ describe('OpenAI Integration Tests', () => {
       it('should handle OpenAI API errors during triage', async () => {
         mockCreate.mockRejectedValueOnce(new Error('OpenAI API error'));
   
-        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+        const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
@@ -360,7 +360,7 @@ describe('OpenAI Integration Tests', () => {
   
         mockCreate.mockResolvedValueOnce(mockResponse);
   
-        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+        const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
@@ -412,11 +412,11 @@ describe('OpenAI Integration Tests', () => {
         const mockUpdateError = vi.fn().mockResolvedValue({ error: new Error('Database update failed') });
         mockSupabase.eq.mockReturnValueOnce(mockUpdateError);
   
-        vi.mock('../../../vite-app/api/config/supabase', () => ({
+        vi.mock('../../../packages/backend/api/config/supabase', () => ({
           default: mockSupabase
         }));
-  
-        const { triageRequest } = await import('../../../vite-app/api/controllers/triageController.js');
+
+        const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {

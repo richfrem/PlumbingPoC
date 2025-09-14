@@ -4,7 +4,7 @@ This document provides a human-readable overview of the critical data structures
 
 ## 1. Core Data Models
 
-These are the primary entities persisted in our Supabase database. The source code for these types can be found in `vite-app/src/features/requests/types/index.ts`.
+These are the primary entities persisted in our Supabase database. The source code for these types can be found in `packages/frontend/src/features/requests/types/index.ts`.
 
 ### QuoteRequest
 
@@ -28,7 +28,7 @@ The central entity in the application. Represents a single job from initial cust
 
 ## 2. API Endpoint Contracts
 
-These contracts define the shape of data for requests and responses to our Node.js/Express API. The source code for these contracts is in `vite-app/api/validation/schemas.js`.
+These contracts define the shape of data for requests and responses to our Node.js/Express API. The source code for these contracts is in `packages/backend/api/validation/schemas.js`.
 
 ### Core Quote Intake Routes (`/api/requests`)
 

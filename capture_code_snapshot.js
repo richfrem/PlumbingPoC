@@ -1,4 +1,6 @@
-// capture_code_snapshot.js (v3.3)
+// capture_code_snapshot.js (v4.0 - Workspace & CJS Aware)
+// This version is updated to correctly handle the new NPM workspace structure
+// and recognizes the `.cjs` file extension for our CommonJS backend files.
 
 const fs = require('fs');
 const path = require('path');
@@ -14,35 +16,30 @@ const excludeDirNames = new Set([
     '.svn', '.hg', '.bzr', 'agents/feedback', 'agents/screenshots', 'playwright-report', 'test-results', 'supabase/.temp'
 ]);
 
+// Exclude relative paths from the project root.
 const excludeRelativePaths = [
-    '.github'
-    // REMOVED: '.env' - This was too broad and was incorrectly excluding .env.example
+    // No top-level paths need to be excluded by default in this project structure.
+    // '.github' would be a good example if you had it.
 ];
 
 const alwaysExcludeFiles = new Set([
     'all_markdown_and_code_snapshot_llm_distilled.txt',
     '.gitignore',
     '.DS_Store',
-    // REMOVED: '.env' - This is now handled by the more specific logic below
-    'capture_code_snapshot.js'
+    'capture_code_snapshot.js',
+    'package-lock.json', // Exclude lock files as they are very large and machine-generated
+    'pnpm-lock.yaml',
+    'yarn.lock'
 ]);
 
-const allowedExtensions = ['.md', '.js', '.ts', '.tsx', '.sh', '.sql'];
+// THE FIX: Added '.cjs' to the list of allowed extensions.
+const allowedExtensions = ['.md', '.js', '.ts', '.tsx', '.sh', '.sql', '.cjs', '.mjs', '.json', '.toml', '.yml', '.yaml'];
 // --- END CONFIGURATION ---
 
 const fileSeparatorStart = '--- START OF FILE';
 const fileSeparatorEnd = '--- END OF FILE';
 
-function distillChronicle(chronicleContent) {
-    console.log('[INFO] AI compression logic would run here.');
-    const placeholder = `
-This content represents an LLM-distilled code summary
-(Original Token Count: ~${encode(chronicleContent).length.toLocaleString()})
-`;
-    return placeholder;
-}
-
-function appendFileContent(filePath, basePath, shouldDistill = false) {
+function appendFileContent(filePath, basePath) {
     const relativePath = path.relative(basePath, filePath).replace(/\\/g, '/');
     let fileContent = '';
     try {
@@ -53,62 +50,68 @@ function appendFileContent(filePath, basePath, shouldDistill = false) {
 
     let output = `${fileSeparatorStart} ${relativePath} ---\n\n`;
     output += fileContent;
-    output += `\n${fileSeparatorEnd} ${relativePath} ---\n\n`;
+    output += `\n${fileSeparatorEnd} ---\n\n`; // Simplified end separator for consistency
     return output;
 }
 
-console.log(`[INFO] Starting scan from project root: ${projectRoot}`);
+console.log(`[INFO] Starting project scan from root: ${projectRoot}`);
+console.log(`[INFO] Script version: v4.0 (Workspace & CJS Aware)`);
 
 try {
-    // --- VARIABLE DECLARATIONS  ---
     const fileTreeLines = [];
-    let distilledMarkdownContent = '';
+    let distilledContent = '';
     let filesCaptured = 0;
     let itemsSkipped = 0;
 
     function traverseAndCapture(currentPath) {
-        const relativePath = path.relative(projectRoot, currentPath).replace(/\\/g, '/');
         const baseName = path.basename(currentPath);
+        const relativePath = path.relative(projectRoot, currentPath).replace(/\\/g, '/');
 
-        if (relativePath) {
-            if (fs.statSync(currentPath).isDirectory() && excludeDirNames.has(baseName)) {
-                console.log(`[SKIP-DIR] Skipping excluded directory name: '${baseName}' at path: ./${relativePath}`);
+        // Rule 1: Exclude entire directories by name (e.g., node_modules)
+        if (fs.statSync(currentPath).isDirectory() && excludeDirNames.has(baseName)) {
+            itemsSkipped++;
+            return;
+        }
+
+        // Rule 2: Exclude specific relative paths (e.g., .github)
+        for (const excludedPath of excludeRelativePaths) {
+            if (relativePath.startsWith(excludedPath)) {
                 itemsSkipped++;
                 return;
             }
-            for (const excludedPath of excludeRelativePaths) {
-                if (relativePath.startsWith(excludedPath)) {
-                    console.log(`[SKIP-PATH] Skipping excluded path: ./${relativePath}`);
-                    itemsSkipped++;
-                    return;
-                }
-            }
         }
         
-        const stats = fs.statSync(currentPath);
-        if (relativePath) {
-            fileTreeLines.push(relativePath + (stats.isDirectory() ? '/' : ''));
+        // Add item to the directory tree structure
+        if (relativePath) { // Don't add the root itself to the tree list
+            fileTreeLines.push(relativePath + (fs.statSync(currentPath).isDirectory() ? '/' : ''));
         }
 
-        if (stats.isDirectory()) {
+        if (fs.statSync(currentPath).isDirectory()) {
             const items = fs.readdirSync(currentPath).sort();
             for (const item of items) {
                 traverseAndCapture(path.join(currentPath, item));
             }
-        } else if (stats.isFile()) {
-            // *** NEW LOGIC: Specifically handle .env files ***
-            // This mirrors the behavior of the corrected .gitignore file.
-            // It ignores any file starting with '.env' unless it is exactly '.env.example'.
+        } else if (fs.statSync(currentPath).isFile()) {
+            // Rule 3: Exclude specific filenames (e.g., .DS_Store)
+            if (alwaysExcludeFiles.has(baseName)) {
+                itemsSkipped++;
+                return;
+            }
+
+            // Rule 4: Handle special .env file logic
             if (baseName.startsWith('.env') && baseName !== '.env.example') {
                 itemsSkipped++;
                 return;
             }
 
-            if (alwaysExcludeFiles.has(baseName) || !allowedExtensions.includes(path.extname(baseName).toLowerCase())) {
+            // Rule 5: Only include files with allowed extensions
+            if (!allowedExtensions.includes(path.extname(baseName).toLowerCase())) {
                 itemsSkipped++;
                 return;
             }
-            distilledMarkdownContent += appendFileContent(currentPath, projectRoot, true);
+
+            // If all checks pass, capture the file content
+            distilledContent += appendFileContent(currentPath, projectRoot);
             filesCaptured++;
         }
     }
@@ -117,18 +120,20 @@ try {
     
     const fileTreeContent = '# Directory Structure (relative to project root)\n' + fileTreeLines.map(line => '  ./' + line).join('\n') + '\n\n';
 
-
-    // --- FORGE LLM-DISTILLED GENOME ---
-    let distilledHeader = `# All Markdown Files Snapshot (LLM-Distilled)\n\nGenerated On: ${new Date().toISOString()}\n\n{TOKEN_COUNT_PLACEHOLDER}\n\n`;
-    const distilledFinalContent = distilledHeader + fileTreeContent + distilledMarkdownContent;
-    const distilledTokenCount = encode(distilledFinalContent).length;
-    const finalDistilledContentWithToken = distilledFinalContent.replace('{TOKEN_COUNT_PLACEHOLDER}', `# Mnemonic Weight (Token Count): ~${distilledTokenCount.toLocaleString()} tokens`);
-    fs.writeFileSync(distilledOutputFile, finalDistilledContentWithToken, 'utf8');
-    console.log(`[SUCCESS] LLM-Distilled packaged to: ${distilledOutputFile}`);
-    console.log(`[METRIC] LLM-Distilled Token Count: ~${distilledTokenCount.toLocaleString()} tokens`);
+    // --- Forge the final output file ---
+    let header = `# All Markdown Files Snapshot (LLM-Distilled)\n\nGenerated On: ${new Date().toISOString()}\n\n{TOKEN_COUNT_PLACEHOLDER}\n\n`;
+    const finalContent = header + fileTreeContent + distilledContent;
+    const tokenCount = encode(finalContent).length;
+    const finalContentWithToken = finalContent.replace('{TOKEN_COUNT_PLACEHOLDER}', `# Mnemonic Weight (Token Count): ~${tokenCount.toLocaleString()} tokens`);
     
-    console.log(`\n[STATS] Markdown Files Captured: ${filesCaptured} | Items Skipped/Excluded: ${itemsSkipped}`);
+    fs.writeFileSync(distilledOutputFile, finalContentWithToken, 'utf8');
+    
+    console.log(`\n[SUCCESS] Snapshot successfully generated: ${distilledOutputFile}`);
+    console.log(`[METRIC] Total Token Count: ~${tokenCount.toLocaleString()} tokens`);
+    console.log(`[STATS] Files Captured: ${filesCaptured} | Directories/Files Skipped: ${itemsSkipped}`);
 
+// ... previous code ...
 } catch (err) {
     console.error(`[FATAL] An error occurred during snapshot generation: ${err.message}`);
-}
+    console.error(err.stack);
+} 

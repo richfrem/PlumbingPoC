@@ -423,7 +423,7 @@ WHERE
 #### subscribers in useRequests.ts
 
 ```typescript
-// From: vite-app/src/features/requests/hooks/useRequests.ts
+// From: packages/frontend/src/features/requests/hooks/useRequests.ts
 const subscriptions = [
     { table: 'requests' },          // <-- For status changes, etc.
     { table: 'request_notes' },      // <-- For the communication log

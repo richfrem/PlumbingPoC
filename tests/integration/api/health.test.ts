@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import app from '../../../vite-app/api/server';
+import app from '../../../packages/backend/api/server.js';
 
 describe('Health Check API', () => {
   it('should return healthy status', async () => {

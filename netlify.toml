@@ -3,14 +3,14 @@
 [build]
   base = "." # Repository root
   command = "npm run build"
-  publish = "vite-app/dist/"
-  functions = "vite-app/netlify/functions/" # Updated functions directory
+  publish = "packages/frontend/dist/"
+  functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
   SECRETS_SCAN_ENABLED = false
   SECRETS_SCAN_OMIT_PATHS = [
     "README.md",
     "all_markdown_and_code_snapshot_llm_distilled.txt",
-    "vite-app/dist/assets/*.js"
+    "packages/frontend/dist/assets/*.js"
   ]
 
 

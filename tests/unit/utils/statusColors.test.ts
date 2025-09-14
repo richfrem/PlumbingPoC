@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../../../vite-app/src/lib/statusColors';
+import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../../../packages/frontend/src/lib/statusColors';
 
 describe('Request Status Colors', () => {
   it('should return correct color for "new" status', () => {

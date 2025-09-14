@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SERVICE_QUOTE_CATEGORIES } from '../../../vite-app/src/lib/serviceQuoteQuestions';
+import { SERVICE_QUOTE_CATEGORIES } from '../../../packages/frontend/src/lib/serviceQuoteQuestions';
 
 describe('Service Quote Categories', () => {
   it('should have all required plumbing categories', () => {

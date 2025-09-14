@@ -5,7 +5,7 @@ These contracts define the interaction between our backend and the external Open
 ### AI Triage Agent
 
 *   **Endpoint:** `POST /api/triage/:requestId`
-*   **Controller:** `vite-app/api/controllers/triageController.js`
+*   **Controller:** `packages/backend/api/controllers/triageController.js`
 *   **Description:** Analyzes a request and returns a structured summary for the admin dashboard.
 
 **Example LLM Output (`application/json`):**
@@ -22,7 +22,7 @@ These contracts define the interaction between our backend and the external Open
 ### AI Follow-Up Question Agent
 
 *   **Endpoint:** `POST /api/requests/gpt-follow-up`
-*   **Controller:** `vite-app/api/controllers/requestController.js`
+*   **Controller:** `packages/backend/api/controllers/requestController.js`
 *   **Description:** Reviews the conversation so far and generates clarifying questions if needed.
 
 **Example LLM Output (Text, to be parsed):**
