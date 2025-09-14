@@ -6,6 +6,47 @@ const emailService = require('../services/emailService');
 const smsService = require('../services/smsService');
 
 /**
+ * Handles fetching all requests for admin dashboard or user's own requests.
+ */
+const getAllRequests = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    let query = supabase
+      .from('requests')
+      .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
+      .order('created_at', { ascending: false });
+
+    // If not admin, only show their own requests
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: requests, error } = await query;
+
+    if (error) {
+      console.error('❌ Get All Requests Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch requests.' });
+    }
+
+    console.log(`✅ Fetched ${requests?.length || 0} requests for ${isAdmin ? 'admin' : 'user'} ${userId}`);
+    res.json(requests || []);
+  } catch (err) {
+    console.error('❌ Get All Requests Exception:', err);
+    next(err);
+  }
+};
+
+/**
  * Handles fetching a request by ID, including user profile info and all related tables.
  */
 const getRequestById = async (req, res, next) => {
@@ -484,6 +525,7 @@ module.exports = {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getAllRequests,
   getRequestById,
   updateQuote,
   acceptQuote,

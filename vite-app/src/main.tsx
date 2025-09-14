@@ -264,15 +264,24 @@ const AppContent: React.FC = () => {
               </a>
 
               {/* Authentication Section */}
-              <div className="pt-6 border-t border-gray-200 w-full flex justify-center">
+              <div className="pt-6 border-t border-gray-200 w-full flex flex-col items-center space-y-4">
                 {user ? (
-                  <UserMenu onOpenProfile={() => {
-                    setShowProfileModal(true);
-                    setIsMenuOpen(false);
-                  }} />
+                  <div className="w-full max-w-xs">
+                    <UserMenu
+                      onOpenProfile={() => {
+                        setShowProfileModal(true);
+                        setIsMenuOpen(false);
+                      }}
+                      onNavigateToDashboard={() => {
+                        // Navigate to dashboard and close mobile menu
+                        window.location.hash = '#/dashboard';
+                        setIsMenuOpen(false);
+                      }}
+                    />
+                  </div>
                 ) : (
                   <button
-                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2 w-full max-w-xs justify-center"
                     onClick={() => {
                       setShowAuthModal(true);
                       setIsMenuOpen(false);

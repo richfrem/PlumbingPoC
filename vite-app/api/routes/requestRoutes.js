@@ -9,6 +9,7 @@ const {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getAllRequests,
   getRequestById,
   updateQuote,
   acceptQuote,
@@ -39,6 +40,7 @@ router.post('/attachments', authenticate, upload.array('attachment', 10), upload
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---
+router.get('/', authenticate, getAllRequests); // Get all requests for admin table
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);

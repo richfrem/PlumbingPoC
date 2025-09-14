@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T02:22:23.624Z
+Generated On: 2025-09-14T02:41:13.993Z
 
-# Mnemonic Weight (Token Count): ~172,268 tokens
+# Mnemonic Weight (Token Count): ~172,960 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -12572,6 +12572,47 @@ const emailService = require('../services/emailService');
 const smsService = require('../services/smsService');
 
 /**
+ * Handles fetching all requests for admin dashboard or user's own requests.
+ */
+const getAllRequests = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    let query = supabase
+      .from('requests')
+      .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
+      .order('created_at', { ascending: false });
+
+    // If not admin, only show their own requests
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: requests, error } = await query;
+
+    if (error) {
+      console.error('❌ Get All Requests Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch requests.' });
+    }
+
+    console.log(`✅ Fetched ${requests?.length || 0} requests for ${isAdmin ? 'admin' : 'user'} ${userId}`);
+    res.json(requests || []);
+  } catch (err) {
+    console.error('❌ Get All Requests Exception:', err);
+    next(err);
+  }
+};
+
+/**
  * Handles fetching a request by ID, including user profile info and all related tables.
  */
 const getRequestById = async (req, res, next) => {
@@ -13050,6 +13091,7 @@ module.exports = {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getAllRequests,
   getRequestById,
   updateQuote,
   acceptQuote,
@@ -13403,6 +13445,7 @@ const {
   getStorageObject,
   addRequestNote,
   createQuoteForRequest,
+  getAllRequests,
   getRequestById,
   updateQuote,
   acceptQuote,
@@ -13433,6 +13476,7 @@ router.post('/attachments', authenticate, upload.array('attachment', 10), upload
 router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStorageObject);
 
 // --- Client Portal & Admin Routes ---
+router.get('/', authenticate, getAllRequests); // Get all requests for admin table
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
@@ -14425,9 +14469,10 @@ import { useAuth } from '../AuthContext';
 
 interface UserMenuProps {
   onOpenProfile: () => void;
+  onNavigateToDashboard?: () => void;
 }
 
-const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboard }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
 
@@ -14461,14 +14506,20 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
             </div>
             <div className="py-1">
               {profile && profile.role === 'admin' && (
-                <a
-                  href="/#/dashboard"
-                  onClick={() => setIsOpen(false)}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigateToDashboard) {
+                      onNavigateToDashboard();
+                    } else {
+                      window.location.hash = '#/dashboard';
+                    }
+                  }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Command Center
-                </a>
+                </button>
               )}
               <button
                 onClick={() => {
@@ -15266,7 +15317,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
               </div>
             </div>
 
-            {/* Footer with Save Button */}
+            {/* Footer with Save and Close Buttons */}
             <div style={{
               padding: '20px 24px',
               borderTop: '1px solid #e0e0e0',
@@ -15302,36 +15353,80 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
                   ✅ Profile saved successfully!
                 </div>
               )}
-              <button
-                type="submit"
-                disabled={loading || saveSuccess}
-                style={{
-                  background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 40px',
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  borderRadius: '25px',
-                  cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
-                  width: '100%',
-                  maxWidth: '250px',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  if (!loading && !saveSuccess) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
-                }}
-              >
-                {loading ? '⏳ SAVING...' : '💾 SAVE PROFILE'}
-              </button>
+
+              {/* Button Container */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                width: '100%',
+                maxWidth: '300px',
+                justifyContent: 'center'
+              }}>
+                {/* Close Button */}
+                {isClosable && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    style={{
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      padding: '12px 24px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      borderRadius: '25px',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      flex: '1',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!loading) {
+                        e.currentTarget.style.background = '#5a6268';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = '#6c757d';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    ❌ CLOSE
+                  </button>
+                )}
+
+                {/* Save Button */}
+                <button
+                  type="submit"
+                  disabled={loading || saveSuccess}
+                  style={{
+                    background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    borderRadius: '25px',
+                    cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
+                    flex: '1',
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!loading && !saveSuccess) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                  }}
+                >
+                  {loading ? '⏳ SAVING...' : '💾 SAVE'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -17929,46 +18024,38 @@ import { QuoteRequest } from '../types';
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
   console.log('🔍 Fetching requests with userId:', userId);
 
-  let query = supabase
-    .from('requests')
-    .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
-    .order('created_at', { ascending: false });
+  // Use API endpoint instead of direct Supabase query for proper permission handling
+  const apiUrl = '/api/requests';  // API handles user filtering based on authentication
 
-  if (userId) {
-    console.log('🔍 Filtering by user_id:', userId);
-    query = query.eq('user_id', userId);
-  } else {
-    console.log('🔍 Fetching ALL requests (admin mode)');
-  }
+  console.log('🔍 API URL:', apiUrl, 'for userId:', userId);
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('❌ Admin Dashboard Fetch Error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Auth headers are handled by the browser for same-origin requests
+      },
+      credentials: 'include', // Include cookies for authentication
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ API Fetched Data:', data?.length || 0, 'requests for userId:', userId);
+    return data || [];
+  } catch (error) {
+    console.error('❌ API Fetch Error:', error);
     throw error;
   }
 
-  console.log('✅ Admin Dashboard Fetched Data:', data?.length || 0, 'requests for userId:', userId);
-
-  if (data && data.length > 0) {
-    console.log('📋 First request sample:', {
-      id: data[0].id,
-      user_id: data[0].user_id,
-      status: data[0].status,
-      has_user_profile: !!data[0].user_profiles,
-      created_at: data[0].created_at
-    });
-  } else {
-    console.log('📋 No requests found in database');
-  }
-
-  return (data as QuoteRequest[]) || [];
+  // This will be replaced by the API call above
+  // For now, return empty array until API endpoint is created
+  console.log('⚠️ API endpoint not yet implemented, returning empty array');
+  return [];
 };
 
 export function useRequestsQuery(userId?: string) {
@@ -18576,15 +18663,24 @@ const AppContent: React.FC = () => {
               </a>
 
               {/* Authentication Section */}
-              <div className="pt-6 border-t border-gray-200 w-full flex justify-center">
+              <div className="pt-6 border-t border-gray-200 w-full flex flex-col items-center space-y-4">
                 {user ? (
-                  <UserMenu onOpenProfile={() => {
-                    setShowProfileModal(true);
-                    setIsMenuOpen(false);
-                  }} />
+                  <div className="w-full max-w-xs">
+                    <UserMenu
+                      onOpenProfile={() => {
+                        setShowProfileModal(true);
+                        setIsMenuOpen(false);
+                      }}
+                      onNavigateToDashboard={() => {
+                        // Navigate to dashboard and close mobile menu
+                        window.location.hash = '#/dashboard';
+                        setIsMenuOpen(false);
+                      }}
+                    />
+                  </div>
                 ) : (
                   <button
-                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2 w-full max-w-xs justify-center"
                     onClick={() => {
                       setShowAuthModal(true);
                       setIsMenuOpen(false);

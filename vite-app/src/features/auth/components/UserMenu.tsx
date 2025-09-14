@@ -4,9 +4,10 @@ import { useAuth } from '../AuthContext';
 
 interface UserMenuProps {
   onOpenProfile: () => void;
+  onNavigateToDashboard?: () => void;
 }
 
-const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboard }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
 
@@ -40,14 +41,20 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile }) => {
             </div>
             <div className="py-1">
               {profile && profile.role === 'admin' && (
-                <a
-                  href="/#/dashboard"
-                  onClick={() => setIsOpen(false)}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onNavigateToDashboard) {
+                      onNavigateToDashboard();
+                    } else {
+                      window.location.hash = '#/dashboard';
+                    }
+                  }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Command Center
-                </a>
+                </button>
               )}
               <button
                 onClick={() => {

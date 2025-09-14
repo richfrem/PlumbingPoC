@@ -510,7 +510,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
               </div>
             </div>
 
-            {/* Footer with Save Button */}
+            {/* Footer with Save and Close Buttons */}
             <div style={{
               padding: '20px 24px',
               borderTop: '1px solid #e0e0e0',
@@ -546,36 +546,80 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
                   ✅ Profile saved successfully!
                 </div>
               )}
-              <button
-                type="submit"
-                disabled={loading || saveSuccess}
-                style={{
-                  background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 40px',
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  borderRadius: '25px',
-                  cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
-                  width: '100%',
-                  maxWidth: '250px',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  if (!loading && !saveSuccess) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
-                }}
-              >
-                {loading ? '⏳ SAVING...' : '💾 SAVE PROFILE'}
-              </button>
+
+              {/* Button Container */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                width: '100%',
+                maxWidth: '300px',
+                justifyContent: 'center'
+              }}>
+                {/* Close Button */}
+                {isClosable && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    style={{
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      padding: '12px 24px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      borderRadius: '25px',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      flex: '1',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!loading) {
+                        e.currentTarget.style.background = '#5a6268';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = '#6c757d';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    ❌ CLOSE
+                  </button>
+                )}
+
+                {/* Save Button */}
+                <button
+                  type="submit"
+                  disabled={loading || saveSuccess}
+                  style={{
+                    background: loading || saveSuccess ? '#6c757d' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    borderRadius: '25px',
+                    cursor: loading || saveSuccess ? 'not-allowed' : 'pointer',
+                    flex: '1',
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!loading && !saveSuccess) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                  }}
+                >
+                  {loading ? '⏳ SAVING...' : '💾 SAVE'}
+                </button>
+              </div>
             </div>
           </form>
         </div>

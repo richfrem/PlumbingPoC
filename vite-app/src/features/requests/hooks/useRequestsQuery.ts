@@ -8,46 +8,38 @@ import { QuoteRequest } from '../types';
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
   console.log('🔍 Fetching requests with userId:', userId);
 
-  let query = supabase
-    .from('requests')
-    .select(`*, user_profiles(name, email, phone), quote_attachments(*), quotes(*), request_notes(*)`)
-    .order('created_at', { ascending: false });
+  // Use API endpoint instead of direct Supabase query for proper permission handling
+  const apiUrl = '/api/requests';  // API handles user filtering based on authentication
 
-  if (userId) {
-    console.log('🔍 Filtering by user_id:', userId);
-    query = query.eq('user_id', userId);
-  } else {
-    console.log('🔍 Fetching ALL requests (admin mode)');
-  }
+  console.log('🔍 API URL:', apiUrl, 'for userId:', userId);
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('❌ Admin Dashboard Fetch Error:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Auth headers are handled by the browser for same-origin requests
+      },
+      credentials: 'include', // Include cookies for authentication
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ API Fetched Data:', data?.length || 0, 'requests for userId:', userId);
+    return data || [];
+  } catch (error) {
+    console.error('❌ API Fetch Error:', error);
     throw error;
   }
 
-  console.log('✅ Admin Dashboard Fetched Data:', data?.length || 0, 'requests for userId:', userId);
-
-  if (data && data.length > 0) {
-    console.log('📋 First request sample:', {
-      id: data[0].id,
-      user_id: data[0].user_id,
-      status: data[0].status,
-      has_user_profile: !!data[0].user_profiles,
-      created_at: data[0].created_at
-    });
-  } else {
-    console.log('📋 No requests found in database');
-  }
-
-  return (data as QuoteRequest[]) || [];
+  // This will be replaced by the API call above
+  // For now, return empty array until API endpoint is created
+  console.log('⚠️ API endpoint not yet implemented, returning empty array');
+  return [];
 };
 
 export function useRequestsQuery(userId?: string) {
