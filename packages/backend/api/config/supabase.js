@@ -1,21 +1,18 @@
-// /config/supabase.js
+// packages/backend/api/config/supabase.js
+
 import { createClient } from '@supabase/supabase-js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-// ESM equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables synchronously
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// THE FIX: Just like in server.js, we simplify the dotenv configuration.
+// We remove the complex pathing logic that relies on import.meta.url,
+// as this is what crashes the Netlify function.
+dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Supabase URL or Service Role Key is missing. Check your .env file.");
+  throw new Error("Supabase URL or Service Role Key is missing. Check your .env file and Netlify environment variables.");
 }
 
 // Create and export a single, shared Supabase client instance
