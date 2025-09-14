@@ -22,10 +22,12 @@
 # ===================================================================
 # THE DEFINITIVE FIX: Function Bundler Configuration
 # ===================================================================
-# This tells Netlify's bundler how to handle our backend function.
+# This tells Netlify's bundler how to handle our backend functions.
+# Note the correct TOML syntax: [functions."function-name"]
 [functions]
-  # Apply these rules to our main API function.
-  "api-mjs" = {
+
+  # Configuration for the main API function
+  [functions."api-mjs"]
     # Tell the bundler to NOT bundle these specific packages.
     # Instead, Netlify will include them in the function's node_modules
     # so they can be required/imported at runtime, just like in local dev.
@@ -37,6 +39,9 @@
       "supabase",
       "@supabase/supabase-js"
     ]
-  }
+
+  # Configuration for the SMS function
+  [functions."send-sms-mjs"]
+    external_node_modules = ["twilio"]
 
 # Removed [secrets] section and all secrets scanning related settings
