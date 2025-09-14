@@ -11,6 +11,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+
+    // Force pre-bundling of MUI dependencies to resolve CI build issues
+    optimizeDeps: {
+      include: ['@mui/material', '@mui/system'],
+    },
+
     server: {
       proxy: isNetlifyDev ? undefined : {
         '/api': (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
