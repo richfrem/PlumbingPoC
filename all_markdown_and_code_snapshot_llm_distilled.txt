@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T20:30:51.212Z
+Generated On: 2025-09-14T21:06:00.078Z
 
-# Mnemonic Weight (Token Count): ~184,458 tokens
+# Mnemonic Weight (Token Count): ~184,786 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -182,6 +182,8 @@ Generated On: 2025-09-14T20:30:51.212Z
   ./packages/frontend/src/lib/statusColors.ts
   ./packages/frontend/src/lib/supabaseClient.ts
   ./packages/frontend/src/main.tsx
+  ./packages/frontend/tsconfig.json
+  ./packages/frontend/tsconfig.node.json
   ./packages/frontend/vite.config.js
   ./playwright.config.ts
   ./scripts/
@@ -7268,7 +7270,7 @@ exports.handler = async function(event) {
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -8736,7 +8738,7 @@ export default ProfileModal;
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { Zap } from 'lucide-react';
-import { QuoteRequest } from './Dashboard'; // Assuming interfaces are in Dashboard.tsx
+import { QuoteRequest } from '../types';
 
 interface AITriageSummaryProps {
   request: QuoteRequest;
@@ -11237,7 +11239,7 @@ export default RequestDetailModal;
 import React from 'react';
 import { Box, Typography, Paper, Divider, Grid } from '@mui/material';
 import { AlertTriangle } from 'lucide-react';
-import { QuoteRequest } from './Dashboard'; // Assuming interfaces are in Dashboard.tsx
+import { QuoteRequest } from '../types';
 
 // This sub-component now lives inside the component that uses it.
 const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
@@ -11257,8 +11259,8 @@ interface RequestProblemDetailsProps {
 
 const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }) => {
   // Logic to separate the main description from other Q&A
-  const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
-  const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
+  const problemDescriptionAnswer = request.answers.find((a: { question: string; answer: string }) => a.question.toLowerCase().includes('describe the general problem'));
+  const otherAnswers = request.answers.filter((a: { question: string; answer: string }) => !a.question.toLowerCase().includes('describe the general problem'));
 
   return (
     <Paper variant="outlined">
@@ -11273,7 +11275,7 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
       <Divider />
       <Box sx={{ p: 2 }}>
         <Grid container spacing={2}>
-          {otherAnswers.map(ans => (
+          {otherAnswers.map((ans: { question: string; answer: string }) => (
             <AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />
           ))}
         </Grid>
@@ -12258,6 +12260,52 @@ const App: React.FC = () => {
 const root = document.getElementById('root');
 if (root) {
   ReactDOM.createRoot(root).render(<App />);
+}
+--- END OF FILE ---
+
+--- START OF FILE packages/frontend/tsconfig.json ---
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Vite */
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+--- END OF FILE ---
+
+--- START OF FILE packages/frontend/tsconfig.node.json ---
+
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.js"]
 }
 --- END OF FILE ---
 

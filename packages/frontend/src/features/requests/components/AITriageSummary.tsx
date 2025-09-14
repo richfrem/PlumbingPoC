@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import { Zap } from 'lucide-react';
-import { QuoteRequest } from './Dashboard'; // Assuming interfaces are in Dashboard.tsx
+import { QuoteRequest } from '../types';
 
 interface AITriageSummaryProps {
   request: QuoteRequest;

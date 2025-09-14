@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Typography, Paper, Divider, Grid } from '@mui/material';
 import { AlertTriangle } from 'lucide-react';
-import { QuoteRequest } from './Dashboard'; // Assuming interfaces are in Dashboard.tsx
+import { QuoteRequest } from '../types';
 
 // This sub-component now lives inside the component that uses it.
 const AnswerItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => (
@@ -23,8 +23,8 @@ interface RequestProblemDetailsProps {
 
 const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }) => {
   // Logic to separate the main description from other Q&A
-  const problemDescriptionAnswer = request.answers.find(a => a.question.toLowerCase().includes('describe the general problem'));
-  const otherAnswers = request.answers.filter(a => !a.question.toLowerCase().includes('describe the general problem'));
+  const problemDescriptionAnswer = request.answers.find((a: { question: string; answer: string }) => a.question.toLowerCase().includes('describe the general problem'));
+  const otherAnswers = request.answers.filter((a: { question: string; answer: string }) => !a.question.toLowerCase().includes('describe the general problem'));
 
   return (
     <Paper variant="outlined">
@@ -39,7 +39,7 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
       <Divider />
       <Box sx={{ p: 2 }}>
         <Grid container spacing={2}>
-          {otherAnswers.map(ans => (
+          {otherAnswers.map((ans: { question: string; answer: string }) => (
             <AnswerItem key={ans.question} question={ans.question} answer={ans.answer} />
           ))}
         </Grid>
