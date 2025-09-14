@@ -1,0 +1,9 @@
+{
+  "new": "#0288D1",
+  "viewed": "#FBC02D",
+  "quoted": "#F57C00",
+  "accepted": "#388E3C",
+  "scheduled": "#00796B",
+  "completed": "#546E7A",
+  "default": "#757575"
+}
