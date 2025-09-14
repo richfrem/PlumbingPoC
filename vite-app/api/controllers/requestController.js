@@ -11,14 +11,35 @@ const smsService = require('../services/smsService');
 const getRequestById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { data: request, error } = await supabase
+    const userId = req.user.id;
+
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    let query = supabase
       .from('requests')
-      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
+      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`);
+
+    // If not admin, only show their own requests
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+
+    // Get the specific request
+    const { data: request, error } = await query
       .eq('id', id)
       .single();
+
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
     }
+
     request.user_profiles = request.user_profiles || null;
     res.json(request);
   } catch (err) {

@@ -107,7 +107,7 @@ exports.sendNewRequestNotification = async (request) => {
   }
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
-  const messageBody = `New Quote Request!\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
+  const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
 
   numbersToNotify.forEach(number => triggerSms(number, messageBody));
 };
@@ -118,7 +118,7 @@ exports.sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
   if (adminNumbers.length === 0) return;
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
-  const messageBody = `Quote ACCEPTED!\nAmount: $${acceptedQuote.quote_amount.toFixed(2)}\nFor: ${request.problem_category.replace(/_/g, " ")}\nCustomer: ${request.user_profiles.name}\nLink: ${requestUrl}`;
+  const messageBody = `Quote ACCEPTED!\nID: ${request.id}\nAmount: $${acceptedQuote.quote_amount.toFixed(2)}\nFor: ${request.problem_category.replace(/_/g, " ")}\nCustomer: ${request.user_profiles.name}\nLink: ${requestUrl}`;
 
   adminNumbers.forEach(number => triggerSms(number, messageBody));
 };

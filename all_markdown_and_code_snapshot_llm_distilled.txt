@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-13T23:57:06.524Z
+Generated On: 2025-09-14T00:11:54.179Z
 
-# Mnemonic Weight (Token Count): ~170,910 tokens
+# Mnemonic Weight (Token Count): ~171,040 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -12577,14 +12577,35 @@ const smsService = require('../services/smsService');
 const getRequestById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { data: request, error } = await supabase
+    const userId = req.user.id;
+
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    let query = supabase
       .from('requests')
-      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`)
+      .select(`*, user_profiles!requests_user_id_fkey(*), quote_attachments(*), quotes(*), request_notes(*)`);
+
+    // If not admin, only show their own requests
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+
+    // Get the specific request
+    const { data: request, error } = await query
       .eq('id', id)
       .single();
+
     if (error || !request) {
       return res.status(404).json({ error: 'Request not found.' });
     }
+
     request.user_profiles = request.user_profiles || null;
     res.json(request);
   } catch (err) {
@@ -13733,7 +13754,7 @@ exports.sendNewRequestNotification = async (request) => {
   }
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
-  const messageBody = `New Quote Request!\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
+  const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
 
   numbersToNotify.forEach(number => triggerSms(number, messageBody));
 };
@@ -13744,7 +13765,7 @@ exports.sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
   if (adminNumbers.length === 0) return;
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
-  const messageBody = `Quote ACCEPTED!\nAmount: $${acceptedQuote.quote_amount.toFixed(2)}\nFor: ${request.problem_category.replace(/_/g, " ")}\nCustomer: ${request.user_profiles.name}\nLink: ${requestUrl}`;
+  const messageBody = `Quote ACCEPTED!\nID: ${request.id}\nAmount: $${acceptedQuote.quote_amount.toFixed(2)}\nFor: ${request.problem_category.replace(/_/g, " ")}\nCustomer: ${request.user_profiles.name}\nLink: ${requestUrl}`;
 
   adminNumbers.forEach(number => triggerSms(number, messageBody));
 };
