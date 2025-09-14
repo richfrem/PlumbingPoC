@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T02:58:06.062Z
+Generated On: 2025-09-14T03:06:04.471Z
 
-# Mnemonic Weight (Token Count): ~173,139 tokens
+# Mnemonic Weight (Token Count): ~173,295 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -18184,7 +18184,10 @@ const apiClient = axios.create({
 // Axios interceptor to automatically add the auth token to every request
 apiClient.interceptors.request.use(
   async (config) => {
+    console.log('🚀 API Client: Interceptor triggered for:', config.url);
+
     try {
+      console.log('🔍 API Client: Getting session...');
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
@@ -18192,9 +18195,16 @@ apiClient.interceptors.request.use(
         return config;
       }
 
+      console.log('📋 API Client: Session result:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        userId: session?.user?.id
+      });
+
       if (session?.access_token) {
         console.log('✅ API Client: Adding JWT token to request');
         config.headers.Authorization = `Bearer ${session.access_token}`;
+        console.log('📤 API Client: Headers now include:', !!config.headers.Authorization);
       } else {
         console.warn('⚠️ API Client: No session or access token found');
       }
@@ -18693,9 +18703,11 @@ const AppContent: React.FC = () => {
                         setIsMenuOpen(false);
                       }}
                       onNavigateToDashboard={() => {
+                        console.log('🚀 UserMenu: Navigating to dashboard');
                         // Navigate to dashboard and close mobile menu
                         setRoute('#/dashboard');
                         setIsMenuOpen(false);
+                        console.log('✅ UserMenu: Route set to:', '#/dashboard');
                       }}
                     />
                   </div>
@@ -18716,15 +18728,18 @@ const AppContent: React.FC = () => {
         )}
 
         <main className="pt-20 flex-grow">
-          {route === '#/dashboard' ? (
-            // *** THE FIX: Dashboard now receives its data and functions as props. ***
-            <Dashboard
-              requests={requests}
-              loading={loading}
-              error={error}
-              refreshRequests={refetch}
-            />
-          ) : renderHomePage()}
+          {(() => {
+            console.log('🎯 Route check:', { route, isDashboard: route === '#/dashboard', userRole: profile?.role });
+            return route === '#/dashboard' ? (
+              // *** THE FIX: Dashboard now receives its data and functions as props. ***
+              <Dashboard
+                requests={requests}
+                loading={loading}
+                error={error}
+                refreshRequests={refetch}
+              />
+            ) : renderHomePage();
+          })()}
         </main>
 
         {user && !profileIncomplete && (

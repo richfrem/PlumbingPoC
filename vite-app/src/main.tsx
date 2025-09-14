@@ -273,9 +273,11 @@ const AppContent: React.FC = () => {
                         setIsMenuOpen(false);
                       }}
                       onNavigateToDashboard={() => {
+                        console.log('🚀 UserMenu: Navigating to dashboard');
                         // Navigate to dashboard and close mobile menu
                         setRoute('#/dashboard');
                         setIsMenuOpen(false);
+                        console.log('✅ UserMenu: Route set to:', '#/dashboard');
                       }}
                     />
                   </div>
@@ -296,15 +298,18 @@ const AppContent: React.FC = () => {
         )}
 
         <main className="pt-20 flex-grow">
-          {route === '#/dashboard' ? (
-            // *** THE FIX: Dashboard now receives its data and functions as props. ***
-            <Dashboard
-              requests={requests}
-              loading={loading}
-              error={error}
-              refreshRequests={refetch}
-            />
-          ) : renderHomePage()}
+          {(() => {
+            console.log('🎯 Route check:', { route, isDashboard: route === '#/dashboard', userRole: profile?.role });
+            return route === '#/dashboard' ? (
+              // *** THE FIX: Dashboard now receives its data and functions as props. ***
+              <Dashboard
+                requests={requests}
+                loading={loading}
+                error={error}
+                refreshRequests={refetch}
+              />
+            ) : renderHomePage();
+          })()}
         </main>
 
         {user && !profileIncomplete && (
