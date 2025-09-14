@@ -249,7 +249,45 @@ const AppContent: React.FC = () => {
             </button>
           </div>
         </header>
-        
+
+        {/* Mobile Navigation Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-30 bg-white flex flex-col items-center justify-center">
+            <nav className="flex flex-col items-center space-y-6 text-xl">
+              <a href="/#services" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Services</a>
+              <a href="/#about" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>About</a>
+              <a href="/#testimonials" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Reviews</a>
+              <a href="/#contact" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Contact</a>
+              <a href="tel:555-123-4567" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2" onClick={() => setIsMenuOpen(false)}>
+                <Phone className="w-5 h-5" />
+                <span>Call Now</span>
+              </a>
+
+              {/* Authentication Section */}
+              <div className="pt-6 border-t border-gray-200 w-full flex justify-center">
+                {user ? (
+                  <div onClick={() => setIsMenuOpen(false)}>
+                    <UserMenu onOpenProfile={() => {
+                      setShowProfileModal(true);
+                      setIsMenuOpen(false);
+                    }} />
+                  </div>
+                ) : (
+                  <button
+                    className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
+                    onClick={() => {
+                      setShowAuthModal(true);
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <span>Sign In</span>
+                  </button>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
+
         <main className="pt-20 flex-grow">
           {route === '#/dashboard' ? (
             // *** THE FIX: Dashboard now receives its data and functions as props. ***
