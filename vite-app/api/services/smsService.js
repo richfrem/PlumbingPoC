@@ -66,10 +66,15 @@ const triggerSms = async (to, body) => {
   }
 
   try {
+    console.log('📤 SMS DEBUG: About to import Twilio...');
     // Import Twilio client
     const twilio = require('twilio')(accountSid, authToken);
+    console.log('📤 SMS DEBUG: Twilio client created successfully');
 
-    console.log('📤 SMS DEBUG: Calling Twilio API...');
+    console.log('📤 SMS DEBUG: About to call Twilio API...');
+    console.log('📤 SMS DEBUG: To:', to);
+    console.log('📤 SMS DEBUG: From:', fromPhone);
+    console.log('📤 SMS DEBUG: Body length:', body.length);
 
     // Send SMS directly
     const smsResponse = await twilio.messages.create({
@@ -93,6 +98,9 @@ const triggerSms = async (to, body) => {
 exports.sendNewRequestNotification = async (request) => {
   console.log('📱 SMS SERVICE: sendNewRequestNotification called');
   console.log('📱 SMS SERVICE: Request ID:', request.id);
+  console.log('📱 SMS SERVICE: Request data structure:', JSON.stringify(request, null, 2));
+  console.log('📱 SMS SERVICE: customer_name:', request.customer_name);
+  console.log('📱 SMS SERVICE: user_profiles:', request.user_profiles);
 
   // First try to get admin numbers from database
   const adminNumbers = await getAdminPhoneNumbers();
@@ -122,7 +130,15 @@ exports.sendNewRequestNotification = async (request) => {
 
 // SCENARIO 2: Quote Accepted by Customer
 exports.sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
+  console.log('📱 SMS SERVICE: sendQuoteAcceptedNotification called');
+  console.log('📱 SMS SERVICE: Request ID:', request.id);
+  console.log('📱 SMS SERVICE: Quote data:', JSON.stringify(acceptedQuote, null, 2));
+  console.log('📱 SMS SERVICE: Request data structure:', JSON.stringify(request, null, 2));
+  console.log('📱 SMS SERVICE: customer_name:', request.customer_name);
+  console.log('📱 SMS SERVICE: user_profiles:', request.user_profiles);
+
   const adminNumbers = await getAdminPhoneNumbers();
+  console.log('📱 SMS SERVICE: Found admin numbers from DB:', adminNumbers);
   if (adminNumbers.length === 0) return;
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
