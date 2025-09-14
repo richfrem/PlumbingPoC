@@ -91,20 +91,28 @@ const triggerSms = async (to, body) => {
 
 // SCENARIO 1: New Quote Request
 exports.sendNewRequestNotification = async (request) => {
+  console.log('📱 SMS SERVICE: sendNewRequestNotification called');
+  console.log('📱 SMS SERVICE: Request ID:', request.id);
+
   // First try to get admin numbers from database
   const adminNumbers = await getAdminPhoneNumbers();
+  console.log('📱 SMS SERVICE: Found admin numbers from DB:', adminNumbers);
 
   let numbersToNotify = adminNumbers;
 
   // If no admin numbers in DB, use default admin number from env
   if (adminNumbers.length === 0) {
     const defaultAdminNumber = process.env.TWILIO_DEFAULT_ADMIN_NUMBER;
+    console.log('📱 SMS SERVICE: No admin numbers in DB, using default:', defaultAdminNumber);
     if (defaultAdminNumber) {
       numbersToNotify = [defaultAdminNumber];
     } else {
+      console.log('📱 SMS SERVICE: No default admin number configured, skipping SMS');
       return;
     }
   }
+
+  console.log('📱 SMS SERVICE: Will send SMS to:', numbersToNotify);
 
   const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
   const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
