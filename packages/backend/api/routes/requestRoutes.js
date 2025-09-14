@@ -1,8 +1,8 @@
 // packages/backend/api/routes/requestRoutes.js
 
-const express = require('express');
-const multer = require('multer');
-const {
+import express from 'express';
+import multer from 'multer';
+import {
   getGptFollowUp,
   submitQuoteRequest,
   uploadAttachment,
@@ -14,10 +14,10 @@ const {
   updateQuote,
   acceptQuote,
   updateRequestStatus,
-} = require('../controllers/requestController.js');
-const { authenticate, isAdmin } = require('../middleware/authMiddleware.js');
-const { validate } = require('../middleware/validationMiddleware.js');
-const {
+} from '../controllers/requestController.js';
+import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validationMiddleware.js';
+import {
   gptRequestSchema,
   submitQuoteSchema,
   addNoteSchema,
@@ -25,7 +25,7 @@ const {
   updateQuoteSchema,
   getObjectSchema,
   updateStatusSchema,
-} = require('../validation/schemas.js');
+} from '../validation/schemas.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -48,4 +48,4 @@ router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSc
 router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:id', authenticate, getRequestById);
 
-module.exports = router;
+export default router;
