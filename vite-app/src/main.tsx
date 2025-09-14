@@ -266,12 +266,10 @@ const AppContent: React.FC = () => {
               {/* Authentication Section */}
               <div className="pt-6 border-t border-gray-200 w-full flex justify-center">
                 {user ? (
-                  <div onClick={() => setIsMenuOpen(false)}>
-                    <UserMenu onOpenProfile={() => {
-                      setShowProfileModal(true);
-                      setIsMenuOpen(false);
-                    }} />
-                  </div>
+                  <UserMenu onOpenProfile={() => {
+                    setShowProfileModal(true);
+                    setIsMenuOpen(false);
+                  }} />
                 ) : (
                   <button
                     className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
