@@ -1,8 +1,8 @@
-// netlify/functions/send-sms.js
+// packages/backend/netlify/functions/send-sms.mjs
 
-const twilio = require('twilio');
+import twilio from 'twilio';
 
-exports.handler = async function(event) {
+export async function handler(event) {
   // 1. Security Check: Only allow POST requests with the correct secret header.
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };

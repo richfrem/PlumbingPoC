@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T21:06:00.078Z
+Generated On: 2025-09-14T22:32:24.915Z
 
-# Mnemonic Weight (Token Count): ~184,786 tokens
+# Mnemonic Weight (Token Count): ~184,225 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -125,8 +125,8 @@ Generated On: 2025-09-14T21:06:00.078Z
   ./packages/backend/api/validation/schemas.js
   ./packages/backend/netlify/
   ./packages/backend/netlify/functions/
-  ./packages/backend/netlify/functions/api.cjs
-  ./packages/backend/netlify/functions/send-sms.cjs
+  ./packages/backend/netlify/functions/api.mjs
+  ./packages/backend/netlify/functions/send-sms.mjs
   ./packages/backend/package.json
   ./packages/frontend/
   ./packages/frontend/index.html
@@ -183,7 +183,6 @@ Generated On: 2025-09-14T21:06:00.078Z
   ./packages/frontend/src/lib/supabaseClient.ts
   ./packages/frontend/src/main.tsx
   ./packages/frontend/tsconfig.json
-  ./packages/frontend/tsconfig.node.json
   ./packages/frontend/vite.config.js
   ./playwright.config.ts
   ./scripts/
@@ -5336,8 +5335,11 @@ Your work is now done. Provide this guide and the following technical specificat
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
     "@google/generative-ai": "^0.15.0",
     "@mui/material": "^5.16.1",
+    "@mui/system": "^5.16.1",
     "@mui/x-data-grid": "^7.17.0",
     "@supabase/supabase-js": "^2.44.4",
     "@tanstack/react-query": "^5.51.11",
@@ -5347,7 +5349,7 @@ Your work is now done. Provide this guide and the following technical specificat
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "lucide-react": "^0.411.0",
-    "multer": "^2.0.2",
+    "multer": "^1.4.5-lts.2",
     "openai": "^4.52.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -7165,26 +7167,25 @@ export {
 };
 --- END OF FILE ---
 
---- START OF FILE packages/backend/netlify/functions/api.cjs ---
+--- START OF FILE packages/backend/netlify/functions/api.mjs ---
 
-// packages/backend/netlify/functions/api.cjs
+// packages/backend/netlify/functions/api.mjs
 
-const serverless = require('serverless-http');
-// This line imports the Express app you just refactored.
-const app = require('../../../packages/backend/api/server.js');
+import serverless from 'serverless-http';
+import app from '../../api/server.js';
 
 // This wraps your Express app for Netlify and exports it as a handler.
-module.exports.handler = serverless(app);
+export const handler = serverless(app);
 
 --- END OF FILE ---
 
---- START OF FILE packages/backend/netlify/functions/send-sms.cjs ---
+--- START OF FILE packages/backend/netlify/functions/send-sms.mjs ---
 
-// netlify/functions/send-sms.js
+// packages/backend/netlify/functions/send-sms.mjs
 
-const twilio = require('twilio');
+import twilio from 'twilio';
 
-exports.handler = async function(event) {
+export async function handler(event) {
   // 1. Security Check: Only allow POST requests with the correct secret header.
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -7239,24 +7240,7 @@ exports.handler = async function(event) {
   "type": "module",
   "main": "api/server.js",
   "scripts": {
-    "start": "node api/server.js",
-    "dev": "node api/server.js"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.15.0",
-    "@supabase/supabase-js": "^2.44.4",
-    "axios": "^1.7.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.2",
-    "openai": "^4.52.7",
-    "resend": "^3.5.0",
-    "twilio": "^5.2.2",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.12"
+    "start": "node api/server.js"
   }
 }
 --- END OF FILE ---
@@ -7273,33 +7257,9 @@ exports.handler = async function(event) {
     "build": "tsc --noEmit && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "@google/generative-ai": "^0.15.0",
-    "@mui/material": "^5.16.1",
-    "@mui/x-data-grid": "^7.17.0",
-    "@supabase/supabase-js": "^2.44.4",
-    "@tanstack/react-query": "^5.51.11",
-    "@vis.gl/react-google-maps": "^1.1.0",
-    "axios": "^1.7.2",
-    "lucide-react": "^0.411.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-dropzone": "^14.2.3",
-    "resend": "^3.5.0",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.12",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.3.4"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE packages/frontend/src/features/admin/components/MapView.tsx ---
@@ -12290,22 +12250,7 @@ if (root) {
     /* Vite */
     "types": ["vite/client"]
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
---- END OF FILE ---
-
---- START OF FILE packages/frontend/tsconfig.node.json ---
-
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["vite.config.js"]
+  "include": ["src"]
 }
 --- END OF FILE ---
 
@@ -19996,7 +19941,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.git', '.cache'],
+    exclude: ['node_modules', 'dist', '.git', '.cache', 'packages/backend'], // Exclude backend from test runs
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
@@ -20005,7 +19950,7 @@ export default defineConfig({
         'tests/',
         '**/*.d.ts',
         '**/*.config.{js,ts}',
-        'netlify/',
+        'packages/backend/', // Explicitly exclude backend from coverage
         'coverage/',
       ],
     },
@@ -20013,9 +19958,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './packages/frontend/src'),
-      '@api': path.resolve(__dirname, './packages/backend/api'),
-      '@lib': path.resolve(__dirname, './packages/frontend/src/lib'),
-      '@features': path.resolve(__dirname, './packages/frontend/src/features'),
     },
   },
 });

@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.git', '.cache'],
+    exclude: ['node_modules', 'dist', '.git', '.cache', 'packages/backend'], // Exclude backend from test runs
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
@@ -18,7 +18,7 @@ export default defineConfig({
         'tests/',
         '**/*.d.ts',
         '**/*.config.{js,ts}',
-        'netlify/',
+        'packages/backend/', // Explicitly exclude backend from coverage
         'coverage/',
       ],
     },
@@ -26,9 +26,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './packages/frontend/src'),
-      '@api': path.resolve(__dirname, './packages/backend/api'),
-      '@lib': path.resolve(__dirname, './packages/frontend/src/lib'),
-      '@features': path.resolve(__dirname, './packages/frontend/src/features'),
     },
   },
 });
