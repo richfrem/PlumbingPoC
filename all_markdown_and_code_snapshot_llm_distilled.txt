@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-14T01:03:16.226Z
+Generated On: 2025-09-14T01:05:11.694Z
 
-# Mnemonic Weight (Token Count): ~171,217 tokens
+# Mnemonic Weight (Token Count): ~171,209 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -13590,7 +13590,7 @@ const getRecipientEmail = (request) => {
 }
 
 const getRequestUrl = (requestId) => {
-  return `${BASE_URL}/requests/${requestId}`; // Assuming frontend route is /requests/:id
+  return `${BASE_URL}`; // Link to main page for better mobile experience
 }
 
 const sendRequestSubmittedEmail = (request) => {
@@ -13765,7 +13765,7 @@ exports.sendNewRequestNotification = async (request) => {
 
   console.log('📱 SMS SERVICE: Will send SMS to:', numbersToNotify);
 
-  const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
+  const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}`;
   const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
 
   numbersToNotify.forEach(number => triggerSms(number, messageBody));

@@ -53,7 +53,7 @@ const getRecipientEmail = (request) => {
 }
 
 const getRequestUrl = (requestId) => {
-  return `${BASE_URL}/requests/${requestId}`; // Assuming frontend route is /requests/:id
+  return `${BASE_URL}`; // Link to main page for better mobile experience
 }
 
 const sendRequestSubmittedEmail = (request) => {

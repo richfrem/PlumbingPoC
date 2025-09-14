@@ -114,7 +114,7 @@ exports.sendNewRequestNotification = async (request) => {
 
   console.log('📱 SMS SERVICE: Will send SMS to:', numbersToNotify);
 
-  const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}/#/dashboard`;
+  const requestUrl = `${process.env.VITE_FRONTEND_BASE_URL}`;
   const messageBody = `New Quote Request!\nID: ${request.id}\nType: ${request.problem_category.replace(/_/g, " ")}\nFrom: ${request.customer_name}\nAddress: ${request.service_address}\nLink: ${requestUrl}`;
 
   numbersToNotify.forEach(number => triggerSms(number, messageBody));
