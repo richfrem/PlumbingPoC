@@ -34,12 +34,12 @@ optimizeDeps: {
 **Problem:** Netlify functions crashed with:
 ```
 TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
-at fileURLToPath (node:internal/url:1507:11)
+    at fileURLToPath (node:internal/url:1507:11)
 ```
 
-**Root Cause:** The server.js file used `import.meta.url` to dynamically load .env files, but this value is undefined in Netlify's serverless environment.
+**Root Cause:** Multiple backend files (server.js, config/supabase.js) used `import.meta.url` to dynamically load .env files, but this value is undefined in Netlify's serverless environment.
 
-**Solution:** Simplified environment variable loading:
+**Solution:** Simplified environment variable loading in all backend files:
 ```javascript
 // Before (problematic)
 import { fileURLToPath } from 'url';
@@ -147,5 +147,7 @@ Before deploying to Netlify:
 - ✅ API endpoints respond correctly
 - ✅ Environment variables load properly
 - ✅ No module resolution errors
+- ✅ All import.meta.url issues resolved
+- ✅ Consistent ESM module system throughout backend
 
 This guide should prevent future deployment issues and serve as a reference for maintaining the Netlify deployment.
