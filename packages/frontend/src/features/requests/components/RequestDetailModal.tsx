@@ -16,6 +16,7 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -31,6 +32,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const updateStatusMutation = useUpdateRequestStatus();
   const acceptQuoteMutation = useAcceptQuote();
   const triageMutation = useTriageRequest();
+  const queryClient = useQueryClient();
+
+  const markAsViewedMutation = useMutation({
+    mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
+    onSuccess: () => {
+      // Invalidate queries to get the fresh status update from the server
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+  });
 
   // Local state is ONLY for UI interactions that are not driven by props.
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -73,14 +83,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isAdmin = profile?.role === 'admin';
   const isReadOnly = ['completed'].includes(request.status);
 
-  // *** NEW: Auto-update status to "viewed" when non-admin user opens modal ***
-  // This implements the missing lifecycle step: user views quote but doesn't approve it
+  // *** Auto-update status to "viewed" when non-admin user views request details ***
+  // This implements the workflow: Quoted --> Viewed when user views request details
   useEffect(() => {
     if (isOpen && request && !isAdmin && request.status === 'quoted') {
       // Non-admin user is viewing a quoted request - update status to viewed
-      handleStatusUpdate('viewed');
+      markAsViewedMutation.mutate(request.id);
     }
-  }, [isOpen, request?.id, isAdmin, request?.status]); // Only run when modal opens or request changes
+  }, [isOpen, request?.id, isAdmin, request?.status, markAsViewedMutation]);
+
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;

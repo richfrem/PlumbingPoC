@@ -488,6 +488,36 @@ const acceptQuote = async (req, res, next) => {
 };
 
 /**
+ * Handles marking a request as viewed by the user.
+ */
+const markRequestAsViewed = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Atomically update the status to 'viewed' ONLY IF it is currently 'quoted'.
+    // This prevents overwriting other statuses. We also ensure the user owns the request.
+    const { data, error } = await supabase
+      .from('requests')
+      .update({ status: 'viewed' })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .eq('status', 'quoted') // This is the critical condition
+      .select()
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // Ignore 'no rows returned' error
+      throw error;
+    }
+
+    // It's not an error if nothing was updated (e.g., status was already 'viewed').
+    res.status(200).json({ message: 'Request marked as viewed where applicable.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -510,7 +540,7 @@ const updateRequestStatus = async (req, res, next) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Request not found.' });
 
-    await emailService.sendStatusUpdateEmail(data);
+    await sendStatusUpdateEmail(data);
 
     res.status(200).json(data);
   } catch (err) {
@@ -530,4 +560,5 @@ export {
   updateQuote,
   acceptQuote,
   updateRequestStatus,
+  markRequestAsViewed,
 };

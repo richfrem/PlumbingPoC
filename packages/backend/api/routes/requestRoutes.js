@@ -14,6 +14,7 @@ import {
   updateQuote,
   acceptQuote,
   updateRequestStatus,
+  markRequestAsViewed,
 } from '../controllers/requestController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validationMiddleware.js';
@@ -41,6 +42,7 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 
 // --- Client Portal & Admin Routes ---
 router.get('/', authenticate, getAllRequests); // Get all requests for admin table
+router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request as viewed by user
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
