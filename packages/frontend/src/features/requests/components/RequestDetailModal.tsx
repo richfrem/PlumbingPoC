@@ -15,6 +15,7 @@ import AITriageSummary from './AITriageSummary';
 import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
+import CompleteJobModal from './CompleteJobModal';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -34,6 +35,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const triageMutation = useTriageRequest();
   const queryClient = useQueryClient();
 
+  const completeJobMutation = useMutation({
+    mutationFn: async ({ requestId, data }: { requestId: string; data: { actual_cost: number; completion_notes: string } }) => {
+      const response = await apiClient.patch(`/requests/${requestId}/complete`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setCompleteModalOpen(false);
+    },
+  });
+
   const markAsViewedMutation = useMutation({
     mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
     onSuccess: () => {
@@ -45,6 +57,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   // Local state is ONLY for UI interactions that are not driven by props.
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
+  const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
   
   // *** THE DEFINITIVE FIX: State Synchronization Effect ***
   // This hook ensures that whenever the parent passes a new `request` object,
@@ -78,6 +91,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     await handleStatusUpdate('scheduled', utcDate.toISOString());
     setScheduledDateChanged(false); // Reset after successful save
   }, [request, scheduledStartDate, handleStatusUpdate]);
+
+  const handleOpenCompleteModal = useCallback(() => {
+    setCompleteModalOpen(true);
+  }, []);
+
+  const handleConfirmCompletion = useCallback(async (data: { actual_cost: number; completion_notes: string }) => {
+    if (!request) return;
+    await completeJobMutation.mutateAsync({ requestId: request.id, data });
+  }, [request, completeJobMutation]);
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
@@ -169,9 +191,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             onStatusChange={(newStatus) => handleStatusUpdate(newStatus)}
             scheduledDateChanged={scheduledDateChanged}
             onSaveAndSchedule={handleSaveAndSchedule}
+            onMarkCompleted={handleOpenCompleteModal}
           />
         </ModalFooter>
       </Paper>
+
+      <CompleteJobModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        onConfirm={handleConfirmCompletion}
+        jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        isSubmitting={completeJobMutation.isPending}
+      />
     </div>
   );
 };

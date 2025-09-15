@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, Chip } from '@mui/material';
-import { Phone } from 'lucide-react';
+import { Phone, CheckCircle } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 
@@ -14,6 +14,7 @@ interface RequestActionsProps {
   onStatusChange: (newStatus: string) => void;
   scheduledDateChanged?: boolean;
   onSaveAndSchedule?: () => void;
+  onMarkCompleted?: () => void;
 }
 
 const RequestActions: React.FC<RequestActionsProps> = ({
@@ -23,7 +24,8 @@ const RequestActions: React.FC<RequestActionsProps> = ({
   isUpdating,
   onStatusChange,
   scheduledDateChanged = false,
-  onSaveAndSchedule
+  onSaveAndSchedule,
+  onMarkCompleted
 }) => {
   return (
     <>
@@ -33,8 +35,19 @@ const RequestActions: React.FC<RequestActionsProps> = ({
 
       {isAdmin && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {scheduledDateChanged ? (
-            // STATE 1: Date has been changed, show the primary action button
+          {currentStatus === 'scheduled' ? (
+            // STATE 1: Scheduled job - show "Mark as Completed" button
+            <Button
+              variant="contained"
+              color="success"
+              onClick={onMarkCompleted}
+              disabled={isUpdating}
+              startIcon={<CheckCircle size={16} />}
+            >
+              Mark as Completed
+            </Button>
+          ) : scheduledDateChanged ? (
+            // STATE 2: Date has been changed, show the primary action button
             <Button
               variant="contained"
               color="success"
@@ -44,7 +57,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
               Save & Schedule
             </Button>
           ) : (
-            // STATE 2: Default view with status dropdown
+            // STATE 3: Default view with status dropdown
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Update Status</InputLabel>
               <Select
