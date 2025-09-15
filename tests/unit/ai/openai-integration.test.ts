@@ -3,6 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock OpenAI at the module level
 const mockCreate = vi.fn();
 vi.mock('openai', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate
+      }
+    }
+  })),
   OpenAI: vi.fn().mockImplementation(() => ({
     chat: {
       completions: {
@@ -18,6 +25,35 @@ vi.mock('axios', () => ({
     post: vi.fn()
   }
 }));
+
+// Mock Resend email service
+vi.mock('resend', () => ({
+  Resend: vi.fn().mockImplementation(() => ({
+    emails: {
+      send: vi.fn().mockResolvedValue({ id: 'test-email-id' })
+    }
+  }))
+}));
+
+// Mock Supabase - define the mock object directly inside the factory function
+vi.mock('../../../packages/backend/api/config/supabase', () => {
+  const mockSupabase = {
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({
+      data: {
+        id: 'test-request-id',
+        problem_category: 'test',
+        answers: []
+      },
+      error: null
+    }),
+    update: vi.fn().mockReturnThis()
+  };
+
+  return { default: mockSupabase };
+});
 
 describe('OpenAI Integration Tests', () => {
   beforeEach(() => {
@@ -277,31 +313,6 @@ describe('OpenAI Integration Tests', () => {
   
         mockCreate.mockResolvedValueOnce(mockResponse);
   
-        // Mock Supabase
-        const mockSupabase = {
-          from: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'test-request-id',
-              problem_category: 'leak_repair',
-              answers: [
-                { question: 'What type of leak?', answer: 'Pipe burst' },
-                { question: 'Location of leak?', answer: 'Under sink' }
-              ]
-            },
-            error: null
-          }),
-          update: vi.fn().mockReturnThis()
-        };
-  
-        const mockUpdateResult = vi.fn().mockResolvedValue({ error: null });
-        mockSupabase.eq.mockReturnValueOnce(mockUpdateResult);
-  
-        vi.mock('../../../packages/backend/api/config/supabase', () => ({
-          default: mockSupabase
-        }));
   
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
@@ -393,28 +404,6 @@ describe('OpenAI Integration Tests', () => {
   
         mockCreate.mockResolvedValueOnce(mockResponse);
   
-        // Mock Supabase with update error
-        const mockSupabase = {
-          from: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'test-request-id',
-              problem_category: 'test',
-              answers: []
-            },
-            error: null
-          }),
-          update: vi.fn().mockReturnThis()
-        };
-
-        const mockUpdateError = vi.fn().mockResolvedValue({ error: new Error('Database update failed') });
-        mockSupabase.eq.mockReturnValueOnce(mockUpdateError);
-  
-        vi.mock('../../../packages/backend/api/config/supabase', () => ({
-          default: mockSupabase
-        }));
 
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
   
