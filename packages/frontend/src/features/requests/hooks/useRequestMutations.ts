@@ -23,10 +23,15 @@ export function useAcceptQuote() {
 
   return useMutation({
     mutationFn: async ({ requestId, quoteId }: { requestId: string; quoteId: string }) => {
+      console.log('useAcceptQuote: Calling API', { requestId, quoteId });
       await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('useAcceptQuote: Success', data);
       queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+    onError: (error) => {
+      console.error('useAcceptQuote: Error', error);
     },
   });
 }

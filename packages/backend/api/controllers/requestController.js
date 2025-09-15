@@ -424,6 +424,8 @@ const acceptQuote = async (req, res, next) => {
     const { id, quoteId } = req.params;
     const userId = req.user.id;
 
+    console.log('acceptQuote: Starting', { requestId: id, quoteId, userId });
+
     // Check if user is admin
     const { data: userProfile } = await supabase
       .from('user_profiles')
@@ -432,6 +434,7 @@ const acceptQuote = async (req, res, next) => {
       .single();
 
     const isAdmin = userProfile?.role === 'admin';
+    console.log('acceptQuote: User role check', { isAdmin, userProfile });
 
     // If not admin, verify user owns this request
     if (!isAdmin) {
@@ -442,20 +445,29 @@ const acceptQuote = async (req, res, next) => {
         .single();
 
       if (requestError || !requestData) {
+        console.log('acceptQuote: Request not found', { requestError, requestData });
         return res.status(404).json({ error: 'Request not found.' });
       }
 
       if (requestData.user_id !== userId) {
+        console.log('acceptQuote: Forbidden - user does not own request', { requestDataUserId: requestData.user_id, userId });
         return res.status(403).json({ error: 'You can only accept quotes for your own requests.' });
       }
     }
+
+    console.log('acceptQuote: Calling stored procedure', { requestId: id, quoteId });
 
     // 1. Run the existing stored procedure to update database state
     const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
       p_request_id: id,
       p_quote_id: quoteId,
     });
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      console.error('acceptQuote: Stored procedure error', rpcError);
+      throw rpcError;
+    }
+
+    console.log('acceptQuote: Stored procedure completed successfully');
 
     // 2. Fetch all necessary data for notifications in a single block
     const { data: requestData, error: requestError } = await supabase
