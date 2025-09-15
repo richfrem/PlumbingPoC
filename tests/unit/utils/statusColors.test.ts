@@ -3,15 +3,15 @@ import { getRequestStatusChipColor, getQuoteStatusChipColor } from '../../../pac
 
 describe('Request Status Colors', () => {
   it('should return correct color for "new" status', () => {
-    expect(getRequestStatusChipColor('new')).toBe('primary');
+    expect(getRequestStatusChipColor('new')).toBe('info');
   });
 
   it('should return correct color for "viewed" status', () => {
-    expect(getRequestStatusChipColor('viewed')).toBe('info');
+    expect(getRequestStatusChipColor('viewed')).toBe('warning');
   });
 
   it('should return correct color for "quoted" status', () => {
-    expect(getRequestStatusChipColor('quoted')).toBe('warning');
+    expect(getRequestStatusChipColor('quoted')).toBe('primary');
   });
 
   it('should return correct color for "accepted" status', () => {

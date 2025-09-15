@@ -13,19 +13,41 @@ The application uses Netlify Functions to run the Express.js backend serverlessl
 
 ## Module System
 
-All functions use ES Modules (`.mjs` extension) to maintain consistency with the backend codebase. This was chosen after extensive troubleshooting with CommonJS/ESM interoperability issues.
+All functions use ES Modules (`.mjs` extension) to maintain consistency with the modern backend codebase. The functions are configured with external module dependencies to ensure proper serverless compatibility.
 
 ### Key Technical Decisions
 
-1. **ESM over CommonJS**: Despite Netlify's CommonJS preference, we use ESM to avoid module system conflicts between the Express server (ESM) and serverless functions.
+1. **ESM Architecture**: Modern ES Modules throughout the entire backend for consistency and future-proofing.
 
-2. **Dynamic Imports**: The `api.mjs` uses dynamic imports to load the Express app and `serverless-http` at runtime, preventing bundling issues.
+2. **External Modules Configuration**: Netlify's bundler is configured via `netlify.toml` to treat complex Node.js packages (express, cors, serverless-http, etc.) as external dependencies rather than bundling them. This prevents bundling conflicts while maintaining runtime availability.
 
-3. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
+3. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
+
+4. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
 
 ## Deployment
 
 Functions are automatically deployed when code is pushed to the main branch. Netlify detects `.mjs` files in this directory and deploys them as serverless functions.
+
+### Bundler Configuration
+
+The functions use Netlify's esbuild bundler with special configuration in `netlify.toml`:
+
+```toml
+[functions]
+  "api-mjs" = {
+    external_node_modules = [
+      "express",
+      "cors",
+      "serverless-http",
+      "dotenv",
+      "supabase",
+      "@supabase/supabase-js"
+    ]
+  }
+```
+
+This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality.
 
 ## Environment Variables
 
@@ -38,11 +60,13 @@ Functions access environment variables set in the Netlify dashboard:
 
 ### Common Issues
 
-1. **502 Bad Gateway**: Usually indicates the function crashed during initialization. Check Netlify function logs for the exact error.
+1. **502 Bad Gateway**: Usually indicates the function crashed during initialization. Check Netlify function logs for the exact error. Often related to bundling issues with external dependencies.
 
-2. **ESM/CommonJS Conflicts**: If you encounter module loading errors, ensure all backend files use consistent import/export syntax.
+2. **Bundling Errors**: If you see errors about external modules, verify the `external_node_modules` configuration in `netlify.toml` includes all required packages.
 
-3. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard.
+3. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
+
+4. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard. Functions access variables injected by Netlify at runtime.
 
 ### Function Logs
 

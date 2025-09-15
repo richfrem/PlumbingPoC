@@ -4,6 +4,6 @@
   "type": "module",
   "main": "api/server.js",
   "scripts": {
-    "start": "node api/server.js"
+    "start": "node start.js"
   }
 }

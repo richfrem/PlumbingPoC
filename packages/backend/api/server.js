@@ -1,23 +1,19 @@
-// packages/backend/api/server.js (v4.2 - Final Syntax Fix)
+// packages/backend/api/server.js (v4.3 - Serverless Clean)
 import express from 'express';
 import cors from 'cors';
 
-// Conditionally require and configure dotenv ONLY for local development.
-if (!process.env.NETLIFY) {
-  // Use a standard require for compatibility.
-  // This block will not run in the Netlify environment.
-  const dotenv = require('dotenv');
-  dotenv.config({ path: '../../.env' });
-}
+// This is the ONLY place dotenv is configured. It is safe here.
+// Netlify provides process.env, so this call is effectively ignored in production.
+// Locally, it loads the .env file as needed.
+const dotenv = require('dotenv');
+dotenv.config({ path: '../../.env' });
 
-// All subsequent imports will now have access to process.env variables.
 import requestRoutes from './routes/requestRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import followUpRoutes from './routes/followUpRoutes.js';
 import triageRoutes from './routes/triageRoutes.js';
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 3000;
 
 const corsOptions = {
   origin: process.env.VITE_FRONTEND_BASE_URL,
@@ -42,14 +38,5 @@ app.use((err, req, res, next) => {
   });
 });
 
+// The serverless wrapper will import this `app` object.
 export default app;
-
-// The local startup block is now extremely simple.
-if (import.meta.url.startsWith('file:')) {
-  const modulePath = new URL(import.meta.url).pathname;
-  if (process.argv[1] === modulePath) {
-    app.listen(PORT, () => {
-      console.log(`LOCAL DEV: API server running on http://localhost:${PORT}`);
-    });
-  }
-}
