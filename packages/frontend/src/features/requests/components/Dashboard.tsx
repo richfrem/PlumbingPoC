@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
-import { AlertTriangle, Map, Table, Siren } from 'lucide-react';
+import { AlertTriangle, Map, Table, Siren, CalendarDays } from 'lucide-react';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
 import { QuoteRequest, Quote } from '../types';
@@ -25,6 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
+  const [dateFilter, setDateFilter] = useState<string>('all');
 
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
@@ -43,13 +44,40 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
       requests = requests.filter(request => request.status === activeFilterStatus);
     }
 
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+
+      requests = requests.filter(request => {
+        const scheduledDate = request.scheduled_start_date ? new Date(request.scheduled_start_date) : null;
+
+        switch (dateFilter) {
+          case 'today':
+            return scheduledDate && scheduledDate.toDateString() === today.toDateString();
+          case 'week':
+            return scheduledDate && scheduledDate >= weekStart && scheduledDate <= weekEnd;
+          case 'unscheduled':
+            return request.status === 'accepted' && !scheduledDate;
+          case 'overdue':
+            return scheduledDate && scheduledDate < today && request.status !== 'completed';
+          default:
+            return true;
+        }
+      });
+    }
+
     // Then, apply emergency filter on top
     if (isEmergencyFilter) {
       requests = requests.filter(request => request.is_emergency === true);
     }
 
     return requests;
-  }, [allRequests, activeFilterStatus, isEmergencyFilter]);
+  }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
 
   const handleRowClick = (params: any) => {
     const fullRequestData = allRequests.find(r => r.id === params.id);
@@ -206,6 +234,29 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                 }}
               />
             ))}
+
+            {/* Date Filter */}
+            <FormControl size="small" sx={{ minWidth: 180, ml: 2 }}>
+              <InputLabel id="date-filter-label">Schedule</InputLabel>
+              <Select
+                labelId="date-filter-label"
+                value={dateFilter}
+                label="Schedule"
+                onChange={(e) => setDateFilter(e.target.value)}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <CalendarDays size={16} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="all">All Time</MenuItem>
+                <MenuItem value="today">Scheduled Today</MenuItem>
+                <MenuItem value="week">Scheduled This Week</MenuItem>
+                <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
+                <MenuItem value="overdue">Overdue</MenuItem>
+              </Select>
+            </FormControl>
+
             {/* Emergency Toggle */}
             <Box sx={{ flexGrow: 1 }} /> {/* This pushes the switch to the right */}
             <FormControlLabel
