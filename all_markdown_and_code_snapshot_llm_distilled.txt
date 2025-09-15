@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-15T01:41:41.442Z
+Generated On: 2025-09-15T15:10:28.910Z
 
-# Mnemonic Weight (Token Count): ~188,707 tokens
+# Mnemonic Weight (Token Count): ~191,227 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -162,6 +162,7 @@ Generated On: 2025-09-15T01:41:41.442Z
   ./packages/frontend/src/features/requests/components/AITriageSummary.tsx
   ./packages/frontend/src/features/requests/components/AttachmentSection.tsx
   ./packages/frontend/src/features/requests/components/CommunicationLog.tsx
+  ./packages/frontend/src/features/requests/components/CompleteJobModal.tsx
   ./packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
   ./packages/frontend/src/features/requests/components/Dashboard.tsx
   ./packages/frontend/src/features/requests/components/ModalFooter.tsx
@@ -2164,15 +2165,15 @@ Victoria, B.C.
 
 --- START OF FILE RequirementsAndGoals/transcript.md ---
 
-### **"Full Arsenal" Demo Script (v1.2 - Final Polish)**
+### **"Full Arsenal" Demo Script (v2.0 - Complete Workflow & Advanced Features)**
 
-**Total Estimated Time:** ~2.5 - 3.5 minutes
+**Total Estimated Time:** ~4.0 - 5.0 minutes
 
 **Instructions:**
 *   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
 *   Speak clearly and naturally. Imagine you're showing this to a friend who runs a plumbing business.
 *   Follow the **[ACTION]** cues precisely.
-*   **NEW:** Include the Map View demonstration in the admin section to showcase route optimization.
+*   **NEW in v2.0:** Enhanced map view with custom styling, advanced filtering (status/emergency/schedule), complete workflow tracking, optimized table layout, and mobile-responsive design.
 ---
 **(Start Recording)**
 **(Shot 1: Customer Experience - Start on your landing page)**
@@ -2199,33 +2200,47 @@ Victoria, B.C.
 **[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top of the Table View.**
 "The new request from our customer appears instantly at the top of your job list. You can see all your jobs here, but the real power comes from visualizing them."
 **[ACTION]: Click the "Map" toggle at the top of the dashboard to switch to Map View.**
-"With one click, your entire workload is plotted on a map. **No more manually typing addresses into Google Maps at the end of the day.**"
+"With one click, your entire workload is plotted on a map with a clean, professional interface. **No more manually typing addresses into Google Maps at the end of the day.**"
 **[ACTION]: Zoom in and out on the map to show how the pins cluster together.**
 "You can instantly see which jobs are in the same neighborhood so you can plan the most efficient route. **This is how you turn wasted drive time back into billable hours.**"
+**[ACTION]: Point out the color-coded pins - blue for new, yellow for viewed, orange for quoted, green for accepted, etc.**
+"Each pin color tells you the exact status at a glance - no need to click to see if it's been quoted or scheduled."
+**[ACTION]: Demonstrate the advanced filtering controls at the top.**
+"Want to focus on today's work? Use the Schedule filter to show only jobs scheduled for today. Need to see emergencies only? Toggle the emergency filter. The system gives you surgical precision over your workload."
 **[ACTION]: Click on one of the new pins to open the info window.**
 "And from the map, you can get a quick look at the job details and jump right into the full docket."
 **[ACTION]: Click the "View Full Job Docket" button from inside the map's info window. This should open the modal directly.**
-"Inside the docket, everything is perfectly organized. But before you even read the details, you have an AI partner."
+"But first, let me show you the improved table view that makes triage even faster."
+**[ACTION]: Switch back to Table view to demonstrate the optimized layout.**
+"The table is now organized by priority - status first, then AI priority score, then urgency flags. You can see at a glance which jobs need attention and which are emergencies."
+**[ACTION]: Point out the color-coded status chips and the clean null value handling.**
+"Now let's see the complete workflow in action. Inside the docket, everything is perfectly organized. But before you even read the details, you have an AI partner."
 **[ACTION]: Click the "AI Triage" button. Let the results appear.**
 "With one click, your AI assistant analyzes the entire request and gives you a triage summary and a priority score, so you know instantly if this is a high-value job that needs your attention now."
 **[ACTION]: Scroll down through the Job Docket modal, showing the organized sections: customer answers, photos, etc.**
 "You've got everything you need right here—no more juggling texts, emails, or notepads. From here, you can add your official quote..."
 **[ACTION]: Quickly create a simple quote. Change the status from "New" to "Quoted".**
 "...and with that, a professional quote is sent, and the customer is notified. The whole process, from new lead to quote sent, takes about 90 seconds."
+**[ACTION]: Demonstrate the complete workflow by showing how the status automatically updates when the customer views the quote.**
+"When the customer opens their portal to review the quote, the system automatically changes the status from 'Quoted' to 'Viewed' - no manual intervention needed. This gives you perfect visibility into customer engagement."
 **[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status appearing instantly.**
 "And the customer sees that update in their portal in real-time, which gives them the confidence that you're on top of it."
-"When the customer accepts your quote, you'll get another SMS alert instantly, so you can start scheduling the job right away."
+"When the customer accepts your quote, you'll get another SMS alert instantly, so you can start scheduling the job right away. The system tracks the complete lifecycle: New → Quoted → Viewed → Accepted → Scheduled → Completed."
 ---
 
 **(Final Shot: Back on Admin View, ready to close)**
 **YOU:**
-"So, in under three minutes, the system:
-- **Handled a new lead** with an AI assistant,
+"So, in under five minutes, the system:
+- **Handled a new lead** with an AI assistant that generates intelligent follow-up questions,
 - **Sent you an instant SMS alert** about the new opportunity,
-- **Showed you exactly where it is** on a map to optimize your route,
-- **Analyzed and prioritized it for you** with AI Triage,
-- And let you send a **professional quote in seconds**... all without a single back-and-forth phone call."
-"This is the kind of tool that saves hours every week on both customer calls and drive time, putting you ahead of the competition."
+- **Showed you exactly where it is** on a clean, color-coded map with advanced filtering,
+- **Analyzed and prioritized it for you** with AI Triage and priority scoring,
+- Let you send a **professional quote in seconds** with itemized pricing,
+- **Tracked the complete workflow** from new → quoted → viewed → accepted → scheduled → completed,
+- **Provided advanced filtering** by status, emergencies, and schedule dates,
+- **Optimized your table view** with priority-based column ordering and visual status indicators,
+- And **ensured mobile accessibility** so you can manage jobs from anywhere... all without a single back-and-forth phone call."
+"This is the kind of comprehensive tool that transforms how trades businesses operate, saving hours every week on calls, drive time, and paperwork while providing a competitive edge."
 
 **(End Recording)**
 --- END OF FILE ---
@@ -9598,6 +9613,118 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
 export default CommunicationLog;
 --- END OF FILE ---
 
+--- START OF FILE packages/frontend/src/features/requests/components/CompleteJobModal.tsx ---
+
+// packages/frontend/src/features/requests/components/CompleteJobModal.tsx
+
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Box,
+  InputAdornment,
+  CircularProgress
+} from '@mui/material';
+import { CheckCircle } from 'lucide-react';
+
+// Define the shape of the data this modal will send back
+interface CompletionData {
+  actual_cost: number;
+  completion_notes: string;
+}
+
+// Define the component's props, including the critical onConfirm function
+interface CompleteJobModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (data: CompletionData) => void; // This function will trigger the API call
+  isSubmitting: boolean;
+  jobTitle: string;
+}
+
+const CompleteJobModal: React.FC<CompleteJobModalProps> = ({ isOpen, onClose, onConfirm, isSubmitting, jobTitle }) => {
+  // Internal state to manage the form fields
+  const [actualCost, setActualCost] = useState('');
+  const [completionNotes, setCompletionNotes] = useState('');
+
+  // Handler for the confirm button click
+  const handleConfirm = () => {
+    console.log('🔘 CompleteJobModal: Confirm button clicked');
+    const data = {
+      actual_cost: parseFloat(actualCost) || 0,
+      completion_notes: completionNotes,
+    };
+    console.log('📤 CompleteJobModal: Sending data:', data);
+    // THE FIX: Call the onConfirm function passed down from the parent
+    // and provide it with the current state of the form.
+    onConfirm(data);
+  };
+
+  return (
+    // Use the MUI Dialog component for a consistent look and feel
+    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CheckCircle color="green" />
+          Complete Job: {jobTitle}
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box component="form" noValidate autoComplete="off" sx={{ mt: 1 }}>
+          {/* Use the MUI TextField for consistent input styling */}
+          <TextField
+            autoFocus
+            required
+            margin="dense"
+            label="Actual Final Cost"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={actualCost}
+            onChange={(e) => setActualCost(e.target.value)}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+            }}
+          />
+          <TextField
+            margin="dense"
+            label="Internal Completion Notes (Optional)"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={completionNotes}
+            onChange={(e) => setCompletionNotes(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ p: '16px 24px' }}>
+        {/* Use MUI Buttons for consistent actions */}
+        <Button onClick={onClose} variant="outlined" disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          variant="contained"
+          color="success"
+          disabled={isSubmitting || !actualCost}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+        >
+          {isSubmitting ? 'Confirming...' : 'Confirm Completion'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default CompleteJobModal;
+--- END OF FILE ---
+
 --- START OF FILE packages/frontend/src/features/requests/components/CustomerInfoSection.tsx ---
 
 // packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
@@ -9618,8 +9745,7 @@ interface CustomerInfoSectionProps {
   editable?: boolean; // For QuoteFormModal
   goodUntil?: string; // For QuoteFormModal
   setGoodUntil?: (date: string) => void; // For QuoteFormModal
-  onSaveScheduledDate?: () => void; // Add this prop
-  scheduledDateChanged?: boolean; // Add this prop
+  onDateChange?: (date: string) => void; // New prop for streamlined workflow
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -9634,8 +9760,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   editable,
   goodUntil,
   setGoodUntil,
-  onSaveScheduledDate, // Destructure the new prop
-  scheduledDateChanged, // Destructure the new prop
+  onDateChange, // New streamlined prop
 }) => {
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles;
@@ -9664,32 +9789,24 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
         {canShowScheduling ? (
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-              <TextField
-                type="date"
-                value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
-                onChange={(e) => {
-                  if (setScheduledStartDate) setScheduledStartDate(e.target.value);
-                  if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
-                    setCurrentStatus('scheduled');
-                  }
-                }}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                disabled={isUpdating}
-              />
-              {scheduledDateChanged && (
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={onSaveScheduledDate}
-                  disabled={isUpdating}
-                >
-                  Save Date
-                </Button>
-              )}
-            </Box>
+            <TextField
+              type="date"
+              value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
+              onChange={(e) => {
+                if (setScheduledStartDate) setScheduledStartDate(e.target.value);
+                // Streamlined workflow: when date is selected, automatically set status to scheduled
+                if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
+                  setCurrentStatus('scheduled');
+                }
+                // Notify parent of date change for dynamic footer
+                if (onDateChange) onDateChange(e.target.value);
+              }}
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              disabled={isUpdating}
+              sx={{ mt: 0.5 }}
+            />
           </Grid>
         ) : (
              <Grid item xs={12} sm={6}>
@@ -9720,10 +9837,10 @@ export default CustomerInfoSection;
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
-import { AlertTriangle, Map, Table, Siren } from 'lucide-react';
+import { AlertTriangle, Map, Table, Siren, CalendarDays } from 'lucide-react';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
 import { QuoteRequest, Quote } from '../types';
@@ -9743,6 +9860,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
+  const [dateFilter, setDateFilter] = useState<string>('all');
 
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
@@ -9761,13 +9879,40 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
       requests = requests.filter(request => request.status === activeFilterStatus);
     }
 
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+
+      requests = requests.filter(request => {
+        const scheduledDate = request.scheduled_start_date ? new Date(request.scheduled_start_date) : null;
+
+        switch (dateFilter) {
+          case 'today':
+            return scheduledDate && scheduledDate.toDateString() === today.toDateString();
+          case 'week':
+            return scheduledDate && scheduledDate >= weekStart && scheduledDate <= weekEnd;
+          case 'unscheduled':
+            return request.status === 'accepted' && !scheduledDate;
+          case 'overdue':
+            return scheduledDate && scheduledDate < today && request.status !== 'completed';
+          default:
+            return true;
+        }
+      });
+    }
+
     // Then, apply emergency filter on top
     if (isEmergencyFilter) {
       requests = requests.filter(request => request.is_emergency === true);
     }
 
     return requests;
-  }, [allRequests, activeFilterStatus, isEmergencyFilter]);
+  }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
 
   const handleRowClick = (params: any) => {
     const fullRequestData = allRequests.find(r => r.id === params.id);
@@ -9924,6 +10069,29 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                 }}
               />
             ))}
+
+            {/* Date Filter */}
+            <FormControl size="small" sx={{ minWidth: 180, ml: 2 }}>
+              <InputLabel id="date-filter-label">Schedule</InputLabel>
+              <Select
+                labelId="date-filter-label"
+                value={dateFilter}
+                label="Schedule"
+                onChange={(e) => setDateFilter(e.target.value)}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <CalendarDays size={16} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="all">All Time</MenuItem>
+                <MenuItem value="today">Scheduled Today</MenuItem>
+                <MenuItem value="week">Scheduled This Week</MenuItem>
+                <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
+                <MenuItem value="overdue">Overdue</MenuItem>
+              </Select>
+            </FormControl>
+
             {/* Emergency Toggle */}
             <Box sx={{ flexGrow: 1 }} /> {/* This pushes the switch to the right */}
             <FormControlLabel
@@ -11519,7 +11687,7 @@ export default QuoteList;
 
 import React from 'react';
 import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, Chip } from '@mui/material';
-import { Phone } from 'lucide-react';
+import { Phone, CheckCircle } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 
@@ -11529,9 +11697,21 @@ interface RequestActionsProps {
   currentStatus: string;
   isUpdating: boolean;
   onStatusChange: (newStatus: string) => void;
+  scheduledDateChanged?: boolean;
+  onSaveAndSchedule?: () => void;
+  onMarkCompleted?: () => void;
 }
 
-const RequestActions: React.FC<RequestActionsProps> = ({ request, isAdmin, currentStatus, isUpdating, onStatusChange }) => {
+const RequestActions: React.FC<RequestActionsProps> = ({
+  request,
+  isAdmin,
+  currentStatus,
+  isUpdating,
+  onStatusChange,
+  scheduledDateChanged = false,
+  onSaveAndSchedule,
+  onMarkCompleted
+}) => {
   return (
     <>
       <Typography component="div" variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -11540,22 +11720,46 @@ const RequestActions: React.FC<RequestActionsProps> = ({ request, isAdmin, curre
 
       {isAdmin && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Update Status</InputLabel>
-            <Select
-              value={currentStatus}
-              label="Update Status"
-              onChange={(e) => onStatusChange(e.target.value as string)}
-              disabled={isUpdating || request.status === 'completed'}
+          {currentStatus === 'scheduled' ? (
+            // STATE 1: Scheduled job - show "Mark as Completed" button
+            <Button
+              variant="contained"
+              color="success"
+              onClick={onMarkCompleted}
+              disabled={isUpdating}
+              startIcon={<CheckCircle size={16} />}
             >
-              <MenuItem value="new">New</MenuItem>
-              <MenuItem value="viewed">Viewed</MenuItem>
-              <MenuItem value="quoted">Quoted</MenuItem>
-              <MenuItem value="accepted">Accepted</MenuItem>
-              <MenuItem value="scheduled">Scheduled</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-            </Select>
-          </FormControl>
+              Mark as Completed
+            </Button>
+          ) : scheduledDateChanged ? (
+            // STATE 2: Date has been changed, show the primary action button
+            <Button
+              variant="contained"
+              color="success"
+              onClick={onSaveAndSchedule}
+              disabled={isUpdating}
+            >
+              Save & Schedule
+            </Button>
+          ) : (
+            // STATE 3: Default view with status dropdown
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Update Status</InputLabel>
+              <Select
+                value={currentStatus}
+                label="Update Status"
+                onChange={(e) => onStatusChange(e.target.value as string)}
+                disabled={isUpdating || request.status === 'completed'}
+              >
+                <MenuItem value="new">New</MenuItem>
+                <MenuItem value="viewed">Viewed</MenuItem>
+                <MenuItem value="quoted">Quoted</MenuItem>
+                <MenuItem value="accepted">Accepted</MenuItem>
+                <MenuItem value="scheduled">Scheduled</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+              </Select>
+            </FormControl>
+          )}
           <Button
             variant="outlined"
             component="a"
@@ -11593,6 +11797,7 @@ import AITriageSummary from './AITriageSummary';
 import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
+import CompleteJobModal from './CompleteJobModal';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -11612,6 +11817,33 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const triageMutation = useTriageRequest();
   const queryClient = useQueryClient();
 
+  const completeJobMutation = useMutation({
+    mutationFn: async ({ requestId, data }: { requestId: string; data: { actual_cost: number; completion_notes: string } }) => {
+      console.log('🔧 CompleteJob: Calling API with:', { requestId, data });
+      try {
+        const response = await apiClient.patch(`/requests/${requestId}/complete`, data);
+        console.log('✅ CompleteJob: API response:', response);
+        return response.data;
+      } catch (error) {
+        console.error('❌ CompleteJob: API error:', error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      console.log('🎉 CompleteJob: Success, data:', data);
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setCompleteModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('💥 CompleteJob: Mutation error:', error);
+      // For now, let's still close the modal and show success to test the UI
+      // TODO: Remove this when backend is ready
+      alert('Backend endpoint not ready yet. Simulating success for UI testing.');
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setCompleteModalOpen(false);
+    },
+  });
+
   const markAsViewedMutation = useMutation({
     mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
     onSuccess: () => {
@@ -11623,6 +11855,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   // Local state is ONLY for UI interactions that are not driven by props.
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
+  const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
   
   // *** THE DEFINITIVE FIX: State Synchronization Effect ***
   // This hook ensures that whenever the parent passes a new `request` object,
@@ -11645,6 +11878,26 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     const utcDate = new Date(scheduledStartDate);
     await handleStatusUpdate('scheduled', utcDate.toISOString());
   };
+
+  const handleDateChange = useCallback((date: string) => {
+    setScheduledDateChanged(true);
+  }, []);
+
+  const handleSaveAndSchedule = useCallback(async () => {
+    if (!request || !scheduledStartDate) return;
+    const utcDate = new Date(scheduledStartDate);
+    await handleStatusUpdate('scheduled', utcDate.toISOString());
+    setScheduledDateChanged(false); // Reset after successful save
+  }, [request, scheduledStartDate, handleStatusUpdate]);
+
+  const handleOpenCompleteModal = useCallback(() => {
+    setCompleteModalOpen(true);
+  }, []);
+
+  const handleConfirmCompletion = useCallback(async (data: { actual_cost: number; completion_notes: string }) => {
+    if (!request) return;
+    await completeJobMutation.mutateAsync({ requestId: request.id, data });
+  }, [request, completeJobMutation]);
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
@@ -11695,12 +11948,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               isAdmin={isAdmin}
               isDateEditable={true}
               scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={(date) => { setScheduledStartDate(date); setScheduledDateChanged(true); }}
+              setScheduledStartDate={setScheduledStartDate}
               currentStatus={request.status}
               setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
               isUpdating={updateStatusMutation.isPending}
-              onSaveScheduledDate={handleSaveScheduledDate}
-              scheduledDateChanged={scheduledDateChanged}
+              onDateChange={handleDateChange}
             />
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />
@@ -11735,9 +11987,20 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             currentStatus={request.status}
             isUpdating={updateStatusMutation.isPending}
             onStatusChange={(newStatus) => handleStatusUpdate(newStatus)}
+            scheduledDateChanged={scheduledDateChanged}
+            onSaveAndSchedule={handleSaveAndSchedule}
+            onMarkCompleted={handleOpenCompleteModal}
           />
         </ModalFooter>
       </Paper>
+
+      <CompleteJobModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        onConfirm={handleConfirmCompletion}
+        isSubmitting={completeJobMutation.isPending}
+        jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      />
     </div>
   );
 };
@@ -12078,6 +12341,8 @@ export interface QuoteRequest {
   latitude: number | null;
   longitude: number | null;
   geocoded_address: string | null;
+  actual_cost: number | null;
+  completion_notes: string | null;
 }
 
 --- END OF FILE ---
@@ -14455,12 +14720,22 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "latitude" double precision,
     "longitude" double precision,
     "geocoded_address" "text",
+    "actual_cost" numeric(10,2),
+    "completion_notes" "text",
     CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
     CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
 );
 
 
 ALTER TABLE "public"."requests" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."requests"."actual_cost" IS 'The final, invoiced cost of the completed job.';
+
+
+
+COMMENT ON COLUMN "public"."requests"."completion_notes" IS 'Internal notes logged by the admin when the job was marked as complete.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_profiles" (

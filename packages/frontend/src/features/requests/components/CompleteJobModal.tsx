@@ -36,12 +36,15 @@ const CompleteJobModal: React.FC<CompleteJobModalProps> = ({ isOpen, onClose, on
 
   // Handler for the confirm button click
   const handleConfirm = () => {
-    // THE FIX: Call the onConfirm function passed down from the parent
-    // and provide it with the current state of the form.
-    onConfirm({
+    console.log('🔘 CompleteJobModal: Confirm button clicked');
+    const data = {
       actual_cost: parseFloat(actualCost) || 0,
       completion_notes: completionNotes,
-    });
+    };
+    console.log('📤 CompleteJobModal: Sending data:', data);
+    // THE FIX: Call the onConfirm function passed down from the parent
+    // and provide it with the current state of the form.
+    onConfirm(data);
   };
 
   return (

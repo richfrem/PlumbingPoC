@@ -313,12 +313,22 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "latitude" double precision,
     "longitude" double precision,
     "geocoded_address" "text",
+    "actual_cost" numeric(10,2),
+    "completion_notes" "text",
     CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
     CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
 );
 
 
 ALTER TABLE "public"."requests" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."requests"."actual_cost" IS 'The final, invoiced cost of the completed job.';
+
+
+
+COMMENT ON COLUMN "public"."requests"."completion_notes" IS 'Internal notes logged by the admin when the job was marked as complete.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
