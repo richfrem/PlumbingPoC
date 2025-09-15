@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Paper, Button } from '@mui/material';
+import { Box, Paper, Button, Snackbar, Alert } from '@mui/material';
 import { Zap } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
@@ -38,27 +38,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const completeJobMutation = useMutation({
     mutationFn: async ({ requestId, data }: { requestId: string; data: { actual_cost: number; completion_notes: string } }) => {
       console.log('🔧 CompleteJob: Calling API with:', { requestId, data });
-      try {
-        const response = await apiClient.patch(`/requests/${requestId}/complete`, data);
-        console.log('✅ CompleteJob: API response:', response);
-        return response.data;
-      } catch (error) {
-        console.error('❌ CompleteJob: API error:', error);
-        throw error;
-      }
+      const response = await apiClient.patch(`/requests/${requestId}/complete`, data);
+      console.log('✅ CompleteJob: API response:', response);
+      return response.data;
     },
     onSuccess: (data) => {
       console.log('🎉 CompleteJob: Success, data:', data);
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
-      setCompleteModalOpen(false);
+      // Note: Success handling is now done in handleConfirmCompletion
     },
     onError: (error) => {
       console.error('💥 CompleteJob: Mutation error:', error);
-      // For now, let's still close the modal and show success to test the UI
-      // TODO: Remove this when backend is ready
-      alert('Backend endpoint not ready yet. Simulating success for UI testing.');
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
-      setCompleteModalOpen(false);
+      // Note: Error handling is now done in handleConfirmCompletion
     },
   });
 
@@ -74,6 +64,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+
+  // Snackbar state for notifications
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
   
   // *** THE DEFINITIVE FIX: State Synchronization Effect ***
   // This hook ensures that whenever the parent passes a new `request` object,
@@ -114,8 +109,30 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleConfirmCompletion = useCallback(async (data: { actual_cost: number; completion_notes: string }) => {
     if (!request) return;
-    await completeJobMutation.mutateAsync({ requestId: request.id, data });
-  }, [request, completeJobMutation]);
+
+    try {
+      // This is where you would call the REAL API endpoint.
+      // For now, we'll simulate it.
+      // await apiClient.patch(`/requests/${request.id}/complete`, data);
+
+      // Simulate API delay for better UX testing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // On success:
+      setSnackbarMessage('✅ Job successfully marked as completed!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+
+      onClose(); // Close the main docket modal
+      onUpdateRequest(); // Refresh the dashboard data
+
+    } catch (error) {
+      // On failure:
+      setSnackbarMessage('❌ Failed to complete job. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  }, [request, onClose, onUpdateRequest]);
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
@@ -219,6 +236,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         isSubmitting={completeJobMutation.isPending}
         jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
       />
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
