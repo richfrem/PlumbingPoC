@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { user, profile, profileIncomplete, refreshProfile } = useAuth();
+  const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.
   // 1. We check if a profile exists and if the role is 'admin'.
@@ -43,7 +43,7 @@ const AppContent: React.FC = () => {
 
   // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
   // This tells React Query to re-run the query when the user logs in.
-  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user);
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading });
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);

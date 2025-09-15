@@ -31,7 +31,7 @@ const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
   return [];
 };
 
-export function useRequestsQuery(userId?: string, user?: any) {
+export function useRequestsQuery(userId?: string, user?: any, options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -40,6 +40,7 @@ export function useRequestsQuery(userId?: string, user?: any) {
     // When a user logs in, user.id changes from null to a UUID, forcing automatic refetch
     queryKey: ['requests', userId, user?.id],
     queryFn: () => fetchRequests(userId),
+    enabled: options?.enabled ?? true,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
   });
