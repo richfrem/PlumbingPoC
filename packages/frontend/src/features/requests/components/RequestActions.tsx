@@ -12,9 +12,19 @@ interface RequestActionsProps {
   currentStatus: string;
   isUpdating: boolean;
   onStatusChange: (newStatus: string) => void;
+  scheduledDateChanged?: boolean;
+  onSaveAndSchedule?: () => void;
 }
 
-const RequestActions: React.FC<RequestActionsProps> = ({ request, isAdmin, currentStatus, isUpdating, onStatusChange }) => {
+const RequestActions: React.FC<RequestActionsProps> = ({
+  request,
+  isAdmin,
+  currentStatus,
+  isUpdating,
+  onStatusChange,
+  scheduledDateChanged = false,
+  onSaveAndSchedule
+}) => {
   return (
     <>
       <Typography component="div" variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -23,22 +33,35 @@ const RequestActions: React.FC<RequestActionsProps> = ({ request, isAdmin, curre
 
       {isAdmin && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Update Status</InputLabel>
-            <Select
-              value={currentStatus}
-              label="Update Status"
-              onChange={(e) => onStatusChange(e.target.value as string)}
-              disabled={isUpdating || request.status === 'completed'}
+          {scheduledDateChanged ? (
+            // STATE 1: Date has been changed, show the primary action button
+            <Button
+              variant="contained"
+              color="success"
+              onClick={onSaveAndSchedule}
+              disabled={isUpdating}
             >
-              <MenuItem value="new">New</MenuItem>
-              <MenuItem value="viewed">Viewed</MenuItem>
-              <MenuItem value="quoted">Quoted</MenuItem>
-              <MenuItem value="accepted">Accepted</MenuItem>
-              <MenuItem value="scheduled">Scheduled</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-            </Select>
-          </FormControl>
+              Save & Schedule
+            </Button>
+          ) : (
+            // STATE 2: Default view with status dropdown
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Update Status</InputLabel>
+              <Select
+                value={currentStatus}
+                label="Update Status"
+                onChange={(e) => onStatusChange(e.target.value as string)}
+                disabled={isUpdating || request.status === 'completed'}
+              >
+                <MenuItem value="new">New</MenuItem>
+                <MenuItem value="viewed">Viewed</MenuItem>
+                <MenuItem value="quoted">Quoted</MenuItem>
+                <MenuItem value="accepted">Accepted</MenuItem>
+                <MenuItem value="scheduled">Scheduled</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+              </Select>
+            </FormControl>
+          )}
           <Button
             variant="outlined"
             component="a"

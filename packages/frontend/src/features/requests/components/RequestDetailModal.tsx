@@ -68,6 +68,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     await handleStatusUpdate('scheduled', utcDate.toISOString());
   };
 
+  const handleDateChange = useCallback((date: string) => {
+    setScheduledDateChanged(true);
+  }, []);
+
+  const handleSaveAndSchedule = useCallback(async () => {
+    if (!request || !scheduledStartDate) return;
+    const utcDate = new Date(scheduledStartDate);
+    await handleStatusUpdate('scheduled', utcDate.toISOString());
+    setScheduledDateChanged(false); // Reset after successful save
+  }, [request, scheduledStartDate, handleStatusUpdate]);
+
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
     acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
@@ -117,12 +128,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               isAdmin={isAdmin}
               isDateEditable={true}
               scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={(date) => { setScheduledStartDate(date); setScheduledDateChanged(true); }}
+              setScheduledStartDate={setScheduledStartDate}
               currentStatus={request.status}
               setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
               isUpdating={updateStatusMutation.isPending}
-              onSaveScheduledDate={handleSaveScheduledDate}
-              scheduledDateChanged={scheduledDateChanged}
+              onDateChange={handleDateChange}
             />
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />
@@ -157,6 +167,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             currentStatus={request.status}
             isUpdating={updateStatusMutation.isPending}
             onStatusChange={(newStatus) => handleStatusUpdate(newStatus)}
+            scheduledDateChanged={scheduledDateChanged}
+            onSaveAndSchedule={handleSaveAndSchedule}
           />
         </ModalFooter>
       </Paper>

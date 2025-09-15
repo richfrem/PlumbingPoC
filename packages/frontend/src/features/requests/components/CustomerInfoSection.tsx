@@ -16,8 +16,7 @@ interface CustomerInfoSectionProps {
   editable?: boolean; // For QuoteFormModal
   goodUntil?: string; // For QuoteFormModal
   setGoodUntil?: (date: string) => void; // For QuoteFormModal
-  onSaveScheduledDate?: () => void; // Add this prop
-  scheduledDateChanged?: boolean; // Add this prop
+  onDateChange?: (date: string) => void; // New prop for streamlined workflow
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -32,8 +31,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   editable,
   goodUntil,
   setGoodUntil,
-  onSaveScheduledDate, // Destructure the new prop
-  scheduledDateChanged, // Destructure the new prop
+  onDateChange, // New streamlined prop
 }) => {
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles;
@@ -62,32 +60,24 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
         {canShowScheduling ? (
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-              <TextField
-                type="date"
-                value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
-                onChange={(e) => {
-                  if (setScheduledStartDate) setScheduledStartDate(e.target.value);
-                  if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
-                    setCurrentStatus('scheduled');
-                  }
-                }}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                disabled={isUpdating}
-              />
-              {scheduledDateChanged && (
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={onSaveScheduledDate}
-                  disabled={isUpdating}
-                >
-                  Save Date
-                </Button>
-              )}
-            </Box>
+            <TextField
+              type="date"
+              value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
+              onChange={(e) => {
+                if (setScheduledStartDate) setScheduledStartDate(e.target.value);
+                // Streamlined workflow: when date is selected, automatically set status to scheduled
+                if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
+                  setCurrentStatus('scheduled');
+                }
+                // Notify parent of date change for dynamic footer
+                if (onDateChange) onDateChange(e.target.value);
+              }}
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              disabled={isUpdating}
+              sx={{ mt: 0.5 }}
+            />
           </Grid>
         ) : (
              <Grid item xs={12} sm={6}>
