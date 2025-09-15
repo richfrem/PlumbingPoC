@@ -73,6 +73,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isAdmin = profile?.role === 'admin';
   const isReadOnly = ['completed'].includes(request.status);
 
+  // *** NEW: Auto-update status to "viewed" when non-admin user opens modal ***
+  // This implements the missing lifecycle step: user views quote but doesn't approve it
+  useEffect(() => {
+    if (isOpen && request && !isAdmin && request.status === 'quoted') {
+      // Non-admin user is viewing a quoted request - update status to viewed
+      handleStatusUpdate('viewed');
+    }
+  }, [isOpen, request?.id, isAdmin, request?.status]); // Only run when modal opens or request changes
+
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
   
