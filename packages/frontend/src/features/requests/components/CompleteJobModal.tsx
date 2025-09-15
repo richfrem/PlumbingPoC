@@ -8,111 +8,94 @@ import {
   DialogActions,
   TextField,
   Button,
+  Box,
   InputAdornment,
+  CircularProgress
 } from '@mui/material';
 import { CheckCircle } from 'lucide-react';
 
+// Define the shape of the data this modal will send back
+interface CompletionData {
+  actual_cost: number;
+  completion_notes: string;
+}
+
+// Define the component's props, including the critical onConfirm function
 interface CompleteJobModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: { actual_cost: number; completion_notes: string }) => void;
+  onConfirm: (data: CompletionData) => void; // This function will trigger the API call
+  isSubmitting: boolean;
   jobTitle: string;
-  isSubmitting?: boolean;
 }
 
-const CompleteJobModal: React.FC<CompleteJobModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  jobTitle,
-  isSubmitting = false,
-}) => {
+const CompleteJobModal: React.FC<CompleteJobModalProps> = ({ isOpen, onClose, onConfirm, isSubmitting, jobTitle }) => {
+  // Internal state to manage the form fields
   const [actualCost, setActualCost] = useState('');
   const [completionNotes, setCompletionNotes] = useState('');
 
-  const handleSubmit = () => {
-    const cost = parseFloat(actualCost);
-    if (isNaN(cost) || cost < 0) {
-      return; // Could add validation feedback here
-    }
-
+  // Handler for the confirm button click
+  const handleConfirm = () => {
+    // THE FIX: Call the onConfirm function passed down from the parent
+    // and provide it with the current state of the form.
     onConfirm({
-      actual_cost: cost,
-      completion_notes: completionNotes.trim(),
+      actual_cost: parseFloat(actualCost) || 0,
+      completion_notes: completionNotes,
     });
   };
 
-  const handleClose = () => {
-    if (!isSubmitting) {
-      setActualCost('');
-      setCompletionNotes('');
-      onClose();
-    }
-  };
-
   return (
-    <Dialog
-      open={isOpen}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
-      <DialogTitle sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        pb: 1
-      }}>
-        <CheckCircle size={24} color="#4caf50" />
-        Complete Job: {jobTitle}
+    // Use the MUI Dialog component for a consistent look and feel
+    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CheckCircle color="green" />
+          Complete Job: {jobTitle}
+        </Box>
       </DialogTitle>
-
-      <DialogContent sx={{ pt: 2 }}>
-        <TextField
-          label="Actual Final Cost"
-          type="number"
-          value={actualCost}
-          onChange={(e) => setActualCost(e.target.value)}
-          fullWidth
-          margin="normal"
-          InputProps={{
-            startAdornment: <InputAdornment position="start">$</InputAdornment>,
-          }}
-          disabled={isSubmitting}
-          autoFocus
-        />
-
-        <TextField
-          label="Internal Completion Notes (Optional)"
-          multiline
-          rows={4}
-          value={completionNotes}
-          onChange={(e) => setCompletionNotes(e.target.value)}
-          fullWidth
-          margin="normal"
-          placeholder="Add any internal notes about the job completion..."
-          disabled={isSubmitting}
-        />
+      <DialogContent dividers>
+        <Box component="form" noValidate autoComplete="off" sx={{ mt: 1 }}>
+          {/* Use the MUI TextField for consistent input styling */}
+          <TextField
+            autoFocus
+            required
+            margin="dense"
+            label="Actual Final Cost"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={actualCost}
+            onChange={(e) => setActualCost(e.target.value)}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+            }}
+          />
+          <TextField
+            margin="dense"
+            label="Internal Completion Notes (Optional)"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={completionNotes}
+            onChange={(e) => setCompletionNotes(e.target.value)}
+          />
+        </Box>
       </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={handleClose}
-          disabled={isSubmitting}
-          variant="outlined"
-        >
+      <DialogActions sx={{ p: '16px 24px' }}>
+        {/* Use MUI Buttons for consistent actions */}
+        <Button onClick={onClose} variant="outlined" disabled={isSubmitting}>
           Cancel
         </Button>
         <Button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !actualCost || parseFloat(actualCost) < 0}
+          onClick={handleConfirm}
           variant="contained"
           color="success"
+          disabled={isSubmitting || !actualCost}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
         >
-          {isSubmitting ? 'Completing...' : 'Confirm Completion'}
+          {isSubmitting ? 'Confirming...' : 'Confirm Completion'}
         </Button>
       </DialogActions>
     </Dialog>

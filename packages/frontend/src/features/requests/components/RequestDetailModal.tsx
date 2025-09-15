@@ -200,8 +200,8 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
         isOpen={isCompleteModalOpen}
         onClose={() => setCompleteModalOpen(false)}
         onConfirm={handleConfirmCompletion}
-        jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
         isSubmitting={completeJobMutation.isPending}
+        jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
       />
     </div>
   );
