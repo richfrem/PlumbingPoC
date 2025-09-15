@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-15T00:37:51.726Z
+Generated On: 2025-09-15T01:41:41.442Z
 
-# Mnemonic Weight (Token Count): ~187,571 tokens
+# Mnemonic Weight (Token Count): ~188,707 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -95,6 +95,7 @@ Generated On: 2025-09-15T00:37:51.726Z
   ./docs/DataContracts.md
   ./docs/FutureRoadmap.md
   ./docs/NETLIFY_TROUBLESHOOTING.md
+  ./docs/QuoteStateChangesWorkflow.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
   ./netlify.toml
@@ -5375,6 +5376,53 @@ Before deploying to Netlify:
 This guide should prevent future deployment issues and serve as a reference for maintaining the Netlify deployment.
 --- END OF FILE ---
 
+--- START OF FILE docs/QuoteStateChangesWorkflow.md ---
+
+# State changes for workflow of quote requests
+
+```mermaid
+stateDiagram-v2
+    direction TB
+    
+    [*] --> New: User Submits Request
+    
+    state New {
+        description status = 'new'
+    }
+    state Quoted {
+        description status = 'quoted'
+    }
+    state Viewed {
+        description status = 'viewed'
+    }
+    state Accepted {
+        description status = 'accepted'
+    }
+    state Scheduled {
+        description status = 'scheduled'
+    }
+    state Completed {
+        description status = 'completed'
+    }
+
+    New --> Quoted: Admin adds a quote
+    Quoted --> Viewed: User views the request details
+    Viewed --> Accepted: User accepts a quote
+    Viewed --> Quoted: Admin adds a NEW or UPDATED quote (restarts the cycle)
+    Accepted --> Scheduled: Admin sets a schedule date
+    Scheduled --> Completed: Admin marks the job as finished
+    
+    Completed --> [*]
+
+    note right of Viewed
+        This is a new state.
+        Triggered when a non-admin
+        opens the detail modal for a
+        'quoted' request.
+    end note
+```
+--- END OF FILE ---
+
 --- START OF FILE docs/SMS_TROUBLESHOOTING.md ---
 
 # SMS Implementation Troubleshooting Guide
@@ -6483,6 +6531,8 @@ const acceptQuote = async (req, res, next) => {
     const { id, quoteId } = req.params;
     const userId = req.user.id;
 
+    console.log('acceptQuote: Starting', { requestId: id, quoteId, userId });
+
     // Check if user is admin
     const { data: userProfile } = await supabase
       .from('user_profiles')
@@ -6491,6 +6541,7 @@ const acceptQuote = async (req, res, next) => {
       .single();
 
     const isAdmin = userProfile?.role === 'admin';
+    console.log('acceptQuote: User role check', { isAdmin, userProfile });
 
     // If not admin, verify user owns this request
     if (!isAdmin) {
@@ -6501,20 +6552,29 @@ const acceptQuote = async (req, res, next) => {
         .single();
 
       if (requestError || !requestData) {
+        console.log('acceptQuote: Request not found', { requestError, requestData });
         return res.status(404).json({ error: 'Request not found.' });
       }
 
       if (requestData.user_id !== userId) {
+        console.log('acceptQuote: Forbidden - user does not own request', { requestDataUserId: requestData.user_id, userId });
         return res.status(403).json({ error: 'You can only accept quotes for your own requests.' });
       }
     }
+
+    console.log('acceptQuote: Calling stored procedure', { requestId: id, quoteId });
 
     // 1. Run the existing stored procedure to update database state
     const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
       p_request_id: id,
       p_quote_id: quoteId,
     });
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      console.error('acceptQuote: Stored procedure error', rpcError);
+      throw rpcError;
+    }
+
+    console.log('acceptQuote: Stored procedure completed successfully');
 
     // 2. Fetch all necessary data for notifications in a single block
     const { data: requestData, error: requestError } = await supabase
@@ -6547,6 +6607,36 @@ const acceptQuote = async (req, res, next) => {
 };
 
 /**
+ * Handles marking a request as viewed by the user.
+ */
+const markRequestAsViewed = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Atomically update the status to 'viewed' ONLY IF it is currently 'quoted'.
+    // This prevents overwriting other statuses. We also ensure the user owns the request.
+    const { data, error } = await supabase
+      .from('requests')
+      .update({ status: 'viewed' })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .eq('status', 'quoted') // This is the critical condition
+      .select()
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // Ignore 'no rows returned' error
+      throw error;
+    }
+
+    // It's not an error if nothing was updated (e.g., status was already 'viewed').
+    res.status(200).json({ message: 'Request marked as viewed where applicable.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -6569,7 +6659,7 @@ const updateRequestStatus = async (req, res, next) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Request not found.' });
 
-    await emailService.sendStatusUpdateEmail(data);
+    await sendStatusUpdateEmail(data);
 
     res.status(200).json(data);
   } catch (err) {
@@ -6589,6 +6679,7 @@ export {
   updateQuote,
   acceptQuote,
   updateRequestStatus,
+  markRequestAsViewed,
 };
 --- END OF FILE ---
 
@@ -6936,6 +7027,7 @@ import {
   updateQuote,
   acceptQuote,
   updateRequestStatus,
+  markRequestAsViewed,
 } from '../controllers/requestController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validationMiddleware.js';
@@ -6963,6 +7055,7 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 
 // --- Client Portal & Admin Routes ---
 router.get('/', authenticate, getAllRequests); // Get all requests for admin table
+router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request as viewed by user
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
@@ -11037,6 +11130,7 @@ export default QuoteAgentModal;
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
+import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
@@ -11062,6 +11156,7 @@ interface Item {
 }
 
 const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
+   const { profile } = useAuth();
    const firstFieldRef = useRef<HTMLInputElement>(null);
    const [goodUntil, setGoodUntil] = useState('');
    const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
@@ -11071,6 +11166,8 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
    const [saving, setSaving] = useState(false);
    const [saveSuccess, setSaveSuccess] = useState(false);
    const [saveError, setSaveError] = useState<string | null>(null);
+
+   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (isOpen) {
@@ -11106,6 +11203,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     }
   }, [quote, isOpen]);
 
+
   const handleSaveQuote = async () => {
     setSaveError(null);
     if (!laborItems.some(item => item.description && parseFloat(item.price) > 0) && !materialItems.some(item => item.description && parseFloat(item.price) > 0)) {
@@ -11136,6 +11234,16 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       const { data: savedQuote } = quote?.id
         ? await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload)
         : await apiClient.post(`/requests/${requestId}/quotes`, payload);
+
+      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+      if (!quote?.id && isAdmin) {
+        try {
+          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+        } catch (statusError) {
+          console.error('Failed to update request status to quoted:', statusError);
+          // Don't fail the quote creation if status update fails
+        }
+      }
 
       if (newAttachments.length > 0 && savedQuote?.id) {
         const formData = new FormData();
@@ -11173,8 +11281,19 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     : `Create New Quote for ${request?.problem_category?.replace(/_/g, ' ')}`;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '700px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
+      <Paper elevation={24} sx={{
+        width: '100%',
+        maxWidth: '700px',
+        p: 0,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#f4f6f8',
+        height: { xs: 'calc(100vh - 16px)', md: 'auto' },
+        maxHeight: { xs: 'calc(100vh - 16px)', md: '90vh' },
+        overflow: 'hidden'
+      }}>
 
         <ModalHeader title={headerTitle} onClose={() => onClose()} />
 
@@ -11348,7 +11467,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
               <ListItem key={quote.id} disablePadding secondaryAction={
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && request.status !== 'accepted' && (
-                    <Button variant="contained" size="small" color="success" onClick={() => onAcceptQuote(quote.id)} disabled={isUpdating}>
+                    <Button variant="contained" size="small" color="success" onClick={() => { console.log('Accepting quote:', quote.id); onAcceptQuote(quote.id); }} disabled={isUpdating}>
                       Accept
                     </Button>
                   )}
@@ -11475,6 +11594,7 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -11490,6 +11610,15 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const updateStatusMutation = useUpdateRequestStatus();
   const acceptQuoteMutation = useAcceptQuote();
   const triageMutation = useTriageRequest();
+  const queryClient = useQueryClient();
+
+  const markAsViewedMutation = useMutation({
+    mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
+    onSuccess: () => {
+      // Invalidate queries to get the fresh status update from the server
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+  });
 
   // Local state is ONLY for UI interactions that are not driven by props.
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -11531,6 +11660,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const isAdmin = profile?.role === 'admin';
   const isReadOnly = ['completed'].includes(request.status);
+
+  // *** Auto-update status to "viewed" when non-admin user views request details ***
+  // This implements the workflow: Quoted --> Viewed when user views request details
+  useEffect(() => {
+    if (isOpen && request && !isAdmin && request.status === 'quoted') {
+      // Non-admin user is viewing a quoted request - update status to viewed
+      markAsViewedMutation.mutate(request.id);
+    }
+  }, [isOpen, request?.id, isAdmin, request?.status, markAsViewedMutation]);
+
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
@@ -11688,10 +11827,15 @@ export function useAcceptQuote() {
 
   return useMutation({
     mutationFn: async ({ requestId, quoteId }: { requestId: string; quoteId: string }) => {
+      console.log('useAcceptQuote: Calling API', { requestId, quoteId });
       await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('useAcceptQuote: Success', data);
       queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+    onError: (error) => {
+      console.error('useAcceptQuote: Error', error);
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
+import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
@@ -27,6 +28,7 @@ interface Item {
 }
 
 const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
+   const { profile } = useAuth();
    const firstFieldRef = useRef<HTMLInputElement>(null);
    const [goodUntil, setGoodUntil] = useState('');
    const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
@@ -36,6 +38,8 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
    const [saving, setSaving] = useState(false);
    const [saveSuccess, setSaveSuccess] = useState(false);
    const [saveError, setSaveError] = useState<string | null>(null);
+
+   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (isOpen) {
@@ -71,6 +75,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     }
   }, [quote, isOpen]);
 
+
   const handleSaveQuote = async () => {
     setSaveError(null);
     if (!laborItems.some(item => item.description && parseFloat(item.price) > 0) && !materialItems.some(item => item.description && parseFloat(item.price) > 0)) {
@@ -101,6 +106,16 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       const { data: savedQuote } = quote?.id
         ? await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload)
         : await apiClient.post(`/requests/${requestId}/quotes`, payload);
+
+      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+      if (!quote?.id && isAdmin) {
+        try {
+          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+        } catch (statusError) {
+          console.error('Failed to update request status to quoted:', statusError);
+          // Don't fail the quote creation if status update fails
+        }
+      }
 
       if (newAttachments.length > 0 && savedQuote?.id) {
         const formData = new FormData();
@@ -138,8 +153,19 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     : `Create New Quote for ${request?.problem_category?.replace(/_/g, ' ')}`;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ width: '95%', maxWidth: '700px', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', maxHeight: '90vh', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
+      <Paper elevation={24} sx={{
+        width: '100%',
+        maxWidth: '700px',
+        p: 0,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#f4f6f8',
+        height: { xs: 'calc(100vh - 16px)', md: 'auto' },
+        maxHeight: { xs: 'calc(100vh - 16px)', md: '90vh' },
+        overflow: 'hidden'
+      }}>
 
         <ModalHeader title={headerTitle} onClose={() => onClose()} />
 
