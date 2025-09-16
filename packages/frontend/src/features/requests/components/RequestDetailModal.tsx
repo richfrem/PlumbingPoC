@@ -162,11 +162,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
-  const handleAddressUpdate = useCallback(async (address: string) => {
+  const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => {
     if (!request) return;
     await updateAddressMutation.mutateAsync({
       requestId: request.id,
-      address
+      address: addressData.service_address
     });
   }, [request, updateAddressMutation]);
 
