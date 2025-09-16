@@ -172,7 +172,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
 
   // Handle cancel
   const handleCancel = () => {
-    if (mode === 'edit') {
+    if (mode === 'view' || mode === 'edit') {
       setIsEditing(false);
     }
     if (onCancel) {
@@ -207,8 +207,8 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
     );
   }
 
-  // Render edit mode
-  if (mode === 'edit' && isEditing) {
+  // Render edit mode (for both 'view' mode when editing and 'edit' mode)
+  if ((mode === 'view' && isEditing) || (mode === 'edit' && isEditing)) {
     return (
       <Grid item xs={12}>
         <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
