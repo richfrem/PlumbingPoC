@@ -6,6 +6,7 @@ import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../../../lib/ser
 import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
+import ServiceLocationManager from "./ServiceLocationManager";
 import { X as XIcon, Wrench, User } from 'lucide-react';
 
 
@@ -696,120 +697,27 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                        </Box>
                      </Paper>
 
-                     {/* Service Address Card */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Service Location
-                       </Typography>
-                       <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                         Where do you need the plumbing service performed?
-                       </Typography>
-
-                       {/* Address Option Toggle */}
-                       <Box sx={{ mb: 3 }}>
-                         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                           <Button
-                             variant={useProfileAddress ? "contained" : "outlined"}
-                             size="small"
-                             onClick={() => {
-                               setUseProfileAddress(true);
-                               setServiceAddress("");
-                               setServiceCity("");
-                               setServicePostalCode("");
-                               setServiceCoordinates(null);
-                               setGeocodingStatus('idle');
-                             }}
-                             sx={{ flex: 1 }}
-                           >
-                             Use My Address
-                           </Button>
-                           <Button
-                             variant={!useProfileAddress ? "contained" : "outlined"}
-                             size="small"
-                             onClick={() => setUseProfileAddress(false)}
-                             sx={{ flex: 1 }}
-                           >
-                             Different Address
-                           </Button>
-                         </Box>
-
-                         {useProfileAddress ? (
-                             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                               <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                                 Service will be at your registered address:
-                               </Typography>
-                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                 {profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : 'Loading...'}
-                               </Typography>
-                               {(profile as any) && (!(profile as any).latitude || !(profile as any).longitude) && (
-                                 <Typography variant="body2" sx={{ color: 'warning.main', fontSize: '0.8rem', mt: 1 }}>
-                                   📍 Address coordinates will be calculated when request is submitted
-                                 </Typography>
-                               )}
-                               {(profile as any) && (profile as any).latitude && (profile as any).longitude && (
-                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem', mt: 1 }}>
-                                   ✅ Address location verified and cached
-                                 </Typography>
-                               )}
-                             </Box>
-                         ) : (
-                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                             <TextField
-                               label="Street Address"
-                               value={serviceAddress}
-                               onChange={(e) => setServiceAddress(e.target.value)}
-                               fullWidth
-                               size="small"
-                               placeholder="123 Main Street"
-                             />
-                             <Box sx={{ display: 'flex', gap: 2 }}>
-                               <TextField
-                                 label="City"
-                                 value={serviceCity}
-                                 onChange={(e) => setServiceCity(e.target.value)}
-                                 fullWidth
-                                 size="small"
-                                 placeholder="Victoria"
-                               />
-                               <TextField
-                                 label="Postal Code"
-                                 value={servicePostalCode}
-                                 onChange={(e) => setServicePostalCode(e.target.value)}
-                                 size="small"
-                                 placeholder="V8W 1A1"
-                                 sx={{ minWidth: 120 }}
-                               />
-                             </Box>
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                               <Button
-                                 variant="outlined"
-                                 size="small"
-                                 onClick={geocodeServiceAddress}
-                                 disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
-                                 sx={{ minWidth: 100 }}
-                               >
-                                 {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
-                               </Button>
-                               {geocodingStatus === 'success' && (
-                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
-                                   ✓ Address verified and located on map
-                                 </Typography>
-                               )}
-                               {geocodingStatus === 'error' && (
-                                 <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                                   ✗ Could not verify address - please check spelling
-                                 </Typography>
-                               )}
-                             </Box>
-                           </Box>
-                         )}
-                       </Box>
-                     </Paper>
+                     <ServiceLocationManager
+                       mode="create"
+                       isAdmin={false}
+                       onDataChange={(addressData) => {
+                         // Update the parent component's state with address data
+                         if (addressData.service_address) {
+                           // Parse the address back into components for form submission
+                           const parts = addressData.service_address.split(', ');
+                           if (parts.length >= 2) {
+                             setServiceAddress(parts[0]);
+                             const cityPostal = parts[1].split(' ');
+                             if (cityPostal.length >= 2) {
+                               setServiceCity(cityPostal.slice(0, -2).join(' '));
+                               setServicePostalCode(cityPostal.slice(-2).join(' '));
+                             }
+                           }
+                           setServiceCoordinates(addressData.latitude && addressData.longitude ?
+                             { lat: addressData.latitude, lng: addressData.longitude } : null);
+                         }
+                       }}
+                     />
 
                      {/* Contact Information Card */}
                      {profile && (

@@ -262,9 +262,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             <FormControlLabel
               control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Siren size={16} style={{ marginRight: '8px', color: '#d32f2f' }} />
-                  <Typography variant="body2">Emergencies Only</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AlertTriangle size={16} />
+                  Emergencies Only
                 </Box>
               }
               sx={{ mr: 1, color: 'text.secondary' }}

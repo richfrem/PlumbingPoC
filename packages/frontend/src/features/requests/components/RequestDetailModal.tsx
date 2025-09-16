@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Paper, Button, Snackbar, Alert } from '@mui/material';
+import { Box, Paper, Button, Snackbar, Alert, Grid, Typography } from '@mui/material';
 import { Zap } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
@@ -16,6 +16,7 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
+import ServiceLocationManager from './ServiceLocationManager';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -52,27 +53,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     },
   });
 
-  const updateAddressMutation = useMutation({
-    mutationFn: async ({ requestId, address }: { requestId: string; address: string }) => {
-      console.log('🏠 UpdateAddress: Calling API with:', { requestId, address });
-      const response = await apiClient.patch(`/requests/${requestId}`, { service_address: address });
-      console.log('✅ UpdateAddress: API response:', response);
-      return response.data;
-    },
-    onSuccess: () => {
-      console.log('🎉 UpdateAddress: Success');
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
-      setSnackbarMessage('✅ Service address updated successfully!');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    },
-    onError: (error) => {
-      console.error('💥 UpdateAddress: Mutation error:', error);
-      setSnackbarMessage('❌ Failed to update service address. Please try again.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    },
-  });
 
   const markAsViewedMutation = useMutation({
     mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
@@ -86,6 +66,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+
 
   // Snackbar state for notifications
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -164,11 +145,29 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => {
     if (!request) return;
-    await updateAddressMutation.mutateAsync({
-      requestId: request.id,
-      address: addressData.service_address
-    });
-  }, [request, updateAddressMutation]);
+
+    try {
+      console.log('🏠 UpdateAddress: Calling API with:', { requestId: request.id, addressData });
+      const response = await apiClient.patch(`/requests/${request.id}`, {
+        service_address: addressData.service_address,
+        latitude: addressData.latitude,
+        longitude: addressData.longitude,
+        geocoded_address: addressData.geocoded_address
+      });
+      console.log('✅ UpdateAddress: API response:', response);
+
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setSnackbarMessage('✅ Service address updated successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('💥 UpdateAddress: Mutation error:', error);
+      setSnackbarMessage('❌ Failed to update service address. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  }, [request, queryClient]);
+
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
@@ -214,18 +213,48 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection
-              request={request}
-              isAdmin={isAdmin}
-              isDateEditable={true}
-              scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={setScheduledStartDate}
-              currentStatus={request.status}
-              setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
-              isUpdating={updateStatusMutation.isPending || updateAddressMutation.isPending}
-              onDateChange={handleDateChange}
-              onAddressUpdate={handleAddressUpdate}
-            />
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Customer Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {request.user_profiles?.name || request.customer_name || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <ServiceLocationManager
+                mode="view"
+                initialAddress={request.service_address}
+                isAdmin={isAdmin}
+                onSave={handleAddressUpdate}
+                isUpdating={false}
+              />
+
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Status
+                  </Typography>
+                  <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+                    {request.status}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Service Type
+                  </Typography>
+                  <Typography variant="body1">
+                    {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />
             

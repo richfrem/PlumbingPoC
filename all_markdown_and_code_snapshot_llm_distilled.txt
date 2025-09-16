@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-16T01:09:30.188Z
+Generated On: 2025-09-16T01:32:30.309Z
 
-# Mnemonic Weight (Token Count): ~193,401 tokens
+# Mnemonic Weight (Token Count): ~194,351 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -174,6 +174,7 @@ Generated On: 2025-09-16T01:09:30.188Z
   ./packages/frontend/src/features/requests/components/RequestActions.tsx
   ./packages/frontend/src/features/requests/components/RequestDetailModal.tsx
   ./packages/frontend/src/features/requests/components/RequestProblemDetails.tsx
+  ./packages/frontend/src/features/requests/components/ServiceLocationManager.tsx
   ./packages/frontend/src/features/requests/hooks/
   ./packages/frontend/src/features/requests/hooks/useRequestMutations.ts
   ./packages/frontend/src/features/requests/hooks/useRequests.ts
@@ -9730,8 +9731,8 @@ export default CompleteJobModal;
 // packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, TextField, Button, Grid, IconButton } from '@mui/material';
-import { User, Edit, Check, X } from 'lucide-react';
+import { Box, Typography, Paper, TextField, Grid, Button } from '@mui/material';
+import { User } from 'lucide-react';
 
 interface CustomerInfoSectionProps {
   request: any;
@@ -9746,7 +9747,6 @@ interface CustomerInfoSectionProps {
   goodUntil?: string; // For QuoteFormModal
   setGoodUntil?: (date: string) => void; // For QuoteFormModal
   onDateChange?: (date: string) => void; // New prop for streamlined workflow
-  onAddressUpdate?: (address: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => void; // Updated prop for structured address updates
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -9762,112 +9762,12 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   goodUntil,
   setGoodUntil,
   onDateChange, // New streamlined prop
-  onAddressUpdate, // New address update prop
 }) => {
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles;
 
-  // State for editing address (structured like QuoteAgentModal)
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [serviceAddress, setServiceAddress] = useState('');
-  const [serviceCity, setServiceCity] = useState('');
-  const [servicePostalCode, setServicePostalCode] = useState('');
-  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
-  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-
   // Only show the scheduling section if the status is 'accepted' or 'scheduled'
   const canShowScheduling = isAdmin && isRequestDetail && (currentStatus === 'accepted' || currentStatus === 'scheduled');
-
-  // Geocoding function (similar to QuoteAgentModal)
-  const geocodeServiceAddress = async () => {
-    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
-      return;
-    }
-
-    setGeocodingStatus('loading');
-
-    try {
-      const fullAddress = `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`;
-      console.log('Geocoding address:', fullAddress);
-
-      // Load Google Maps API if not already loaded
-      if (!window.google || !window.google.maps) {
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
-
-        if (!apiKey) {
-          throw new Error('Google Maps API key not found');
-        }
-
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
-        script.async = true;
-        script.defer = true;
-
-        await new Promise((resolve, reject) => {
-          script.onload = () => resolve(void 0);
-          script.onerror = (error) => reject(error);
-          document.head.appendChild(script);
-        });
-      }
-
-      // Use Google Maps Geocoding service
-      const geocoder = new (window as any).google.maps.Geocoder();
-
-      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
-        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
-          const location = results[0].geometry.location;
-          setServiceCoordinates({ lat: location.lat(), lng: location.lng() });
-          setGeocodingStatus('success');
-        } else {
-          setGeocodingStatus('error');
-        }
-      });
-
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      setGeocodingStatus('error');
-    }
-  };
-
-  // Address editing handlers
-  const handleStartEditingAddress = () => {
-    // Parse existing address into components (simple parsing)
-    const existingAddress = request?.service_address || '';
-    const parts = existingAddress.split(', ');
-    if (parts.length >= 2) {
-      setServiceAddress(parts[0]);
-      const cityPostal = parts[1].split(' ');
-      if (cityPostal.length >= 2) {
-        setServiceCity(cityPostal.slice(0, -2).join(' ')); // City name
-        setServicePostalCode(cityPostal.slice(-2).join(' ')); // Postal code
-      }
-    }
-    setServiceCoordinates(null);
-    setGeocodingStatus('idle');
-    setIsEditingAddress(true);
-  };
-
-  const handleSaveAddress = () => {
-    if (onAddressUpdate && serviceCoordinates) {
-      const addressData = {
-        service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
-        latitude: serviceCoordinates.lat,
-        longitude: serviceCoordinates.lng,
-        geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
-      };
-      onAddressUpdate(addressData);
-    }
-    setIsEditingAddress(false);
-  };
-
-  const handleCancelEditingAddress = () => {
-    setServiceAddress('');
-    setServiceCity('');
-    setServicePostalCode('');
-    setServiceCoordinates(null);
-    setGeocodingStatus('idle');
-    setIsEditingAddress(false);
-  };
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -9885,9 +9785,9 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography>
           <Button component="a" href={`mailto:${customerProfile?.email}`} size="small" sx={{ p: 0, justifyContent: 'flex-start', textTransform: 'none' }}>{customerProfile?.email || 'N/A'}</Button>
         </Grid>
-        
+
         {/* Conditional rendering for the date input */}
-        {canShowScheduling ? (
+        {canShowScheduling && (
           <Grid item xs={12} sm={6}>
             <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
             <TextField
@@ -9909,104 +9809,6 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
               sx={{ mt: 0.5 }}
             />
           </Grid>
-        ) : (
-             <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography>
-                {isEditingAddress ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5 }}>
-                    <TextField
-                      label="Street Address"
-                      value={serviceAddress}
-                      onChange={(e) => setServiceAddress(e.target.value)}
-                      size="small"
-                      fullWidth
-                      placeholder="123 Main Street"
-                      disabled={isUpdating}
-                      autoFocus
-                    />
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <TextField
-                        label="City"
-                        value={serviceCity}
-                        onChange={(e) => setServiceCity(e.target.value)}
-                        size="small"
-                        fullWidth
-                        placeholder="Victoria"
-                        disabled={isUpdating}
-                      />
-                      <TextField
-                        label="Postal Code"
-                        value={servicePostalCode}
-                        onChange={(e) => setServicePostalCode(e.target.value)}
-                        size="small"
-                        placeholder="V8W 1A1"
-                        sx={{ minWidth: 120 }}
-                        disabled={isUpdating}
-                      />
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={geocodeServiceAddress}
-                        disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim() || isUpdating}
-                      >
-                        {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
-                      </Button>
-                      {geocodingStatus === 'success' && (
-                        <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
-                          ✓ Address verified
-                        </Typography>
-                      )}
-                      {geocodingStatus === 'error' && (
-                        <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                          ✗ Could not verify
-                        </Typography>
-                      )}
-                      <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                        <IconButton
-                          size="small"
-                          onClick={handleSaveAddress}
-                          disabled={isUpdating || !serviceCoordinates}
-                          color="success"
-                        >
-                          <Check size={16} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={handleCancelEditingAddress}
-                          disabled={isUpdating}
-                          color="error"
-                        >
-                          <X size={16} />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Button
-                      component="a"
-                      href={`https://maps.google.com/?q=${encodeURIComponent(request?.service_address)}`}
-                      target="_blank"
-                      size="small"
-                      sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left', flex: 1 }}
-                    >
-                      {request?.service_address || 'N/A'}
-                    </Button>
-                    {isAdmin && (
-                      <IconButton
-                        size="small"
-                        onClick={handleStartEditingAddress}
-                        disabled={isUpdating}
-                        sx={{ ml: 1 }}
-                      >
-                        <Edit size={14} />
-                      </IconButton>
-                    )}
-                  </Box>
-                )}
-             </Grid>
         )}
 
         {/* This is for the QuoteFormModal, which doesn't show the scheduled date */}
@@ -10563,6 +10365,7 @@ import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory } from "../../../lib/ser
 import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
+import ServiceLocationManager from "./ServiceLocationManager";
 import { X as XIcon, Wrench, User } from 'lucide-react';
 
 
@@ -11253,120 +11056,27 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                        </Box>
                      </Paper>
 
-                     {/* Service Address Card */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Service Location
-                       </Typography>
-                       <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                         Where do you need the plumbing service performed?
-                       </Typography>
-
-                       {/* Address Option Toggle */}
-                       <Box sx={{ mb: 3 }}>
-                         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                           <Button
-                             variant={useProfileAddress ? "contained" : "outlined"}
-                             size="small"
-                             onClick={() => {
-                               setUseProfileAddress(true);
-                               setServiceAddress("");
-                               setServiceCity("");
-                               setServicePostalCode("");
-                               setServiceCoordinates(null);
-                               setGeocodingStatus('idle');
-                             }}
-                             sx={{ flex: 1 }}
-                           >
-                             Use My Address
-                           </Button>
-                           <Button
-                             variant={!useProfileAddress ? "contained" : "outlined"}
-                             size="small"
-                             onClick={() => setUseProfileAddress(false)}
-                             sx={{ flex: 1 }}
-                           >
-                             Different Address
-                           </Button>
-                         </Box>
-
-                         {useProfileAddress ? (
-                             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                               <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                                 Service will be at your registered address:
-                               </Typography>
-                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                 {profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : 'Loading...'}
-                               </Typography>
-                               {(profile as any) && (!(profile as any).latitude || !(profile as any).longitude) && (
-                                 <Typography variant="body2" sx={{ color: 'warning.main', fontSize: '0.8rem', mt: 1 }}>
-                                   📍 Address coordinates will be calculated when request is submitted
-                                 </Typography>
-                               )}
-                               {(profile as any) && (profile as any).latitude && (profile as any).longitude && (
-                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem', mt: 1 }}>
-                                   ✅ Address location verified and cached
-                                 </Typography>
-                               )}
-                             </Box>
-                         ) : (
-                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                             <TextField
-                               label="Street Address"
-                               value={serviceAddress}
-                               onChange={(e) => setServiceAddress(e.target.value)}
-                               fullWidth
-                               size="small"
-                               placeholder="123 Main Street"
-                             />
-                             <Box sx={{ display: 'flex', gap: 2 }}>
-                               <TextField
-                                 label="City"
-                                 value={serviceCity}
-                                 onChange={(e) => setServiceCity(e.target.value)}
-                                 fullWidth
-                                 size="small"
-                                 placeholder="Victoria"
-                               />
-                               <TextField
-                                 label="Postal Code"
-                                 value={servicePostalCode}
-                                 onChange={(e) => setServicePostalCode(e.target.value)}
-                                 size="small"
-                                 placeholder="V8W 1A1"
-                                 sx={{ minWidth: 120 }}
-                               />
-                             </Box>
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                               <Button
-                                 variant="outlined"
-                                 size="small"
-                                 onClick={geocodeServiceAddress}
-                                 disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
-                                 sx={{ minWidth: 100 }}
-                               >
-                                 {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
-                               </Button>
-                               {geocodingStatus === 'success' && (
-                                 <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
-                                   ✓ Address verified and located on map
-                                 </Typography>
-                               )}
-                               {geocodingStatus === 'error' && (
-                                 <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                                   ✗ Could not verify address - please check spelling
-                                 </Typography>
-                               )}
-                             </Box>
-                           </Box>
-                         )}
-                       </Box>
-                     </Paper>
+                     <ServiceLocationManager
+                       mode="create"
+                       isAdmin={false}
+                       onDataChange={(addressData) => {
+                         // Update the parent component's state with address data
+                         if (addressData.service_address) {
+                           // Parse the address back into components for form submission
+                           const parts = addressData.service_address.split(', ');
+                           if (parts.length >= 2) {
+                             setServiceAddress(parts[0]);
+                             const cityPostal = parts[1].split(' ');
+                             if (cityPostal.length >= 2) {
+                               setServiceCity(cityPostal.slice(0, -2).join(' '));
+                               setServicePostalCode(cityPostal.slice(-2).join(' '));
+                             }
+                           }
+                           setServiceCoordinates(addressData.latitude && addressData.longitude ?
+                             { lat: addressData.latitude, lng: addressData.longitude } : null);
+                         }
+                       }}
+                     />
 
                      {/* Contact Information Card */}
                      {profile && (
@@ -11978,7 +11688,7 @@ export default RequestActions;
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Paper, Button, Snackbar, Alert } from '@mui/material';
+import { Box, Paper, Button, Snackbar, Alert, Grid, Typography } from '@mui/material';
 import { Zap } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
@@ -11992,6 +11702,7 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
+import ServiceLocationManager from './ServiceLocationManager';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -12028,27 +11739,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     },
   });
 
-  const updateAddressMutation = useMutation({
-    mutationFn: async ({ requestId, address }: { requestId: string; address: string }) => {
-      console.log('🏠 UpdateAddress: Calling API with:', { requestId, address });
-      const response = await apiClient.patch(`/requests/${requestId}`, { service_address: address });
-      console.log('✅ UpdateAddress: API response:', response);
-      return response.data;
-    },
-    onSuccess: () => {
-      console.log('🎉 UpdateAddress: Success');
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
-      setSnackbarMessage('✅ Service address updated successfully!');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    },
-    onError: (error) => {
-      console.error('💥 UpdateAddress: Mutation error:', error);
-      setSnackbarMessage('❌ Failed to update service address. Please try again.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    },
-  });
 
   const markAsViewedMutation = useMutation({
     mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
@@ -12062,6 +11752,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+
 
   // Snackbar state for notifications
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -12140,11 +11831,29 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => {
     if (!request) return;
-    await updateAddressMutation.mutateAsync({
-      requestId: request.id,
-      address: addressData.service_address
-    });
-  }, [request, updateAddressMutation]);
+
+    try {
+      console.log('🏠 UpdateAddress: Calling API with:', { requestId: request.id, addressData });
+      const response = await apiClient.patch(`/requests/${request.id}`, {
+        service_address: addressData.service_address,
+        latitude: addressData.latitude,
+        longitude: addressData.longitude,
+        geocoded_address: addressData.geocoded_address
+      });
+      console.log('✅ UpdateAddress: API response:', response);
+
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setSnackbarMessage('✅ Service address updated successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('💥 UpdateAddress: Mutation error:', error);
+      setSnackbarMessage('❌ Failed to update service address. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  }, [request, queryClient]);
+
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
@@ -12190,18 +11899,48 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection
-              request={request}
-              isAdmin={isAdmin}
-              isDateEditable={true}
-              scheduledStartDate={scheduledStartDate}
-              setScheduledStartDate={setScheduledStartDate}
-              currentStatus={request.status}
-              setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
-              isUpdating={updateStatusMutation.isPending || updateAddressMutation.isPending}
-              onDateChange={handleDateChange}
-              onAddressUpdate={handleAddressUpdate}
-            />
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Customer Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {request.user_profiles?.name || request.customer_name || 'N/A'}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <ServiceLocationManager
+                mode="view"
+                initialAddress={request.service_address}
+                isAdmin={isAdmin}
+                onSave={handleAddressUpdate}
+                isUpdating={false}
+              />
+
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Status
+                  </Typography>
+                  <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+                    {request.status}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Service Type
+                  </Typography>
+                  <Typography variant="body1">
+                    {request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />
             
@@ -12320,6 +12059,408 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
 };
 
 export default RequestProblemDetails;
+--- END OF FILE ---
+
+--- START OF FILE packages/frontend/src/features/requests/components/ServiceLocationManager.tsx ---
+
+// packages/frontend/src/features/requests/components/ServiceLocationManager.tsx
+
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, TextField, Button, Grid, IconButton, Alert } from '@mui/material';
+import { Pencil, Check, X } from 'lucide-react';
+
+interface AddressData {
+  service_address: string;
+  latitude: number | null;
+  longitude: number | null;
+  geocoded_address: string | null;
+}
+
+interface ServiceLocationManagerProps {
+  mode: 'view' | 'edit' | 'create';
+  initialAddress?: string | AddressData;
+  isAdmin: boolean;
+  onSave?: (addressData: AddressData) => void;
+  onCancel?: () => void;
+  onDataChange?: (addressData: Partial<AddressData>) => void;
+  isUpdating?: boolean;
+}
+
+const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
+  mode,
+  initialAddress,
+  isAdmin,
+  onSave,
+  onCancel,
+  onDataChange,
+  isUpdating = false,
+}) => {
+  // State for edit mode
+  const [isEditing, setIsEditing] = useState(mode === 'edit');
+  const [useProfileAddress, setUseProfileAddress] = useState(true);
+  const [serviceAddress, setServiceAddress] = useState('');
+  const [serviceCity, setServiceCity] = useState('');
+  const [servicePostalCode, setServicePostalCode] = useState('');
+  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  // Initialize state based on mode and initialAddress
+  useEffect(() => {
+    if (mode === 'view' && typeof initialAddress === 'string') {
+      // For view mode, we just display the address string
+      setIsEditing(false);
+    } else if (mode === 'edit' && typeof initialAddress === 'string') {
+      // Parse existing address for editing
+      const parts = initialAddress.split(', ');
+      if (parts.length >= 2) {
+        setServiceAddress(parts[0]);
+        const cityPostal = parts[1].split(' ');
+        if (cityPostal.length >= 2) {
+          setServiceCity(cityPostal.slice(0, -2).join(' '));
+          setServicePostalCode(cityPostal.slice(-2).join(' '));
+        }
+      }
+      setIsEditing(true);
+    } else if (mode === 'create') {
+      // For create mode, start with empty fields
+      setUseProfileAddress(true);
+      setServiceAddress('');
+      setServiceCity('');
+      setServicePostalCode('');
+      setServiceCoordinates(null);
+      setGeocodingStatus('idle');
+    }
+  }, [mode, initialAddress]);
+
+  // Geocoding function
+  const geocodeServiceAddress = async () => {
+    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
+      return;
+    }
+
+    setGeocodingStatus('loading');
+
+    try {
+      const fullAddress = `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`;
+      console.log('Geocoding address:', fullAddress);
+
+      // Load Google Maps API if not already loaded
+      if (!window.google || !window.google.maps) {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        await new Promise((resolve, reject) => {
+          script.onload = () => resolve(void 0);
+          script.onerror = (error) => reject(error);
+          document.head.appendChild(script);
+        });
+      }
+
+      // Use Google Maps Geocoding service
+      const geocoder = new (window as any).google.maps.Geocoder();
+
+      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
+        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+          const location = results[0].geometry.location;
+          setServiceCoordinates({ lat: location.lat(), lng: location.lng() });
+          setGeocodingStatus('success');
+        } else {
+          setGeocodingStatus('error');
+        }
+      });
+
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setGeocodingStatus('error');
+    }
+  };
+
+  // Handle field changes
+  const handleFieldChange = (field: string, value: string) => {
+    switch (field) {
+      case 'street':
+        setServiceAddress(value);
+        break;
+      case 'city':
+        setServiceCity(value);
+        break;
+      case 'postalCode':
+        setServicePostalCode(value);
+        break;
+    }
+
+    // Reset geocoding status when user changes address
+    if (geocodingStatus !== 'idle') {
+      setGeocodingStatus('idle');
+      setServiceCoordinates(null);
+    }
+
+    // Notify parent of data changes
+    if (onDataChange) {
+      onDataChange({
+        service_address: field === 'street' ? value : serviceAddress,
+        latitude: null,
+        longitude: null,
+        geocoded_address: null,
+      });
+    }
+  };
+
+  // Handle save
+  const handleSave = () => {
+    if (mode === 'edit' && serviceCoordinates && onSave) {
+      const addressData: AddressData = {
+        service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+        latitude: serviceCoordinates.lat,
+        longitude: serviceCoordinates.lng,
+        geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
+      };
+      onSave(addressData);
+    } else if (mode === 'create' && onDataChange) {
+      // For create mode, just notify parent of the current state
+      onDataChange({
+        service_address: useProfileAddress ? '' : `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+        latitude: serviceCoordinates?.lat || null,
+        longitude: serviceCoordinates?.lng || null,
+        geocoded_address: serviceCoordinates ? `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada` : null,
+      });
+    }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (mode === 'edit') {
+      setIsEditing(false);
+    }
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  // Render view mode
+  if (mode === 'view' && !isEditing) {
+    return (
+      <Grid item xs={12} sm={6}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+            Service Address
+          </Typography>
+          {isAdmin && (
+            <IconButton size="small" onClick={() => setIsEditing(true)} disabled={isUpdating}>
+              <Pencil size={16} />
+            </IconButton>
+          )}
+        </Box>
+        <Button
+          component="a"
+          href={`https://maps.google.com/?q=${encodeURIComponent(typeof initialAddress === 'string' ? initialAddress : '')}`}
+          target="_blank"
+          size="small"
+          sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}
+        >
+          {typeof initialAddress === 'string' ? initialAddress : 'N/A'}
+        </Button>
+      </Grid>
+    );
+  }
+
+  // Render edit mode
+  if (mode === 'edit' && isEditing) {
+    return (
+      <Grid item xs={12}>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
+          Service Address
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <TextField
+            label="Street Address"
+            value={serviceAddress}
+            onChange={(e) => handleFieldChange('street', e.target.value)}
+            size="small"
+            fullWidth
+            placeholder="123 Main Street"
+            disabled={isUpdating}
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              label="City"
+              value={serviceCity}
+              onChange={(e) => handleFieldChange('city', e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="Victoria"
+              disabled={isUpdating}
+            />
+            <TextField
+              label="Postal Code"
+              value={servicePostalCode}
+              onChange={(e) => handleFieldChange('postalCode', e.target.value)}
+              size="small"
+              placeholder="V8W 1A1"
+              sx={{ minWidth: 120 }}
+              disabled={isUpdating}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={geocodeServiceAddress}
+              disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim() || isUpdating}
+            >
+              {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
+            </Button>
+            {geocodingStatus === 'success' && (
+              <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
+                ✓ Address verified
+              </Typography>
+            )}
+            {geocodingStatus === 'error' && (
+              <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                ✗ Could not verify
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Button size="small" onClick={handleCancel} disabled={isUpdating}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
+              disabled={isUpdating || geocodingStatus !== 'success'}
+            >
+              Save Changes
+            </Button>
+          </Box>
+        </Box>
+      </Grid>
+    );
+  }
+
+  // Render create mode (for QuoteAgentModal)
+  if (mode === 'create') {
+    return (
+      <Paper sx={{
+        p: 3,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+          Service Location
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+          Where do you need the plumbing service performed?
+        </Typography>
+
+        {/* Address Option Toggle */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <Button
+              variant={useProfileAddress ? "contained" : "outlined"}
+              size="small"
+              onClick={() => {
+                setUseProfileAddress(true);
+                setServiceAddress("");
+                setServiceCity("");
+                setServicePostalCode("");
+                setServiceCoordinates(null);
+                setGeocodingStatus('idle');
+              }}
+              sx={{ flex: 1 }}
+            >
+              Use My Address
+            </Button>
+            <Button
+              variant={!useProfileAddress ? "contained" : "outlined"}
+              size="small"
+              onClick={() => setUseProfileAddress(false)}
+              sx={{ flex: 1 }}
+            >
+              Different Address
+            </Button>
+          </Box>
+
+          {useProfileAddress ? (
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
+                Service will be at your registered address:
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {/* This would be populated from user profile */}
+                Profile address would go here
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Street Address"
+                value={serviceAddress}
+                onChange={(e) => handleFieldChange('street', e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="123 Main Street"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label="City"
+                  value={serviceCity}
+                  onChange={(e) => handleFieldChange('city', e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Victoria"
+                />
+                <TextField
+                  label="Postal Code"
+                  value={servicePostalCode}
+                  onChange={(e) => handleFieldChange('postalCode', e.target.value)}
+                  size="small"
+                  placeholder="V8W 1A1"
+                  sx={{ minWidth: 120 }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={geocodeServiceAddress}
+                  disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
+                >
+                  {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
+                </Button>
+                {geocodingStatus === 'success' && (
+                  <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
+                    ✓ Address verified and located on map
+                  </Typography>
+                )}
+                {geocodingStatus === 'error' && (
+                  <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                    ✗ Could not verify address - please check spelling
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+    );
+  }
+
+  return null;
+};
+
+export default ServiceLocationManager;
 --- END OF FILE ---
 
 --- START OF FILE packages/frontend/src/features/requests/hooks/useRequestMutations.ts ---
