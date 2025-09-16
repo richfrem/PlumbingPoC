@@ -36,6 +36,7 @@ This roadmap tracks our progress. We will validate each building block before mo
 - [x] **Profile Management - UI Submission**: User can fill out and submit the profile form via the UI.
 - [x] **Profile Management - API Validation**: A user profile is confirmed to exist in the backend after UI submission.
 - [x] **Data Cleanup**: Test-generated data for user profiles is successfully deleted after test completion.
+- [x] **Test Data Management**: Automated cleanup API for E2E test data with safety controls.
 
 ### Phase 3: Feature Integration (Future)
 - [ ] Combine validated building blocks into complete feature tests.
@@ -58,6 +59,30 @@ npm run test:e2e
 
 # Run a specific test file
 npx playwright test tests/e2e/profile/profile-management.spec.ts
+```
+
+### Test Data Cleanup
+E2E tests create real database records for validation. Use the cleanup API to remove test data:
+
+```bash
+# Dry run - see what would be deleted (safe)
+curl -X DELETE "https://your-api.com/api/requests/cleanup-test-data" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+
+# Actually delete test data (dangerous - use carefully)
+curl -X DELETE "https://your-api.com/api/requests/cleanup-test-data" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun": false, "confirmDelete": true}'
+```
+
+**Safety Features:**
+- Admin authentication required
+- Dry-run mode by default
+- Only deletes specific test patterns (not everything)
+- Requires explicit confirmation for deletion
+- Audit logging of all operations
+- Disabled in production without test header
 ```
 
 ### Quick Links

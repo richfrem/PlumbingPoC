@@ -568,6 +568,164 @@ const updateRequest = async (req, res, next) => {
 };
 
 /**
+ * Handles cleanup of test data (admin only, highly secured)
+ * Only deletes records matching specific test patterns
+ */
+const cleanupTestData = async (req, res, next) => {
+  try {
+    // SECURITY: Only admins can access this endpoint
+    const userId = req.user.id;
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, email')
+      .eq('user_id', userId)
+      .single();
+
+    if (userProfile?.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Admin access required for cleanup operations.',
+        user: userProfile?.email
+      });
+    }
+
+    // SECURITY: Dry-run by default for safety
+    const { dryRun = true, confirmDelete = false } = req.body;
+    const isDryRun = dryRun === true || dryRun === 'true';
+
+    // SECURITY: Require explicit confirmation for actual deletion
+    if (!isDryRun && !confirmDelete) {
+      return res.status(400).json({
+        error: 'Must set confirmDelete=true in request body for actual deletion'
+      });
+    }
+
+    // SECURITY: Only allow in non-production or with test header
+    const isProduction = process.env.NODE_ENV === 'production';
+    const hasTestHeader = req.headers['x-test-mode'] === 'true';
+
+    if (isProduction && !hasTestHeader) {
+      return res.status(403).json({
+        error: 'Cleanup operations disabled in production environment without test header'
+      });
+    }
+
+    // Define VERY SPECIFIC test data patterns (not wildcards)
+    const testPatterns = {
+      addresses: [
+        '%Test St%',
+        '%V1V1V1%',
+        '%Admin Test%',
+        '%Test Address%'
+      ],
+      // Could add more patterns as needed
+    };
+
+    const results = {
+      dryRun: isDryRun,
+      adminUser: userProfile.email,
+      environment: process.env.NODE_ENV,
+      identified: [],
+      deleted: {
+        requests: 0,
+        quotes: 0,
+        attachments: 0,
+        notes: 0
+      }
+    };
+
+    // Find test requests by address patterns
+    for (const addressPattern of testPatterns.addresses) {
+      const { data: testRequests, error } = await supabase
+        .from('requests')
+        .select('id, service_address, customer_name, created_at')
+        .ilike('service_address', addressPattern);
+
+      if (error) {
+        console.error('Error finding test requests by address:', error);
+        continue;
+      }
+
+      if (testRequests && testRequests.length > 0) {
+        results.identified.push(...testRequests.map(r => ({
+          id: r.id,
+          address: r.service_address,
+          name: r.customer_name,
+          created: r.created_at
+        })));
+
+        if (!isDryRun) {
+          // Delete associated data first (cascade delete for safety)
+          for (const request of testRequests) {
+            // Delete quotes
+            const { data: quotes } = await supabase
+              .from('quotes')
+              .delete()
+              .eq('request_id', request.id)
+              .select();
+            if (quotes) results.deleted.quotes += quotes.length;
+
+            // Delete attachments
+            const { data: attachments } = await supabase
+              .from('quote_attachments')
+              .delete()
+              .eq('request_id', request.id)
+              .select();
+            if (attachments) results.deleted.attachments += attachments.length;
+
+            // Delete notes
+            const { data: notes } = await supabase
+              .from('request_notes')
+              .delete()
+              .eq('request_id', request.id)
+              .select();
+            if (notes) results.deleted.notes += notes.length;
+          }
+
+          // Finally delete the requests
+          const { data: deletedRequests, error: deleteError } = await supabase
+            .from('requests')
+            .delete()
+            .ilike('service_address', addressPattern)
+            .select();
+
+          if (deleteError) {
+            console.error('Error deleting test requests:', deleteError);
+            return res.status(500).json({ error: 'Failed to delete test requests' });
+          }
+
+          if (deletedRequests) {
+            results.deleted.requests += deletedRequests.length;
+          }
+        }
+      }
+    }
+
+    // AUDIT LOGGING: Log all cleanup operations
+    console.log(`🧹 TEST DATA CLEANUP ${isDryRun ? 'DRY RUN' : 'EXECUTED'}:`, {
+      admin: userProfile.email,
+      environment: process.env.NODE_ENV,
+      identified: results.identified.length,
+      deleted: results.deleted,
+      patterns: testPatterns
+    });
+
+    const message = isDryRun
+      ? `Found ${results.identified.length} test records (dry run - no deletion)`
+      : `Successfully deleted ${results.deleted.requests} test records and ${results.deleted.quotes + results.deleted.attachments + results.deleted.notes} related items`;
+
+    res.json({
+      success: true,
+      message,
+      ...results
+    });
+
+  } catch (err) {
+    console.error('❌ Test data cleanup error:', err);
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
