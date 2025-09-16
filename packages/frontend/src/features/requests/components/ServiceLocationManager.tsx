@@ -15,7 +15,7 @@ interface ServiceLocationManagerProps {
   mode: 'view' | 'edit' | 'create';
   initialAddress?: string | AddressData;
   isAdmin: boolean;
-  onSave?: (addressData: AddressData) => void;
+  onSave?: (addressData: AddressData) => Promise<void>;
   onCancel?: () => void;
   onDataChange?: (addressData: Partial<AddressData>) => void;
   isUpdating?: boolean;
@@ -150,7 +150,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
   };
 
   // Handle save
-  const handleSave = () => {
+  const handleSave = async () => {
     if (mode === 'edit' && serviceCoordinates && onSave) {
       const addressData: AddressData = {
         service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
@@ -158,7 +158,15 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
         longitude: serviceCoordinates.lng,
         geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
       };
-      onSave(addressData);
+
+      try {
+        await onSave(addressData);
+        // Exit edit mode on successful save
+        setIsEditing(false);
+      } catch (error) {
+        // Keep in edit mode on error so user can try again
+        console.error('Failed to save address:', error);
+      }
     } else if (mode === 'create' && onDataChange) {
       // For create mode, just notify parent of the current state
       onDataChange({

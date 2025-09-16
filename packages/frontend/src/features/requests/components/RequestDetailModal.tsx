@@ -144,7 +144,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
-  const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => {
+  const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
     if (!request) return;
 
     try {
@@ -166,6 +166,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setSnackbarMessage('❌ Failed to update service address. Please try again.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
+      throw error; // Re-throw so ServiceLocationManager knows it failed
     }
   }, [request, queryClient]);
 
