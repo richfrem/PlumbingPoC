@@ -145,29 +145,23 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
   const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
-    console.log('🎯 handleAddressUpdate called with:', addressData);
-    if (!request) {
-      console.log('❌ No request object available');
-      return;
-    }
+    if (!request) return;
 
     try {
-      console.log('🏠 UpdateAddress: Calling API with:', { requestId: request.id, addressData });
-      const response = await apiClient.patch(`/requests/${request.id}`, {
+      await apiClient.patch(`/requests/${request.id}`, {
         service_address: addressData.service_address,
         latitude: addressData.latitude,
         longitude: addressData.longitude,
         geocoded_address: addressData.geocoded_address
       });
-      console.log('✅ UpdateAddress: API response:', response);
 
       queryClient.invalidateQueries({ queryKey: ['requests'] });
-      setSnackbarMessage('✅ Service address updated successfully!');
+      setSnackbarMessage('Service address updated successfully!');
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
     } catch (error) {
-      console.error('💥 UpdateAddress: Mutation error:', error);
-      setSnackbarMessage('❌ Failed to update service address. Please try again.');
+      console.error('Failed to update service address:', error);
+      setSnackbarMessage('Failed to update service address. Please try again.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       throw error; // Re-throw so ServiceLocationManager knows it failed

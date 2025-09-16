@@ -151,20 +151,6 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
 
   // Handle save
   const handleSave = async () => {
-    console.log('🔄 handleSave called', {
-      mode,
-      isEditing,
-      hasCoordinates: !!serviceCoordinates,
-      hasOnSave: !!onSave,
-      geocodingStatus,
-      addressData: serviceCoordinates ? {
-        service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
-        latitude: serviceCoordinates.lat,
-        longitude: serviceCoordinates.lng,
-        geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
-      } : null
-    });
-
     if (((mode === 'view' && isEditing) || mode === 'edit') && serviceCoordinates && onSave) {
       const addressData: AddressData = {
         service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
@@ -174,14 +160,12 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
       };
 
       try {
-        console.log('📤 Calling onSave with:', addressData);
         await onSave(addressData);
-        console.log('✅ onSave completed successfully');
         // Exit edit mode on successful save
         setIsEditing(false);
       } catch (error) {
         // Keep in edit mode on error so user can try again
-        console.error('❌ Failed to save address:', error);
+        console.error('Failed to save address:', error);
       }
     } else if (mode === 'create' && onDataChange) {
       // For create mode, just notify parent of the current state
@@ -190,14 +174,6 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
         latitude: serviceCoordinates?.lat || null,
         longitude: serviceCoordinates?.lng || null,
         geocoded_address: serviceCoordinates ? `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada` : null,
-      });
-    } else {
-      console.log('❓ Save conditions not met:', {
-        mode,
-        isEditing,
-        hasCoordinates: !!serviceCoordinates,
-        hasOnSave: !!onSave,
-        geocodingStatus
       });
     }
   };
