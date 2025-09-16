@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-16T02:21:19.762Z
+Generated On: 2025-09-16T02:28:32.270Z
 
-# Mnemonic Weight (Token Count): ~194,523 tokens
+# Mnemonic Weight (Token Count): ~194,597 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -11830,7 +11830,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
-  const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }) => {
+  const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
     if (!request) return;
 
     try {
@@ -11852,6 +11852,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setSnackbarMessage('❌ Failed to update service address. Please try again.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
+      throw error; // Re-throw so ServiceLocationManager knows it failed
     }
   }, [request, queryClient]);
 
@@ -12081,7 +12082,7 @@ interface ServiceLocationManagerProps {
   mode: 'view' | 'edit' | 'create';
   initialAddress?: string | AddressData;
   isAdmin: boolean;
-  onSave?: (addressData: AddressData) => void;
+  onSave?: (addressData: AddressData) => Promise<void>;
   onCancel?: () => void;
   onDataChange?: (addressData: Partial<AddressData>) => void;
   isUpdating?: boolean;
@@ -12216,7 +12217,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
   };
 
   // Handle save
-  const handleSave = () => {
+  const handleSave = async () => {
     if (mode === 'edit' && serviceCoordinates && onSave) {
       const addressData: AddressData = {
         service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
@@ -12224,7 +12225,15 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
         longitude: serviceCoordinates.lng,
         geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
       };
-      onSave(addressData);
+
+      try {
+        await onSave(addressData);
+        // Exit edit mode on successful save
+        setIsEditing(false);
+      } catch (error) {
+        // Keep in edit mode on error so user can try again
+        console.error('Failed to save address:', error);
+      }
     } else if (mode === 'create' && onDataChange) {
       // For create mode, just notify parent of the current state
       onDataChange({

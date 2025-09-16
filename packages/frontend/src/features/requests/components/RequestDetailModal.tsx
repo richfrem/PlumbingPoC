@@ -145,7 +145,11 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
   const handleAddressUpdate = useCallback(async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
-    if (!request) return;
+    console.log('🎯 handleAddressUpdate called with:', addressData);
+    if (!request) {
+      console.log('❌ No request object available');
+      return;
+    }
 
     try {
       console.log('🏠 UpdateAddress: Calling API with:', { requestId: request.id, addressData });
