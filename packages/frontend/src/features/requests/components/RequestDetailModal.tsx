@@ -112,11 +112,17 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
     try {
       // This is where you would call the REAL API endpoint.
-      // For now, we'll simulate it.
+      // For now, we'll simulate it and update the status.
       // await apiClient.patch(`/requests/${request.id}/complete`, data);
 
       // Simulate API delay for better UX testing
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update the status to 'completed' using the existing mutation
+      await updateStatusMutation.mutateAsync({
+        requestId: request.id,
+        status: 'completed'
+      });
 
       // On success:
       setSnackbarMessage('✅ Job successfully marked as completed!');
@@ -132,7 +138,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
-  }, [request, onClose, onUpdateRequest]);
+  }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
