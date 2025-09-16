@@ -52,6 +52,28 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     },
   });
 
+  const updateAddressMutation = useMutation({
+    mutationFn: async ({ requestId, address }: { requestId: string; address: string }) => {
+      console.log('🏠 UpdateAddress: Calling API with:', { requestId, address });
+      const response = await apiClient.patch(`/requests/${requestId}`, { service_address: address });
+      console.log('✅ UpdateAddress: API response:', response);
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('🎉 UpdateAddress: Success');
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      setSnackbarMessage('✅ Service address updated successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    },
+    onError: (error) => {
+      console.error('💥 UpdateAddress: Mutation error:', error);
+      setSnackbarMessage('❌ Failed to update service address. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    },
+  });
+
   const markAsViewedMutation = useMutation({
     mutationFn: (requestId: string) => apiClient.patch(`/requests/${requestId}/viewed`),
     onSuccess: () => {
@@ -140,6 +162,14 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request, updateStatusMutation, onClose, onUpdateRequest]);
 
+  const handleAddressUpdate = useCallback(async (address: string) => {
+    if (!request) return;
+    await updateAddressMutation.mutateAsync({
+      requestId: request.id,
+      address
+    });
+  }, [request, updateAddressMutation]);
+
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
     acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
@@ -192,8 +222,9 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               setScheduledStartDate={setScheduledStartDate}
               currentStatus={request.status}
               setCurrentStatus={(newStatus) => handleStatusUpdate(newStatus)}
-              isUpdating={updateStatusMutation.isPending}
+              isUpdating={updateStatusMutation.isPending || updateAddressMutation.isPending}
               onDateChange={handleDateChange}
+              onAddressUpdate={handleAddressUpdate}
             />
             {isAdmin && <AITriageSummary request={request} />}
             <RequestProblemDetails request={request} />

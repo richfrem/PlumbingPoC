@@ -1,8 +1,8 @@
 // packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
 
-import React from 'react';
-import { Box, Typography, Paper, TextField, Button, Grid } from '@mui/material';
-import { User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Box, Typography, Paper, TextField, Button, Grid, IconButton } from '@mui/material';
+import { User, Edit, Check, X } from 'lucide-react';
 
 interface CustomerInfoSectionProps {
   request: any;
@@ -17,6 +17,7 @@ interface CustomerInfoSectionProps {
   goodUntil?: string; // For QuoteFormModal
   setGoodUntil?: (date: string) => void; // For QuoteFormModal
   onDateChange?: (date: string) => void; // New prop for streamlined workflow
+  onAddressUpdate?: (address: string) => void; // New prop for address updates
 }
 
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
@@ -32,12 +33,35 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   goodUntil,
   setGoodUntil,
   onDateChange, // New streamlined prop
+  onAddressUpdate, // New address update prop
 }) => {
   const isRequestDetail = setScheduledStartDate !== undefined;
   const customerProfile = request?.user_profiles;
 
+  // State for editing address
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [editedAddress, setEditedAddress] = useState(request?.service_address || '');
+
   // Only show the scheduling section if the status is 'accepted' or 'scheduled'
   const canShowScheduling = isAdmin && isRequestDetail && (currentStatus === 'accepted' || currentStatus === 'scheduled');
+
+  // Address editing handlers
+  const handleStartEditingAddress = () => {
+    setEditedAddress(request?.service_address || '');
+    setIsEditingAddress(true);
+  };
+
+  const handleSaveAddress = () => {
+    if (onAddressUpdate && editedAddress.trim() !== request?.service_address) {
+      onAddressUpdate(editedAddress.trim());
+    }
+    setIsEditingAddress(false);
+  };
+
+  const handleCancelEditingAddress = () => {
+    setEditedAddress(request?.service_address || '');
+    setIsEditingAddress(false);
+  };
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -82,7 +106,60 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
         ) : (
              <Grid item xs={12} sm={6}>
                 <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Service Address</Typography>
-                <Button component="a" href={`https://maps.google.com/?q=${encodeURIComponent(request?.service_address)}`} target="_blank" size="small" sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}>{request?.service_address || 'N/A'}</Button>
+                {isEditingAddress ? (
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mt: 0.5 }}>
+                    <TextField
+                      value={editedAddress}
+                      onChange={(e) => setEditedAddress(e.target.value)}
+                      size="small"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      disabled={isUpdating}
+                      autoFocus
+                    />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={handleSaveAddress}
+                        disabled={isUpdating || !editedAddress.trim()}
+                        color="success"
+                      >
+                        <Check size={16} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={handleCancelEditingAddress}
+                        disabled={isUpdating}
+                        color="error"
+                      >
+                        <X size={16} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Button
+                      component="a"
+                      href={`https://maps.google.com/?q=${encodeURIComponent(request?.service_address)}`}
+                      target="_blank"
+                      size="small"
+                      sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left', flex: 1 }}
+                    >
+                      {request?.service_address || 'N/A'}
+                    </Button>
+                    {isAdmin && (
+                      <IconButton
+                        size="small"
+                        onClick={handleStartEditingAddress}
+                        disabled={isUpdating}
+                        sx={{ ml: 1 }}
+                      >
+                        <Edit size={14} />
+                      </IconButton>
+                    )}
+                  </Box>
+                )}
              </Grid>
         )}
 
