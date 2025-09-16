@@ -153,6 +153,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
   const handleSave = async () => {
     console.log('🔄 handleSave called', {
       mode,
+      isEditing,
       hasCoordinates: !!serviceCoordinates,
       hasOnSave: !!onSave,
       geocodingStatus,
@@ -164,7 +165,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
       } : null
     });
 
-    if (mode === 'edit' && serviceCoordinates && onSave) {
+    if (((mode === 'view' && isEditing) || mode === 'edit') && serviceCoordinates && onSave) {
       const addressData: AddressData = {
         service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
         latitude: serviceCoordinates.lat,
@@ -193,6 +194,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
     } else {
       console.log('❓ Save conditions not met:', {
         mode,
+        isEditing,
         hasCoordinates: !!serviceCoordinates,
         hasOnSave: !!onSave,
         geocodingStatus
