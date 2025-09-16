@@ -530,6 +530,44 @@ const markRequestAsViewed = async (req, res, next) => {
 };
 
 /**
+ * Handles updating a request (general update for address, etc.).
+ */
+const updateRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Only allow updating specific fields for security
+    const allowedFields = ['service_address', 'latitude', 'longitude', 'geocoded_address'];
+    const filteredUpdateData = {};
+
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        filteredUpdateData[field] = updateData[field];
+      }
+    }
+
+    if (Object.keys(filteredUpdateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update.' });
+    }
+
+    const { data, error } = await supabase
+      .from('requests')
+      .update(filteredUpdateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Request not found.' });
+
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -569,6 +607,7 @@ export {
   createQuoteForRequest,
   getAllRequests,
   getRequestById,
+  updateRequest,
   updateQuote,
   acceptQuote,
   updateRequestStatus,

@@ -11,6 +11,7 @@ import {
   createQuoteForRequest,
   getAllRequests,
   getRequestById,
+  updateRequest,
   updateQuote,
   acceptQuote,
   updateRequestStatus,
@@ -42,6 +43,7 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 
 // --- Client Portal & Admin Routes ---
 router.get('/', authenticate, getAllRequests); // Get all requests for admin table
+router.patch('/:id', authenticate, updateRequest); // Update request (address, etc.)
 router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request as viewed by user
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
