@@ -48,3 +48,21 @@ export function useTriageRequest() {
     },
   });
 }
+
+export function useUpdateAddressMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, addressData }: { requestId: string; addressData: any }) => {
+      console.log('useUpdateAddressMutation: Calling API', { requestId, addressData });
+      return apiClient.patch(`/requests/${requestId}`, addressData);
+    },
+    onSuccess: (data) => {
+      console.log('useUpdateAddressMutation: Success', data);
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+    onError: (error) => {
+      console.error('useUpdateAddressMutation: Error', error);
+    },
+  });
+}

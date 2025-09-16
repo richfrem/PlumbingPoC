@@ -17,7 +17,7 @@ import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
 import ServiceLocationManager from './ServiceLocationManager';
-import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
+import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface RequestDetailModalProps {
@@ -34,6 +34,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const updateStatusMutation = useUpdateRequestStatus();
   const acceptQuoteMutation = useAcceptQuote();
   const triageMutation = useTriageRequest();
+  const updateAddressMutation = useUpdateAddressMutation();
   const queryClient = useQueryClient();
 
   const completeJobMutation = useMutation({
@@ -230,7 +231,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 initialAddress={request.service_address}
                 isAdmin={isAdmin}
                 onSave={handleAddressUpdate}
-                isUpdating={false}
+                isUpdating={updateAddressMutation.isPending}
               />
 
               <Grid item xs={12} sm={6}>

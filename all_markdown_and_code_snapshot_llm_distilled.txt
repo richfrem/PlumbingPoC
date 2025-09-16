@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-16T01:32:30.309Z
+Generated On: 2025-09-16T02:21:19.762Z
 
-# Mnemonic Weight (Token Count): ~194,351 tokens
+# Mnemonic Weight (Token Count): ~194,523 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -10093,9 +10093,9 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             <FormControlLabel
               control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Siren size={16} style={{ marginRight: '8px', color: '#d32f2f' }} />
-                  <Typography variant="body2">Emergencies Only</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AlertTriangle size={16} />
+                  Emergencies Only
                 </Box>
               }
               sx={{ mr: 1, color: 'text.secondary' }}
@@ -11703,7 +11703,7 @@ import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
 import ServiceLocationManager from './ServiceLocationManager';
-import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest } from '../hooks/useRequestMutations';
+import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface RequestDetailModalProps {
@@ -11720,6 +11720,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const updateStatusMutation = useUpdateRequestStatus();
   const acceptQuoteMutation = useAcceptQuote();
   const triageMutation = useTriageRequest();
+  const updateAddressMutation = useUpdateAddressMutation();
   const queryClient = useQueryClient();
 
   const completeJobMutation = useMutation({
@@ -11916,7 +11917,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 initialAddress={request.service_address}
                 isAdmin={isAdmin}
                 onSave={handleAddressUpdate}
-                isUpdating={false}
+                isUpdating={updateAddressMutation.isPending}
               />
 
               <Grid item xs={12} sm={6}>
@@ -12237,7 +12238,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
 
   // Handle cancel
   const handleCancel = () => {
-    if (mode === 'edit') {
+    if (mode === 'view' || mode === 'edit') {
       setIsEditing(false);
     }
     if (onCancel) {
@@ -12272,8 +12273,8 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
     );
   }
 
-  // Render edit mode
-  if (mode === 'edit' && isEditing) {
+  // Render edit mode (for both 'view' mode when editing and 'edit' mode)
+  if ((mode === 'view' && isEditing) || (mode === 'edit' && isEditing)) {
     return (
       <Grid item xs={12}>
         <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
@@ -12512,6 +12513,24 @@ export function useTriageRequest() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+  });
+}
+
+export function useUpdateAddressMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, addressData }: { requestId: string; addressData: any }) => {
+      console.log('useUpdateAddressMutation: Calling API', { requestId, addressData });
+      return apiClient.patch(`/requests/${requestId}`, addressData);
+    },
+    onSuccess: (data) => {
+      console.log('useUpdateAddressMutation: Success', data);
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+    },
+    onError: (error) => {
+      console.error('useUpdateAddressMutation: Error', error);
     },
   });
 }
