@@ -71,6 +71,9 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     onDrop: acceptedFiles => {
       if (onNewFiles) {
         onNewFiles(acceptedFiles);
+      } else {
+        // For direct upload
+        uploadFiles(acceptedFiles);
       }
     }
   });
@@ -128,6 +131,32 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     };
   }, [stablePendingFileKey]); // Use the new stable key here.
 
+  const uploadFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('request_id', requestId);
+      if (quoteId) {
+        formData.append('quote_id', quoteId);
+      }
+      files.forEach(file => {
+        formData.append('attachment', file);
+      });
+
+      await apiClient.post('/requests/attachments', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      onUpdate();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err.message || 'Failed to upload files.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -138,28 +167,8 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('request_id', requestId);
-      if (quoteId) {
-        formData.append('quote_id', quoteId);
-      }
-      Array.from(files).forEach(file => {
-        formData.append('attachment', file);
-      });
-      
-      await apiClient.post('/requests/attachments', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      onUpdate();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || 'Failed to upload files.');
-    } finally {
-      setLoading(false);
-      event.target.value = '';
-    }
+    await uploadFiles(Array.from(files));
+    event.target.value = '';
   };
 
   const allUrls = { ...signedUrls, ...pendingImageUrls };
