@@ -88,6 +88,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    // Redirect to home page after sign out
+    window.location.hash = '';
   };
 
   const refreshProfile = () => fetchProfile(user);
