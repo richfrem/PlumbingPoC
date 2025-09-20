@@ -29,6 +29,7 @@ export const getQuoteStatusChipColor = (status: string): ChipColor => {
     accepted: 'success',
     rejected: 'error',
     sent: 'default',
+    change_order: 'warning',
   };
   return colorMap[status] || 'default';
 };

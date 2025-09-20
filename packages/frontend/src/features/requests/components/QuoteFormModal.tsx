@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
+import { useUpdateQuote } from '../hooks/useRequestMutations';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -17,7 +18,7 @@ interface QuoteFormModalProps {
   isOpen: boolean;
   onClose: (updated?: boolean) => void;
   quote?: any;
-  editable: boolean;
+  mode: 'create' | 'update' | 'change_order' | 'view';
   request: QuoteRequest;
   requestId: string;
 }
@@ -27,25 +28,23 @@ interface Item {
   price: string;
 }
 
-const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
-   const { profile } = useAuth();
-   const firstFieldRef = useRef<HTMLInputElement>(null);
-   const [goodUntil, setGoodUntil] = useState('');
-   const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
-   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
-   const [notes, setNotes] = useState('');
-   const [newAttachments, setNewAttachments] = useState<File[]>([]);
-   const [saving, setSaving] = useState(false);
-   const [saveSuccess, setSaveSuccess] = useState(false);
-   const [saveError, setSaveError] = useState<string | null>(null);
+const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, mode, request, requestId }) => {
+    const { profile } = useAuth();
+    const firstFieldRef = useRef<HTMLInputElement>(null);
+    const [goodUntil, setGoodUntil] = useState('');
+    const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
+    const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
+    const [notes, setNotes] = useState('');
+    const [newAttachments, setNewAttachments] = useState<File[]>([]);
 
-   const isAdmin = profile?.role === 'admin';
+    const isAdmin = profile?.role === 'admin';
+    const editable = mode !== 'view';
+
+    const updateQuoteMutation = useUpdateQuote();
 
   useEffect(() => {
     if (isOpen) {
       setNewAttachments([]);
-      setSaveError(null);
-      setSaveSuccess(false);
 
       if (quote) {
         let detailsObj: any = {};
@@ -77,12 +76,14 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
 
 
   const handleSaveQuote = async () => {
-    setSaveError(null);
     if (!laborItems.some(item => item.description && parseFloat(item.price) > 0) && !materialItems.some(item => item.description && parseFloat(item.price) > 0)) {
-      setSaveError('Please add at least one labor or material item with a price.');
+      // Show validation error
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Please add at least one labor or material item with a price.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
       return;
     }
-    setSaving(true);
 
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
@@ -91,50 +92,75 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const pst = subtotal * 0.07;
     const totalPrice = subtotal + gst + pst;
 
+    const payload = {
+      quote_amount: Number(totalPrice.toFixed(2)),
+      details: JSON.stringify({
+        labor_items: laborItems.filter(item => item.description),
+        material_items: materialItems.filter(item => item.description),
+        notes,
+        good_until: goodUntil,
+        tax_details: { gst: Number(gst.toFixed(2)), pst: Number(pst.toFixed(2)) },
+      }),
+    };
+
     try {
-      const payload = {
-        quote_amount: Number(totalPrice.toFixed(2)),
-        details: JSON.stringify({
-          labor_items: laborItems.filter(item => item.description),
-          material_items: materialItems.filter(item => item.description),
-          notes,
-          good_until: goodUntil,
-          tax_details: { gst: Number(gst.toFixed(2)), pst: Number(pst.toFixed(2)) },
-        }),
-      };
+      if (mode === 'change_order') {
+        // Create a new change order quote
+        const changeOrderPayload = {
+          ...payload,
+          status: 'change_order',
+          details: JSON.stringify({
+            ...JSON.parse(payload.details),
+            is_change_order: true,
+            original_quote_id: quote.id,
+            change_reason: 'Additional work requested'
+          })
+        };
 
-      const { data: savedQuote } = quote?.id
-        ? await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload)
-        : await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
 
-      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
-      if (!quote?.id && isAdmin) {
-        try {
-          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
-        } catch (statusError) {
-          console.error('Failed to update request status to quoted:', statusError);
-          // Don't fail the quote creation if status update fails
+        // Change orders don't change the main request status
+        // They remain as separate quotes that need acceptance
+
+        if (newAttachments.length > 0 && savedQuote?.id) {
+          const formData = new FormData();
+          formData.append('request_id', requestId);
+          formData.append('quote_id', savedQuote.id);
+          newAttachments.forEach(file => formData.append('attachment', file));
+          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        }
+      } else if (quote?.id && mode === 'update') {
+        // Update existing quote
+        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, payload });
+      } else if (mode === 'create') {
+        // Create new quote
+        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+
+        // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+        if (isAdmin) {
+          try {
+            await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+          } catch (statusError) {
+            console.error('Failed to update request status to quoted:', statusError);
+            // Don't fail the quote creation if status update fails
+          }
+        }
+
+        if (newAttachments.length > 0 && savedQuote?.id) {
+          const formData = new FormData();
+          formData.append('request_id', requestId);
+          formData.append('quote_id', savedQuote.id);
+          newAttachments.forEach(file => formData.append('attachment', file));
+          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         }
       }
 
-      if (newAttachments.length > 0 && savedQuote?.id) {
-        const formData = new FormData();
-        formData.append('request_id', requestId);
-        formData.append('quote_id', savedQuote.id);
-        newAttachments.forEach(file => formData.append('attachment', file));
-        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      }
-
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-        onClose(true);
-      }, 1200);
+      // Close modal after successful save
+      onClose(true);
 
     } catch (err: any) {
-      setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
-    } finally {
-      setSaving(false);
+      // Error is handled by the mutation hook
+      console.error('Failed to save quote:', err);
     }
   };
 
@@ -148,7 +174,9 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const totalPrice = subtotal + gst + pst;
 
   const quoteAttachments = request?.quote_attachments?.filter((att: QuoteAttachment) => att.quote_id === quote?.id) || [];
-  const headerTitle = quote?.id
+  const headerTitle = mode === 'change_order'
+    ? `Create Change Order for ${request?.problem_category?.replace(/_/g, ' ')}`
+    : quote?.id
     ? `Update Quote #${quote.quote_number}`
     : `Create New Quote for ${request?.problem_category?.replace(/_/g, ' ')}`;
 
@@ -259,19 +287,17 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         </Box>
 
         <ModalFooter>
-          <Box>
-            {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
-          </Box>
-          {editable && (
-            <Box>
-              {saveError && <Typography color="error" sx={{ display: 'inline', mr: 2 }}>{saveError}</Typography>}
-              {saveSuccess && <Typography color="success.main" sx={{ display: 'inline', mr: 2 }}>Quote saved!</Typography>}
-              <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={saving || saveSuccess}>
-                {saving ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
-              </Button>
-            </Box>
-          )}
-        </ModalFooter>
+           <Box>
+             {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
+           </Box>
+           {editable && (
+             <Box>
+               <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={updateQuoteMutation.isPending}>
+                 {updateQuoteMutation.isPending ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
+               </Button>
+             </Box>
+           )}
+         </ModalFooter>
       </Paper>
     </div>
   );

@@ -5,7 +5,7 @@ import cors from 'cors';
 // This is the ONLY place dotenv is configured. It is safe here.
 // Netlify provides process.env, so this call is effectively ignored in production.
 // Locally, it loads the .env file as needed.
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 
 import requestRoutes from './routes/requestRoutes.js';

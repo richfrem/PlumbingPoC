@@ -394,7 +394,17 @@ const updateQuote = async (req, res, next) => {
     const { id, quoteId } = req.params;
     const { quote_amount, details } = req.body;
 
-    const { data, error } = await supabase
+    // First get the current quote to log its status
+    const { data: currentQuote } = await supabase
+      .from('quotes')
+      .select('status')
+      .eq('id', quoteId)
+      .single();
+
+    console.log('updateQuote: Updating quote', { quoteId, currentStatus: currentQuote?.status });
+
+    // Update quote details first
+    const { data: updatedQuote, error } = await supabase
       .from('quotes')
       .update({
         quote_amount,
@@ -405,10 +415,45 @@ const updateQuote = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
+    if (error) {
+      console.error('updateQuote: Error updating quote details', error);
+      throw error;
+    }
+    if (!updatedQuote) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
+    // Then update the status separately
+    console.log('updateQuote: About to update quote status to sent');
+    const { data: statusData, error: statusError } = await supabase
+      .from('quotes')
+      .update({ status: 'sent' })
+      .eq('id', quoteId)
+      .select('status')
+      .single();
+
+    if (statusError) {
+      console.error('updateQuote: Error updating quote status', statusError);
+      console.error('updateQuote: Status error details:', JSON.stringify(statusError, null, 2));
+      // Don't throw here, the main update succeeded
+    } else {
+      console.log('updateQuote: Quote status updated successfully', { newStatus: statusData?.status });
+    }
+
+    console.log('updateQuote: Quote updated successfully', { quoteId, amount: updatedQuote.quote_amount });
+
+    // Only revert status to 'quoted' if it was previously 'accepted'
+    // This ensures that updating a quote reverts accepted quotes back to quoted status
+    // since the new terms haven't been approved yet
+    const { data: requestData, error: requestError } = await supabase
+      .from('requests')
+      .select('status')
+      .eq('id', id)
+      .single();
+
+    if (requestError) throw requestError;
+
+    if (requestData.status === 'accepted') {
+      await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
+    }
 
     res.status(200).json(data);
   } catch (err) {
@@ -455,19 +500,31 @@ const acceptQuote = async (req, res, next) => {
       }
     }
 
-    console.log('acceptQuote: Calling stored procedure', { requestId: id, quoteId });
+    console.log('acceptQuote: Updating request and quote statuses directly', { requestId: id, quoteId });
 
-    // 1. Run the existing stored procedure to update database state
-    const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
-      p_request_id: id,
-      p_quote_id: quoteId,
-    });
-    if (rpcError) {
-      console.error('acceptQuote: Stored procedure error', rpcError);
-      throw rpcError;
+    // Update request status to 'accepted'
+    const { error: requestError } = await supabase
+      .from('requests')
+      .update({ status: 'accepted' })
+      .eq('id', id);
+
+    if (requestError) {
+      console.error('acceptQuote: Failed to update request status', requestError);
+      throw requestError;
     }
 
-    console.log('acceptQuote: Stored procedure completed successfully');
+    // Update quote status to 'accepted'
+    const { error: quoteError } = await supabase
+      .from('quotes')
+      .update({ status: 'accepted' })
+      .eq('id', quoteId);
+
+    if (quoteError) {
+      console.error('acceptQuote: Failed to update quote status', quoteError);
+      throw quoteError;
+    }
+
+    console.log('acceptQuote: Request and quote statuses updated successfully');
 
     // 2. Fetch all necessary data for notifications in a single block
     const { data: requestData, error: requestError } = await supabase

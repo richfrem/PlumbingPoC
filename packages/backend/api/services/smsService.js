@@ -59,6 +59,17 @@ const triggerSms = async (to, body) => {
   console.log(`🔍 SMS DEBUG: From number: ${fromPhone}`);
   console.log(`🔍 SMS DEBUG: Message length: ${body.length} characters`);
 
+  // FEATURE FLAG: Only send SMS in production (Netlify) environment
+  // This prevents accidental SMS sending during local development
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true';
+  if (!isProduction) {
+    console.log('📱 SMS SKIPPED: SMS sending disabled in development environment');
+    console.log('📱 SMS SKIPPED: To prevent accidental costs during development');
+    console.log('📱 SMS SKIPPED: SMS would have been sent to:', to);
+    console.log('📱 SMS SKIPPED: Message preview:', body.substring(0, 50) + '...');
+    return;
+  }
+
   if (!accountSid || !authToken || !fromPhone) {
     console.error('❌ SMS ERROR: Twilio credentials not configured');
     console.error('❌ SMS ERROR: accountSid:', !!accountSid);
