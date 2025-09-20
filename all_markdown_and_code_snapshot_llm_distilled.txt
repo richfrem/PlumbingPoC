@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-20T20:50:28.665Z
+Generated On: 2025-09-20T21:17:51.876Z
 
-# Mnemonic Weight (Token Count): ~196,235 tokens
+# Mnemonic Weight (Token Count): ~196,238 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -13341,7 +13341,7 @@ const AppContent: React.FC = () => {
 
   // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
   // This tells React Query to re-run the query when the user logs in.
-  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading });
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading && !!user });
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
