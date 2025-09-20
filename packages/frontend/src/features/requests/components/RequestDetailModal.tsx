@@ -85,6 +85,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     }
   }, [request?.scheduled_start_date]); // This effect ONLY runs when the `request` prop itself changes.
 
+  // Listen for custom snackbar events
+  useEffect(() => {
+    const handleSnackbarEvent = (event: CustomEvent) => {
+      setSnackbarMessage(event.detail.message);
+      setSnackbarSeverity(event.detail.severity);
+      setSnackbarOpen(true);
+    };
+
+    window.addEventListener('show-snackbar', handleSnackbarEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('show-snackbar', handleSnackbarEvent as EventListener);
+    };
+  }, []);
+
   const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
     if (!request) return;
     updateStatusMutation.mutate({ requestId: request.id, status: newStatus, scheduledStartDate: date ?? null });

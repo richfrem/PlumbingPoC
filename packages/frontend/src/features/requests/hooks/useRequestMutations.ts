@@ -24,14 +24,25 @@ export function useAcceptQuote() {
   return useMutation({
     mutationFn: async ({ requestId, quoteId }: { requestId: string; quoteId: string }) => {
       console.log('useAcceptQuote: Calling API', { requestId, quoteId });
-      await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
+      const response = await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
+      return response.data;
     },
     onSuccess: (data) => {
       console.log('useAcceptQuote: Success', data);
       queryClient.invalidateQueries({ queryKey: ['requests'] });
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote accepted successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
     },
     onError: (error) => {
       console.error('useAcceptQuote: Error', error);
+      // Show error message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '❌ Failed to accept quote. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
     },
   });
 }
