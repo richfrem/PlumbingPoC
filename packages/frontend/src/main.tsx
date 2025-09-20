@@ -43,7 +43,7 @@ const AppContent: React.FC = () => {
 
   // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
   // This tells React Query to re-run the query when the user logs in.
-  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading });
+  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading && !!user });
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
