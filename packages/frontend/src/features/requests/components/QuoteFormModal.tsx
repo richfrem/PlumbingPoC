@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
-import { useUpdateQuote } from '../hooks/useRequestMutations';
+import { useCreateQuote, useUpdateQuote } from '../hooks/useRequestMutations';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -40,6 +40,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const isAdmin = profile?.role === 'admin';
     const editable = mode !== 'view';
 
+    const createQuoteMutation = useCreateQuote();
     const updateQuoteMutation = useUpdateQuote();
 
   useEffect(() => {
@@ -134,24 +135,30 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, payload });
       } else if (mode === 'create') {
         // Create new quote
-        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        try {
+          const savedQuote = await createQuoteMutation.mutateAsync({ requestId, payload });
 
-        // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
-        if (isAdmin) {
-          try {
-            await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
-          } catch (statusError) {
-            console.error('Failed to update request status to quoted:', statusError);
-            // Don't fail the quote creation if status update fails
+          // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+          if (isAdmin) {
+            try {
+              await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+            } catch (statusError) {
+              console.error('Failed to update request status to quoted:', statusError);
+              // Don't fail the quote creation if status update fails
+            }
           }
-        }
 
-        if (newAttachments.length > 0 && savedQuote?.id) {
-          const formData = new FormData();
-          formData.append('request_id', requestId);
-          formData.append('quote_id', savedQuote.id);
-          newAttachments.forEach(file => formData.append('attachment', file));
-          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          if (newAttachments.length > 0 && savedQuote?.id) {
+            const formData = new FormData();
+            formData.append('request_id', requestId);
+            formData.append('quote_id', savedQuote.id);
+            newAttachments.forEach(file => formData.append('attachment', file));
+            await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          }
+        } catch (error) {
+          // Error is handled by the mutation hook's onError
+          console.error('Failed to create quote:', error);
+          return;
         }
       }
 

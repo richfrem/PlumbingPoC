@@ -27,6 +27,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>('all');
 
+
   useEffect(() => {
     if (selectedRequest && allRequests.length > 0) {
       const newRequestData = allRequests.find(r => r.id === selectedRequest.id);

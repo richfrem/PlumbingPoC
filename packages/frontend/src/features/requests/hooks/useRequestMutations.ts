@@ -13,7 +13,8 @@ export function useUpdateRequestStatus() {
       await apiClient.patch(`/requests/${requestId}/status`, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      // Let real-time subscriptions handle the update instead of manual invalidation
+      console.log('useUpdateRequestStatus: Success - letting real-time handle update');
     },
   });
 }
@@ -27,10 +28,11 @@ export function useAcceptQuote() {
       const response = await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       console.log('useAcceptQuote: Success', data);
-      // Try more targeted invalidation to avoid infinite loops
-      queryClient.invalidateQueries({ queryKey: ['requests', variables.requestId], exact: false });
+      // Force immediate refetch since request status changed
+      await queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.refetchQueries({ queryKey: ['requests'] });
       // Show success message
       const event = new CustomEvent('show-snackbar', {
         detail: { message: '✅ Quote accepted successfully!', severity: 'success' }
@@ -42,6 +44,37 @@ export function useAcceptQuote() {
       // Show error message
       const event = new CustomEvent('show-snackbar', {
         detail: { message: '❌ Failed to accept quote. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
+    },
+  });
+}
+
+export function useCreateQuote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, payload }: { requestId: string; payload: any }) => {
+      console.log('useCreateQuote: Calling API', { requestId, payload });
+      const response = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+      return response.data;
+    },
+    onSuccess: async (data) => {
+      console.log('useCreateQuote: Success', data);
+      // Force immediate refetch of requests data so users see new quotes
+      await queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.refetchQueries({ queryKey: ['requests'] });
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote created successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+    },
+    onError: (error) => {
+      console.error('useCreateQuote: Error', error);
+      // Show error message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '❌ Failed to create quote. Please try again.', severity: 'error' }
       });
       window.dispatchEvent(event);
     },
@@ -84,7 +117,7 @@ export function useTriageRequest() {
 
   return useMutation({
     mutationFn: async (requestId: string) => {
-      await apiClient.post(`/triage/${requestId}`);
+      await apiClient.post(`/api/triage/${requestId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requests'] });

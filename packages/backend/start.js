@@ -2,7 +2,7 @@
 import app from './api/server.js';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: '../../.env' });
 
 const PORT = process.env.BACKEND_PORT || 3000;
 

@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Feature flag to control which browsers to run
 const BROWSERS_ENABLED = process.env.BROWSERS_ENABLED || 'chromium'; // 'chromium', 'firefox', 'webkit', 'all'

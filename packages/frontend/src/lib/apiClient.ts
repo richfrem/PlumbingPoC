@@ -35,19 +35,9 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${session.access_token}`;
         console.log('📤 API Client: Headers now include:', !!config.headers.Authorization);
       } else {
-        console.warn('⚠️ API Client: No session or access token found - trying refresh...');
-
-        // Try to refresh the session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError) {
-          console.error('❌ API Client: Session refresh failed:', refreshError);
-        } else if (refreshData?.session?.access_token) {
-          console.log('✅ API Client: Session refreshed successfully');
-          config.headers.Authorization = `Bearer ${refreshData.session.access_token}`;
-        } else {
-          console.warn('⚠️ API Client: Session refresh did not provide token');
-        }
+        console.warn('⚠️ API Client: No session or access token found - request may fail with 401');
+        // Don't try to refresh here as it can cause issues
+        // Let the request proceed and handle 401 errors in the response interceptor if needed
       }
     } catch (error) {
       console.error('❌ API Client: Exception getting session:', error);
@@ -57,6 +47,19 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     console.error('❌ API Client: Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle 401 errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.warn('⚠️ API Client: Received 401 Unauthorized - session may be expired');
+      // Don't automatically retry or redirect, just log and pass the error through
+      // The component can handle this appropriately
+    }
     return Promise.reject(error);
   }
 );

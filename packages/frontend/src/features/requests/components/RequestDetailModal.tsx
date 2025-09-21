@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { Box, Paper, Button, Snackbar, Alert, Grid, Typography } from '@mui/material';
-import { Zap } from 'lucide-react';
+import { Box, Paper, Button, Snackbar, Alert, Grid, Typography, CircularProgress } from '@mui/material';
+import { Zap, RefreshCw } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../../../lib/apiClient';
@@ -19,16 +19,68 @@ import CompleteJobModal from './CompleteJobModal';
 import ServiceLocationManager from './ServiceLocationManager';
 import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation } from '../hooks/useRequestMutations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRequestById } from '../../../hooks/useSpecializedQueries';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  request: QuoteRequest | null;
-  onUpdateRequest: () => void;
+  request: QuoteRequest | null; // Used only for the requestId
+  onUpdateRequest: () => void; // Kept for backward compatibility
 }
 
-const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request, onUpdateRequest }) => {
+const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request: initialRequest, onUpdateRequest }) => {
   const { profile } = useAuth();
+  
+  // Use standardized real-time system to get fresh request data
+  const requestId = initialRequest?.id;
+  const { data: requestArray, loading, error, refetch } = useRequestById(requestId || '', {
+    enabled: !!requestId && isOpen // Only fetch when modal is open and we have a requestId
+  });
+  const request = requestArray?.[0] || initialRequest; // Use real-time data if available, fallback to initial
+
+  // Manual refresh function for immediate updates
+  const refreshRequestData = () => {
+    console.log('🔄 Manually refreshing request data for:', requestId);
+    refetch();
+  };
+
+  // Auto-refresh every 30 seconds when modal is open to catch updates from other users
+  useEffect(() => {
+    if (!isOpen || !requestId) return;
+
+    console.log('⏰ Setting up auto-refresh for request detail modal');
+    const interval = setInterval(() => {
+      console.log('⏰ Auto-refreshing request data...');
+      refetch();
+    }, 30000); // 30 seconds
+
+    return () => {
+      console.log('⏰ Clearing auto-refresh interval');
+      clearInterval(interval);
+    };
+  }, [isOpen, requestId, refetch]);
+
+  // Refresh when window gains focus to catch updates from other sessions
+  useEffect(() => {
+    if (!isOpen || !requestId) return;
+
+    const handleFocus = () => {
+      console.log('🎯 Window focused - refreshing request data');
+      refetch();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isOpen, requestId, refetch]);
+  
+  console.log('🔍 RequestDetailModal using standardized real-time system:', {
+    requestId,
+    hasRealTimeData: !!requestArray?.[0],
+    attachmentsLength: request?.quote_attachments?.length,
+    notesLength: request?.request_notes?.length,
+    loading,
+    error
+  });
 
   // Mutations
   const updateStatusMutation = useUpdateRequestStatus();
@@ -67,7 +119,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
-
+  const [hasMarkedViewed, setHasMarkedViewed] = useState(false);
 
   // Snackbar state for notifications
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -130,13 +182,6 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
 
     try {
-      // This is where you would call the REAL API endpoint.
-      // For now, we'll simulate it and update the status.
-      // await apiClient.patch(`/requests/${request.id}/complete`, data);
-
-      // Simulate API delay for better UX testing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // Update the status to 'completed' using the existing mutation
       await updateStatusMutation.mutateAsync({
         requestId: request.id,
@@ -186,7 +231,20 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
-    acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
+    console.log('handleAcceptQuote: Starting quote acceptance', { requestId: request.id, quoteId });
+    acceptQuoteMutation.mutate(
+      { requestId: request.id, quoteId },
+      {
+        onSuccess: (data) => {
+          console.log('handleAcceptQuote: Quote accepted successfully', data);
+          // Refresh the request detail after accepting a quote
+          onUpdateRequest();
+        },
+        onError: (error) => {
+          console.error('handleAcceptQuote: Quote acceptance failed', error);
+        }
+      }
+    );
   };
   
   const handleTriageRequest = async () => {
@@ -198,26 +256,65 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const isAdmin = profile?.role === 'admin';
   const isReadOnly = ['completed'].includes(request.status);
+  const hasAcceptedQuotes = request.quotes?.some(q => q.status === 'accepted') || false;
+  const isEditable = !isReadOnly && (isAdmin || !hasAcceptedQuotes);
+  
+  // For attachments, users should be able to upload even after quotes are accepted
+  // Only restrict when job is completed
+  const canEditAttachments = !isReadOnly;
+  
+  console.log('🔍 RequestDetailModal editable calculation:', {
+    requestId: request.id,
+    isAdmin,
+    isReadOnly,
+    requestStatus: request.status,
+    quotesCount: request.quotes?.length || 0,
+    hasAcceptedQuotes,
+    isEditable,
+    canEditAttachments,
+    hasRealTimeData: !!requestArray?.[0]
+  });
 
   // *** Auto-update status to "viewed" when non-admin user views request details ***
-  // This implements the workflow: Quoted --> Viewed when user views request details
+  // Guard: Only run once per modal open to prevent infinite PATCH calls
   useEffect(() => {
-    if (isOpen && request && !isAdmin && request.status === 'quoted') {
-      // Non-admin user is viewing a quoted request - update status to viewed
-      markAsViewedMutation.mutate(request.id);
+    if (
+      isOpen &&
+      request &&
+      !isAdmin &&
+      request.status === 'quoted' &&
+      !hasMarkedViewed &&
+      profile?.user_id // Only run if user is authenticated
+    ) {
+      markAsViewedMutation.mutate(request.id, {
+        onSuccess: () => setHasMarkedViewed(true),
+        onError: (error) => {
+          console.error('Failed to mark as viewed:', error);
+          setHasMarkedViewed(true); // Prevent infinite loop on error
+        }
+      });
     }
-  }, [isOpen, request?.id, isAdmin, request?.status, markAsViewedMutation]);
+    if (!isOpen) setHasMarkedViewed(false);
+  }, [isOpen, request?.id, request?.status, isAdmin, hasMarkedViewed, profile?.user_id, markAsViewedMutation]);
 
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
   
   const headerActions = (
-    isAdmin && !request.triage_summary ? (
-      <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} sx={{ whiteSpace: 'nowrap' }} startIcon={<Zap />}>
-        {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
-      </Button>
-    ) : null
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {loading && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <RefreshCw size={14} className="animate-spin" />
+          <Typography variant="caption" color="text.secondary">Refreshing...</Typography>
+        </Box>
+      )}
+      {isAdmin && !request.triage_summary && (
+        <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} sx={{ whiteSpace: 'nowrap' }} startIcon={<Zap />}>
+          {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
+        </Button>
+      )}
+    </Box>
   );
 
   return (
@@ -276,14 +373,14 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
             <AttachmentSection
               requestId={request.id}
               attachments={request.quote_attachments || []}
-              editable={!isReadOnly && (isAdmin || !request.quotes.some(q => q.status === 'accepted'))}
-              onUpdate={onUpdateRequest}
+              editable={canEditAttachments}
+              onUpdate={refreshRequestData}
             />
 
             <CommunicationLog
               requestId={request.id}
               initialNotes={request.request_notes || []}
-              onNoteAdded={onUpdateRequest}
+              onNoteAdded={refreshRequestData}
             />
 
             <QuoteList
@@ -291,7 +388,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               isReadOnly={isReadOnly}
               isUpdating={acceptQuoteMutation.isPending}
               onAcceptQuote={handleAcceptQuote}
-              onUpdateRequest={onUpdateRequest}
+              onUpdateRequest={refreshRequestData}
             />
           </Box>
         </Box>
@@ -328,6 +425,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {/* Custom CSS for animations */}
+      <style>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

@@ -455,8 +455,9 @@ const updateQuote = async (req, res, next) => {
       await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
     }
 
-    res.status(200).json(data);
+    res.status(200).json(updatedQuote); // FIX: Return updatedQuote instead of undefined 'data'
   } catch (err) {
+    console.error('updateQuote: Error in updateQuote controller:', err);
     next(err);
   }
 };
@@ -503,31 +504,31 @@ const acceptQuote = async (req, res, next) => {
     console.log('acceptQuote: Updating request and quote statuses directly', { requestId: id, quoteId });
 
     // Update request status to 'accepted'
-    const { error: requestError } = await supabase
+    const { error: requestUpdateError } = await supabase
       .from('requests')
       .update({ status: 'accepted' })
       .eq('id', id);
 
-    if (requestError) {
-      console.error('acceptQuote: Failed to update request status', requestError);
-      throw requestError;
+    if (requestUpdateError) {
+      console.error('acceptQuote: Failed to update request status', requestUpdateError);
+      throw requestUpdateError;
     }
 
     // Update quote status to 'accepted'
-    const { error: quoteError } = await supabase
+    const { error: quoteUpdateError } = await supabase
       .from('quotes')
       .update({ status: 'accepted' })
       .eq('id', quoteId);
 
-    if (quoteError) {
-      console.error('acceptQuote: Failed to update quote status', quoteError);
-      throw quoteError;
+    if (quoteUpdateError) {
+      console.error('acceptQuote: Failed to update quote status', quoteUpdateError);
+      throw quoteUpdateError;
     }
 
     console.log('acceptQuote: Request and quote statuses updated successfully');
 
     // 2. Fetch all necessary data for notifications in a single block
-    const { data: requestData, error: requestError } = await supabase
+    const { data: notificationRequestData, error: notificationRequestError } = await supabase
       .from('requests')
       .select('*, user_profiles(name)')
       .eq('id', id)
@@ -540,13 +541,13 @@ const acceptQuote = async (req, res, next) => {
       .single();
 
     // 3. Send notifications if data was fetched successfully
-    if (requestError || quoteError) {
-      console.error("Could not fetch data for notifications, but quote was accepted.", requestError || quoteError);
-    } else if (requestData && quoteData) {
+    if (notificationRequestError || quoteError) {
+      console.error("Could not fetch data for notifications, but quote was accepted.", notificationRequestError || quoteError);
+    } else if (notificationRequestData && quoteData) {
       // Send the existing status update email
-      await sendStatusUpdateEmail(requestData);
+      await sendStatusUpdateEmail(notificationRequestData);
       // Send the new SMS notification to admins
-      sendQuoteAcceptedNotification(requestData, quoteData);
+      sendQuoteAcceptedNotification(notificationRequestData, quoteData);
     }
 
     // 4. Send success response to the client

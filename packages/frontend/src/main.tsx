@@ -15,7 +15,10 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
-import { useRequestsQuery } from './features/requests/hooks/useRequestsQuery'; // Import the new hook
+import { useRequestsQuery } from './features/requests/hooks/useRequestsQuery'; // Legacy import for compatibility
+// Alternative: import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
+import { RealtimeDebugger } from './components/RealtimeDebugger';
+import { useSimpleRealtime } from './hooks/useSimpleRealtime';
 import {
   Phone,
   Wrench,
@@ -25,6 +28,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
+  console.log('🔥 AppContent component RENDERED');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.
@@ -38,12 +42,30 @@ const AppContent: React.FC = () => {
     profileRole: profile?.role,
     isAdmin: profile?.role === 'admin',
     userIdForQuery: userIdForQuery,
-    profileExists: !!profile
+    profileExists: !!profile,
+    authLoading,
+    enabled: !authLoading && !!user
   });
 
   // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
   // This tells React Query to re-run the query when the user logs in.
   const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading && !!user });
+  
+  console.log('🔍 useRequestsQuery result:', {
+    requestsLength: requests?.length,
+    loading,
+    error,
+    hasRefetch: !!refetch
+  });
+
+  // Log when requests data changes
+  useEffect(() => {
+    console.log('📡 Main.tsx requests updated:', requests?.length, 'items');
+  }, [requests?.length]);
+
+  // Simple real-time sync that invalidates all queries on any database change
+  useSimpleRealtime(!!user); // Only enable when user is logged in
+
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -370,6 +392,9 @@ const AppContent: React.FC = () => {
           }}
         />
       )}
+      
+      {/* Debug component removed - real-time working */}
+      {/* <RealtimeDebugger /> */}
     </React.Fragment>
   );
 };

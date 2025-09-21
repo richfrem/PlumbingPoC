@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-20T21:17:51.876Z
+Generated On: 2025-09-21T00:11:53.809Z
 
-# Mnemonic Weight (Token Count): ~196,238 tokens
+# Mnemonic Weight (Token Count): ~200,689 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -98,6 +98,7 @@ Generated On: 2025-09-20T21:17:51.876Z
   ./docs/QuoteStateChangesWorkflow.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
+  ./fix_quotes_rls.sql
   ./netlify.toml
   ./package-lock.json
   ./package.json
@@ -267,6 +268,7 @@ Generated On: 2025-09-20T21:17:51.876Z
   ./tests/integration/api/README.md
   ./tests/integration/api/health.test.ts
   ./tests/integration/api/requests.test.ts
+  ./tests/manual-tests.md
   ./tests/setup.ts
   ./tests/unit/
   ./tests/unit/README.md
@@ -5658,6 +5660,22 @@ This is the final and most important step. It securely provides the credentials 
 Your work is now done. Provide this guide and the following technical specification to your developer. They will have everything they need to implement the feature. You may need to redeploy your site for the new environment variables to take effect.
 --- END OF FILE ---
 
+--- START OF FILE fix_quotes_rls.sql ---
+
+-- Fix RLS policy for quotes to allow real-time updates for users
+-- The problem: conflicting policies prevent users from receiving real-time updates
+-- when admins add quotes to their requests
+
+-- Drop the restrictive policy that prevents users from seeing quotes on their requests
+DROP POLICY "Enable read for own quotes" ON "public"."quotes";
+
+-- The "Enable read for request owners" policy should remain and handle user access correctly
+-- This policy allows users to read quotes where they own the associated request
+
+-- Verify the remaining policy exists (should show the request owners policy)
+-- You can run: SELECT * FROM pg_policies WHERE tablename = 'quotes' AND schemaname = 'public';
+--- END OF FILE ---
+
 --- START OF FILE netlify.toml ---
 
 # netlify.toml (v3 - Root Configuration)
@@ -6517,7 +6535,17 @@ const updateQuote = async (req, res, next) => {
     const { id, quoteId } = req.params;
     const { quote_amount, details } = req.body;
 
-    const { data, error } = await supabase
+    // First get the current quote to log its status
+    const { data: currentQuote } = await supabase
+      .from('quotes')
+      .select('status')
+      .eq('id', quoteId)
+      .single();
+
+    console.log('updateQuote: Updating quote', { quoteId, currentStatus: currentQuote?.status });
+
+    // Update quote details first
+    const { data: updatedQuote, error } = await supabase
       .from('quotes')
       .update({
         quote_amount,
@@ -6528,10 +6556,45 @@ const updateQuote = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
+    if (error) {
+      console.error('updateQuote: Error updating quote details', error);
+      throw error;
+    }
+    if (!updatedQuote) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
-    await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
+    // Then update the status separately
+    console.log('updateQuote: About to update quote status to sent');
+    const { data: statusData, error: statusError } = await supabase
+      .from('quotes')
+      .update({ status: 'sent' })
+      .eq('id', quoteId)
+      .select('status')
+      .single();
+
+    if (statusError) {
+      console.error('updateQuote: Error updating quote status', statusError);
+      console.error('updateQuote: Status error details:', JSON.stringify(statusError, null, 2));
+      // Don't throw here, the main update succeeded
+    } else {
+      console.log('updateQuote: Quote status updated successfully', { newStatus: statusData?.status });
+    }
+
+    console.log('updateQuote: Quote updated successfully', { quoteId, amount: updatedQuote.quote_amount });
+
+    // Only revert status to 'quoted' if it was previously 'accepted'
+    // This ensures that updating a quote reverts accepted quotes back to quoted status
+    // since the new terms haven't been approved yet
+    const { data: requestData, error: requestError } = await supabase
+      .from('requests')
+      .select('status')
+      .eq('id', id)
+      .single();
+
+    if (requestError) throw requestError;
+
+    if (requestData.status === 'accepted') {
+      await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
+    }
 
     res.status(200).json(data);
   } catch (err) {
@@ -6578,22 +6641,34 @@ const acceptQuote = async (req, res, next) => {
       }
     }
 
-    console.log('acceptQuote: Calling stored procedure', { requestId: id, quoteId });
+    console.log('acceptQuote: Updating request and quote statuses directly', { requestId: id, quoteId });
 
-    // 1. Run the existing stored procedure to update database state
-    const { error: rpcError } = await supabase.rpc('accept_quote_and_update_request', {
-      p_request_id: id,
-      p_quote_id: quoteId,
-    });
-    if (rpcError) {
-      console.error('acceptQuote: Stored procedure error', rpcError);
-      throw rpcError;
+    // Update request status to 'accepted'
+    const { error: requestUpdateError } = await supabase
+      .from('requests')
+      .update({ status: 'accepted' })
+      .eq('id', id);
+
+    if (requestUpdateError) {
+      console.error('acceptQuote: Failed to update request status', requestUpdateError);
+      throw requestUpdateError;
     }
 
-    console.log('acceptQuote: Stored procedure completed successfully');
+    // Update quote status to 'accepted'
+    const { error: quoteUpdateError } = await supabase
+      .from('quotes')
+      .update({ status: 'accepted' })
+      .eq('id', quoteId);
+
+    if (quoteUpdateError) {
+      console.error('acceptQuote: Failed to update quote status', quoteUpdateError);
+      throw quoteUpdateError;
+    }
+
+    console.log('acceptQuote: Request and quote statuses updated successfully');
 
     // 2. Fetch all necessary data for notifications in a single block
-    const { data: requestData, error: requestError } = await supabase
+    const { data: notificationRequestData, error: notificationRequestError } = await supabase
       .from('requests')
       .select('*, user_profiles(name)')
       .eq('id', id)
@@ -6606,13 +6681,13 @@ const acceptQuote = async (req, res, next) => {
       .single();
 
     // 3. Send notifications if data was fetched successfully
-    if (requestError || quoteError) {
-      console.error("Could not fetch data for notifications, but quote was accepted.", requestError || quoteError);
-    } else if (requestData && quoteData) {
+    if (notificationRequestError || quoteError) {
+      console.error("Could not fetch data for notifications, but quote was accepted.", notificationRequestError || quoteError);
+    } else if (notificationRequestData && quoteData) {
       // Send the existing status update email
-      await sendStatusUpdateEmail(requestData);
+      await sendStatusUpdateEmail(notificationRequestData);
       // Send the new SMS notification to admins
-      sendQuoteAcceptedNotification(requestData, quoteData);
+      sendQuoteAcceptedNotification(notificationRequestData, quoteData);
     }
 
     // 4. Send success response to the client
@@ -7336,7 +7411,7 @@ import cors from 'cors';
 // This is the ONLY place dotenv is configured. It is safe here.
 // Netlify provides process.env, so this call is effectively ignored in production.
 // Locally, it loads the .env file as needed.
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 
 import requestRoutes from './routes/requestRoutes.js';
@@ -7549,6 +7624,17 @@ const triggerSms = async (to, body) => {
   console.log(`🔍 SMS DEBUG: Attempting to send SMS to: ${to}`);
   console.log(`🔍 SMS DEBUG: From number: ${fromPhone}`);
   console.log(`🔍 SMS DEBUG: Message length: ${body.length} characters`);
+
+  // FEATURE FLAG: Only send SMS in production (Netlify) environment
+  // This prevents accidental SMS sending during local development
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true';
+  if (!isProduction) {
+    console.log('📱 SMS SKIPPED: SMS sending disabled in development environment');
+    console.log('📱 SMS SKIPPED: To prevent accidental costs during development');
+    console.log('📱 SMS SKIPPED: SMS would have been sent to:', to);
+    console.log('📱 SMS SKIPPED: Message preview:', body.substring(0, 50) + '...');
+    return;
+  }
 
   if (!accountSid || !authToken || !fromPhone) {
     console.error('❌ SMS ERROR: Twilio credentials not configured');
@@ -8251,6 +8337,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    // Redirect to home page after sign out
+    window.location.hash = '';
   };
 
   const refreshProfile = () => fetchProfile(user);
@@ -11417,6 +11505,7 @@ import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
+import { useUpdateQuote } from '../hooks/useRequestMutations';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -11428,7 +11517,7 @@ interface QuoteFormModalProps {
   isOpen: boolean;
   onClose: (updated?: boolean) => void;
   quote?: any;
-  editable: boolean;
+  mode: 'create' | 'update' | 'change_order' | 'view';
   request: QuoteRequest;
   requestId: string;
 }
@@ -11438,25 +11527,23 @@ interface Item {
   price: string;
 }
 
-const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, editable, request, requestId }) => {
-   const { profile } = useAuth();
-   const firstFieldRef = useRef<HTMLInputElement>(null);
-   const [goodUntil, setGoodUntil] = useState('');
-   const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
-   const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
-   const [notes, setNotes] = useState('');
-   const [newAttachments, setNewAttachments] = useState<File[]>([]);
-   const [saving, setSaving] = useState(false);
-   const [saveSuccess, setSaveSuccess] = useState(false);
-   const [saveError, setSaveError] = useState<string | null>(null);
+const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote, mode, request, requestId }) => {
+    const { profile } = useAuth();
+    const firstFieldRef = useRef<HTMLInputElement>(null);
+    const [goodUntil, setGoodUntil] = useState('');
+    const [laborItems, setLaborItems] = useState<Item[]>([{ description: '', price: '' }]);
+    const [materialItems, setMaterialItems] = useState<Item[]>([{ description: '', price: '' }]);
+    const [notes, setNotes] = useState('');
+    const [newAttachments, setNewAttachments] = useState<File[]>([]);
 
-   const isAdmin = profile?.role === 'admin';
+    const isAdmin = profile?.role === 'admin';
+    const editable = mode !== 'view';
+
+    const updateQuoteMutation = useUpdateQuote();
 
   useEffect(() => {
     if (isOpen) {
       setNewAttachments([]);
-      setSaveError(null);
-      setSaveSuccess(false);
 
       if (quote) {
         let detailsObj: any = {};
@@ -11488,12 +11575,14 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
 
 
   const handleSaveQuote = async () => {
-    setSaveError(null);
     if (!laborItems.some(item => item.description && parseFloat(item.price) > 0) && !materialItems.some(item => item.description && parseFloat(item.price) > 0)) {
-      setSaveError('Please add at least one labor or material item with a price.');
+      // Show validation error
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Please add at least one labor or material item with a price.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
       return;
     }
-    setSaving(true);
 
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
@@ -11502,50 +11591,75 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const pst = subtotal * 0.07;
     const totalPrice = subtotal + gst + pst;
 
+    const payload = {
+      quote_amount: Number(totalPrice.toFixed(2)),
+      details: JSON.stringify({
+        labor_items: laborItems.filter(item => item.description),
+        material_items: materialItems.filter(item => item.description),
+        notes,
+        good_until: goodUntil,
+        tax_details: { gst: Number(gst.toFixed(2)), pst: Number(pst.toFixed(2)) },
+      }),
+    };
+
     try {
-      const payload = {
-        quote_amount: Number(totalPrice.toFixed(2)),
-        details: JSON.stringify({
-          labor_items: laborItems.filter(item => item.description),
-          material_items: materialItems.filter(item => item.description),
-          notes,
-          good_until: goodUntil,
-          tax_details: { gst: Number(gst.toFixed(2)), pst: Number(pst.toFixed(2)) },
-        }),
-      };
+      if (mode === 'change_order') {
+        // Create a new change order quote
+        const changeOrderPayload = {
+          ...payload,
+          status: 'change_order',
+          details: JSON.stringify({
+            ...JSON.parse(payload.details),
+            is_change_order: true,
+            original_quote_id: quote.id,
+            change_reason: 'Additional work requested'
+          })
+        };
 
-      const { data: savedQuote } = quote?.id
-        ? await apiClient.put(`/requests/${requestId}/quotes/${quote.id}`, payload)
-        : await apiClient.post(`/requests/${requestId}/quotes`, payload);
+        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
 
-      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
-      if (!quote?.id && isAdmin) {
-        try {
-          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
-        } catch (statusError) {
-          console.error('Failed to update request status to quoted:', statusError);
-          // Don't fail the quote creation if status update fails
+        // Change orders don't change the main request status
+        // They remain as separate quotes that need acceptance
+
+        if (newAttachments.length > 0 && savedQuote?.id) {
+          const formData = new FormData();
+          formData.append('request_id', requestId);
+          formData.append('quote_id', savedQuote.id);
+          newAttachments.forEach(file => formData.append('attachment', file));
+          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        }
+      } else if (quote?.id && mode === 'update') {
+        // Update existing quote
+        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, payload });
+      } else if (mode === 'create') {
+        // Create new quote
+        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
+
+        // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+        if (isAdmin) {
+          try {
+            await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+          } catch (statusError) {
+            console.error('Failed to update request status to quoted:', statusError);
+            // Don't fail the quote creation if status update fails
+          }
+        }
+
+        if (newAttachments.length > 0 && savedQuote?.id) {
+          const formData = new FormData();
+          formData.append('request_id', requestId);
+          formData.append('quote_id', savedQuote.id);
+          newAttachments.forEach(file => formData.append('attachment', file));
+          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         }
       }
 
-      if (newAttachments.length > 0 && savedQuote?.id) {
-        const formData = new FormData();
-        formData.append('request_id', requestId);
-        formData.append('quote_id', savedQuote.id);
-        newAttachments.forEach(file => formData.append('attachment', file));
-        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      }
-
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-        onClose(true);
-      }, 1200);
+      // Close modal after successful save
+      onClose(true);
 
     } catch (err: any) {
-      setSaveError(err?.response?.data?.error || err.message || 'Failed to save quote.');
-    } finally {
-      setSaving(false);
+      // Error is handled by the mutation hook
+      console.error('Failed to save quote:', err);
     }
   };
 
@@ -11559,7 +11673,9 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
   const totalPrice = subtotal + gst + pst;
 
   const quoteAttachments = request?.quote_attachments?.filter((att: QuoteAttachment) => att.quote_id === quote?.id) || [];
-  const headerTitle = quote?.id
+  const headerTitle = mode === 'change_order'
+    ? `Create Change Order for ${request?.problem_category?.replace(/_/g, ' ')}`
+    : quote?.id
     ? `Update Quote #${quote.quote_number}`
     : `Create New Quote for ${request?.problem_category?.replace(/_/g, ' ')}`;
 
@@ -11670,19 +11786,17 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         </Box>
 
         <ModalFooter>
-          <Box>
-            {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
-          </Box>
-          {editable && (
-            <Box>
-              {saveError && <Typography color="error" sx={{ display: 'inline', mr: 2 }}>{saveError}</Typography>}
-              {saveSuccess && <Typography color="success.main" sx={{ display: 'inline', mr: 2 }}>Quote saved!</Typography>}
-              <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={saving || saveSuccess}>
-                {saving ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
-              </Button>
-            </Box>
-          )}
-        </ModalFooter>
+           <Box>
+             {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
+           </Box>
+           {editable && (
+             <Box>
+               <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={updateQuoteMutation.isPending}>
+                 {updateQuoteMutation.isPending ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
+               </Button>
+             </Box>
+           )}
+         </ModalFooter>
       </Paper>
     </div>
   );
@@ -11714,12 +11828,12 @@ interface QuoteListProps {
 const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, onAcceptQuote, onUpdateRequest }) => {
   const { profile } = useAuth();
   const [showQuoteForm, setShowQuoteForm] = useState(false);
-  const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update'>('create');
+  const [quoteModalMode, setQuoteModalMode] = useState<'create' | 'update' | 'change_order' | 'view'>('create');
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
 
   const isAdmin = profile?.role === 'admin';
 
-  const handleOpenQuoteForm = (mode: 'create' | 'update', quote?: any) => {
+  const handleOpenQuoteForm = (mode: 'create' | 'update' | 'change_order' | 'view', quote?: any) => {
     setQuoteModalMode(mode);
     setSelectedQuote(quote || null);
     setShowQuoteForm(true);
@@ -11754,18 +11868,38 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
                       Accept
                     </Button>
                   )}
-                  <Button variant="outlined" size="small" onClick={() => handleOpenQuoteForm('update', quote)}>
-                    {isAdmin && !isReadOnly ? 'Update' : 'View Details'}
-                  </Button>
+                  {isAdmin && !isReadOnly && quote.status !== 'accepted' && (
+                    <Button variant="outlined" size="small" onClick={() => handleOpenQuoteForm('update', quote)}>
+                      Update
+                    </Button>
+                  )}
+                  {isAdmin && !isReadOnly && quote.status === 'accepted' && (
+                    <Button variant="outlined" size="small" color="warning" onClick={() => handleOpenQuoteForm('change_order', quote)}>
+                      Change Order
+                    </Button>
+                  )}
+                  {!isAdmin && (quote.status === 'accepted' || quote.status === 'rejected') && (
+                    <Button variant="outlined" size="small" onClick={() => handleOpenQuoteForm('view', quote)}>
+                      View Details
+                    </Button>
+                  )}
                 </Box>
               }>
                 <ListItemText
                   primaryTypographyProps={{ component: 'div' }}
-                  primary={`Quote #${quote.quote_number} - $${quote.quote_amount.toFixed(2)}`}
+                  secondaryTypographyProps={{ component: 'div' }}
+                  primary={`${quote.status === 'change_order' ? 'Change Order' : 'Quote'} #${quote.quote_number} - $${quote.quote_amount.toFixed(2)}`}
                   secondary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <Chip label={quote.status || 'N/A'} color={getQuoteStatusChipColor(quote.status)} size="small" sx={{ textTransform: 'capitalize' }} />
-                      <Typography variant="caption" color="text.secondary">| Created: {new Date(quote.created_at).toLocaleDateString()}</Typography>
+                      <Chip
+                        label={quote.status === 'change_order' ? 'Change Order' : (quote.status || 'N/A')}
+                        color={getQuoteStatusChipColor(quote.status)}
+                        size="small"
+                        sx={{ textTransform: 'capitalize' }}
+                      />
+                      <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                        | Created: {new Date(quote.created_at).toLocaleDateString()}
+                      </Box>
                     </Box>
                   }
                 />
@@ -11785,7 +11919,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
         isOpen={showQuoteForm}
         onClose={handleQuoteFormClose}
         quote={selectedQuote}
-        editable={isAdmin && !isReadOnly}
+        mode={quoteModalMode}
         request={request}
         requestId={request.id}
       />
@@ -11964,7 +12098,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
-
+  const [hasMarkedViewed, setHasMarkedViewed] = useState(false);
 
   // Snackbar state for notifications
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -11981,6 +12115,21 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       setScheduledDateChanged(false); // Reset tracking when new data arrives
     }
   }, [request?.scheduled_start_date]); // This effect ONLY runs when the `request` prop itself changes.
+
+  // Listen for custom snackbar events
+  useEffect(() => {
+    const handleSnackbarEvent = (event: CustomEvent) => {
+      setSnackbarMessage(event.detail.message);
+      setSnackbarSeverity(event.detail.severity);
+      setSnackbarOpen(true);
+    };
+
+    window.addEventListener('show-snackbar', handleSnackbarEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('show-snackbar', handleSnackbarEvent as EventListener);
+    };
+  }, []);
 
   const handleStatusUpdate = async (newStatus: string, date?: string | null) => {
     if (!request) return;
@@ -12068,7 +12217,20 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleAcceptQuote = async (quoteId: string) => {
     if (!request) return;
-    acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
+    console.log('handleAcceptQuote: Starting quote acceptance', { requestId: request.id, quoteId });
+    acceptQuoteMutation.mutate(
+      { requestId: request.id, quoteId },
+      {
+        onSuccess: (data) => {
+          console.log('handleAcceptQuote: Quote accepted successfully', data);
+          // Refresh the request detail after accepting a quote
+          onUpdateRequest();
+        },
+        onError: (error) => {
+          console.error('handleAcceptQuote: Quote acceptance failed', error);
+        }
+      }
+    );
   };
   
   const handleTriageRequest = async () => {
@@ -12082,13 +12244,26 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const isReadOnly = ['completed'].includes(request.status);
 
   // *** Auto-update status to "viewed" when non-admin user views request details ***
-  // This implements the workflow: Quoted --> Viewed when user views request details
+  // Guard: Only run once per modal open to prevent infinite PATCH calls
   useEffect(() => {
-    if (isOpen && request && !isAdmin && request.status === 'quoted') {
-      // Non-admin user is viewing a quoted request - update status to viewed
-      markAsViewedMutation.mutate(request.id);
+    if (
+      isOpen &&
+      request &&
+      !isAdmin &&
+      request.status === 'quoted' &&
+      !hasMarkedViewed &&
+      profile?.user_id // Only run if user is authenticated
+    ) {
+      markAsViewedMutation.mutate(request.id, {
+        onSuccess: () => setHasMarkedViewed(true),
+        onError: (error) => {
+          console.error('Failed to mark as viewed:', error);
+          setHasMarkedViewed(true); // Prevent infinite loop on error
+        }
+      });
     }
-  }, [isOpen, request?.id, isAdmin, request?.status, markAsViewedMutation]);
+    if (!isOpen) setHasMarkedViewed(false);
+  }, [isOpen, request?.id, request?.status, isAdmin, hasMarkedViewed, profile?.user_id, markAsViewedMutation]);
 
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
@@ -12699,7 +12874,8 @@ export function useUpdateRequestStatus() {
       await apiClient.patch(`/requests/${requestId}/status`, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      // Let real-time subscriptions handle the update instead of manual invalidation
+      console.log('useUpdateRequestStatus: Success - letting real-time handle update');
     },
   });
 }
@@ -12710,14 +12886,57 @@ export function useAcceptQuote() {
   return useMutation({
     mutationFn: async ({ requestId, quoteId }: { requestId: string; quoteId: string }) => {
       console.log('useAcceptQuote: Calling API', { requestId, quoteId });
-      await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
+      const response = await apiClient.post(`/requests/${requestId}/quotes/${quoteId}/accept`);
+      return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       console.log('useAcceptQuote: Success', data);
-      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      // Let real-time subscriptions handle the update instead of manual invalidation
+      console.log('useAcceptQuote: Letting real-time subscriptions handle UI update');
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote accepted successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
     },
     onError: (error) => {
       console.error('useAcceptQuote: Error', error);
+      // Show error message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '❌ Failed to accept quote. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
+    },
+  });
+}
+
+export function useUpdateQuote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, quoteId, payload }: { requestId: string; quoteId: string; payload: any }) => {
+      console.log('useUpdateQuote: Calling API', { requestId, quoteId, payload });
+      const response = await apiClient.put(`/requests/${requestId}/quotes/${quoteId}`, payload);
+      return response.data;
+    },
+    onSuccess: async (data) => {
+      console.log('useUpdateQuote: Success', data);
+      // Force immediate refetch of requests data
+      await queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.refetchQueries({ queryKey: ['requests'] });
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote updated successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+    },
+    onError: (error) => {
+      console.error('useUpdateQuote: Error', error);
+      // Show error message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '❌ Failed to update quote. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
     },
   });
 }
@@ -12758,7 +12977,7 @@ export function useUpdateAddressMutation() {
 
 // packages/frontend/src/features/requests/hooks/useRequests.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
@@ -12801,39 +13020,15 @@ export function useRequests(userId?: string) {
     fetchRequests();
   }, [fetchRequests]);
 
-  // *** THE DEFINITIVE FIX: Use a separate, dedicated channel for each table. ***
-  // This is the most robust real-time pattern. It ensures that both the admin (who can see all requests)
-  // and the user (who can only see their own via RLS) are listening on the exact same broadcast channels.
+  // DISABLED: This hook is no longer used - useRequestsQuery is used instead
+  // Keeping real-time subscriptions disabled to prevent infinite loops
   useEffect(() => {
-    const handleUpdate = (payload: any) => {
-      console.log('Realtime update received, re-fetching data:', payload);
-      fetchRequests();
-    };
-
-    const requestsChannel = supabase.channel('public:requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleUpdate)
-      .subscribe();
-
-    const notesChannel = supabase.channel('public:request_notes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'request_notes' }, handleUpdate)
-      .subscribe();
-      
-    const quotesChannel = supabase.channel('public:quotes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, handleUpdate)
-      .subscribe();
-
-    const attachmentsChannel = supabase.channel('public:quote_attachments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_attachments' }, handleUpdate)
-      .subscribe();
-
-    // Cleanup function to remove all subscriptions when the component unmounts
+    console.log('useRequests hook: DISABLED - useRequestsQuery is used instead');
+    // Real-time subscriptions removed to prevent conflicts with useRequestsQuery
     return () => {
-      supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(notesChannel);
-      supabase.removeChannel(quotesChannel);
-      supabase.removeChannel(attachmentsChannel);
+      // No cleanup needed since no subscriptions are created
     };
-  }, [fetchRequests]); // The dependency on the stable fetchRequests function is correct.
+  }, []);
 
   return { requests, loading, error, refreshRequests: fetchRequests };
 }
@@ -12844,14 +13039,14 @@ export function useRequests(userId?: string) {
 // packages/frontend/src/features/requests/hooks/useRequestsQuery.ts
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import apiClient from '../../../lib/apiClient';
 import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
 const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
   // The userId parameter is now handled by the backend based on the authenticated user's token.
-  console.log(`🔍 Fetching requests for authenticated user (ID: ${userId || 'admin'})`);
+  console.log(`🔍 useRequestsQuery fetchRequests: Starting API call for user ${userId || 'admin'}`);
 
   try {
     // Use apiClient.get() instead of fetch() - this ensures JWT token is automatically included
@@ -12859,7 +13054,7 @@ const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
 
     // The response data is directly available on response.data (already parsed JSON)
     const data = response.data;
-    console.log(`✅ API Fetched Data: ${data?.length || 0} requests.`);
+    console.log(`✅ useRequestsQuery fetchRequests: API returned ${data?.length || 0} requests`);
     return data || [];
 
   } catch (error) {
@@ -12876,11 +13071,9 @@ const fetchRequests = async (userId?: string): Promise<QuoteRequest[]> => {
 
 export function useRequestsQuery(userId?: string, user?: any, options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
+  const invalidateTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const query = useQuery({
-    // THE FIX: Include user?.id in queryKey for proper cache invalidation
-    // This tells TanStack Query that the identity of the user is fundamental to this data request
-    // When a user logs in, user.id changes from null to a UUID, forcing automatic refetch
     queryKey: ['requests', userId, user?.id],
     queryFn: () => fetchRequests(userId),
     enabled: options?.enabled ?? true,
@@ -12888,35 +13081,78 @@ export function useRequestsQuery(userId?: string, user?: any, options?: { enable
     refetchOnWindowFocus: true,
   });
 
-  // Set up real-time subscriptions to invalidate the query on changes
+  // Set up real-time subscriptions to invalidate the query on changes (debounced)
   useEffect(() => {
-    const handleUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ['requests', userId] });
+    console.log('🚀 useRequestsQuery useEffect STARTED - Setting up subscriptions');
+    const handleUpdate = (payload: any) => {
+      console.log('🔥 RAW real-time event received:', payload);
+      
+      // Only handle meaningful database events, not query refetches
+      if (!payload || !payload.eventType || !['INSERT', 'UPDATE', 'DELETE'].includes(payload.eventType)) {
+        console.log('🚫 Ignoring event - not a valid database change:', payload);
+        return;
+      }
+      
+      const eventData = payload.new || payload.old;
+      console.log('✅ Real-time DB event received:', {
+        eventType: payload.eventType,
+        table: payload.table,
+        currentUserId: userId,
+        eventData: eventData
+      });
+
+      // Log specific scenarios to help debug
+      if (payload.table === 'quotes' && eventData) {
+        console.log('💰 Quote event details:', {
+          quoteCreatedBy: eventData.user_id, // This will be admin ID
+          quoteForRequest: eventData.request_id, // This should be user's request
+          currentUser: userId
+        });
+      }
+      
+      if (payload.table === 'requests' && eventData) {
+        console.log('🏠 Request event details:', {
+          requestOwnedBy: eventData.user_id, // This should match current user
+          currentUser: userId
+        });
+      }
+
+      if (invalidateTimeout.current) clearTimeout(invalidateTimeout.current);
+      invalidateTimeout.current = setTimeout(() => {
+        console.log('🔄 useRequestsQuery: Invalidating query after real-time event for user:', userId || 'admin');
+        queryClient.invalidateQueries({ queryKey: ['requests', userId, user?.id] });
+      }, 500); // Increased to 500ms debounce for more stability
     };
 
-    const requestsChannel = supabase.channel('public:requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleUpdate)
-      .subscribe();
+    console.log('🔌 useRequestsQuery: Setting up real-time subscriptions for user:', userId);
 
-    const notesChannel = supabase.channel('public:request_notes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'request_notes' }, handleUpdate)
-      .subscribe();
-
-    const quotesChannel = supabase.channel('public:quotes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, handleUpdate)
-      .subscribe();
-
-    const attachmentsChannel = supabase.channel('public:quote_attachments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_attachments' }, handleUpdate)
-      .subscribe();
+    // Use a single channel for all tables to avoid potential conflicts
+    const realtimeChannel = supabase.channel('requests-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, (payload) => {
+        console.log('🏠 Requests table event:', payload);
+        handleUpdate(payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'request_notes' }, (payload) => {
+        console.log('� Notes table event:', payload);
+        handleUpdate(payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, (payload) => {
+        console.log('� Quotes table event:', payload);
+        handleUpdate(payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_attachments' }, (payload) => {
+        console.log('📎 Attachments table event:', payload);
+        handleUpdate(payload);
+      })
+      .subscribe((status) => {
+        console.log('📡 Realtime channel status:', status);
+      });
 
     return () => {
-      supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(notesChannel);
-      supabase.removeChannel(quotesChannel);
-      supabase.removeChannel(attachmentsChannel);
+      if (invalidateTimeout.current) clearTimeout(invalidateTimeout.current);
+      supabase.removeChannel(realtimeChannel);
     };
-  }, [queryClient, userId]);
+  }, [queryClient, userId, user?.id]);
 
   return {
     requests: query.data || [],
@@ -13023,19 +13259,9 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${session.access_token}`;
         console.log('📤 API Client: Headers now include:', !!config.headers.Authorization);
       } else {
-        console.warn('⚠️ API Client: No session or access token found - trying refresh...');
-
-        // Try to refresh the session
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError) {
-          console.error('❌ API Client: Session refresh failed:', refreshError);
-        } else if (refreshData?.session?.access_token) {
-          console.log('✅ API Client: Session refreshed successfully');
-          config.headers.Authorization = `Bearer ${refreshData.session.access_token}`;
-        } else {
-          console.warn('⚠️ API Client: Session refresh did not provide token');
-        }
+        console.warn('⚠️ API Client: No session or access token found - request may fail with 401');
+        // Don't try to refresh here as it can cause issues
+        // Let the request proceed and handle 401 errors in the response interceptor if needed
       }
     } catch (error) {
       console.error('❌ API Client: Exception getting session:', error);
@@ -13045,6 +13271,19 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     console.error('❌ API Client: Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle 401 errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.warn('⚠️ API Client: Received 401 Unauthorized - session may be expired');
+      // Don't automatically retry or redirect, just log and pass the error through
+      // The component can handle this appropriately
+    }
     return Promise.reject(error);
   }
 );
@@ -13263,6 +13502,7 @@ export const getQuoteStatusChipColor = (status: string): ChipColor => {
     accepted: 'success',
     rejected: 'error',
     sent: 'default',
+    change_order: 'warning',
   };
   return colorMap[status] || 'default';
 };
@@ -14026,15 +14266,10 @@ else
     echo -e "${BLUE}🚀${NC} Starting development services..."
     echo -e "${BLUE}═══${NC}═══════════════════════════════════════════════"
 
-    # Start backend service in background
-    echo -e "${BLUE}⏳${NC} Starting backend service..."
-    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev:backend &
-    BACKEND_PID=$!
-
-    # Start frontend service in background
-    echo -e "${BLUE}⏳${NC} Starting frontend service..."
-    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev:frontend &
-    FRONTEND_PID=$!
+    # Start both services using npm-run-all
+    echo -e "${BLUE}⏳${NC} Starting both frontend and backend services..."
+    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev &
+    DEV_PID=$!
 
     # Wait a moment for services to start
     sleep 5
@@ -15581,17 +15816,19 @@ CREATE POLICY "Enable insert for owners" ON "public"."quote_attachments" FOR INS
 
 
 
-CREATE POLICY "Enable read for admins and owners" ON "public"."quote_attachments" FOR SELECT USING (("public"."is_admin"() OR ("auth"."uid"() = ( SELECT "requests"."user_id"
-   FROM "public"."requests"
-  WHERE ("requests"."id" = "quote_attachments"."request_id")))));
-
-
-
 CREATE POLICY "Enable read for own invoices" ON "public"."invoices" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Enable read for own quotes" ON "public"."quotes" FOR SELECT USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Enable read for request owners" ON "public"."quote_attachments" FOR SELECT USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
+   FROM "public"."requests"
+  WHERE ("requests"."id" = "quote_attachments"."request_id"))) OR "public"."is_admin"()));
+
+
+
+CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
+   FROM "public"."requests"
+  WHERE ("requests"."id" = "quotes"."request_id"))) OR "public"."is_admin"()));
 
 
 
@@ -16462,179 +16699,289 @@ While the core test suite is complete and functional, future enhancements could 
 
 --- START OF FILE tests/e2e/README.md ---
 
-# End-to-End (E2E) Test Strategy
+# PlumbingPOC E2E Testing Roadmap
 
-**Purpose**: Simulate complete user journeys to validate the application works end-to-end from the user's perspective.
+## Overview
+This document outlines the strategy for implementing automated End-to-End (E2E) testing with Playwright to replace manual testing and ensure continuous quality.
 
-## 🎯 Layer Purpose
+## Current Status
+- ✅ **Playwright configured** (`playwright.config.ts` exists)
+- ✅ **Manual test scenarios documented** (`../manual-tests.md`)
+- ✅ **Test users available** (from `.env` test credentials)
+- 🚧 **E2E tests**: Not yet implemented
 
-This layer focuses on **user experience validation** - ensuring that all components work together seamlessly to deliver a complete, functional user experience. We simulate real user interactions and validate both UI behavior and backend state changes.
+## Testing Strategy
 
-## 🛠️ Tools & Technologies
+### Test Data Management
+- **Test Users**: Use existing test credentials from `.env`
+  - Admin: `kassandrajo@outlook.com`
+  - User: `ziazdamauler@yahoo.ca`
+- **Test Isolation**: Each test should clean up after itself
+- **Data Fixtures**: Create reusable test data for consistent testing
 
-- **Playwright**: Modern, reliable browser automation
-- **Page Object Model (POM)**: Encapsulated UI interactions
-- **Hybrid Validation**: UI actions + API state validation
-- **Custom Fixtures**: Reusable test setup and teardown
+### Page Object Model
+Implement page objects for maintainable, readable tests:
 
-## 📋 Key Testing Patterns
-
-### 1. Page Object Model (POM)
 ```typescript
-// Encapsulated UI interactions
-export class QuoteRequestPage {
-  async openQuoteRequestModal() {
-    await this.page.click('[data-testid="quote-button"]');
+// tests/e2e/page-objects/DashboardPage.ts
+export class DashboardPage {
+  constructor(private page: Page) {}
+
+  async navigateToRequest(requestId: string) {
+    await this.page.click(`[data-testid="request-${requestId}"]`);
   }
 
-  async createQuoteRequest(data: QuoteData) {
-    // Complete form filling workflow
+  async uploadAttachment(filePath: string) {
+    const fileInput = this.page.locator('[data-testid="attachment-upload"]');
+    await fileInput.setInputFiles(filePath);
   }
 }
 ```
 
-### 2. Hybrid UI/API Validation
-```typescript
-// UI action + API validation
-await quotePage.createQuoteRequest(testData);
-const apiValidation = await apiClient.validateRequestData(testData);
-expect(apiValidation).toBe(true);
-```
+## Implementation Phases
 
-### 3. Atomic Test Design
+### Phase 1: Foundation (Week 1-2)
+**Goal**: Basic test infrastructure and core authentication flows
+
+#### 1.1 Setup & Infrastructure
+- [ ] Configure test database/cleanup scripts
+- [ ] Set up test data fixtures
+- [ ] Create base page objects (LoginPage, DashboardPage)
+- [ ] Implement test utilities and helpers
+
+#### 1.2 Authentication Tests
 ```typescript
-test('should create quote request', async ({ page }) => {
-  // PRECONDITIONS: User authentication must work
-  // TEST: Complete quote creation workflow
-  // VALIDATION: UI + API state verification
-  // CLEANUP: Automatic via fixtures
+// tests/e2e/auth.spec.ts
+test.describe('Authentication', () => {
+  test('user can login and access dashboard', async ({ page }) => {
+    // Test login flow
+  });
+
+  test('admin can access admin features', async ({ page }) => {
+    // Test admin permissions
+  });
 });
 ```
 
-## 📁 Test Organization
+#### 1.3 Basic Navigation
+- [ ] Landing page accessibility
+- [ ] Dashboard loading
+- [ ] Modal interactions
+
+### Phase 2: Core User Journeys (Week 3-4)
+**Goal**: Automate the most critical user workflows
+
+#### 2.1 Quote Request Lifecycle
+```typescript
+// tests/e2e/quote-lifecycle.spec.ts
+test.describe('Quote Request to Completion', () => {
+  test('complete quote request workflow', async ({ page }) => {
+    // 1. User creates request with attachment
+    // 2. Admin creates quote
+    // 3. User accepts quote
+    // 4. Admin schedules job
+    // 5. Admin completes job
+  });
+});
+```
+
+#### 2.2 Admin Workflow
+```typescript
+// tests/e2e/admin-workflow.spec.ts
+test.describe('Admin Functionality', () => {
+  test('admin can upload attachments', async ({ page }) => {
+    // Test drag-and-drop uploads
+  });
+
+  test('admin can create and modify quotes', async ({ page }) => {
+    // Quote creation, updates, change orders
+  });
+});
+```
+
+#### 2.3 Communication Features
+```typescript
+// tests/e2e/communication.spec.ts
+test.describe('Communication', () => {
+  test('users and admins can exchange messages', async ({ page }) => {
+    // Note creation and visibility
+  });
+});
+```
+
+### Phase 3: Edge Cases & Error Handling (Week 5-6)
+**Goal**: Comprehensive coverage including error scenarios
+
+#### 3.1 Error Scenarios
+```typescript
+// tests/e2e/error-handling.spec.ts
+test.describe('Error Handling', () => {
+  test('handles network errors gracefully', async ({ page }) => {
+    // Test offline scenarios
+  });
+
+  test('validates form inputs', async ({ page }) => {
+    // Required field validation
+  });
+});
+```
+
+#### 3.2 Edge Cases
+- [ ] Multiple quotes per request
+- [ ] Status transitions
+- [ ] Permission boundaries
+- [ ] File upload limits
+
+### Phase 4: Performance & Visual (Week 7-8)
+**Goal**: Non-functional testing
+
+#### 4.1 Performance Tests
+```typescript
+// tests/e2e/performance.spec.ts
+test.describe('Performance', () => {
+  test('dashboard loads within 3 seconds', async ({ page }) => {
+    // Performance benchmarks
+  });
+});
+```
+
+#### 4.2 Visual Regression
+```typescript
+// tests/e2e/visual.spec.ts
+test.describe('Visual Regression', () => {
+  test('UI matches design specifications', async ({ page }) => {
+    // Screenshot comparisons
+  });
+});
+```
+
+### Phase 5: CI/CD Integration (Week 9-10)
+**Goal**: Automated testing in deployment pipeline
+
+#### 5.1 CI/CD Setup
+- [ ] GitHub Actions workflow
+- [ ] Parallel test execution
+- [ ] Test result reporting
+- [ ] Deployment gates
+
+#### 5.2 Monitoring & Maintenance
+- [ ] Test flakiness detection
+- [ ] Regular test maintenance
+- [ ] Performance monitoring
+
+## Test File Structure
 
 ```
 tests/e2e/
-├── README.md                    # This strategy document
-├── page-objects/               # UI interaction encapsulation
-│   ├── AuthPage.ts            # Authentication flows
-│   ├── QuoteRequestPage.ts    # Quote creation
-│   ├── DashboardPage.ts       # Dashboard interactions
-│   └── ProfilePage.ts         # Profile management
-├── fixtures/                   # Test data and setup
-│   ├── test-data.ts           # Test user accounts and data
-│   └── test-users.ts          # User credentials
-├── helpers/                    # Shared utilities
-│   ├── auth.ts                # Authentication helpers
-│   └── apiClient.ts           # API validation client
-└── [feature]/                 # Feature-specific tests
-    ├── auth/                  # Authentication tests
-    ├── quote-requests/        # Quote creation tests
-    ├── dashboard/             # Dashboard tests
-    └── profile/               # Profile tests
+├── README.md                    # This file
+├── page-objects/               # Page Object Model
+│   ├── BasePage.ts
+│   ├── LoginPage.ts
+│   ├── DashboardPage.ts
+│   ├── RequestModalPage.ts
+│   └── QuoteModalPage.ts
+├── fixtures/                   # Test data
+│   ├── test-users.ts
+│   └── sample-requests.ts
+├── utils/                      # Test utilities
+│   ├── test-helpers.ts
+│   └── api-helpers.ts
+├── auth.spec.ts               # Authentication tests
+├── quote-lifecycle.spec.ts    # Main user journey
+├── admin-workflow.spec.ts     # Admin functionality
+├── communication.spec.ts      # Messaging features
+├── error-handling.spec.ts     # Error scenarios
+├── performance.spec.ts        # Performance tests
+└── visual.spec.ts            # Visual regression
 ```
 
-## ✅ Current Test Coverage
+## Getting Started
 
-### Authentication Flow
-- [x] **User Login**: Successful authentication with valid credentials
-- [x] **Session Persistence**: User remains logged in across page refreshes
-- [x] **Logout Functionality**: Proper session termination
-- [x] **Invalid Credentials**: Proper error handling
-
-### Quote Request Creation
-- [x] **Modal Opening**: Quote request modal displays correctly
-- [x] **Form Validation**: Required field validation
-- [x] **Category Selection**: Service category dropdown functionality
-- [x] **Emergency Toggle**: Emergency request flag handling
-- [x] **API Integration**: Successful backend submission
-- [x] **Response Validation**: Proper success/error handling
-
-### Dashboard Interactions
-- [x] **Request Display**: Created requests appear in dashboard
-- [x] **Request Details**: Individual request viewing
-- [x] **Status Updates**: Request status changes reflected
-- [x] **Data Persistence**: Requests persist across sessions
-
-### Profile Management
-- [x] **Profile Creation**: New user profile setup
-- [x] **Profile Editing**: User information updates
-- [x] **Data Validation**: Profile field validation
-- [x] **Persistence**: Profile changes saved correctly
-
-## 🚀 Running E2E Tests
-
+### 1. Run Existing Tests
 ```bash
-# Run all E2E tests
 npm run test:e2e
-
-# Run specific test file
-npx playwright test tests/e2e/quote-requests/quote-creation.spec.ts
-
-# Run with browser selection
-npm run test:e2e:chromium
-
-# Run with debugging
-npm run test:e2e -- --debug
-
-# Run with video recording
-npm run test:e2e -- --video
 ```
 
-## 📊 Success Metrics
+### 2. Generate Test Code
+```bash
+# Record interactions and generate test code
+npx playwright codegen http://localhost:5173
+```
 
-- **Test Execution**: < 30 seconds for critical user journeys
-- **Reliability**: > 95% pass rate in CI/CD
-- **Coverage**: All critical user paths tested
-- **Maintainability**: < 5 minutes to update for UI changes
+### 3. Debug Tests
+```bash
+# Run tests in debug mode
+npx playwright test --debug
+```
 
-## 🔧 Best Practices
+### 4. View Test Results
+```bash
+# Open test report
+npx playwright show-report
+```
 
-### 1. Page Object Model
-- **Single Responsibility**: Each POM class handles one page/feature
-- **Method Naming**: Descriptive method names (e.g., `createQuoteRequest()`)
-- **Selector Strategy**: Use data-testid attributes for reliable selection
-- **Error Handling**: Graceful handling of missing elements
+## Best Practices
 
-### 2. Test Data Management
-- **Isolation**: Each test uses unique data
-- **Cleanup**: Automatic cleanup via fixtures
-- **Realism**: Test data mirrors production scenarios
-- **Reusability**: Shared test data across related tests
+### Test Organization
+- **One concept per test**: Each test should verify one specific behavior
+- **Descriptive names**: Test names should explain what they're testing
+- **Independent tests**: Tests should not depend on each other
+- **Fast execution**: Keep tests focused and efficient
 
-### 3. Hybrid Validation Strategy
-- **UI Validation**: Visual and interaction verification
-- **API Validation**: Backend state verification
-- **Data Integrity**: End-to-end data flow validation
-- **Performance**: Fast feedback with API shortcuts
+### Test Data
+- **Realistic data**: Use data that represents actual usage
+- **Cleanup**: Always clean up test data
+- **Isolation**: Tests should not interfere with each other
 
-### 4. Test Independence
-- **No Dependencies**: Tests can run in any order
-- **Self-Contained**: Each test includes all prerequisites
-- **Cleanup**: Proper teardown and data cleanup
-- **Parallel Execution**: Tests designed for concurrent running
+### Maintenance
+- **Regular updates**: Update tests when UI changes
+- **Flaky test monitoring**: Identify and fix unreliable tests
+- **Documentation**: Keep tests well-documented
 
-## 🔗 Dependencies
+## Success Metrics
 
-**Prerequisites:**
-- Frontend application running on `http://localhost:5173`
-- Backend API running on `http://localhost:3000`
-- Database connection available
-- Test user accounts configured
+### Coverage Goals
+- **Critical paths**: 100% coverage of main user journeys
+- **Error scenarios**: 90% coverage of error conditions
+- **Edge cases**: 75% coverage of edge cases
 
-**Test Order:**
-1. `auth/` - Authentication foundation
-2. `quote-requests/` - Core functionality
-3. `dashboard/` - User experience
-4. `profile/` - User management
+### Quality Metrics
+- **Test execution time**: < 5 minutes for full suite
+- **Flaky tests**: < 5% failure rate
+- **Maintenance time**: < 2 hours per week
 
-## 📈 Future Enhancements
+## Integration with Development
 
-- **Visual Regression**: Screenshot comparison testing
-- **Performance Testing**: Page load and interaction timing
-- **Cross-browser Matrix**: Full browser compatibility
-- **Mobile Testing**: Responsive design validation
-- **Accessibility Testing**: WCAG compliance validation
+### Pre-commit Hooks
+- Run critical E2E tests before commits
+- Block commits if core functionality is broken
+
+### Pull Request Checks
+- Run E2E tests on all PRs
+- Require E2E test approval for UI changes
+
+### Deployment Gates
+- E2E tests must pass before deployment
+- Rollback capability if production tests fail
+
+## Resources
+
+- [Playwright Documentation](https://playwright.dev/)
+- [Testing Best Practices](https://playwright.dev/docs/best-practices)
+- [Page Object Model](https://playwright.dev/docs/pom)
+- [Visual Testing](https://playwright.dev/docs/test-screenshots)
+
+## Next Steps
+
+1. **Start with Phase 1**: Set up infrastructure and basic auth tests
+2. **Implement page objects**: Create reusable page abstractions
+3. **Automate critical paths**: Convert manual tests to automated ones
+4. **Add to CI/CD**: Integrate with deployment pipeline
+5. **Monitor and maintain**: Regularly update and improve tests
+
+---
+
+**Note**: This roadmap evolves based on project needs and team capacity. Start small and expand gradually for sustainable testing practices.
 --- END OF FILE ---
 
 --- START OF FILE tests/e2e/admin-functionality/admin-dashboard.spec.ts ---
@@ -20338,6 +20685,254 @@ describe('API Integration Tests', () => {
     });
   });
 });
+--- END OF FILE ---
+
+--- START OF FILE tests/manual-tests.md ---
+
+# PlumbingPOC Manual Test Scenarios
+
+## Overview
+This document outlines comprehensive manual test scenarios to validate PlumbingPOC functionality before deployment. Tests are organized by user roles and workflows.
+
+## Test Environment Setup
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:3000
+- **Test Users**:
+  - Admin: `kassandrajo@outlook.com` / `JDV2ede*vca2nuw_fzg`
+  - User: `ziazdamauler@yahoo.ca` / `ajr4yjg3czd.HTM6hfn`
+
+## 1. User Registration & Authentication
+
+### 1.1 Landing Page Access
+- [ ] Visit landing page without authentication
+- [ ] No 401 errors in console
+- [ ] All navigation links work
+- [ ] "Request a Quote" button prompts login
+
+### 1.2 User Registration
+- [ ] Click "Sign In" → "Sign Up"
+- [ ] Complete profile form
+- [ ] Verify email confirmation (if implemented)
+- [ ] Login with new credentials
+
+### 1.3 Admin Login
+- [ ] Login as admin user
+- [ ] Verify admin dashboard access
+- [ ] Check admin-specific UI elements
+
+## 2. Quote Request Creation (User Flow)
+
+### 2.1 Create Quote Request with Attachment
+- [ ] Login as regular user
+- [ ] Click "Request a Quote"
+- [ ] Complete quote request form with all fields
+- [ ] Upload attachment via drag-and-drop
+- [ ] Verify attachment preview
+- [ ] Submit request
+- [ ] Verify success message
+- [ ] Check request appears in "My Requests"
+
+### 2.2 Quote Request Without Attachment
+- [ ] Create request without attachment
+- [ ] Verify submission works
+- [ ] Check request status is "new"
+
+## 3. Admin Dashboard & Management
+
+### 3.1 Command Center Dashboard
+- [ ] Login as admin
+- [ ] Navigate to dashboard
+- [ ] Verify requests table displays
+- [ ] Check map view shows request locations
+- [ ] Test table sorting and filtering
+- [ ] Verify request status indicators
+
+### 3.2 Request Details View
+- [ ] Click on request in table
+- [ ] Verify modal opens with full details
+- [ ] Check customer information
+- [ ] Verify attachment display
+- [ ] Test address/location display
+
+### 3.3 Admin Attachment Upload
+- [ ] Open request details modal
+- [ ] Drag and drop files into attachment section
+- [ ] Verify files upload successfully
+- [ ] Check file previews work
+- [ ] Verify attachments appear for user
+
+## 4. Quote Management
+
+### 4.1 Create Quote
+- [ ] Open request details as admin
+- [ ] Click "Add New Quote"
+- [ ] Fill quote form with labor/material items
+- [ ] Add pricing and notes
+- [ ] Save quote
+- [ ] Verify quote appears in request
+- [ ] Check request status changes to "quoted"
+
+### 4.2 Update Existing Quote
+- [ ] Click "Update" on existing quote
+- [ ] Modify pricing or details
+- [ ] Save changes
+- [ ] Verify quote updates
+- [ ] Check request status remains "quoted"
+
+### 4.3 Create Change Order
+- [ ] Accept a quote first (see section 5)
+- [ ] Click "Change Order" button on accepted quote
+- [ ] Create new quote for additional work
+- [ ] Verify change order appears as separate quote
+- [ ] Check change order has "Change Order" status
+
+## 5. Communication & Notes
+
+### 5.1 User Adds Notes
+- [ ] Login as user
+- [ ] Open request details
+- [ ] Add note in communication log
+- [ ] Verify note appears with "customer" author
+- [ ] Check timestamp
+
+### 5.2 Admin Adds Notes
+- [ ] Login as admin
+- [ ] Open request details
+- [ ] Add note in communication log
+- [ ] Verify note appears with "admin" author
+- [ ] Check user can see admin notes
+
+## 6. Quote Acceptance Flow
+
+### 6.1 User Accepts Quote
+- [ ] Login as user
+- [ ] Open quoted request
+- [ ] Click "Accept" on quote
+- [ ] Verify success message appears
+- [ ] Refresh page and check quote status is "accepted"
+- [ ] Check request status is "accepted"
+
+### 6.2 User Accepts Change Order
+- [ ] With accepted original quote
+- [ ] Accept change order quote
+- [ ] Verify change order becomes "accepted"
+- [ ] Check original quote becomes "rejected"
+- [ ] Verify request status remains "accepted"
+
+## 7. Job Scheduling & Completion
+
+### 7.1 Admin Schedules Job
+- [ ] Login as admin
+- [ ] Open accepted request
+- [ ] Click "Schedule Job" or similar
+- [ ] Set date/time
+- [ ] Verify request status changes to "scheduled"
+- [ ] Check scheduled date displays
+
+### 7.2 Admin Completes Job
+- [ ] Open scheduled request
+- [ ] Click "Mark as Completed"
+- [ ] Fill completion details
+- [ ] Submit completion
+- [ ] Verify request status changes to "completed"
+- [ ] Check completion notes saved
+
+## 8. Status Transitions & Edge Cases
+
+### 8.1 Status Flow Validation
+- [ ] new → quoted → accepted → scheduled → completed
+- [ ] Verify each status transition works
+- [ ] Check status colors and indicators
+
+### 8.2 Multiple Quotes
+- [ ] Create multiple quotes for one request
+- [ ] Accept one quote
+- [ ] Verify other quotes become "rejected"
+- [ ] Check only accepted quote remains active
+
+### 8.3 Permission Checks
+- [ ] User cannot access admin dashboard
+- [ ] User cannot modify other users' requests
+- [ ] Admin can access all requests
+- [ ] Admin can modify any request
+
+## 9. Mobile Responsiveness
+
+### 9.1 Mobile Navigation
+- [ ] Test hamburger menu
+- [ ] Verify mobile dashboard
+- [ ] Check modal responsiveness
+
+### 9.2 Touch Interactions
+- [ ] Test drag-and-drop on mobile
+- [ ] Verify button sizes and spacing
+- [ ] Check form inputs on mobile
+
+## 10. Error Handling
+
+### 10.1 Network Errors
+- [ ] Test with slow/poor connection
+- [ ] Verify error messages display
+- [ ] Check retry functionality
+
+### 10.2 Validation Errors
+- [ ] Submit forms with missing required fields
+- [ ] Upload invalid file types
+- [ ] Test quote calculation errors
+
+### 10.3 Authentication Errors
+- [ ] Test expired sessions
+- [ ] Verify re-login prompts
+- [ ] Check protected route access
+
+## 11. Performance & Usability
+
+### 11.1 Load Times
+- [ ] Dashboard loads within 3 seconds
+- [ ] Modals open quickly
+- [ ] File uploads complete promptly
+
+### 11.2 UI/UX
+- [ ] Intuitive navigation
+- [ ] Clear status indicators
+- [ ] Helpful error messages
+- [ ] Consistent styling
+
+## Test Completion Checklist
+
+- [ ] All scenarios pass without errors
+- [ ] No console errors or warnings
+- [ ] UI updates correctly (may require refresh for quote acceptance)
+- [ ] Mobile experience works
+- [ ] Performance acceptable
+- [ ] Ready for deployment
+
+## Known Issues (Document for Reference)
+- UI may not update immediately after quote acceptance (requires manual refresh)
+- Query invalidation disabled to prevent infinite API loops
+
+## Pre-Deployment Configuration
+
+### Supabase Production Setup
+**IMPORTANT**: Before deploying to production, update Supabase configuration:
+
+1. **Site URL**: Change from `localhost:5173` to `https://plumbingpoc.netlify.app`
+2. **Redirect URLs**: Update authentication redirect URLs in Supabase dashboard
+3. **CORS Settings**: Ensure production domain is whitelisted
+
+### Environment Variables
+Verify production environment has correct values:
+- `VITE_SUPABASE_URL=https://oxoiwzijacglgueemlva.supabase.co`
+- `VITE_FRONTEND_BASE_URL=https://plumbingpoc.netlify.app`
+- `VITE_BACKEND_BASE_URL=https://plumbingpoc.netlify.app`
+
+## Post-Deployment Monitoring
+- Monitor error logs
+- Check user feedback
+- Verify attachment uploads work in production
+- Monitor API performance
+- Test authentication flows in production
+- Verify Supabase redirects work correctly
 --- END OF FILE ---
 
 --- START OF FILE tests/setup.ts ---

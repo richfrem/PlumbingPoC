@@ -1,6 +1,6 @@
 // packages/frontend/src/features/requests/hooks/useRequests.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { QuoteRequest } from '../types';
 
@@ -43,39 +43,15 @@ export function useRequests(userId?: string) {
     fetchRequests();
   }, [fetchRequests]);
 
-  // *** THE DEFINITIVE FIX: Use a separate, dedicated channel for each table. ***
-  // This is the most robust real-time pattern. It ensures that both the admin (who can see all requests)
-  // and the user (who can only see their own via RLS) are listening on the exact same broadcast channels.
+  // DISABLED: This hook is no longer used - useRequestsQuery is used instead
+  // Keeping real-time subscriptions disabled to prevent infinite loops
   useEffect(() => {
-    const handleUpdate = (payload: any) => {
-      console.log('Realtime update received, re-fetching data:', payload);
-      fetchRequests();
-    };
-
-    const requestsChannel = supabase.channel('public:requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, handleUpdate)
-      .subscribe();
-
-    const notesChannel = supabase.channel('public:request_notes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'request_notes' }, handleUpdate)
-      .subscribe();
-      
-    const quotesChannel = supabase.channel('public:quotes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, handleUpdate)
-      .subscribe();
-
-    const attachmentsChannel = supabase.channel('public:quote_attachments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_attachments' }, handleUpdate)
-      .subscribe();
-
-    // Cleanup function to remove all subscriptions when the component unmounts
+    console.log('useRequests hook: DISABLED - useRequestsQuery is used instead');
+    // Real-time subscriptions removed to prevent conflicts with useRequestsQuery
     return () => {
-      supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(notesChannel);
-      supabase.removeChannel(quotesChannel);
-      supabase.removeChannel(attachmentsChannel);
+      // No cleanup needed since no subscriptions are created
     };
-  }, [fetchRequests]); // The dependency on the stable fetchRequests function is correct.
+  }, []);
 
   return { requests, loading, error, refreshRequests: fetchRequests };
 }
