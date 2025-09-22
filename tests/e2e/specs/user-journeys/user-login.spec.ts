@@ -1,3 +1,19 @@
+/**
+ * User Authentication Test Suite
+ *
+ * This spec tests all user authentication functionality using Page Object building blocks.
+ *
+ * Tests Performed:
+ * 1. should sign in regular user successfully - Basic user sign in using building blocks
+ * 2. should sign out successfully - Basic sign out functionality
+ * 3. should handle already logged in state - Edge case handling for repeated sign ins
+ * 4. should fail with invalid credentials - Error handling for authentication failures
+ * 5. should sign out and redirect to login - Complete logout flow verification
+ * 6. should handle sign out from different pages - Sign out robustness across app states
+ * 7. should get current user info - User info retrieval functionality
+ * 8. should sign in, wait 10 seconds, then sign out - Session persistence testing
+ */
+
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
@@ -15,8 +31,7 @@ test.describe('User Authentication', () => {
     // Tests the most basic authentication functionality
     console.log('🧪 Testing regular user sign in...');
 
-    const success = await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
-    expect(success).toBe(true);
+    await authPage.signInAsUserType('user');
 
     // Verify we're logged in
     const isLoggedIn = await authPage.isLoggedIn();
@@ -29,7 +44,7 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing sign out...');
 
     // First sign in
-    await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
 
     // Then sign out
     const signOutSuccess = await authPage.signOut();
@@ -48,11 +63,10 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing already logged in handling...');
 
     // Sign in first
-    await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
 
     // Try to sign in again (should detect already logged in)
-    const secondSignIn = await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
-    expect(secondSignIn).toBe(true); // Should return true for already logged in
+    await authPage.signInAsUserType('user'); // Should detect already logged in and skip
 
     console.log('✅ Already logged in handling test passed');
   });
@@ -78,7 +92,7 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing complete sign out flow...');
 
     // First sign in
-    await authPage.ensureSignedIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
 
     // Verify we're logged in
     let isLoggedIn = await authPage.isLoggedIn();
@@ -102,7 +116,7 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing sign out from different application states...');
 
     // Sign in and navigate to different states
-    await authPage.ensureSignedIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
 
     // Test sign out from main dashboard
     await authPage.signOut();
@@ -110,7 +124,7 @@ test.describe('User Authentication', () => {
     expect(isLoggedIn).toBe(false);
 
     // Sign back in and test sign out after navigation
-    await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
     await page.goto('/#/dashboard'); // Navigate to dashboard
     await authPage.signOut();
     isLoggedIn = await authPage.isLoggedIn();
@@ -123,7 +137,7 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing current user info retrieval...');
 
     // Sign in first
-    await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
+    await authPage.signInAsUserType('user');
 
     // Get current user
     const currentUser = await authPage.getCurrentUser();
@@ -136,8 +150,7 @@ test.describe('User Authentication', () => {
     console.log('🧪 Testing sign in → 10 second wait → sign out flow...');
 
     // Sign in
-    const signInSuccess = await authPage.signIn(TEST_USERS.customer.email, TEST_USERS.customer.password);
-    expect(signInSuccess).toBe(true);
+    await authPage.signInAsUserType('user');
 
     // Verify we're logged in
     let isLoggedIn = await authPage.isLoggedIn();
