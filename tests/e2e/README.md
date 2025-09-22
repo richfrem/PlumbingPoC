@@ -61,8 +61,10 @@ npx playwright test tests/e2e/specs/user-journeys/navigation.spec.ts
 
 ### **Phase 2: Core Features (Requires Auth Working)**
 ```bash
-# 4. Quote request creation (basic working)
-npx playwright test tests/e2e/specs/user-journeys/basic-quote-request.spec.ts
+# 4. Quote request creation (AI-enhanced with attachments)
+npx playwright test tests/e2e/specs/user-journeys/comprehensive-quote-creation.spec.ts
+npx playwright test tests/e2e/specs/user-journeys/perimeter-drain-quote-with-attachment.spec.ts
+npx playwright test tests/e2e/specs/user-journeys/leak-repair-quote-with-attachment.spec.ts
 
 # 5. My requests dashboard (when implemented)
 npx playwright test tests/e2e/specs/user-journeys/dashboard-interactions.spec.ts
@@ -94,17 +96,19 @@ npx playwright test tests/e2e/specs/integration/realtime-sync.spec.ts
 | Category | Tests | Status | Notes |
 |----------|-------|--------|-------|
 | **Authentication** | 8 tests | ✅ **8/8 PASSING** | ✅ **COMPLETE** |
-| **User Features** | 6 tests | 🟢 **2/6 IMPLEMENTED** | Comprehensive quote creation with AI conversations working |
-| **Admin Features** | 4 tests | 🔴 **0/4 IMPLEMENTED** | Ready for development |
+| **User Features** | 6 tests | 🟢 **3/6 IMPLEMENTED** | AI-enhanced quote creation + 2 attachment tests working |
+| **Admin Features** | 4 tests | 🟢 **1/4 IMPLEMENTED** | Admin dashboard access working |
 | **Integration** | 2 tests | 🔴 **0/2 IMPLEMENTED** | Ready for development |
-| **Total** | **20 tests** | 🟢 **9/20 IMPLEMENTED** | AI-enhanced quote creation working |
+| **Total** | **20 tests** | 🟢 **11/20 IMPLEMENTED** | Advanced quote creation + admin dashboard working |
 
 ## 🎯 **Next Priority Development**
 
-### **Immediate (Fix Current Issues):**
+### **Immediate (Completed - Ready for Next Phase):**
 1. ✅ **Comprehensive Quote Creation** - AI-enhanced testing working for all 8 categories
-2. **Fix `getCurrentUser()` test** - Authentication test failing
-3. **Implement user registration** - Foundation for all user features
+2. ✅ **File Attachment Testing** - Real plumbing images successfully uploaded
+3. ✅ **Reusable Helper Functions** - Modular test architecture implemented
+4. **Fix `getCurrentUser()` test** - Authentication test failing
+5. **Implement user registration** - Foundation for all user features
 
 ### **Short-term (Build on Working Quote Creation):**
 4. **My Requests dashboard** - Core user functionality
@@ -143,8 +147,30 @@ AI Response: "The home brewery setup will be in the garage, requiring a dedicate
 #### **Test Coverage:**
 - ✅ **8 Service Categories**: Bathroom, Perimeter Drains, Water Heater, Leak Repair, Fixtures, Main Line, Emergency, Other
 - ✅ **AI Conversations**: Dynamic follow-up question handling
+- ✅ **File Attachments**: Real plumbing images successfully uploaded
 - ✅ **API Integration**: Successful quote request submissions
 - ✅ **UI Automation**: Complete conversational flow automation
+
+#### **🛠️ Reusable Helper Functions**
+The test suite includes modular helper functions for maintainable test development:
+
+- **`answerGenericQuestions()`**: Handles common questions (property type, homeowner, problem description, timing, notes)
+- **`answerCategoryQuestions()`**: Processes category-specific questions using `exampleAnswers` from `serviceQuoteQuestions.ts`
+- **`submitQuoteRequest()`**: Standardized quote submission with API validation and error handling
+- **`generateAIAnswer()`**: OpenAI-powered responses to dynamic AI-generated follow-up questions
+
+#### **📁 Test Architecture:**
+```
+tests/e2e/utils/
+├── quoteHelpers.ts       # Reusable quote creation functions
+│   ├── answerGenericQuestions()
+│   ├── answerCategoryQuestions()
+│   ├── submitQuoteRequest()
+│   └── generateAIAnswer()
+└── fixtures/example-images/  # Real test images
+    ├── crawl-space-leak.jpg
+    └── leak-under-kitchensink.jpg
+```
 
 ### Page Object Model
 Implement page objects for maintainable, readable tests:
@@ -189,23 +215,26 @@ export class DashboardPage {
 | `authentication.spec.ts` | `npx playwright test specs/auth/authentication.spec.ts` | Login/logout, session validation | None |
 
 #### **👤 User Journey Tests** (`specs/user-journeys/`)
-| File | Command | Tests | Dependencies |
-|------|---------|-------|--------------|
-| `core-functionality.spec.ts` | `npx playwright test specs/user-journeys/core-functionality.spec.ts` | Basic quote submission | Auth |
-| `dashboard-interactions.spec.ts` | `npx playwright test specs/user-journeys/dashboard-interactions.spec.ts` | Dashboard filtering, navigation | Auth |
-| `basic-quote-request.spec.ts` | `npx playwright test specs/user-journeys/basic-quote-request.spec.ts` | Standard plumbing requests | Auth + Core |
-| `emergency-leak-scenario.spec.ts` | `npx playwright test specs/user-journeys/emergency-leak-scenario.spec.ts` | Emergency request flow | Auth + Core |
-| `customer-quote-creation.spec.ts` | `npx playwright test specs/user-journeys/customer-quote-creation.spec.ts` | Customer-specific quotes | Auth + Core |
-| `profile-management.spec.ts` | `npx playwright test specs/user-journeys/profile-management.spec.ts` | Profile updates | Auth |
-| `quote-creation.spec.ts` | `npx playwright test specs/user-journeys/quote-creation.spec.ts` | Quote creation variations | Auth + Core |
-| `standard-plumbing-workflow.spec.ts` | `npx playwright test specs/user-journeys/standard-plumbing-workflow.spec.ts` | Standard service workflows | Auth + Core |
-| `standard-service-request.spec.ts` | `npx playwright test specs/user-journeys/standard-service-request.spec.ts` | Service request variations | Auth + Core |
+| File | Command | Tests | Dependencies | Status |
+|------|---------|-------|--------------|--------|
+| `comprehensive-quote-creation.spec.ts` | `npx playwright test specs/user-journeys/comprehensive-quote-creation.spec.ts` | AI-enhanced quote creation for all 8 categories | Auth | ✅ **WORKING** |
+| `perimeter-drain-quote-with-attachment.spec.ts` | `npx playwright test specs/user-journeys/perimeter-drain-quote-with-attachment.spec.ts` | Perimeter drain quotes with file attachments | Auth | ✅ **WORKING** |
+| `leak-repair-quote-with-attachment.spec.ts` | `npx playwright test specs/user-journeys/leak-repair-quote-with-attachment.spec.ts` | Leak repair quotes with file attachments | Auth | ✅ **WORKING** |
+| `core-functionality.spec.ts` | `npx playwright test specs/user-journeys/core-functionality.spec.ts` | Basic quote submission | Auth | 🚧 **READY** |
+| `dashboard-interactions.spec.ts` | `npx playwright test specs/user-journeys/dashboard-interactions.spec.ts` | Dashboard filtering, navigation | Auth | 🚧 **READY** |
+| `basic-quote-request.spec.ts` | `npx playwright test specs/user-journeys/basic-quote-request.spec.ts` | Standard plumbing requests | Auth + Core | 📁 **REVIEW** |
+| `emergency-leak-scenario.spec.ts` | `npx playwright test specs/user-journeys/emergency-leak-scenario.spec.ts` | Emergency request flow | Auth + Core | 📁 **REVIEW** |
+| `customer-quote-creation.spec.ts` | `npx playwright test specs/user-journeys/customer-quote-creation.spec.ts` | Customer-specific quotes | Auth + Core | 📁 **REVIEW** |
+| `profile-management.spec.ts` | `npx playwright test specs/user-journeys/profile-management.spec.ts` | Profile updates | Auth | 📁 **REVIEW** |
+| `quote-creation.spec.ts` | `npx playwright test specs/user-journeys/quote-creation.spec.ts` | Quote creation variations | Auth + Core | 📁 **REVIEW** |
+| `standard-plumbing-workflow.spec.ts` | `npx playwright test specs/user-journeys/standard-plumbing-workflow.spec.ts` | Standard service workflows | Auth + Core | 📁 **REVIEW** |
+| `standard-service-request.spec.ts` | `npx playwright test specs/user-journeys/standard-service-request.spec.ts` | Service request variations | Auth + Core | 📁 **REVIEW** |
 
 #### **👑 Admin Journey Tests** (`specs/admin-journeys/`)
-| File | Command | Tests | Dependencies |
-|------|---------|-------|--------------|
-| `admin-dashboard.spec.ts` | `npx playwright test specs/admin-journeys/admin-dashboard.spec.ts` | Admin login, dashboard access | Auth |
-| `admin-quote-management.spec.ts` | `npx playwright test specs/admin-journeys/admin-quote-management.spec.ts` | Quote approval, status changes | Admin Auth + User Quotes |
+| File | Command | Tests | Dependencies | Status |
+|------|---------|-------|--------------|--------|
+| `admin-dashboard.spec.ts` | `npx playwright test specs/admin-journeys/admin-dashboard.spec.ts` | Admin login, dashboard access, request counting | Auth | ✅ **WORKING** |
+| `admin-quote-management.spec.ts` | `npx playwright test specs/admin-journeys/admin-quote-management.spec.ts` | Quote approval, status changes | Admin Auth + User Quotes | 🚧 **READY** |
 
 #### **🔗 Integration Tests** (`specs/integration/`)
 | File | Command | Tests | Dependencies |

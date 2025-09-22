@@ -59,7 +59,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
               {requests.map((req) => {
                 const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
                 return (
-                  <button key={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
+                  <button key={req.id} data-request-id={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
                     <Box>
                       <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
                         {req.problem_category.replace(/_/g, " ")}

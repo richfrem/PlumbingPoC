@@ -553,11 +553,11 @@ CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT U
 
 
 
-CREATE POLICY "Enable read for users and admins with realtime" ON "public"."requests" FOR SELECT USING (((auth.uid() = user_id) OR is_admin() OR (auth.role() = 'authenticated'::text)));
-
-
-
 CREATE POLICY "Enable read for users and admins" ON "public"."user_profiles" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
+
+
+
+CREATE POLICY "Enable read for users and admins with realtime" ON "public"."requests" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"() OR ("auth"."role"() = 'authenticated'::"text")));
 
 
 

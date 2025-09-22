@@ -276,6 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
               <DataGrid
                 rows={filteredRequests}
                 columns={columns}
+                getRowId={(row) => row.id}
                 onRowClick={handleRowClick}
                 disableColumnFilter={false}
                 initialState={{
