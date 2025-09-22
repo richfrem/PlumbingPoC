@@ -1,0 +1,225 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "AquaFlow Plumbing" [ref=e6] [cursor=pointer]:
+        - /url: /#
+        - img [ref=e7] [cursor=pointer]
+        - generic [ref=e9] [cursor=pointer]: AquaFlow Plumbing
+      - navigation [ref=e10]:
+        - link "Services" [ref=e11] [cursor=pointer]:
+          - /url: /#services
+        - link "About" [ref=e12] [cursor=pointer]:
+          - /url: /#about
+        - link "Reviews" [ref=e13] [cursor=pointer]:
+          - /url: /#testimonials
+        - link "Contact" [ref=e14] [cursor=pointer]:
+          - /url: /#contact
+        - link "Call Now" [ref=e15] [cursor=pointer]:
+          - /url: tel:555-123-4567
+          - img [ref=e16] [cursor=pointer]
+          - generic [ref=e18] [cursor=pointer]: Call Now
+        - button "Dashboard" [ref=e20] [cursor=pointer]:
+          - img [ref=e22] [cursor=pointer]
+          - generic [ref=e26] [cursor=pointer]: Dashboard
+          - img [ref=e27] [cursor=pointer]
+  - main [ref=e29]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - heading "Professional Plumbing Services You Can Trust" [level=1] [ref=e36]
+        - paragraph [ref=e37]: 24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.
+        - generic [ref=e38]:
+          - button "Request a Quote" [ref=e39] [cursor=pointer]:
+            - generic [ref=e40] [cursor=pointer]: Request a Quote
+          - link "Call Now" [ref=e41] [cursor=pointer]:
+            - /url: tel:555-123-4567
+            - img [ref=e42] [cursor=pointer]
+            - generic [ref=e44] [cursor=pointer]: Call Now
+      - generic [ref=e46]:
+        - img "Professional plumber at work" [ref=e47]
+        - generic [ref=e48]:
+          - img [ref=e50]
+          - generic [ref=e53]:
+            - generic [ref=e54]: Licensed & Insured
+            - generic [ref=e55]: Fully certified professionals
+    - paragraph [ref=e57]: Request failed with status code 401
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - heading "Our Professional Plumbing Services" [level=2] [ref=e61]
+        - paragraph [ref=e62]: From emergency repairs to complete installations, we provide comprehensive plumbing solutions for homes and businesses.
+      - generic [ref=e63]:
+        - generic [ref=e66]:
+          - img [ref=e68]
+          - heading "Leak Detection & Repair" [level=3] [ref=e71]
+          - paragraph [ref=e72]: Fast detection and repair of water leaks to prevent damage and save water.
+          - list [ref=e73]:
+            - listitem [ref=e74]:
+              - img [ref=e75]
+              - generic [ref=e78]: Emergency leak repair
+            - listitem [ref=e79]:
+              - img [ref=e80]
+              - generic [ref=e83]: Pipe inspection
+            - listitem [ref=e84]:
+              - img [ref=e85]
+              - generic [ref=e88]: Slab leak detection
+        - generic [ref=e91]:
+          - img [ref=e93]
+          - heading "Pipe Installation & Repiping" [level=3] [ref=e95]
+          - paragraph [ref=e96]: Professional installation and replacement for new construction or aging systems.
+          - list [ref=e97]:
+            - listitem [ref=e98]:
+              - img [ref=e99]
+              - generic [ref=e102]: Full home repiping
+            - listitem [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e107]: New construction plumbing
+        - generic [ref=e110]:
+          - img [ref=e112]
+          - heading "Drain Cleaning" [level=3] [ref=e116]
+          - paragraph [ref=e117]: Clear clogged drains and prevent future blockages with our expert services.
+          - list [ref=e118]:
+            - listitem [ref=e119]:
+              - img [ref=e120]
+              - generic [ref=e123]: Kitchen & bathroom drains
+            - listitem [ref=e124]:
+              - img [ref=e125]
+              - generic [ref=e128]: Main line sewer cleaning
+        - generic [ref=e131]:
+          - img [ref=e133]
+          - heading "Water Heater Services" [level=3] [ref=e135]
+          - paragraph [ref=e136]: Reliable installation and repair for tankless and traditional water heaters.
+          - list [ref=e137]:
+            - listitem [ref=e138]:
+              - img [ref=e139]
+              - generic [ref=e142]: New installations
+            - listitem [ref=e143]:
+              - img [ref=e144]
+              - generic [ref=e147]: 24/7 emergency repairs
+        - generic [ref=e150]:
+          - img [ref=e152]
+          - heading "Fixture Repair & Installation" [level=3] [ref=e156]
+          - paragraph [ref=e157]: We service all types of plumbing fixtures for your home or business.
+          - list [ref=e158]:
+            - listitem [ref=e159]:
+              - img [ref=e160]
+              - generic [ref=e163]: Faucets & sinks
+            - listitem [ref=e164]:
+              - img [ref=e165]
+              - generic [ref=e168]: Toilets & bidets
+        - generic [ref=e171]:
+          - img [ref=e173]
+          - heading "Gas Line Services" [level=3] [ref=e176]
+          - paragraph [ref=e177]: Safe and certified installation and repair of natural gas lines.
+          - list [ref=e178]:
+            - listitem [ref=e179]:
+              - img [ref=e180]
+              - generic [ref=e183]: New appliance hookups
+            - listitem [ref=e184]:
+              - img [ref=e185]
+              - generic [ref=e188]: Leak detection & repair
+    - generic [ref=e190]:
+      - img "Plumbing team" [ref=e192]
+      - generic [ref=e193]:
+        - heading "About AquaFlow Plumbing" [level=2] [ref=e194]
+        - paragraph [ref=e195]: With over 15 years of experience serving our community, AquaFlow Plumbing has built a reputation for reliable, professional service and competitive pricing.
+        - paragraph [ref=e196]: Our team of licensed professionals is committed to providing the highest quality workmanship and customer service. We use the latest tools and techniques to ensure your plumbing systems work perfectly.
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - img [ref=e199]
+            - generic [ref=e201]:
+              - generic [ref=e202]: Licensed & Insured
+              - generic [ref=e203]: Full coverage protection
+          - generic [ref=e204]:
+            - img [ref=e205]
+            - generic [ref=e208]:
+              - generic [ref=e209]: 24/7 Emergency
+              - generic [ref=e210]: Always available
+          - generic [ref=e211]:
+            - img [ref=e212]
+            - generic [ref=e215]:
+              - generic [ref=e216]: Quality Guarantee
+              - generic [ref=e217]: 100% satisfaction
+          - generic [ref=e218]:
+            - img [ref=e219]
+            - generic [ref=e221]:
+              - generic [ref=e222]: 5-Star Rated
+              - generic [ref=e223]: Proven customer satisfaction
+    - generic [ref=e225]:
+      - generic [ref=e226]:
+        - heading "What Our Customers Say" [level=2] [ref=e227]
+        - paragraph [ref=e228]: Don't just take our word for it - see what our satisfied customers have to say.
+      - generic [ref=e229]:
+        - generic [ref=e230]:
+          - generic [ref=e231]:
+            - img [ref=e232]
+            - img [ref=e234]
+            - img [ref=e236]
+            - img [ref=e238]
+            - img [ref=e240]
+          - paragraph [ref=e242]: "\"Fast, friendly, and fixed my leak in no time!\""
+          - generic [ref=e243]: Jane D.
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - img [ref=e246]
+            - img [ref=e248]
+            - img [ref=e250]
+            - img [ref=e252]
+            - img [ref=e254]
+          - paragraph [ref=e256]: "\"Professional team, great price, highly recommend.\""
+          - generic [ref=e257]: Mike R.
+        - generic [ref=e258]:
+          - generic [ref=e259]:
+            - img [ref=e260]
+            - img [ref=e262]
+            - img [ref=e264]
+            - img [ref=e266]
+            - img [ref=e268]
+          - paragraph [ref=e270]: "\"Emergency call at 2am, they showed up and saved my basement!\""
+          - generic [ref=e271]: Sara L.
+    - generic [ref=e273]:
+      - generic [ref=e274]:
+        - heading "Get In Touch" [level=2] [ref=e275]
+        - paragraph [ref=e276]: Ready to solve your plumbing problems? Contact us today for fast, professional service.
+        - generic [ref=e277]:
+          - generic [ref=e278]:
+            - img [ref=e280]
+            - generic [ref=e282]:
+              - generic [ref=e283]: Call or Text
+              - generic [ref=e284]: (555) 123-4567
+          - generic [ref=e285]:
+            - img [ref=e287]
+            - generic [ref=e290]:
+              - generic [ref=e291]: Service Area
+              - generic [ref=e292]: Greater Metro Area
+          - generic [ref=e293]:
+            - img [ref=e295]
+            - generic [ref=e298]:
+              - generic [ref=e299]: Email Us
+              - generic [ref=e300]: info@aquaflowplumbing.com
+          - generic [ref=e301]:
+            - img [ref=e303]
+            - generic [ref=e306]:
+              - generic [ref=e307]: Business Hours
+              - generic [ref=e308]: 24/7 Emergency Service
+      - generic [ref=e309]:
+        - heading "Emergency Service" [level=3] [ref=e310]
+        - paragraph [ref=e311]: Plumbing emergencies don't wait for business hours. We're available 24/7 for urgent repairs.
+        - link "Emergency Line" [ref=e312] [cursor=pointer]:
+          - /url: tel:555-123-4567
+          - img [ref=e313] [cursor=pointer]
+          - generic [ref=e315] [cursor=pointer]: Emergency Line
+  - contentinfo [ref=e316]:
+    - generic [ref=e317]:
+      - generic [ref=e318]:
+        - img [ref=e319]
+        - generic [ref=e321]: AquaFlow Plumbing
+      - generic [ref=e322]:
+        - paragraph [ref=e323]: © 2025 AquaFlow Plumbing. All rights reserved.
+        - paragraph [ref=e324]: Licensed • Insured • Trusted
+  - link "Emergency Line" [ref=e325] [cursor=pointer]:
+    - /url: tel:555-123-4567
+    - img [ref=e326] [cursor=pointer]
+    - generic [ref=e328] [cursor=pointer]: Emergency Line
+```

@@ -1,19 +1,36 @@
+/**
+ * Admin Dashboard Test Suite
+ *
+ * This spec tests admin dashboard functionality including login, navigation, and basic admin operations.
+ *
+ * ASSUMPTIONS:
+ * - admin-login.spec.ts tests have run first and admin authentication works
+ * - This spec focuses on admin dashboard access and basic admin UI interactions
+ *
+ * Tests Performed:
+ * 1. should login as admin, view dashboard, and count quote requests - Admin dashboard access and request counting
+ * 2. should access admin command center and view dashboard - Command Center navigation and dashboard loading
+ * 3. should create a quote for an existing request - Basic quote creation workflow
+ * 4. should update request status - Request status management
+ * 5. should view and manage quotes - Quote viewing and management
+ */
+
 import { test, expect } from '@playwright/test';
-import { signInForTest, getAdminTestCredentials } from '../../utils/auth';
+import { AuthPage } from '../../page-objects/pages/AuthPage';
 
 test.describe('Admin Dashboard and Quote Management', () => {
+  let authPage: AuthPage;
+
+  test.beforeEach(async ({ page }) => {
+    authPage = new AuthPage(page);
+    await page.goto('/');
+  });
+
   test('should login as admin, view dashboard, and count quote requests in table view', async ({ page }) => {
     console.log('🧪 Testing admin dashboard access and quote request counting...');
 
-    // Get admin credentials
-    const { email, password } = getAdminTestCredentials();
-
-    // Navigate to the application
-    await page.goto('/');
-
-    // Sign in as admin
-    const loginSuccess = await signInForTest(page, email, password);
-    expect(loginSuccess).toBe(true);
+    // Sign in as admin using AuthPage
+    await authPage.signInAsUserType('admin');
     console.log('✅ Admin login successful');
 
     // Click user menu to access Command Center
@@ -105,15 +122,8 @@ test.describe('Admin Dashboard and Quote Management', () => {
     console.log('🎉 Admin dashboard test completed successfully!');
   });
   test('should access admin command center and view dashboard', async ({ page }) => {
-    // Get admin credentials
-    const { email, password } = getAdminTestCredentials();
-
-    // Navigate to the application
-    await page.goto('/');
-
-    // Sign in as admin
-    const loginSuccess = await signInForTest(page, email, password);
-    expect(loginSuccess).toBe(true);
+    // Sign in as admin using AuthPage
+    await authPage.signInAsUserType('admin');
 
     // Click user menu to access Command Center
     await page.locator('button:has(svg.lucide-chevron-down)').click();
@@ -130,15 +140,8 @@ test.describe('Admin Dashboard and Quote Management', () => {
   });
 
   test('should create a quote for an existing request', async ({ page }) => {
-    // Get admin credentials
-    const { email, password } = getAdminTestCredentials();
-
-    // Navigate to the application
-    await page.goto('/');
-
-    // Sign in as admin
-    const loginSuccess = await signInForTest(page, email, password);
-    expect(loginSuccess).toBe(true);
+    // Sign in as admin using AuthPage
+    await authPage.signInAsUserType('admin');
 
     // Access admin dashboard
     await page.locator('button:has(svg.lucide-chevron-down)').click();
@@ -168,15 +171,8 @@ test.describe('Admin Dashboard and Quote Management', () => {
   });
 
   test('should update request status', async ({ page }) => {
-    // Get admin credentials
-    const { email, password } = getAdminTestCredentials();
-
-    // Navigate to the application
-    await page.goto('/');
-
-    // Sign in as admin
-    const loginSuccess = await signInForTest(page, email, password);
-    expect(loginSuccess).toBe(true);
+    // Sign in as admin using AuthPage
+    await authPage.signInAsUserType('admin');
 
     // Access admin dashboard
     await page.locator('button:has(svg.lucide-chevron-down)').click();
@@ -199,15 +195,8 @@ test.describe('Admin Dashboard and Quote Management', () => {
   });
 
   test('should view and manage quotes', async ({ page }) => {
-    // Get admin credentials
-    const { email, password } = getAdminTestCredentials();
-
-    // Navigate to the application
-    await page.goto('/');
-
-    // Sign in as admin
-    const loginSuccess = await signInForTest(page, email, password);
-    expect(loginSuccess).toBe(true);
+    // Sign in as admin using AuthPage
+    await authPage.signInAsUserType('admin');
 
     // Access admin dashboard
     await page.locator('button:has(svg.lucide-chevron-down)').click();

@@ -3,6 +3,83 @@
 ## Overview
 This document outlines the strategy for implementing automated End-to-End (E2E) testing with Playwright to replace manual testing and ensure continuous quality.
 
+## 🎯 **Testing Architecture: Page Object Model (POM)**
+
+### **Exclusive Page Object Model Approach**
+This test suite uses **Page Object Model exclusively** - all tests interact with the application through dedicated page objects rather than direct DOM manipulation. This ensures:
+
+- **🔧 Maintainability**: UI changes only require updates in one place per page
+- **♻️ Reusability**: Page methods can be used across multiple tests
+- **📖 Readability**: Tests read like high-level user actions
+- **🛡️ Encapsulation**: Implementation details are hidden from tests
+- **🧪 Testability**: Easy to mock or stub page interactions
+
+### **Page Object Structure**
+```
+tests/e2e/page-objects/
+├── base/
+│   └── BasePage.ts          # Common functionality for all pages
+├── pages/
+│   ├── AuthPage.ts          # Authentication (signInAsUserType, signOut)
+│   ├── QuoteRequestPage.ts  # Quote creation (createQuoteRequest)
+│   ├── DashboardPage.ts     # Dashboard navigation
+│   └── RequestDetailPage.ts # Request management
+└── components/
+    ├── CommandMenu.ts       # Admin command center navigation
+    ├── QuoteList.ts         # Quote display/management components
+    ├── RequestModal.ts      # Request detail modal components
+    └── UserMenu.ts          # User menu dropdown components
+```
+
+### **Building Blocks Pattern**
+Tests use **building block functions** that compose multiple page object methods:
+
+```typescript
+// AuthPage building blocks
+await authPage.signInAsUserType('user');     // Smart login with user type detection
+await authPage.signOut();                    // Robust logout
+
+// QuoteRequestPage building blocks
+const requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains');
+
+// DashboardPage building blocks
+await dashboardPage.findAndOpenRequest(requestId, 'admin');
+await dashboardPage.createQuote(description, price);
+```
+
+### **Standardized Test Documentation**
+All E2E test specs follow a standardized documentation format at the top of each file:
+
+```typescript
+/**
+ * [Test Suite Name] Test Suite
+ *
+ * This spec tests [specific functionality being tested].
+ *
+ * ASSUMPTIONS:
+ * - [Any prerequisite tests or conditions that must be met]
+ *
+ * Tests Performed:
+ * 1. [test name] - [brief description]
+ * 2. [test name] - [brief description]
+ * ...
+ */
+```
+
+**Example from user-login.spec.ts:**
+```typescript
+/**
+ * User Authentication Test Suite
+ *
+ * This spec tests all user authentication functionality using Page Object building blocks.
+ *
+ * Tests Performed:
+ * 1. should sign in regular user successfully - Basic user sign in using building blocks
+ * 2. should sign out successfully - Basic sign out functionality
+ * ...
+ */
+```
+
 ## Current Status & Testing Roadmap
 
 ### ✅ **Foundation Layer (Basic Building Blocks)**
