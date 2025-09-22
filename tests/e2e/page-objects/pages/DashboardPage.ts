@@ -1,5 +1,5 @@
 import { Page, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { BasePage } from '../base/BasePage';
 
 /**
  * Page object for dashboard functionality
@@ -261,5 +261,72 @@ export class DashboardPage extends BasePage {
     }
 
     console.log('✅ Request creation date verified');
+  }
+
+  /**
+   * BUILDING BLOCK: Navigate dashboard table and find a specific request.
+   * Scrolls through the dashboard table to locate a request by ID.
+   * @param requestId The ID of the request to find.
+   * @param userType The type of dashboard ('user' or 'admin').
+   */
+  async navigateToRequestInTable(requestId: string, userType: 'user' | 'admin'): Promise<void> {
+    console.log(`Navigating dashboard table to find request ${requestId}...`);
+
+    const locator = userType === 'admin'
+      ? `div[data-request-id="${requestId}"]`
+      : `button[data-request-id="${requestId}"]`;
+
+    // Wait for the table to load and find the specific request
+    const requestRow = this.page.locator(locator);
+    await requestRow.waitFor({ state: 'visible', timeout: 20000 });
+
+    // Scroll the element into view if needed
+    await requestRow.scrollIntoViewIfNeeded();
+
+    console.log(`✅ Found request ${requestId} in dashboard table.`);
+  }
+
+  /**
+   * BUILDING BLOCK: Finds and opens a request modal from a dashboard.
+   * @param requestId The ID of the request to find.
+   * @param userType The type of dashboard to look on ('user' or 'admin').
+   */
+  async findAndOpenRequest(requestId: string, userType: 'user' | 'admin'): Promise<void> {
+    console.log(`Finding request ${requestId} on the ${userType} dashboard...`);
+    const locator = userType === 'admin'
+        ? `div[data-request-id="${requestId}"]`
+        : `button[data-request-id="${requestId}"]`;
+
+    const requestRow = this.page.locator(locator);
+    await requestRow.waitFor({ state: 'visible', timeout: 20000 });
+    await requestRow.click();
+    await expect(this.page.getByText(/Job Docket:/)).toBeVisible();
+    console.log('✅ Found and opened request modal.');
+  }
+
+  /**
+   * BUILDING BLOCK: Open a specific quote request by ID from dashboard.
+   * Combines navigation and opening into a single action.
+   * @param requestId The ID of the request to open.
+   * @param userType The type of dashboard ('user' or 'admin').
+   */
+  async openRequestById(requestId: string, userType: 'user' | 'admin'): Promise<void> {
+    console.log(`Opening request ${requestId} from ${userType} dashboard...`);
+
+    // First navigate to the request in the table
+    await this.navigateToRequestInTable(requestId, userType);
+
+    // Then click to open it
+    const locator = userType === 'admin'
+      ? `div[data-request-id="${requestId}"]`
+      : `button[data-request-id="${requestId}"]`;
+
+    const requestRow = this.page.locator(locator);
+    await requestRow.click();
+
+    // Wait for the modal to open
+    await expect(this.page.getByText(/Job Docket:/)).toBeVisible();
+
+    console.log(`✅ Successfully opened request ${requestId}.`);
   }
 }

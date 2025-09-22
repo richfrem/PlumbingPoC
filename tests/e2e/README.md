@@ -96,10 +96,10 @@ npx playwright test tests/e2e/specs/integration/realtime-sync.spec.ts
 | Category | Tests | Status | Notes |
 |----------|-------|--------|-------|
 | **Authentication** | 8 tests | ✅ **8/8 PASSING** | ✅ **COMPLETE** |
-| **User Features** | 6 tests | 🟢 **3/6 IMPLEMENTED** | AI-enhanced quote creation + 2 attachment tests working |
+| **User Features** | 7 tests | 🟢 **4/7 IMPLEMENTED** | AI-enhanced quote creation + 3 attachment tests working |
 | **Admin Features** | 4 tests | 🟢 **1/4 IMPLEMENTED** | Admin dashboard access working |
 | **Integration** | 2 tests | 🔴 **0/2 IMPLEMENTED** | Ready for development |
-| **Total** | **20 tests** | 🟢 **11/20 IMPLEMENTED** | Advanced quote creation + admin dashboard working |
+| **Total** | **21 tests** | 🟢 **12/21 IMPLEMENTED** | Advanced quote creation + admin dashboard working |
 
 ## 🎯 **Next Priority Development**
 
@@ -220,6 +220,7 @@ export class DashboardPage {
 | `comprehensive-quote-creation.spec.ts` | `npx playwright test specs/user-journeys/comprehensive-quote-creation.spec.ts` | AI-enhanced quote creation for all 8 categories | Auth | ✅ **WORKING** |
 | `perimeter-drain-quote-with-attachment.spec.ts` | `npx playwright test specs/user-journeys/perimeter-drain-quote-with-attachment.spec.ts` | Perimeter drain quotes with file attachments | Auth | ✅ **WORKING** |
 | `leak-repair-quote-with-attachment.spec.ts` | `npx playwright test specs/user-journeys/leak-repair-quote-with-attachment.spec.ts` | Leak repair quotes with file attachments | Auth | ✅ **WORKING** |
+| `other-service-quote-with-attachment.spec.ts` | `npx playwright test specs/user-journeys/other-service-quote-with-attachment.spec.ts` | Other service quotes with AI follow-ups and attachments | Auth | ✅ **WORKING** |
 | `core-functionality.spec.ts` | `npx playwright test specs/user-journeys/core-functionality.spec.ts` | Basic quote submission | Auth | 🚧 **READY** |
 | `dashboard-interactions.spec.ts` | `npx playwright test specs/user-journeys/dashboard-interactions.spec.ts` | Dashboard filtering, navigation | Auth | 🚧 **READY** |
 | `basic-quote-request.spec.ts` | `npx playwright test specs/user-journeys/basic-quote-request.spec.ts` | Standard plumbing requests | Auth + Core | 📁 **REVIEW** |

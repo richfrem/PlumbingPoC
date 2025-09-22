@@ -537,6 +537,10 @@ CREATE POLICY "Enable insert for owners" ON "public"."quote_attachments" FOR INS
 
 
 
+CREATE POLICY "Enable read for admins and owners" ON "public"."requests" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
+
+
+
 CREATE POLICY "Enable read for own invoices" ON "public"."invoices" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
@@ -554,10 +558,6 @@ CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT U
 
 
 CREATE POLICY "Enable read for users and admins" ON "public"."user_profiles" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
-
-
-
-CREATE POLICY "Enable read for users and admins with realtime" ON "public"."requests" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"() OR ("auth"."role"() = 'authenticated'::"text")));
 
 
 

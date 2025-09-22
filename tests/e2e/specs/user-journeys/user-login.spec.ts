@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
 
-test.describe('Authentication', () => {
+test.describe('User Authentication', () => {
   let authPage: AuthPage;
 
   test.beforeEach(async ({ page }) => {

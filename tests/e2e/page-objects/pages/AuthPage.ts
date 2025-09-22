@@ -1,5 +1,10 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env file
+config({ path: path.join(process.cwd(), '.env') });
 
 /**
  * Page object for authentication functionality
@@ -15,6 +20,34 @@ export class AuthPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
+  }
+
+  /**
+   * Get test credentials from environment variables
+   */
+  private getTestCredentials() {
+    const email = process.env.TEST_USER_EMAIL;
+    const password = process.env.TEST_USER_PASSWORD;
+
+    if (!email || !password) {
+      throw new Error('Test credentials not found. Please set TEST_USER_EMAIL and TEST_USER_PASSWORD in .env');
+    }
+
+    return { email, password };
+  }
+
+  /**
+   * Get admin test credentials from environment variables
+   */
+  private getAdminTestCredentials() {
+    const email = process.env.TEST_ADMIN_USER_EMAIL;
+    const password = process.env.TEST_ADMIN_USER_PASSWORD;
+
+    if (!email || !password) {
+      throw new Error('Admin test credentials not found. Please set TEST_ADMIN_USER_EMAIL and TEST_ADMIN_USER_PASSWORD in .env');
+    }
+
+    return { email, password };
   }
 
   /**
@@ -139,5 +172,39 @@ export class AuthPage extends BasePage {
         throw new Error(`Failed to sign in as ${email}`);
       }
     }
+  }
+
+  /**
+   * Sign in as a specific user type (user or admin)
+   * Includes smart checking to avoid unnecessary login if already signed in as correct type
+   */
+  async signInAsUserType(userType: 'user' | 'admin'): Promise<void> {
+    console.log(`Attempting to sign in as ${userType}...`);
+    const { email, password } = userType === 'admin' ? this.getAdminTestCredentials() : this.getTestCredentials();
+
+    const successSelector = userType === 'admin'
+      ? this.page.getByRole('button', { name: 'Command Center' })
+      : this.page.getByRole('button', { name: 'Dashboard' });
+
+    // Check if we are already logged in as the correct user type
+    if (await successSelector.count() > 0) {
+      console.log(`✅ Already logged in as ${userType}. Skipping login flow.`);
+      return;
+    }
+
+    // If not logged in, or logged in as the wrong user, proceed with login
+    await this.page.goto('/');
+
+    const mainSignInButton = this.page.getByRole('button', { name: 'Sign In' });
+    await mainSignInButton.waitFor({ state: 'visible' });
+    await mainSignInButton.click();
+
+    await this.page.getByLabel('Email').fill(email);
+    await this.page.getByLabel('Password').fill(password);
+    await this.page.getByRole('button', { name: 'Sign In with Email' }).click();
+
+    // Wait for the login-specific success element to appear
+    await expect(successSelector).toBeVisible({ timeout: 15000 });
+    console.log(`✅ Successfully signed in as ${userType}.`);
   }
 }

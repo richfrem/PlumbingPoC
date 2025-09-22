@@ -1,6 +1,6 @@
 // packages/frontend/src/features/requests/components/Dashboard.tsx
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
@@ -26,6 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const dataGridRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -79,6 +80,28 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
     return requests;
   }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
+
+  // Add data-request-id attributes to DataGrid rows for integration testing
+  useEffect(() => {
+    console.log('🔍 DataGrid useEffect running:', {
+      hasRef: !!dataGridRef.current,
+      requestCount: filteredRequests.length,
+      viewMode
+    });
+
+    if (dataGridRef.current && filteredRequests.length > 0) {
+      const rows = dataGridRef.current.querySelectorAll('[role="row"]');
+      console.log(`🔍 Found ${rows.length} rows in DataGrid`);
+
+      rows.forEach((row, index) => {
+        if (index > 0 && filteredRequests[index - 1]) { // Skip header row
+          const requestId = filteredRequests[index - 1].id;
+          row.setAttribute('data-request-id', requestId);
+          console.log(`✅ Added data-request-id="${requestId}" to row ${index}`);
+        }
+      });
+    }
+  }, [filteredRequests, viewMode]);
 
   const handleRowClick = (params: any) => {
     const fullRequestData = allRequests.find(r => r.id === params.id);
@@ -272,7 +295,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             />
           </Paper>
           {viewMode === 'table' ? (
-            <Paper sx={{ height: 600, width: '100%' }}>
+            <Paper ref={dataGridRef} sx={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={filteredRequests}
                 columns={columns}
