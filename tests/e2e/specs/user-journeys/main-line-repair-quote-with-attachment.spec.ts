@@ -10,9 +10,11 @@ test.describe('Main Line Repair Quote Request with Attachment', () => {
     const quoteRequestPage = new QuoteRequestPage(page);
 
     // Use the new reusable function
-    const result = await quoteRequestPage.createQuoteRequest('main_line_repair');
+    const requestId = await quoteRequestPage.createQuoteRequest('main_line_repair');
 
-    expect(result).toBe('success');
+    expect(requestId).toBeDefined();
+    expect(typeof requestId).toBe('string');
+    expect(requestId.length).toBeGreaterThan(0);
 
     console.log('✅ Successfully created main line repair quote request with attachment using reusable function!');
   });
