@@ -27,8 +27,11 @@ import { AuthPage } from '../../page-objects/pages/AuthPage';
 async function verifyQuoteCreated(page: any, expectedRequestId: string, description: string, expectedOptions?: any) {
   console.log(`🔍 Verifying quote creation in database: ${description}`);
 
+  // Use frontend base URL from environment (API is served through frontend in dev)
+  const apiBaseUrl = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
+
   // Call local development API to get user's requests
-  const apiResponse = await page.request.get('http://localhost:5173/api/requests/user');
+  const apiResponse = await page.request.get(`${apiBaseUrl}/api/requests/user`);
   expect(apiResponse.ok()).toBeTruthy();
 
   const responseData = await apiResponse.json();
