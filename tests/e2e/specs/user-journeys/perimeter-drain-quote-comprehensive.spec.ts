@@ -23,6 +23,26 @@ import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 
+// API verification helper
+async function verifyQuoteCreated(page: any, expectedRequestId: string, description: string) {
+  console.log(`🔍 Verifying quote creation: ${description}`);
+
+  // Make API call to verify quote exists
+  const apiResponse = await page.request.get('http://localhost:8888/.netlify/functions/api/requests/user');
+  expect(apiResponse.ok()).toBeTruthy();
+
+  const responseData = await apiResponse.json();
+  const userRequests = responseData.requests || [];
+
+  // Find our created request
+  const createdRequest = userRequests.find((req: any) => req.id === expectedRequestId);
+  expect(createdRequest).toBeDefined();
+  expect(createdRequest.category).toBe('perimeter_drains');
+
+  console.log(`✅ Verified quote exists in database: ${expectedRequestId}`);
+  return createdRequest;
+}
+
 test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
 
   test('should create basic perimeter drain quote (no attachments, no address changes)', async ({ page }) => {
@@ -44,14 +64,19 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
     // Create basic quote request (no options)
     const requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains');
 
+    // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
     expect(typeof requestId).toBe('string');
-    expect(requestId.length).toBeGreaterThan(0);
+    expect(requestId.length).toBeGreaterThan(10); // UUID-like length
+    expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
+
+    // Verify it's a newly created request (not a reused ID)
+    expect(requestId.startsWith('test-')).toBeFalsy(); // Not a test stub
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log('✅ Successfully created basic perimeter drain quote!');
+    console.log(`✅ Successfully created basic perimeter drain quote with ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with file attachment only', async ({ page }) => {
@@ -75,14 +100,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       attachmentPath: 'tests/e2e/fixtures/example-images/crawl-space-leak.jpg'
     });
 
+    // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
     expect(typeof requestId).toBe('string');
-    expect(requestId.length).toBeGreaterThan(0);
+    expect(requestId.length).toBeGreaterThan(10); // UUID-like length
+    expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log('✅ Successfully created perimeter drain quote with attachment!');
+    console.log(`✅ Successfully created perimeter drain quote with attachment, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with custom service address only', async ({ page }) => {
@@ -110,14 +137,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       }
     });
 
+    // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
     expect(typeof requestId).toBe('string');
-    expect(requestId.length).toBeGreaterThan(0);
+    expect(requestId.length).toBeGreaterThan(10); // UUID-like length
+    expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log('✅ Successfully created perimeter drain quote with custom service address!');
+    console.log(`✅ Successfully created perimeter drain quote with custom address, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with attachment and custom service address', async ({ page }) => {
@@ -146,14 +175,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       }
     });
 
+    // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
     expect(typeof requestId).toBe('string');
-    expect(requestId.length).toBeGreaterThan(0);
+    expect(requestId.length).toBeGreaterThan(10); // UUID-like length
+    expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log('✅ Successfully created perimeter drain quote with attachment and custom address!');
+    console.log(`✅ Successfully created perimeter drain quote with attachment and address, ID: ${requestId}`);
   });
 
 });
