@@ -23,12 +23,12 @@ import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 
-// API verification helper
-async function verifyQuoteCreated(page: any, expectedRequestId: string, description: string) {
-  console.log(`🔍 Verifying quote creation: ${description}`);
+// API verification helper - calls local development API to verify quote creation
+async function verifyQuoteCreated(page: any, expectedRequestId: string, description: string, expectedOptions?: any) {
+  console.log(`🔍 Verifying quote creation in database: ${description}`);
 
-  // Make API call to verify quote exists
-  const apiResponse = await page.request.get('http://localhost:8888/.netlify/functions/api/requests/user');
+  // Call local development API to get user's requests
+  const apiResponse = await page.request.get('http://localhost:5173/api/requests/user');
   expect(apiResponse.ok()).toBeTruthy();
 
   const responseData = await apiResponse.json();
@@ -39,7 +39,20 @@ async function verifyQuoteCreated(page: any, expectedRequestId: string, descript
   expect(createdRequest).toBeDefined();
   expect(createdRequest.category).toBe('perimeter_drains');
 
-  console.log(`✅ Verified quote exists in database: ${expectedRequestId}`);
+  // Verify additional data if options provided
+  if (expectedOptions?.attachmentPath) {
+    expect(createdRequest.attachments).toBeDefined();
+    expect(createdRequest.attachments.length).toBeGreaterThan(0);
+    console.log('✅ Verified attachment was saved');
+  }
+
+  if (expectedOptions?.serviceLocation) {
+    expect(createdRequest.serviceLocation).toBeDefined();
+    expect(createdRequest.serviceLocation.address).toBe(expectedOptions.serviceLocation.address);
+    console.log('✅ Verified service location was saved');
+  }
+
+  console.log(`✅ Verified quote exists in database with correct data: ${expectedRequestId}`);
   return createdRequest;
 }
 
@@ -70,13 +83,13 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
     expect(requestId.length).toBeGreaterThan(10); // UUID-like length
     expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
-    // Verify it's a newly created request (not a reused ID)
-    expect(requestId.startsWith('test-')).toBeFalsy(); // Not a test stub
+    // API verification: Confirm quote exists in database
+    await verifyQuoteCreated(page, requestId, 'basic perimeter drain quote');
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created basic perimeter drain quote with ID: ${requestId}`);
+    console.log(`✅ Successfully created and verified basic perimeter drain quote with ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with file attachment only', async ({ page }) => {
@@ -106,10 +119,15 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
     expect(requestId.length).toBeGreaterThan(10); // UUID-like length
     expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
+    // API verification: Confirm quote with attachment exists in database
+    await verifyQuoteCreated(page, requestId, 'perimeter drain quote with attachment', {
+      attachmentPath: 'tests/e2e/fixtures/example-images/crawl-space-leak.jpg'
+    });
+
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created perimeter drain quote with attachment, ID: ${requestId}`);
+    console.log(`✅ Successfully created and verified perimeter drain quote with attachment, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with custom service address only', async ({ page }) => {
@@ -143,10 +161,19 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
     expect(requestId.length).toBeGreaterThan(10); // UUID-like length
     expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
+    // API verification: Confirm quote with service location exists in database
+    await verifyQuoteCreated(page, requestId, 'perimeter drain quote with service location', {
+      serviceLocation: {
+        address: '4490 Prospect Lake Rd',
+        city: 'Victoria',
+        postalCode: 'BC V9E 1J3'
+      }
+    });
+
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created perimeter drain quote with custom address, ID: ${requestId}`);
+    console.log(`✅ Successfully created and verified perimeter drain quote with custom address, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with attachment and custom service address', async ({ page }) => {
@@ -181,10 +208,20 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
     expect(requestId.length).toBeGreaterThan(10); // UUID-like length
     expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
 
+    // API verification: Confirm quote with both attachment and location exists in database
+    await verifyQuoteCreated(page, requestId, 'perimeter drain quote with attachment and location', {
+      attachmentPath: 'tests/e2e/fixtures/example-images/crawl-space-leak.jpg',
+      serviceLocation: {
+        address: '5325 Cordova Bay Rd',
+        city: 'Victoria',
+        postalCode: 'BC V8Y 2L3'
+      }
+    });
+
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created perimeter drain quote with attachment and address, ID: ${requestId}`);
+    console.log(`✅ Successfully created and verified perimeter drain quote with attachment and address, ID: ${requestId}`);
   });
 
 });
