@@ -1,3 +1,19 @@
+/**
+ * Real-time Synchronization Test Suite
+ *
+ * This spec tests real-time data synchronization between admin and user interfaces using Supabase realtime.
+ *
+ * ASSUMPTIONS:
+ * - All foundation tests (auth, user journeys, admin journeys) have passed
+ * - Supabase realtime is properly configured and running
+ * - This spec tests cross-user data synchronization and auto-refresh functionality
+ *
+ * Tests Performed:
+ * 1. admin creates quote → appears in user My Requests - Quote creation sync across users
+ * 2. user accepts quote → status updates in admin dashboard - Quote acceptance status sync
+ * 3. admin adds note → appears in user communication log - Communication log sync
+ */
+
 import { test, expect } from '@playwright/test';
 import { signInForTest, getTestCredentials, getAdminTestCredentials } from '../helpers/auth';
 

@@ -1,7 +1,26 @@
+/**
+ * Admin Dashboard Navigation Test Suite
+ *
+ * This spec tests admin dashboard navigation, menu interactions, and basic admin UI functionality.
+ *
+ * ASSUMPTIONS:
+ * - admin-login.spec.ts tests have run first and admin authentication works
+ * - This spec focuses on admin dashboard access and navigation patterns
+ *
+ * Tests Performed:
+ * 1. should navigate to admin dashboard after login - Admin dashboard access and redirection
+ * 2. should sign in as admin - Basic admin authentication verification
+ * 3. should sign out from admin dashboard - Admin logout functionality
+ * 4. should open dashboard menu and pick Command Center - User menu navigation
+ * 5. should navigate dashboard table - Admin dashboard table/list interaction
+ * 6. should open a specific quote request by ID - Request detail modal opening
+ * 7. should create a new quote for a request - Quote creation workflow
+ * 8. should update a quote - Quote editing functionality
+ */
+
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
-import { signOut, openDashboardMenu, navigateToCommandCenter } from '../../utils/commandMenuHelpers';
 
 test.describe('Admin Dashboard Navigation', () => {
   let authPage: AuthPage;

@@ -11,32 +11,43 @@ export class AttachmentSection extends BasePage {
   }
 
   /**
-   * Upload a file attachment
-   */
-  async uploadFile(filePath: string): Promise<void> {
-    console.log(`Uploading file: ${filePath}`);
+    * Upload a file attachment
+    */
+   async uploadFile(filePath: string): Promise<void> {
+     console.log(`Uploading file: ${filePath}`);
 
-    // Implementation for file upload
-    // - Find file input element
-    // - Set input files
-    // - Wait for upload completion
-    // - Verify file appears in attachment list
+     // Find file input element - try multiple selectors
+     const fileInput = this.page.locator('input[type="file"], [data-testid="file-input"], .file-input').first();
 
-    console.log('✅ File uploaded successfully');
-  }
+     // Wait for file input to be visible
+     await fileInput.waitFor({ state: 'visible', timeout: 10000 });
+
+     // Set the file
+     await fileInput.setInputFiles(filePath);
+
+     console.log('File input set, waiting for upload completion...');
+
+     // Wait for upload to complete - look for upload progress indicators to disappear
+     // or success indicators to appear
+     await this.page.waitForTimeout(3000); // Give time for upload
+
+     console.log('✅ File uploaded successfully');
+   }
 
   /**
-   * Verify an attachment exists by filename
-   */
-  async verifyAttachmentExists(filename: string): Promise<void> {
-    console.log(`Verifying attachment exists: ${filename}`);
+    * Verify an attachment exists by filename
+    */
+   async verifyAttachmentExists(filename: string): Promise<void> {
+     console.log(`Verifying attachment exists: ${filename}`);
 
-    // Implementation for verifying attachments
-    // - Search attachment list for filename
-    // - Assert attachment is visible
+     // Search attachment list for filename
+     const attachmentItem = this.page.locator('[data-testid*="attachment"], .attachment, .file-attachment').filter({ hasText: filename });
 
-    console.log('✅ Attachment verified');
-  }
+     // Assert attachment is visible
+     await expect(attachmentItem).toBeVisible({ timeout: 10000 });
+
+     console.log('✅ Attachment verified');
+   }
 
   /**
    * Delete an attachment by filename

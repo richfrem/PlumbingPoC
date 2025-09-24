@@ -1,4 +1,16 @@
-// tests/e2e/specs/user-journeys/main-line-repair-quote-with-attachment.spec.ts
+/**
+ * Main Line Repair Quote Request with Attachment Test Suite
+ *
+ * This spec tests main line repair quote creation with file attachment functionality.
+ *
+ * ASSUMPTIONS:
+ * - user-login.spec.ts tests have run first and user authentication works
+ * - This spec focuses on main line repair category quote creation with image attachments
+ * - FRONTEND AND BACKEND SERVERS MUST BE RUNNING FIRST (run ./startup.sh)
+ * 
+ * Tests Performed:
+ * 1. should create a main line repair quote request with file attachment using reusable function - Main line repair quote creation with attachment
+ */
 
 import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';

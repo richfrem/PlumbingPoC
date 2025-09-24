@@ -1,4 +1,16 @@
-// tests/e2e/specs/user-journeys/other-service-quote-with-attachment.spec.ts
+/**
+ * Other Service Quote Request with Attachment Test Suite
+ *
+ * This spec tests other service quote creation with file attachment and AI follow-up questions.
+ *
+ * ASSUMPTIONS:
+ * - user-login.spec.ts tests have run first and user authentication works
+ * - This spec focuses on other service category with AI-enhanced conversations and attachments
+ * - FRONTEND AND BACKEND SERVERS MUST BE RUNNING FIRST (run ./startup.sh)
+ *
+ * Tests Performed:
+ * 1. should create an other service quote request with file attachment using reusable function - Other service quote creation with AI follow-ups and attachment
+ */
 
 import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';

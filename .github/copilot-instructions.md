@@ -1,4 +1,25 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+
+## CRITICAL COMMUNICATION RULE
+
+**ALWAYS confirm user intent before making code changes.** Never implement solutions without explicit approval. Ask clarifying questions and wait for confirmation before proceeding with any code modifications.
+
+**WHY:** Prevents frustration and ensures collaborative development. Users need time to review, ask questions, and provide feedback on proposed changes.
+
+**HOW TO:**
+1. **Ask clarifying questions** to understand requirements fully
+2. **Confirm assumptions** about implementation details
+3. Present your understanding of the request
+4. Ask for confirmation: "Does this match what you want?"
+5. Wait for explicit approval before implementing
+6. If unsure, ask: "Should I proceed with this approach?"
+
+**WHY THIS REDUCES REWORK:**
+- Uncovers hidden requirements early
+- Prevents incorrect assumptions
+- Avoids implementing the wrong solution
+- Saves time by getting it right the first time
+
 - [ ] Verify that the copilot-instructions.md file in the .github directory is created.
 
 - [ ] Clarify Project Requirements

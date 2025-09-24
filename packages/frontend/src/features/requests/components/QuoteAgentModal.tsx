@@ -484,12 +484,22 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const renderContent = () => {
     switch (status) {
         case 'ASKING_EMERGENCY':
+          const emergencyQuestion = GENERIC_QUESTIONS.find(q => q.key === 'is_emergency');
           return (
             <Box sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>Is this an emergency?</Typography>
+              <Typography variant="h6" sx={{ mb: 2 }}>{emergencyQuestion?.question || 'Is this an emergency?'}</Typography>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                <Button variant="contained" color="error" size="large" onClick={() => handleEmergencyChoice(true)}>Yes, it's an emergency</Button>
-                <Button variant="contained" color="primary" size="large" onClick={() => handleEmergencyChoice(false)}>No</Button>
+                {(emergencyQuestion?.choices || ['Yes, it\'s an emergency', 'No']).map((choice, index) => (
+                  <Button
+                    key={choice}
+                    variant="contained"
+                    color={index === 0 ? "error" : "primary"}
+                    size="large"
+                    onClick={() => handleEmergencyChoice(index === 0)}
+                  >
+                    {choice}
+                  </Button>
+                ))}
               </Box>
             </Box>
           );
@@ -808,7 +818,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   }
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div data-testid="quote-modal" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ background: '#fff', borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 500, width: '95%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1, color: 'grey.500' }}>
           <XIcon size={24} />

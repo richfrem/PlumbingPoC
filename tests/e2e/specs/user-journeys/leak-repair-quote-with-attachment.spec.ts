@@ -1,4 +1,16 @@
-// tests/e2e/specs/user-journeys/leak-repair-quote-with-attachment.spec.ts
+/**
+ * Leak Repair Quote Request with Attachment Test Suite
+ *
+ * This spec tests leak repair quote creation with file attachment functionality.
+ *
+ * ASSUMPTIONS:
+ * - user-login.spec.ts tests have run first and user authentication works
+ * - This spec focuses on leak repair category quote creation with image attachments
+ * - FRONTEND AND BACKEND SERVERS MUST BE RUNNING FIRST (run ./startup.sh)
+ * 
+ * Tests Performed:
+ * 1. should create a leak repair quote request with file attachment using reusable function - Leak repair quote creation with attachment
+ */
 
 import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';

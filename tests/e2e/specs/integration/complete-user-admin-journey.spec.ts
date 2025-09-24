@@ -1,4 +1,15 @@
-// tests/e2e/specs/integration/complete-user-admin-journey.spec.ts
+/**
+ * Complete User-to-Admin Workflow Integration Test Suite
+ *
+ * This spec tests the complete end-to-end workflow from user quote creation to admin quote response.
+ *
+ * ASSUMPTIONS:
+ * - All foundation tests (auth, user journeys, admin journeys) have passed
+ * - This spec tests the integration between user and admin workflows using Page Object building blocks
+ *
+ * Tests Performed:
+ * 1. Full Workflow: User creates request -> Admin quotes -> User views quote - Complete user-admin business process
+ */
 
 import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';

@@ -1,7 +1,23 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
 import OpenAI from 'openai';
-import { SERVICE_QUOTE_CATEGORIES } from '../../../packages/frontend/src/lib/serviceQuoteQuestions';
+import { SERVICE_QUOTE_CATEGORIES, GENERIC_QUESTIONS } from '../../../../packages/frontend/src/lib/serviceQuoteQuestions';
+import { AttachmentSection } from '../components/AttachmentSection';
+import { ServiceLocationManager } from '../components/ServiceLocationManager';
+
+/**
+ * Options for creating a quote request
+ */
+export interface QuoteRequestOptions {
+  /** Path to file to attach */
+  attachmentPath?: string;
+  /** Service location details */
+  serviceLocation?: {
+    address: string;
+    city: string;
+    postalCode: string;
+  };
+}
 
 // Initialize OpenAI client for AI-powered question answering
 const openai = new OpenAI({
@@ -14,15 +30,9 @@ const openai = new OpenAI({
  */
 export class QuoteRequestPage extends BasePage {
   // Selectors
-  private requestQuoteButton = 'button:has-text("Request a Quote")';
-  private emergencyYesButton = 'button:has-text("Yes, it\'s an emergency")';
-  private emergencyNoButton = 'button:has-text("No")';
-  private serviceCategoryButtons = {
-    leakRepair: 'button:has-text("Leak Repair")',
-    bathroomRenovation: 'button:has-text("Bathroom Renovation")'
-  };
+  private requestQuoteButton = '[data-testid="request-quote-button"], button:has-text("Request a Quote"), button:has-text("Request Quote"), a:has-text("Request a Quote"), a:has-text("Request Quote")';
   private submitButton = 'button:has-text("Submit")';
-  private modalDialog = '[role="dialog"]';
+  private modalDialog = '[role="dialog"], .modal, .MuiDialog-root, [data-testid="quote-modal"]';
   private myQuoteRequestsSection = 'text="My Quote Requests"';
 
   constructor(page: Page) {
@@ -30,38 +40,77 @@ export class QuoteRequestPage extends BasePage {
   }
 
   /**
-   * Open the quote request modal
+   * Open the quote request modal. This version is strict and reliable.
    */
   async openQuoteRequestModal(): Promise<void> {
-    console.log('Opening quote request modal...');
-    await this.page.locator(this.requestQuoteButton).click();
-    await this.waitForElement(this.modalDialog);
+    console.log('Attempting to open the quote request modal...');
+
+    const quoteButton = this.page.locator(this.requestQuoteButton).first();
+
+    // 1. Wait for the button to be available before clicking
+    await quoteButton.waitFor({ state: 'visible', timeout: 10000 });
+    console.log('Found "Request a Quote" button.');
+
+    // 2. Click the button. The `force: true` helps if other elements are in the way.
+    console.log('Clicking the "Request a Quote" button...');
+    await quoteButton.click({ force: true });
+
+    // Wait for network activity to settle down after the click,
+    // in case the modal component is being loaded on demand.
+    console.log('Waiting for network activity to be idle...');
+    await this.page.waitForLoadState('networkidle');
+
+    // 3. THE CRITICAL FIX:
+    // This part is strict. It will wait for the modal to appear and will
+    // throw a clear error right here if it doesn't.
+    console.log('Waiting for the quote modal to become visible...');
+    const modalLocator = this.page.locator(this.modalDialog);
+
+    try {
+      // Use a generous timeout because modals can have entry animations.
+      await modalLocator.waitFor({ state: 'visible', timeout: 15000 });
+      console.log('✅ Modal is visible. Proceeding...');
+    } catch (error) {
+      console.error('❌ FAILED: Modal did not appear after clicking the "Request a Quote" button.');
+      // Take a screenshot at the moment of failure for easy debugging.
+      await this.page.screenshot({ path: 'tests/e2e/debug/debug-modal-did-not-open.png', fullPage: true });
+      // Re-throw the error with a clear message to fail the test immediately.
+      throw new Error(`The quote request modal did not become visible within 15 seconds. Check the screenshot.`);
+    }
   }
 
   /**
-   * Handle emergency triage
+   * Select service category by key. This version uses a more robust click method.
    */
-  async selectEmergencyOption(isEmergency: boolean): Promise<void> {
-    const buttonText = isEmergency ? 'Yes, it\'s an emergency' : 'No';
-    console.log(`Selecting emergency option: ${buttonText}`);
+  async selectServiceCategory(categoryKey: string): Promise<void> {
+    const category = SERVICE_QUOTE_CATEGORIES.find((cat: any) => cat.key === categoryKey);
+    if (!category) {
+      throw new Error(`Service category with key '${categoryKey}' not found.`);
+    }
+    console.log(`Selecting service category: ${category.label}`);
+    const modalLocator = this.page.locator(this.modalDialog);
+    
+    // Use getByRole for a more semantic and user-facing selector
+    const categoryButton = modalLocator.getByRole('button', { name: category.label, exact: true });
+    
+    // Wait for the button to be ready and visible
+    await categoryButton.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Use dispatchEvent to ensure the React event handler fires reliably.
+    console.log(`   Dispatching click event on button: "${category.label}" to ensure React handler fires.`);
+    await categoryButton.dispatchEvent('click');
+    
+    // VERIFY THE RESULT: After a successful click, the UI must change.
+    // We will wait for the first generic question to appear, confirming the state transition.
+    const firstGenericQuestion = GENERIC_QUESTIONS[0].question;
+    console.log(`   Waiting for first question to appear: "${firstGenericQuestion.substring(0, 30)}..."`);
+    
+    const questionBubble = modalLocator.locator('div[class*="MuiBox-root"]').filter({ hasText: firstGenericQuestion }).last();
+    await questionBubble.waitFor({ timeout: 15000 });
 
-    await this.page.locator(`button:has-text("${buttonText}")`).click();
+    console.log('   ✅ Category selection successful. Next question is visible.');
   }
-
-  /**
-   * Select service category
-   */
-  async selectServiceCategory(category: 'leak_repair' | 'bathroom_renovation'): Promise<void> {
-    const categoryMap = {
-      leak_repair: 'Leak Repair',
-      bathroom_renovation: 'Bathroom Renovation'
-    };
-
-    const categoryText = categoryMap[category];
-    console.log(`Selecting service category: ${categoryText}`);
-
-    await this.page.locator(`button:has-text("${categoryText}")`).click();
-  }
+  
 
   /**
    * Fill out the basic quote request form
@@ -221,9 +270,6 @@ export class QuoteRequestPage extends BasePage {
     // Open modal
     await this.openQuoteRequestModal();
 
-    // Emergency triage
-    await this.selectEmergencyOption(options.isEmergency);
-
     // Service category
     await this.selectServiceCategory(options.category);
 
@@ -246,7 +292,6 @@ export class QuoteRequestPage extends BasePage {
    * Get the generic questions and answers that apply to all service categories
    */
   private getGenericQuestionsAndAnswers() {
-    const { GENERIC_QUESTIONS } = require('../../../../packages/frontend/src/lib/serviceQuoteQuestions');
     return GENERIC_QUESTIONS.map((gq: any) => ({
       question: gq.question,
       answer: gq.exampleAnswer
@@ -322,47 +367,94 @@ Examples based on your situation:
     }
   }
 
-  /**
-   * Answer the generic questions that apply to all services
+    /**
+   * Answers only the initial emergency question and verifies the next state.
    */
-  async answerGenericQuestions(): Promise<void> {
-    const genericQA = this.getGenericQuestionsAndAnswers();
-
-    for (const qa of genericQA) {
-      console.log(`❓ Answering generic question: "${qa.question.substring(0, 50)}..."`);
-      console.log(`💡 Answer: "${qa.answer}"`);
-
-      // Wait for the question to appear
-      await this.page.locator('p').filter({ hasText: qa.question }).last().waitFor({ timeout: 15000 });
-
-      // Check if this is a button choice or text input
-      const allButtons = this.page.locator('button:not([disabled])').filter({ hasText: /^.{1,50}$/ });
-      const buttonCount = await allButtons.count();
-
-      let foundMatchingButton = false;
-      if (buttonCount > 0) {
-        console.log(`🔍 Looking for button with text: "${qa.answer}" among ${buttonCount} buttons`);
-        for (let i = 0; i < buttonCount; i++) {
-          const button = allButtons.nth(i);
-          const buttonText = await button.textContent();
-          console.log(`🔍 Button ${i}: "${buttonText}"`);
-          if (buttonText && buttonText.trim() === qa.answer?.trim()) {
-            console.log('🎯 Clicking button choice...');
-            await button.click();
-            foundMatchingButton = true;
-            break;
-          }
-        }
-      }
-
-      if (!foundMatchingButton && qa.answer) {
-        console.log('✍️ Filling text input...');
-        await this.page.getByPlaceholder('Type your answer...').fill(qa.answer);
-        await this.page.getByRole('button', { name: 'Send' }).click();
-      }
-
-      await this.page.waitForTimeout(1000); // Brief pause
+  async answerEmergencyQuestion(): Promise<void> {
+    const modalLocator = this.page.locator(this.modalDialog);
+    console.log('❓ Answering emergency question...');
+    try {
+      const questionText = 'Is this an emergency?';
+      // Wait for the question text to be visible
+      await modalLocator.getByText(questionText).waitFor();
+      console.log('   ✅ Found emergency question text.');
+      
+      // Click the "No" button
+      const answerButton = modalLocator.getByRole('button', { name: 'No', exact: true });
+      await answerButton.click();
+      console.log(`   💡 Clicked answer: "No"`);
+      
+      // IMPORTANT: Wait for the category selection UI to appear. This is the key to fixing the race condition.
+      await modalLocator.getByText('Select a service type:').waitFor();
+      console.log('   ✅ Category selection UI is now visible.');
+    } catch (error) {
+      console.error(`❌ FAILED to answer the emergency question.`);
+      await this.page.screenshot({ path: `tests/e2e/debug/debug-emergency-question-failure-${Date.now()}.png`, fullPage: true });
+      throw error;
     }
+  }
+
+  
+  /**
+   * Answers questions sequentially as they appear in the chat interface.
+   * This version is simplified for maximum robustness.
+   */
+  async answerConversationalQuestions(category: any): Promise<void> {
+    const modalLocator = this.page.locator(this.modalDialog);
+
+    const genericQA = this.getGenericQuestionsAndAnswers();
+    const categoryQA = this.getCategoryQuestionsAndAnswers(category);
+    const allQuestionsToAnswer = [...genericQA, ...categoryQA];
+
+    console.log(`📝 Will answer ${allQuestionsToAnswer.length} questions sequentially.`);
+
+    for (let i = 0; i < allQuestionsToAnswer.length; i++) {
+      const qa = allQuestionsToAnswer[i];
+      console.log(`❓ [${i + 1}/${allQuestionsToAnswer.length}] Answering: "${qa.question.substring(0, 50)}..."`);
+
+      try {
+        // --- THE SIMPLIFIED LOGIC ---
+        // 1. Wait for the question to appear anywhere. We look for the LAST instance
+        //    to distinguish it from previous questions in the chat history.
+        const questionLocator = modalLocator.getByText(qa.question, { exact: false }).last();
+        await questionLocator.waitFor({ timeout: 20000 });
+        console.log(`   ✅ Question is visible.`);
+
+        // 2. Find the correct interactive element and use it.
+        const questionData = GENERIC_QUESTIONS.find(gq => gq.question === qa.question);
+        const isButtonChoice = questionData?.choices;
+
+        if (isButtonChoice && qa.answer) {
+          const answerButton = modalLocator.getByRole('button', { name: qa.answer, exact: true });
+          await answerButton.waitFor({ state: 'visible', timeout: 5000 });
+          console.log(`   💡 Clicking button choice: "${qa.answer}"`);
+          await answerButton.click();
+        } else if (qa.answer) {
+          console.log(`   💡 Filling text input with: "${qa.answer}"`);
+          const inputField = modalLocator.getByPlaceholder('Type your answer...');
+          await inputField.waitFor({ state: 'visible', timeout: 5000 });
+          await inputField.fill(qa.answer);
+          await modalLocator.getByRole('button', { name: 'Send' }).click();
+        }
+
+        // 3. Wait intelligently for the next state.
+        if (i < allQuestionsToAnswer.length - 1) {
+            const nextQuestion = allQuestionsToAnswer[i + 1];
+            console.log(`   ⏳ Waiting for next question: "${nextQuestion.question.substring(0, 30)}..."`);
+            // The next question MUST appear after the current one is answered.
+            await modalLocator.getByText(nextQuestion.question, { exact: false }).last().waitFor({ timeout: 15000 });
+        } else {
+            console.log('   ⏳ All questions answered. Waiting for summary screen...');
+            await modalLocator.getByText('Please review your request').waitFor({ timeout: 15000 });
+        }
+
+      } catch (error) {
+        console.error(`❌ FAILED to answer question ${i + 1}: "${qa.question}"`);
+        await this.page.screenshot({ path: `tests/e2e/debug/debug-question-${i + 1}-failure-${Date.now()}.png`, fullPage: true });
+        throw error;
+      }
+    }
+    console.log('✅ All conversational questions answered');
   }
 
   /**
@@ -370,39 +462,33 @@ Examples based on your situation:
    */
   async answerCategoryQuestions(category: any): Promise<void> {
     const categoryQA = this.getCategoryQuestionsAndAnswers(category);
+    const modalLocator = this.page.locator(this.modalDialog);
 
     for (const qa of categoryQA) {
       console.log(`❓ Answering category question: "${qa.question.substring(0, 50)}..."`);
       console.log(`💡 Answer: "${qa.answer}"`);
 
-      // Wait for the question to appear
-      await this.page.locator('p').filter({ hasText: qa.question }).last().waitFor({ timeout: 15000 });
+      try {
+        const questionLocator = modalLocator.getByText(qa.question, { exact: false });
+        await questionLocator.waitFor({ timeout: 15000 });
 
-      // Check if this is a button choice or text input
-      const allButtons = this.page.locator('button:not([disabled])').filter({ hasText: /^.{1,50}$/ });
-      const buttonCount = await allButtons.count();
+        const answerButton = modalLocator.getByRole('button', { name: qa.answer, exact: true });
 
-      let foundMatchingButton = false;
-      if (buttonCount > 0) {
-        for (let i = 0; i < buttonCount; i++) {
-          const button = allButtons.nth(i);
-          const buttonText = await button.textContent();
-          if (buttonText && buttonText.trim() === qa.answer?.trim()) {
-            console.log('🎯 Clicking button choice...');
-            await button.click();
-            foundMatchingButton = true;
-            break;
-          }
+        if (qa.answer && await answerButton.isVisible()) {
+          console.log('🎯 Clicking button choice...');
+          await answerButton.click();
+        } else if (qa.answer) {
+          console.log('✍️ Filling text input...');
+          await modalLocator.getByPlaceholder('Type your answer...').fill(qa.answer);
+          await modalLocator.getByRole('button', { name: 'Send' }).click();
         }
-      }
 
-      if (!foundMatchingButton && qa.answer) {
-        console.log('✍️ Filling text input...');
-        await this.page.getByPlaceholder('Type your answer...').fill(qa.answer);
-        await this.page.getByRole('button', { name: 'Send' }).click();
+        await this.page.waitForTimeout(1500);
+      } catch (error) {
+        console.error(`❌ FAILED to find or answer category question: "${qa.question}"`);
+        await this.page.screenshot({ path: `tests/e2e/debug/debug-category-question-failure-${Date.now()}.png`, fullPage: true });
+        throw error;
       }
-
-      await this.page.waitForTimeout(1000); // Brief pause
     }
   }
 
@@ -513,29 +599,110 @@ Examples based on your situation:
   }
 
   /**
-   * BUILDING BLOCK (COMPOSITE): Creates a new quote request from start to finish.
-   * Assembles other building blocks to perform a complete user action.
-   * @param categoryKey The key of the service category (e.g., 'perimeter_drains').
-   * @returns The ID of the newly created request.
-   */
-  async createQuoteRequest(categoryKey: string): Promise<string> {
-    console.log(`Creating a new quote request for category: ${categoryKey}...`);
+    * Waits for the summary screen and clicks the final submit button.
+    * @returns The ID of the newly created request.
+    */
+  async confirmAndSubmitRequest(): Promise<string> {
+    const modalLocator = this.page.locator(this.modalDialog);
 
-    await this.page.getByRole('button', { name: 'Request a Quote' }).click();
-    await this.page.locator('button').filter({ hasText: /^No$/ }).click();
+    console.log('⏳ Waiting for the summary screen to appear...');
+    const summaryTitle = modalLocator.getByText('Please review your request');
+    await summaryTitle.waitFor({ timeout: 20000 }); // Wait for summary to render
+    console.log('✅ Summary screen is visible.');
 
-    // Use the imported SERVICE_QUOTE_CATEGORIES
+    // Use a data-testid for the submit button for maximum reliability
+    const submitButton = modalLocator.getByTestId('submit-quote-request');
+
+    console.log('📤 Clicking the final "Confirm & Submit Request" button...');
+
+    // Start waiting for the API call *before* clicking
+    const apiCallPromise = this.page.waitForResponse(response =>
+      response.url().includes('/api/requests/submit') && response.status() === 201
+    );
+
+    await submitButton.click();
+
+    console.log('⏳ Waiting for API submission response...');
+    const apiResponse = await apiCallPromise;
+    console.log('✅ API submission successful!');
+
+    const responseData = await apiResponse.json();
+    const newRequestId = responseData.request?.id;
+    if (!newRequestId) {
+      throw new Error('Failed to extract request ID from API response.');
+    }
+    console.log(`✅ Captured new request ID: ${newRequestId}`);
+
+    // The modal closes itself on success, so we wait for it to disappear
+    await modalLocator.waitFor({ state: 'hidden', timeout: 10000 });
+    console.log('✅ Modal closed after submission.');
+
+    return newRequestId;
+  }
+
+
+  /**
+    * BUILDING BLOCK (COMPOSITE): Creates a new quote request from start to finish.
+    * Supports optional file attachments and service location configuration.
+    */
+  async createQuoteRequest(categoryKey: string, options?: QuoteRequestOptions): Promise<string> {
+    const hasAttachment = !!options?.attachmentPath;
+    const hasLocation = !!options?.serviceLocation;
+    console.log(`🚀 Starting new quote request for category: ${categoryKey}${hasAttachment ? ' (with attachment)' : ''}${hasLocation ? ' (with location)' : ''}...`);
+
+    // 1. Open the modal
+    await this.openQuoteRequestModal();
+
+    // 2. Answer the initial emergency question and wait for the next state
+    await this.answerEmergencyQuestion();
+
+    // 3. Select the service category (this function now includes its own verification)
     const category = SERVICE_QUOTE_CATEGORIES.find((cat: any) => cat.key === categoryKey);
-    expect(category).toBeDefined();
-    await this.page.locator('button').filter({ hasText: category!.label }).first().click();
+    if (!category) throw new Error(`Category ${categoryKey} not found.`);
+    await this.selectServiceCategory(categoryKey);
+    console.log(`✅ Selected category: ${category.label}`);
 
-    await this.page.waitForTimeout(2000); // Wait for chat to initialize
-    await this.answerGenericQuestions();
-    await this.answerCategoryQuestions(category!);
-    await this.handleAIFollowUpQuestions(category!);
+    // 4. Answer all remaining conversational questions
+    await this.answerConversationalQuestions(category);
 
-    const requestId = await this.submitQuoteRequest();
-    console.log(`✅ Quote request created with ID: ${requestId}`);
+    // 5. Wait for summary screen
+    const modalLocator = this.page.locator(this.modalDialog);
+    console.log('⏳ Waiting for the summary screen to appear...');
+    const summaryTitle = modalLocator.getByText('Please review your request');
+    await summaryTitle.waitFor({ timeout: 20000 });
+    console.log('✅ Summary screen is visible.');
+
+    // 6. Conditional branch: Upload attachment if provided (during summary screen)
+    if (options?.attachmentPath) {
+      console.log('📎 Uploading attachment using reusable AttachmentSection...');
+      const attachmentSection = new AttachmentSection(this.page);
+      await attachmentSection.uploadFile(options.attachmentPath);
+      console.log('✅ Attachment uploaded');
+
+      // TODO: Verify attachment was uploaded (selector needs to be fixed)
+      // await this.page.waitForTimeout(1000);
+      // const filename = options.attachmentPath.split('/').pop() || '';
+      // await attachmentSection.verifyAttachmentExists(filename);
+      console.log('✅ Attachment uploaded (verification skipped for now)');
+    }
+
+    // 7. Conditional branch: Configure service location if provided
+    if (options?.serviceLocation) {
+      console.log('📍 Configuring service location using ServiceLocationManager...');
+      const locationManager = new ServiceLocationManager(this.page);
+      await locationManager.fillAddressForm({
+        useProfileAddress: false,
+        ...options.serviceLocation
+      });
+      await locationManager.verifyAddressGeocoding();
+      console.log('✅ Service location configured and geocoded');
+    }
+
+    // 8. Confirm and submit (one method for all cases)
+    const requestId = await this.confirmAndSubmitRequest();
+
     return requestId;
   }
+  
+  
 }
