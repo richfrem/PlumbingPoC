@@ -8,6 +8,12 @@
 - Clean options object API for extensibility
 - Reusable component architecture (AttachmentSection, ServiceLocationManager)
 - Communication guidelines established
+- Comprehensive test spec with 4 scenarios (perimeter-drain-quote-comprehensive.spec.ts)
+
+⚠️ **Known Issues:**
+- Service location tests timeout at final submission step
+- ServiceLocationManager component methods are called but submit button may not work after location changes
+- Attachment verification selector needs fixing
 
 ## Where We Left Off
 
@@ -19,53 +25,26 @@ Current test: `perimeter-drain-quote-with-attachment.spec.ts` (attachment only)
 
 ## Next Steps
 
-### 1. **Immediate Next Test: Combined Features**
-Create a new E2E test that exercises **both attachment AND service location**:
+### 1. **High Priority: Fix Service Location Submission Issue**
+**Problem:** Tests with service location timeout at final submission step
+**Root Cause:** Submit button/API call not working after location form changes
+**Solution:** Debug why `confirmAndSubmitRequest()` fails when location is modified
 
-```typescript
-// File: tests/e2e/specs/user-journeys/perimeter-drain-quote-with-attachment-and-location.spec.ts
-test('should create perimeter drain quote with attachment and custom service location', async ({ page }) => {
-  // Sign in
-  await authPage.signInAsUserType('user');
+### 2. **Medium Priority: Complete ServiceLocationManager Implementation**
+The component skeleton exists but methods need proper implementation:
+- `fillAddressForm()` - Fill address fields with proper selectors
+- `verifyAddressGeocoding()` - Verify geocoding API responses
+- `toggleAddressMode()` - Switch between profile/custom address modes
 
-  // Create quote with both options
-  const requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains', {
-    attachmentPath: 'tests/e2e/fixtures/example-images/crawl-space-leak.jpg',
-    serviceLocation: {
-      address: '123 Main Street',
-      city: 'Vancouver',
-      postalCode: 'V6B 1A1'
-    }
-  });
+### 3. **Medium Priority: Fix Attachment Verification**
+`AttachmentSection.verifyAttachmentExists()` selector doesn't find uploaded files in UI
 
-  // Verify request created
-  expect(requestId).toBeDefined();
-  expect(typeof requestId).toBe('string');
-
-  // Sign out
-  await authPage.signOut();
-});
-```
-
-### 2. **Service Location Component Implementation**
-Complete the `ServiceLocationManager` component methods:
-- `fillAddressForm()` - Fill address fields
-- `verifyAddressGeocoding()` - Verify geocoding works
-- `toggleAddressMode()` - Switch between profile/custom address
-
-### 3. **Attachment Verification Fix**
-Fix the `AttachmentSection.verifyAttachmentExists()` method to properly detect uploaded files in the UI.
-
-### 4. **Additional Test Scenarios**
-- Quote with service location only (no attachment)
-- Different service categories with attachments
+### 4. **Low Priority: Additional Test Scenarios**
+Once core functionality works:
+- Different service categories with various option combinations
 - Error handling (invalid addresses, failed geocoding)
 - Profile address vs custom address scenarios
-
-### 5. **Integration Testing**
-- Test the full user journey from landing page to quote creation
-- Verify data persistence in the backend
-- Test email notifications and follow-ups
+- Edge cases and validation testing
 
 ## Implementation Notes
 

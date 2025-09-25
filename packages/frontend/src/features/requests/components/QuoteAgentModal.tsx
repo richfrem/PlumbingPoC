@@ -142,6 +142,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const [useProfileAddress, setUseProfileAddress] = useState(true);
   const [serviceAddress, setServiceAddress] = useState('');
   const [serviceCity, setServiceCity] = useState('');
+  const [serviceProvince, setServiceProvince] = useState('BC');
   const [servicePostalCode, setServicePostalCode] = useState('');
   const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -190,6 +191,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     setUseProfileAddress(true);
     setServiceAddress("");
     setServiceCity("");
+    setServiceProvince("BC");
     setServicePostalCode("");
     setServiceCoordinates(null);
     setGeocodingStatus('idle');
@@ -426,10 +428,10 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
             }
             console.log("DEBUG: Using DIFFERENT service address for submission.");
             serviceAddressData = {
-                service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+                service_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}`,
                 latitude: serviceCoordinates.lat,
                 longitude: serviceCoordinates.lng,
-                geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
+                geocoded_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`
             };
         }
 
@@ -705,21 +707,33 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                        mode="create"
                        isAdmin={false}
                        onDataChange={(addressData) => {
+                         console.log('QuoteAgentModal: Received address data change:', addressData);
                          // Update the parent component's state with address data
                          if (addressData.service_address) {
+                           console.log('QuoteAgentModal: Parsing service address:', addressData.service_address);
                            // Parse the address back into components for form submission
+                           // Format: "street, city, province postalCode"
                            const parts = addressData.service_address.split(', ');
-                           if (parts.length >= 2) {
+                           if (parts.length >= 3) {
                              setServiceAddress(parts[0]);
-                             const cityPostal = parts[1].split(' ');
-                             if (cityPostal.length >= 2) {
-                               setServiceCity(cityPostal.slice(0, -2).join(' '));
-                               setServicePostalCode(cityPostal.slice(-2).join(' '));
+                             setServiceCity(parts[1]);
+                             const provinceAndPostal = parts[2].split(' ');
+                             if (provinceAndPostal.length >= 2) {
+                               setServiceProvince(provinceAndPostal[0]);
+                               setServicePostalCode(provinceAndPostal.slice(1).join(' '));
                              }
                            }
                            setServiceCoordinates(addressData.latitude && addressData.longitude ?
                              { lat: addressData.latitude, lng: addressData.longitude } : null);
+                           console.log('QuoteAgentModal: Address data updated');
+                         } else {
+                           // If no service_address provided, this might be initial state or clearing
+                           console.log('QuoteAgentModal: No service_address in data change');
                          }
+                       }}
+                       onModeChange={(useProfile) => {
+                         console.log('QuoteAgentModal: Address mode changed to:', useProfile ? 'profile' : 'custom');
+                         setUseProfileAddress(useProfile);
                        }}
                      />
 

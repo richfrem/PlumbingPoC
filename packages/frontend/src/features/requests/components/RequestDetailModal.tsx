@@ -342,6 +342,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
                 initialAddress={request.service_address}
                 isAdmin={isAdmin}
                 onSave={handleAddressUpdate}
+                onModeChange={() => {}} // Not needed in view mode
                 isUpdating={updateAddressMutation.isPending}
               />
 

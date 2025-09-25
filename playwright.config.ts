@@ -11,7 +11,7 @@ const isCI = process.env.CI === 'true';
 export default defineConfig({
   testDir: './tests/e2e', // Only run E2E tests, not unit tests
   testMatch: '**/*.spec.ts', // Only run .spec.ts files
-  fullyParallel: !isCI,
+  fullyParallel: false, // Run tests sequentially to avoid state pollution
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,

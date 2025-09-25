@@ -27,21 +27,9 @@ export const GENERIC_QUESTIONS: GenericQuestion[] = [
     exampleAnswer: 'Yes' // Button selection
   },
   {
-    key: 'problem_description',
-    question: 'Please provide details about the issue you need help with.',
-    textarea: true,
-    exampleAnswer: 'Kitchen sink leak under the cabinet' // Text input
-  },
-  {
     key: 'preferred_timing',
     question: 'When would you like this service to be scheduled?',
     exampleAnswer: 'This week' // Text input
-  },
-  {
-    key: 'additional_notes',
-    question: 'Any additional information or special instructions?',
-    textarea: true,
-    exampleAnswer: 'Access available during business hours' // Text input
   },
 ];
 

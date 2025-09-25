@@ -17,16 +17,58 @@ export class ServiceLocationManager extends BasePage {
     useProfileAddress: boolean;
     address?: string;
     city?: string;
+    province?: string;
     postalCode?: string;
   }): Promise<void> {
     console.log('Filling service address form...');
 
-    // Implementation for address form filling
-    // - Choose profile address or custom address
-    // - Fill address fields if custom
-    // - Handle geocoding if needed
+    if (addressData.useProfileAddress) {
+      // Click "Use My Address" button
+      console.log('Using profile address...');
+      await this.page.getByRole('button', { name: 'Use My Address' }).click();
+      console.log('✅ Profile address selected');
+    } else {
+      // Click "Different Address" button to show form
+      console.log('Using different address...');
+      const differentAddressButton = this.page.getByRole('button', { name: 'Different Address' });
+      await differentAddressButton.waitFor({ state: 'visible' });
+      await differentAddressButton.click();
 
-    console.log('✅ Address form filled');
+      // Wait for form fields to appear
+      const streetField = this.page.getByLabel('Street Address');
+      await streetField.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Fill address fields
+      if (addressData.address) {
+        console.log(`Filling street address: ${addressData.address}`);
+        await streetField.fill(addressData.address);
+        const streetValue = await streetField.inputValue();
+        console.log(`Street field value: "${streetValue}"`);
+      }
+      if (addressData.city) {
+        console.log(`Filling city: ${addressData.city}`);
+        const cityField = this.page.getByLabel('City');
+        await cityField.fill(addressData.city);
+        const cityValue = await cityField.inputValue();
+        console.log(`City field value: "${cityValue}"`);
+      }
+      if (addressData.province) {
+        console.log(`Filling province: ${addressData.province}`);
+        const provinceField = this.page.getByLabel('Province');
+        await provinceField.fill(addressData.province);
+        const provinceValue = await provinceField.inputValue();
+        console.log(`Province field value: "${provinceValue}"`);
+      }
+      if (addressData.postalCode) {
+        console.log(`Filling postal code: ${addressData.postalCode}`);
+        const postalField = this.page.getByLabel('Postal Code');
+        await postalField.fill(addressData.postalCode);
+        const postalValue = await postalField.inputValue();
+        console.log(`Postal code field value: "${postalValue}"`);
+      }
+
+      console.log('✅ Address form fields filled');
+    }
   }
 
   /**
@@ -35,10 +77,14 @@ export class ServiceLocationManager extends BasePage {
   async verifyAddressGeocoding(): Promise<void> {
     console.log('Verifying address geocoding...');
 
-    // Implementation for geocoding verification
-    // - Check if geocoding is successful
-    // - Verify coordinates are set
-    // - Assert validation messages
+    // Click "Verify Address" button
+    const verifyButton = this.page.getByRole('button', { name: 'Verify Address' });
+    await verifyButton.waitFor({ state: 'visible' });
+    await verifyButton.click();
+
+    // Wait for geocoding success message
+    const successMessage = this.page.getByText('✓ Address verified and located on map');
+    await successMessage.waitFor({ state: 'visible', timeout: 10000 });
 
     console.log('✅ Address geocoding verified');
   }
