@@ -84,6 +84,13 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   });
   const request = requestArray?.[0];
   const attachments = request?.quote_attachments || initialAttachments || [];
+
+  // Clear signed URLs when requestId changes to prevent showing old attachments
+  useEffect(() => {
+    setSignedUrls({});
+    setPendingImageUrls({});
+    setError(null);
+  }, [requestId]);
   
   console.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
@@ -92,6 +99,8 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     requestLoading,
     requestError,
     hasRealTimeData: !!request,
+    signedUrlsCount: Object.keys(signedUrls).length,
+    pendingUrlsCount: Object.keys(pendingImageUrls).length,
     timestamp: new Date().toISOString()
   });
 
