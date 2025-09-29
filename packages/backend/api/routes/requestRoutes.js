@@ -1,4 +1,32 @@
 // packages/backend/api/routes/requestRoutes.js
+//
+// REQUEST ROUTES - Express Router for Plumbing Quote Request Management
+//
+// This file defines all HTTP routes for the plumbing quote request system.
+// Routes are organized into logical sections and mounted at '/api/requests' in server.js.
+//
+// ARCHITECTURE:
+// - Express Router handles route definitions and middleware
+// - Routes are grouped by functionality (quote intake, admin operations, etc.)
+// - Middleware: authentication, admin checks, input validation
+// - Controllers handle business logic, this file only defines endpoints
+//
+// DEPLOYMENT:
+// - In development: runs as Express server at http://localhost:3000/api/requests/*
+// - In production: deployed as Netlify Function, routes via /.netlify/functions/api/*
+// - Netlify redirects /api/* to the function with path parameters
+//
+// MIDDLEWARE CHAIN:
+// 1. authenticate - verifies JWT token and attaches user to req.user
+// 2. isAdmin - checks if user has admin role (for admin-only routes)
+// 3. validate(schema) - validates request body against Joi schema
+// 4. controller - handles the actual business logic
+//
+// SECURITY:
+// - All routes require authentication
+// - Admin routes have additional isAdmin middleware
+// - Input validation prevents malformed requests
+// - File uploads use memory storage (no disk writes in serverless)
 
 import express from 'express';
 import multer from 'multer';
