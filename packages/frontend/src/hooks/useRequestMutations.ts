@@ -325,8 +325,8 @@ export function useSubmitQuoteRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: QuoteRequest) => {
-      const response = await apiClient.post('/requests', request);
+    mutationFn: async (payload: any) => {
+      const response = await apiClient.post('/requests/submit', payload);
       return response.data;
     },
     onSuccess: async () => {
