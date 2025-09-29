@@ -1,3 +1,57 @@
+/**
+ * =============================================================================
+ * ContactSection.tsx - Contact Information Component
+ * =============================================================================
+ *
+ * WHAT IS THIS COMPONENT?
+ * -----------------------
+ * The ContactSection component provides all contact information for AquaFlow
+ * Plumbing, including phone numbers, service areas, email, and business hours.
+ * It also prominently features emergency service availability.
+ *
+ * COMPONENT FEATURES:
+ * -------------------
+ * - Contact information grid with icons
+ * - Emergency service call-to-action
+ * - Direct phone number links (tel: protocol)
+ * - Responsive layout (2-column on desktop, stacked on mobile)
+ * - Dark theme matching footer styling
+ *
+ * CONTACT INFORMATION DISPLAYED:
+ * -----------------------------
+ * - Phone: (555) 123-4567 (call or text)
+ * - Service Area: Greater Metro Area
+ * - Email: info@aquaflowplumbing.com
+ * - Business Hours: 24/7 Emergency Service
+ *
+ * LAYOUT STRUCTURE:
+ * -----------------
+ * - Left side (2/3 width): Main contact info grid
+ * - Right side (1/3 width): Emergency service callout box
+ * - Emergency box: Red CTA button with phone icon
+ *
+ * RESPONSIVE BEHAVIOR:
+ * -------------------
+ * - Desktop: 3-column grid (2 for contact info, 1 for emergency)
+ * - Tablet: 2-column contact grid, stacked emergency box
+ * - Mobile: Single column stack
+ *
+ * ICONS USED:
+ * -----------
+ * - Phone: Phone number contact
+ * - MapPin: Service area coverage
+ * - Mail: Email contact
+ * - Clock: Business hours
+ *
+ * STYLING:
+ * --------
+ * - Dark background (bg-gray-900) with white text
+ * - Blue accent color for icons and backgrounds
+ * - Red emergency button for high visibility
+ * - Rounded corners and proper spacing
+ * - Hover effects on interactive elements
+ */
+
 import React from 'react';
 import { Phone, MapPin, Mail, Clock } from 'lucide-react';
 

@@ -1,5 +1,83 @@
 // packages/frontend/src/hooks/useSupabaseRealtimeV3.ts
 
+/**
+ * =============================================================================
+ * useSupabaseRealtimeV3.ts - Advanced Supabase Real-Time Hook
+ * =============================================================================
+ *
+ * WHAT IS THIS HOOK?
+ * ------------------
+ * This is the core real-time synchronization hook that establishes WebSocket
+ * connections to Supabase for live database updates. It intelligently manages
+ * multiple table subscriptions and triggers React Query cache invalidation
+ * when database changes occur.
+ *
+ * WHY "V3"?
+ * ---------
+ * This is the third iteration of the real-time system, featuring:
+ * - Advanced table configuration with filtering
+ * - Smart query invalidation targeting
+ * - Comprehensive error handling and logging
+ * - Performance optimizations
+ * - Type-safe configuration
+ *
+ * HOW IT WORKS:
+ * -------------
+ * 1. SUBSCRIPTION: Creates WebSocket channels for specified tables
+ * 2. LISTENING: Monitors INSERT/UPDATE/DELETE events via PostgreSQL changes
+ * 3. FILTERING: Applies row-level or table-level filters if specified
+ * 4. INVALIDATION: Triggers React Query cache updates for affected data
+ * 5. CLEANUP: Properly unsubscribes when component unmounts
+ *
+ * KEY FEATURES:
+ * -------------
+ * - Multi-table subscriptions in single hook
+ * - Row-level filtering (e.g., user-specific data)
+ * - Event-specific listening (INSERT, UPDATE, DELETE)
+ * - Smart query invalidation (targets specific cache keys)
+ * - Connection status monitoring
+ * - Automatic cleanup and error recovery
+ *
+ * CONFIGURATION:
+ * --------------
+ * Table configs must be memoized with useMemo() to prevent re-subscription:
+ *
+ * const tableConfigs = useMemo(() => [
+ *   {
+ *     table: 'requests',
+ *     events: ['INSERT', 'UPDATE'],
+ *     invalidateQueries: [['requests'], ['requests', userId]]
+ *   }
+ * ], [userId]);
+ *
+ * REAL-TIME ARCHITECTURE:
+ * -----------------------
+ * Component → useTableQuery → useSupabaseRealtimeV3 → Supabase WebSocket
+ *     ↓              ↓                    ↓                      ↓
+ *   Data Display  Cache Mgmt      Event Listening      DB Changes
+ *   Updates       Invalidation    Query Targeting      Live Sync
+ *
+ * PERFORMANCE:
+ * ------------
+ * - Minimal subscriptions (only specified tables/events)
+ * - Targeted invalidation (only affected queries)
+ * - Connection pooling and reuse
+ * - Automatic cleanup prevents memory leaks
+ *
+ * ERROR HANDLING:
+ * ---------------
+ * - Channel connection errors logged and handled gracefully
+ * - Subscription timeouts managed automatically
+ * - Continues operation even if real-time fails
+ * - Comprehensive logging for debugging
+ *
+ * DEPENDENCIES:
+ * -------------
+ * - Supabase Client: For WebSocket connections
+ * - React Query: For cache invalidation
+ * - Custom table configs: Provided by calling hooks
+ */
+
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
@@ -21,24 +99,32 @@ interface RealtimeOptions {
  * Advanced Supabase Realtime hook following official patterns
  * Handles specific table changes with targeted query invalidation
  *
- * @param tableConfigs - Array of table configurations
+ * ⚠️ IMPORTANT: The `tableConfigs` array MUST be memoized using `useMemo` in the calling component
+ * to prevent re-subscribing on every render. See example below.
+ *
+ * @param tableConfigs - Array of table configurations (MUST be memoized with useMemo)
  * @param options - Hook options
  *
  * @example
- * const tableConfigs = [
- *   {
- *     table: 'requests',
- *     events: ['INSERT', 'UPDATE', 'DELETE'],
- *     invalidateQueries: [['requests'], ['requests', userId]]
- *   },
- *   {
- *     table: 'quotes',
- *     events: ['INSERT', 'UPDATE'],
- *     invalidateQueries: [['quotes'], ['requests']] // Quotes affect requests
- *   }
- * ];
+ * import { useMemo } from 'react';
  *
- * useSupabaseRealtimeV3(tableConfigs, { enabled: true });
+ * function MyComponent() {
+ *   const tableConfigs = useMemo(() => [
+ *     {
+ *       table: 'requests',
+ *       events: ['INSERT', 'UPDATE', 'DELETE'],
+ *       invalidateQueries: [['requests'], ['requests', userId]]
+ *     },
+ *     {
+ *       table: 'quotes',
+ *       events: ['INSERT', 'UPDATE'],
+ *       invalidateQueries: [['quotes'], ['requests']] // Quotes affect requests
+ *     }
+ *   ], [userId]); // Only re-create if dependencies change
+ *
+ *   useSupabaseRealtimeV3(tableConfigs, { enabled: true });
+ *   // ...
+ * }
  */
 export function useSupabaseRealtimeV3(
   tableConfigs: TableConfig[],
@@ -53,10 +139,15 @@ export function useSupabaseRealtimeV3(
       return;
     }
 
+    // CRITICAL: tableConfigs must be memoized in the calling component using useMemo
+    // to prevent re-subscribing on every render. Example:
+    // const tableConfigs = useMemo(() => [{ table: 'requests', ... }], [dependencies]);
+
     console.log('🔌 Setting up Supabase Realtime v3 for tables:', tableConfigs.map(c => c.table));
 
-    // Create a unique channel name
-    const channelName = `realtime-v3-${Date.now()}`;
+    // Create a descriptive channel name for better debugging
+    const tables = tableConfigs.map(c => c.table).join('-');
+    const channelName = `realtime-v3-${tables}`;
     const channel = supabase.channel(channelName);
 
     // Set up listeners for each table configuration
@@ -74,7 +165,12 @@ export function useSupabaseRealtimeV3(
             ...(config.filter && { filter: config.filter })
           } as any,
           (payload: any) => {
-            console.log(`🔄 Realtime v3: ${event} on ${config.table}`, payload);
+            console.log(`🔄 Realtime v3: ${event} on ${config.table}`, {
+              recordId: payload.new?.id || payload.old?.id,
+              event,
+              table: config.table,
+              payloadKeys: Object.keys(payload)
+            });
 
             // Call custom event handler if provided
             onEvent?.(event, config.table, payload);
@@ -92,6 +188,15 @@ export function useSupabaseRealtimeV3(
               console.log(`🗑️ Special invalidation for request_notes:`, requestQueryKey);
               queryClient.invalidateQueries({ queryKey: requestQueryKey, exact: true });
             }
+
+            // Special handling for quotes - also invalidate the specific parent request query
+            // This ensures the request's details (like status) are fresh when its quotes change.
+            if (config.table === 'quotes' && (payload.new?.request_id || payload.old?.request_id)) {
+              const requestId = payload.new?.request_id || payload.old?.request_id;
+              const requestQueryKey = ['request', requestId];
+              console.log(`🗑️ Special invalidation for quotes affecting parent request:`, requestQueryKey);
+              queryClient.invalidateQueries({ queryKey: requestQueryKey, exact: true });
+            }
           }
         );
       });
@@ -103,10 +208,14 @@ export function useSupabaseRealtimeV3(
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime v3 channel subscribed successfully');
         console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
+        console.log('🎧 Full table configs:', tableConfigs);
       } else if (status === 'CHANNEL_ERROR') {
         console.error('❌ Realtime v3 channel error:', status, err);
+        // Don't throw error - just log it and continue without realtime
+        console.warn('⚠️ Continuing without realtime due to channel error');
       } else if (status === 'TIMED_OUT') {
         console.error('⏰ Realtime v3 channel timed out');
+        console.warn('⚠️ Continuing without realtime due to timeout');
       } else if (status === 'CLOSED') {
         console.log('🔌 Realtime v3 channel closed');
       }
@@ -124,4 +233,62 @@ export function useSupabaseRealtimeV3(
       }
     };
   }, [enabled, tableConfigs, queryClient, onEvent]);
+}
+
+/**
+ * Centralized real-time invalidation hook for critical tables
+ * Ensures all clients receive updates for requests and quotes changes
+ */
+export function useRealtimeInvalidation(userId?: string) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    console.log('🔌 Setting up centralized realtime invalidation');
+
+    // Helper to invalidate all relevant query keys
+    const invalidateAll = (requestId?: string) => {
+      queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
+      if (requestId) {
+        queryClient.invalidateQueries({ queryKey: ['request', requestId] });
+      }
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: ['requests', userId] });
+      }
+    };
+
+    // Subscribe to requests table (all events)
+    const reqChannel = supabase
+      .channel('public:requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        (payload: any) => {
+          console.log('[realtime] requests payload', payload);
+          const newRow = payload.new ?? payload.record ?? null;
+          const requestId = newRow?.id ?? null;
+          invalidateAll(requestId);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to quotes table (status changes affect requests)
+    const quotesChannel = supabase
+      .channel('public:quotes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'quotes' },
+        (payload: any) => {
+          console.log('[realtime] quotes payload', payload);
+          const newRow = payload.new ?? payload.record ?? null;
+          const requestId = newRow?.request_id ?? null;
+          invalidateAll(requestId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reqChannel);
+      supabase.removeChannel(quotesChannel);
+    };
+  }, [queryClient, userId]);
 }

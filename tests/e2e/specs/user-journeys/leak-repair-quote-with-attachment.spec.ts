@@ -1,4 +1,4 @@
-/**
+ngit /**
  * Leak Repair Quote Comprehensive Test Suite
  *
  * This spec tests all variations of leak repair quote creation:

@@ -1,3 +1,62 @@
+/**
+ * =============================================================================
+ * ServicesSection.tsx - Services Overview Component
+ * =============================================================================
+ *
+ * WHAT IS THIS COMPONENT?
+ * -----------------------
+ * The ServicesSection component displays AquaFlow Plumbing's service offerings
+ * in an attractive bento grid layout. It showcases the main plumbing services
+ * with icons, descriptions, and key features to help customers understand
+ * the range of services available.
+ *
+ * COMPONENT FEATURES:
+ * -------------------
+ * - Dynamic service data from servicesData.ts
+ * - Bento grid layout with varying card sizes
+ * - Icon mapping system for visual consistency
+ * - Hover effects and smooth transitions
+ * - Responsive design with mobile-first approach
+ * - Feature lists with checkmark icons
+ *
+ * GRID LAYOUT STRUCTURE:
+ * ---------------------
+ * - Large featured service: 2x2 grid span (Leak Detection & Repair)
+ * - Medium service: 2x1 grid span (Pipe Installation & Repiping)
+ * - Small service cards: 1x1 grid (4 additional services)
+ * - Total: 6 services displayed in asymmetric grid
+ *
+ * ICON MAPPING SYSTEM:
+ * -------------------
+ * Maps string names to Lucide React icon components:
+ * - Droplets: Leak Detection & Repair
+ * - Wrench: Pipe Installation & Repiping
+ * - Wind: Drain Cleaning
+ * - Thermometer: Water Heater Services
+ * - ShowerHead: Fixture Repair & Installation
+ * - Settings: Gas Line Services
+ *
+ * RESPONSIVE BEHAVIOR:
+ * -------------------
+ * - Desktop: 4-column bento grid with size variations
+ * - Tablet: 2-column grid with adjusted spans
+ * - Mobile: Single column stack
+ *
+ * DATA SOURCE:
+ * -----------
+ * - Imports service data from ../../../lib/servicesData.ts
+ * - Each service includes: key, title, description, features array, icon name
+ *
+ * STYLING:
+ * --------
+ * - Light gray background (bg-gray-50)
+ * - White service cards with rounded corners
+ * - Blue icons and gradient hover effects
+ * - Green checkmarks for features
+ * - Scale and shadow animations on hover
+ * - Gradient overlays for visual depth
+ */
+
 import React from 'react';
 import { CheckCircle, Droplets, Wrench, Wind, Thermometer, ShowerHead, Settings } from 'lucide-react';
 import { services } from '../../../lib/servicesData';

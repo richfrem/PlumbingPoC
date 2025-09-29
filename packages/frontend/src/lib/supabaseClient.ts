@@ -11,9 +11,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   realtime: {
     params: {
-      eventsPerSecond: 2 // Limit events to prevent rate limiting
+      eventsPerSecond: 20 // Further increased for reliable real-time updates
     },
-    heartbeatIntervalMs: 30000, // 30 seconds
-    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000) // Exponential backoff
+    heartbeatIntervalMs: 15000, // Reduced to 15 seconds for better connection
+    reconnectAfterMs: (tries: number) => Math.min(tries * 500, 10000) // Faster reconnection
   }
 });

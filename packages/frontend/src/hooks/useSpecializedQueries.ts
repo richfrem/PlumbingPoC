@@ -1,5 +1,51 @@
 // packages/frontend/src/hooks/useSpecializedQueries.ts
 
+/**
+ * =============================================================================
+ * useSpecializedQueries.ts - Specialized Data Query Hooks
+ * =============================================================================
+ *
+ * WHAT IS THIS FILE?
+ * ------------------
+ * This file contains specialized query hooks that build on top of the core
+ * useTableQuery hook. These hooks provide convenient, pre-configured interfaces
+ * for common data access patterns in the plumbing application.
+ *
+ * WHY SPECIALIZED HOOKS?
+ * ----------------------
+ * - Provides semantic, business-logic-focused APIs
+ * - Handles complex relationships between tables
+ * - Includes user role-based access control
+ * - Combines multiple queries for dashboard views
+ * - Abstracts away technical query configuration
+ *
+ * HOOK CATEGORIES:
+ * ----------------
+ * 1. USER & PROFILE QUERIES - User management and profiles
+ * 2. REQUEST & QUOTE QUERIES - Core business data (plumbing requests)
+ * 3. ADMIN DASHBOARD QUERIES - Combined views for administrators
+ * 4. UTILITY HOOKS - Statistics and computed data
+ *
+ * REAL-TIME FEATURES:
+ * -------------------
+ * All hooks automatically include real-time updates via useTableQuery
+ * - User requests update when new quotes are added
+ * - Admin dashboards update when users create requests
+ * - Statistics update in real-time as data changes
+ *
+ * USAGE PATTERNS:
+ * ---------------
+ * - Admin Dashboard: useAdminDashboard() - All admin data in one hook
+ * - User Profile: useUserRequests(userId) - User's plumbing requests
+ * - Statistics: useStatistics() - Real-time business metrics
+ * - Quotes: useRequestQuotes(requestId) - Quotes for specific request
+ *
+ * DEPENDENCIES:
+ * -------------
+ * - useTableQuery: Core query functionality with real-time
+ * - QuoteRequest, Quote, etc.: TypeScript interfaces from types/
+ */
+
 import { useTableQuery } from './useTableQuery';
 
 /**
@@ -81,7 +127,7 @@ export function useUserRequests(userId: string) {
  */
 export function useAllRequests() {
   return useTableQuery<QuoteRequest>('requests', {
-    endpoint: '/admin/requests',
+    endpoint: '/requests', // Backend handles admin vs user filtering
     queryKey: ['requests'], // No userId for admin
     additionalTables: ['quotes', 'request_notes', 'quote_attachments', 'user_profiles'],
   });
@@ -95,6 +141,7 @@ export function useRequestById(requestId: string, options?: { enabled?: boolean 
     endpoint: `/requests/${requestId}`,
     queryKey: ['request', requestId],
     additionalTables: ['quotes', 'request_notes', 'quote_attachments'],
+    enableRealtime: true,
     enabled: options?.enabled,
   });
 }

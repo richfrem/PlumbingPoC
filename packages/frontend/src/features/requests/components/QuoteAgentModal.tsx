@@ -8,6 +8,7 @@ import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typo
 import AttachmentSection from "./AttachmentSection";
 import ServiceLocationManager from "./ServiceLocationManager";
 import { X as XIcon, Wrench, User } from 'lucide-react';
+import { useSubmitQuoteRequest } from '../../../hooks';
 
 
 // Typing indicator component
@@ -150,6 +151,9 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const chatEndRef = useRef<HTMLDivElement>(null);
   const userInputRef = useRef<HTMLInputElement>(null);
   const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
+
+  // Mutation hook for submitting quote requests
+  const submitQuoteMutation = useSubmitQuoteRequest();
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -382,8 +386,6 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
   const handleSubmitQuote = async () => {
     if (!profile || !selectedCategory || !user) return;
 
-
-    setLoading(true);
     setErrorMessage("");
 
     try {
@@ -403,7 +405,6 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         if (useProfileAddress) {
             if (!profile?.address) {
                 setErrorMessage("Your profile address is incomplete. Please update it or provide a different service address.");
-                setLoading(false);
                 return;
             }
             console.log("DEBUG: Using profile address for submission.");
@@ -418,12 +419,10 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         else {
             if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
                 setErrorMessage("Please fill out all fields for the different service address.");
-                setLoading(false);
                 return;
             }
             if (!serviceCoordinates) {
                 setErrorMessage("Please click 'Verify Address' for the new service location before submitting.");
-                setLoading(false);
                 return;
             }
             console.log("DEBUG: Using DIFFERENT service address for submission.");
@@ -437,7 +436,6 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
 
         if (!serviceAddressData) {
             setErrorMessage("A valid service address is required.");
-            setLoading(false);
             return;
         }
 
@@ -455,7 +453,8 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         // --- DEBUGGING: Log the payload being sent to backend ---
         console.log("Submitting payload to backend:", JSON.stringify(payload, null, 2));
 
-        const { data: result } = await apiClient.post('/requests/submit', payload);
+        // Use the mutation hook instead of direct API call
+        const result = await submitQuoteMutation.mutateAsync(payload);
         const newRequest = result.request;
         const newRequestId = newRequest?.id;
 
@@ -473,7 +472,6 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
         console.error("Submission Error:", err);
         const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
         setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
-        setLoading(false);
     }
   };
 
@@ -800,7 +798,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                    color="primary"
                    fullWidth
                    onClick={handleSubmitQuote}
-                   disabled={loading}
+                   disabled={submitQuoteMutation.isPending}
                    sx={{
                      py: 1.5,
                      fontSize: '1.1rem',
@@ -814,7 +812,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                      transition: 'all 0.2s ease-in-out'
                    }}
                  >
-                   {loading ? 'Submitting...' : 'Confirm & Submit Request'}
+                   {submitQuoteMutation.isPending ? 'Submitting...' : 'Confirm & Submit Request'}
                  </Button>
                </Box>
              </Box>

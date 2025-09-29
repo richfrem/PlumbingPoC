@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
-import { useCreateQuote, useUpdateQuote } from '../hooks/useRequestMutations';
+import { useCreateQuote, useUpdateQuote } from '../../../hooks';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -132,11 +132,11 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         }
       } else if (quote?.id && mode === 'update') {
         // Update existing quote
-        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, payload });
+        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, quote: payload });
       } else if (mode === 'create') {
         // Create new quote
         try {
-          const savedQuote = await createQuoteMutation.mutateAsync({ requestId, payload });
+          const savedQuote = await createQuoteMutation.mutateAsync({ requestId, quote: payload });
 
           // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
           if (isAdmin) {

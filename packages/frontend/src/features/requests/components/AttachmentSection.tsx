@@ -8,7 +8,7 @@ import apiClient from '../../../lib/apiClient';
 import { Box, Typography, Paper, Button, CircularProgress, Alert, IconButton, Divider } from '@mui/material';
 import { FileText as FileTextIcon, Paperclip, X as XIcon, UploadCloud } from 'lucide-react';
 import { QuoteAttachment } from '../types';
-import { useRequestById } from '../../../hooks/useSpecializedQueries';
+import { useRequestById } from '../../../hooks';
 
 interface AttachmentSectionProps {
   requestId: string;

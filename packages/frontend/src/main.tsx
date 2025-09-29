@@ -15,10 +15,7 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
-import { useRequestsQuery } from './features/requests/hooks/useRequestsQuery'; // Legacy import for compatibility
-// Alternative: import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
-import { RealtimeDebugger } from './components/RealtimeDebugger';
-import { useSimpleRealtime } from './hooks/useSimpleRealtime';
+import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
 import {
   Phone,
   Wrench,
@@ -47,24 +44,32 @@ const AppContent: React.FC = () => {
     enabled: !authLoading && !!user
   });
 
-  // THE SECOND FIX: We pass the user's ID as a dependency to the hook.
-  // This tells React Query to re-run the query when the user logs in.
-  const { requests, loading, error, refetch } = useRequestsQuery(userIdForQuery, user, { enabled: !authLoading && !!user });
+  // Use the appropriate hook based on user role
+  const isAdmin = profile?.role === 'admin';
+  const userRequestsHook = useUserRequests(user?.id || '');
+  const allRequestsHook = useAllRequests();
+
+  // Select the appropriate hook result
+  const { data: requests, loading, error, refetch } = isAdmin ? allRequestsHook : userRequestsHook;
   
-  console.log('🔍 useRequestsQuery result:', {
+  console.log('🔍 useUserRequests/useAllRequests result:', {
     requestsLength: requests?.length,
     loading,
     error,
-    hasRefetch: !!refetch
+    hasRefetch: !!refetch,
+    isAdmin
   });
 
   // Log when requests data changes
   useEffect(() => {
-    console.log('📡 Main.tsx requests updated:', requests?.length, 'items');
-  }, [requests?.length]);
+    console.log('📡 Main.tsx requests updated:', {
+      count: requests?.length,
+      statuses: requests?.map(r => ({ id: r.id, status: r.status })),
+      hasQuotes: requests?.map(r => ({ id: r.id, quoteCount: r.quotes?.length || 0 }))
+    });
+  }, [requests]);
 
-  // Simple real-time sync that invalidates all queries on any database change
-  useSimpleRealtime(!!user); // Only enable when user is logged in
+  // Real-time sync is now handled by individual hooks (useTableQuery, etc.)
 
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -393,8 +398,6 @@ const AppContent: React.FC = () => {
         />
       )}
       
-      {/* Debug component removed - real-time working */}
-      {/* <RealtimeDebugger /> */}
     </React.Fragment>
   );
 };

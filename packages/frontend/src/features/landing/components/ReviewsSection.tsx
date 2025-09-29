@@ -1,3 +1,49 @@
+/**
+ * =============================================================================
+ * ReviewsSection.tsx - Customer Testimonials Component
+ * =============================================================================
+ *
+ * WHAT IS THIS COMPONENT?
+ * -----------------------
+ * The ReviewsSection component displays customer testimonials and reviews
+ * to build social proof and trust with potential customers. It showcases
+ * positive experiences from real customers of AquaFlow Plumbing.
+ *
+ * COMPONENT FEATURES:
+ * -------------------
+ * - Static customer testimonials with ratings
+ * - 5-star rating display with filled star icons
+ * - Responsive grid layout (1 column mobile, 3 columns desktop)
+ * - Hover effects and smooth transitions
+ * - Professional testimonial cards with shadows
+ *
+ * TESTIMONIAL DATA:
+ * -----------------
+ * Contains 3 hardcoded testimonials:
+ * 1. Jane D. - Fast, friendly service
+ * 2. Mike R. - Professional team, great price
+ * 3. Sara L. - Emergency service at 2am
+ *
+ * LAYOUT STRUCTURE:
+ * -----------------
+ * - Section header with title and description
+ * - Grid of testimonial cards
+ * - Each card contains: star rating, testimonial text, customer name
+ *
+ * RESPONSIVE BEHAVIOR:
+ * -------------------
+ * - Mobile: Single column stack
+ * - Desktop: 3-column grid
+ *
+ * STYLING:
+ * --------
+ * - Light gray background (bg-gray-50)
+ * - White testimonial cards with rounded corners
+ * - Yellow star ratings
+ * - Hover shadow effects
+ * - Clean typography with italic quotes
+ */
+
 import React from 'react';
 import { Star } from 'lucide-react';
 

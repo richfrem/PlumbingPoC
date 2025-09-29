@@ -13,36 +13,11 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  const mapStyles = [
-    {
-      // Hides all business icons and labels (e.g., stores, restaurants)
-      featureType: 'poi.business',
-      elementType: 'labels',
-      stylers: [{ visibility: 'off' }],
-    },
-    {
-      // Hides all transit station icons (e.g., bus stops)
-      featureType: 'transit',
-      elementType: 'labels.icon',
-      stylers: [{ visibility: 'off' }],
-    },
-    {
-      // Hides all road icons (e.g., highway shields)
-      featureType: 'road',
-      elementType: 'labels.icon',
-      stylers: [{ visibility: 'off' }],
-    },
-    {
-      // Slightly desaturates all map colors to make our pins stand out
-      featureType: 'all',
-      elementType: 'all',
-      stylers: [{ saturation: -70 }],
-    },
-  ];
+  // Map ID for cloud-based Google Maps styling (Light Political style)
+  const mapId = import.meta.env.VITE_GOOGLE_MAPS_ID;
 
   if (!apiKey) {
-    return (
+    return ( 
       <Paper sx={{ height: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="error">
@@ -50,6 +25,21 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Please set VITE_GOOGLE_MAPS_API_KEY in your environment variables
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+
+  if (!mapId) {
+    return (
+      <Paper sx={{ height: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" color="error">
+            Google Maps ID Missing
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please set VITE_GOOGLE_MAPS_ID in your environment variables for Light Political map style
           </Typography>
         </Box>
       </Paper>
@@ -75,9 +65,8 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
         <Map
           defaultCenter={{ lat: 48.4284, lng: -123.3656 }}
           defaultZoom={10}
-          mapId="plumbing-requests-map"
+          mapId={mapId}
           style={{ width: '100%', height: '100%' }}
-          styles={mapStyles}
         >
           {geocodedRequests.map((request) => (
             <AdvancedMarker

@@ -72,7 +72,7 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="space-y-2">
             {requests.slice(0, 3).map(request => (
               <div key={request.id} className="text-sm p-2 bg-gray-50 rounded">
-                <div className="font-medium">{request.description?.substring(0, 40)}...</div>
+                <div className="font-medium">{request.problem_category?.substring(0, 40)}...</div>
                 <div className="text-gray-500">
                   Status: <span className="capitalize">{request.status}</span>
                 </div>
@@ -130,10 +130,10 @@ const AdminDemo: React.FC = () => {
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {requests.slice(0, 5).map(request => (
               <div key={request.id} className="text-sm p-2 bg-gray-50 rounded">
-                <div className="font-medium">{request.description?.substring(0, 50)}...</div>
+                <div className="font-medium">{request.problem_category?.substring(0, 50)}...</div>
                 <div className="text-gray-500 flex justify-between">
                   <span>Status: <span className="capitalize">{request.status}</span></span>
-                  <span>{request.priority} priority</span>
+                  <span>Priority: {request.priority_score || 'N/A'}</span>
                 </div>
               </div>
             ))}

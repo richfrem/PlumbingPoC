@@ -14,8 +14,57 @@ export class DashboardPage extends BasePage {
   private viewDetailsButtons = 'button:has-text("View Details")';
   private adminCommandCenter = 'text="Command Center"';
 
+  // --- ADD THESE NEW SELECTORS ---
+  private readonly adminCommandCenterHeading = this.page.getByRole('heading', { name: "Plumber's Command Center" });
+  private readonly adminCommandCenterText = this.page.getByText("Plumber's Command Center");
+  private readonly dataGrid = this.page.locator('.MuiDataGrid-root');
+  private readonly tableModeButton = this.page.getByRole('button', { name: 'Table' });
+  private readonly mapModeButton = this.page.getByRole('button', { name: 'Map' });
+  private readonly emergencyOnlyToggle = this.page.getByLabel('Emergencies Only');
+  private readonly requestDetailModal = this.page.getByText(/Job Docket:/).locator('xpath=./ancestor::div[1]');
+
   constructor(page: Page) {
     super(page);
+  }
+
+  // --- ADD THESE NEW METHODS FOR DATAGRID UI ---
+
+  /**
+   * [NEW] Clicks a status filter chip in the filter bar.
+   * @param status The status to filter by (e.g., 'New', 'Quoted', 'All Requests').
+   */
+  async filterByStatus(status: 'All Requests' | 'New' | 'Viewed' | 'Quoted' | 'Accepted' | 'Scheduled' | 'Completed'): Promise<void> {
+    console.log(`Filtering dashboard by status: "${status}"...`);
+    const filterChip = this.page.getByRole('button', { name: status, exact: true });
+    await filterChip.click();
+    await this.page.waitForTimeout(500); // Small pause for UI to settle
+  }
+
+  /**
+   * [NEW] Toggles the "Emergencies Only" switch.
+   */
+  async toggleEmergencyFilter(): Promise<void> {
+    console.log('Toggling the "Emergencies Only" filter...');
+    await this.emergencyOnlyToggle.click();
+    await this.page.waitForTimeout(500); // Small pause for UI to settle
+  }
+
+  /**
+   * [NEW] Switches the view to the Table mode.
+   */
+  async switchToTableView(): Promise<void> {
+    console.log('Switching to Table view...');
+    await this.tableModeButton.click();
+    await expect(this.dataGrid).toBeVisible();
+  }
+
+  /**
+   * [NEW] Switches the view to the Map mode.
+   */
+  async switchToMapView(): Promise<void> {
+    console.log('Switching to Map view...');
+    await this.mapModeButton.click();
+    await expect(this.page.getByText('Keyboard shortcuts')).toBeVisible();
   }
 
   /**
@@ -36,11 +85,17 @@ export class DashboardPage extends BasePage {
   }
 
   /**
-   * Verify we're on the admin dashboard
+   * [UPDATED] Verify we're on the admin dashboard
    */
   async verifyOnAdminDashboard(): Promise<void> {
     console.log('Verifying on admin dashboard...');
-    await expect(this.page.locator(this.adminCommandCenter)).toBeVisible();
+    // Try heading selector first, fallback to text selector
+    try {
+      await expect(this.adminCommandCenterHeading).toBeVisible({ timeout: 5000 });
+    } catch (error) {
+      console.log('Heading selector failed, trying text selector...');
+      await expect(this.adminCommandCenterText).toBeVisible({ timeout: 5000 });
+    }
   }
 
   /**
@@ -113,11 +168,12 @@ export class DashboardPage extends BasePage {
   }
 
   /**
-   * Wait for requests to load
+   * [UPDATED] Wait for requests to load
    */
   async waitForRequestsToLoad(timeout = 10000): Promise<void> {
     console.log('Waiting for requests to load...');
-    await this.page.waitForSelector(this.requestCards, { timeout });
+    // Updated to check for DataGrid rows, which is more reliable than the old card selector
+    await this.page.locator('[role="row"][data-request-id]').first().waitFor({ timeout });
   }
 
   /**
@@ -152,7 +208,7 @@ export class DashboardPage extends BasePage {
   }
 
   /**
-   * Verify request details in the modal
+   * [UPDATED] Verify request details in the modal
    */
   async verifyRequestDetails(expectedData: {
     id: string;
@@ -162,35 +218,26 @@ export class DashboardPage extends BasePage {
     status: string;
   }): Promise<void> {
     console.log('Verifying request details in modal...');
-
-    // Wait for modal to be visible
-    const modal = this.page.locator('[role="dialog"], .modal, .MuiDialog-root');
+    const modal = this.requestDetailModal;
     await expect(modal).toBeVisible();
 
-    // Verify request ID is displayed
-    const idElement = modal.locator(`text=${expectedData.id}, [data-testid*="id"]`);
-    await expect(idElement.or(modal.locator('text=/ID:/'))).toBeVisible();
-
-    // Verify category
+    // Updated locators to be more specific to the new modal structure
+    await expect(modal.getByText(`ID: ${expectedData.id}`)).toBeVisible();
     if (expectedData.category) {
-      await expect(modal.locator(`text=${expectedData.category}`)).toBeVisible();
+      await expect(modal.getByText(expectedData.category, { exact: false })).toBeVisible();
     }
-
-    // Verify problem description
     if (expectedData.problemDescription) {
-      await expect(modal.locator(`text=${expectedData.problemDescription}`)).toBeVisible();
+        await expect(modal.getByText(expectedData.problemDescription)).toBeVisible();
     }
-
-    // Verify emergency status
     if (expectedData.isEmergency) {
-      await expect(modal.locator('text=/emergency/i')).toBeVisible();
+        // Look for the "EMERGENCY" chip/text
+        await expect(modal.locator(':text("Emergency"), :text("EMERGENCY")')).toBeVisible();
     }
-
-    // Verify status
     if (expectedData.status) {
-      await expect(modal.locator(`text=${expectedData.status}`)).toBeVisible();
+        // Find the "Status" label and get its sibling element for the value
+        const statusField = modal.getByText('Status').locator('xpath=./following-sibling::*');
+        await expect(statusField).toHaveText(expectedData.status, { ignoreCase: true });
     }
-
     console.log('✅ Request details verified successfully');
   }
 
@@ -225,41 +272,17 @@ export class DashboardPage extends BasePage {
   }
 
   /**
-   * Verify request creation date is displayed and recent
+   * [UPDATED] Verify request creation date is displayed and recent
    */
   async verifyRequestCreationDate(): Promise<void> {
     console.log('Verifying request creation date...');
-
-    const modal = this.page.locator('[role="dialog"], .modal, .MuiDialog-root');
-
-    // Look for date-related text
-    const dateSelectors = [
-      'text=/created/i',
-      'text=/date/i',
-      '[data-testid*="date"]',
-      '[data-testid*="created"]'
-    ];
-
-    let dateFound = false;
-    for (const selector of dateSelectors) {
-      try {
-        const dateElement = modal.locator(selector);
-        if (await dateElement.isVisible({ timeout: 1000 })) {
-          dateFound = true;
-          break;
-        }
-      } catch (e) {
-        // Continue to next selector
-      }
-    }
-
-    if (!dateFound) {
-      // Check if there's any text that looks like a date
-      const modalText = await modal.textContent();
-      const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i;
-      expect(modalText).toMatch(dateRegex);
-    }
-
+    const modal = this.requestDetailModal;
+    const subtitle = modal.locator('p:has-text("Received:")');
+    await expect(subtitle).toBeVisible();
+    const subtitleText = await subtitle.textContent();
+    // This regex matches the format in the UI screenshot (e.g., "9/24/2025, 11:32:10 AM")
+    const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M/i;
+    expect(subtitleText).toMatch(dateRegex);
     console.log('✅ Request creation date verified');
   }
 

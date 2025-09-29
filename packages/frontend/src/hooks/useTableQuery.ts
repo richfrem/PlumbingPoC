@@ -1,6 +1,71 @@
 // packages/frontend/src/hooks/useTableQuery.ts
 
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+/**
+ * =============================================================================
+ * useTableQuery.ts - Advanced Database Query Hook with Real-Time Updates
+ * =============================================================================
+ *
+ * WHAT IS A HOOK?
+ * ---------------
+ * In React, a "hook" is a special function that lets you use React features
+ * (like state, lifecycle methods, and context) in functional components.
+ * Hooks are the modern way to manage component logic and side effects.
+ *
+ * WHAT DOES THIS HOOK DO?
+ * -----------------------
+ * This is an advanced, reusable hook that combines:
+ * 1. Data fetching from database tables via REST API
+ * 2. Automatic real-time updates via Supabase WebSocket subscriptions
+ * 3. Smart query caching and invalidation using TanStack Query
+ * 4. Cross-component synchronization for multi-user applications
+ *
+ * KEY FEATURES:
+ * - Generic: Works with any database table
+ * - Real-time: Automatically updates UI when database changes
+ * - Cached: Prevents unnecessary API calls
+ * - User-aware: Supports user-specific data filtering
+ * - Type-safe: Full TypeScript support
+ * - Optimized: Smart invalidation prevents unnecessary refetches
+ *
+ * HOW IT WORKS:
+ * -------------
+ * 1. FETCH: Makes HTTP request to API endpoint (e.g., /requests)
+ * 2. CACHE: Stores data in TanStack Query cache with unique key
+ * 3. SUBSCRIBE: Sets up WebSocket listeners for database changes
+ * 4. INVALIDATE: When DB changes occur, invalidates relevant cache entries
+ * 5. REFRESH: Automatically refetches fresh data and updates UI
+ *
+ * REAL-TIME SYNCHRONIZATION:
+ * --------------------------
+ * - Listens for INSERT/UPDATE/DELETE events on specified tables
+ * - Invalidates TanStack Query cache when changes detected
+ * - Triggers automatic UI updates across all components using same data
+ * - Supports cross-user synchronization (admin ↔ user updates)
+ *
+ * ARCHITECTURE BENEFITS:
+ * ----------------------
+ * - Eliminates manual refresh buttons
+ * - Prevents stale data issues
+ * - Enables instant collaboration features
+ * - Reduces server load through smart caching
+ * - Provides consistent UX across different user roles
+ *
+ * USAGE PATTERNS:
+ * ---------------
+ * - Admin dashboards (see all requests)
+ * - User-specific lists (my requests only)
+ * - Detail views with related data
+ * - Real-time collaborative features
+ *
+ * DEPENDENCIES:
+ * -------------
+ * - @tanstack/react-query: For caching and query management
+ * - Supabase: For real-time database subscriptions
+ * - Custom API client: For HTTP requests
+ */
+
+import { useQuery, UseQueryOptions, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import apiClient from '../lib/apiClient';
 import { useSupabaseRealtimeV3 } from './useSupabaseRealtimeV3';
 
@@ -54,6 +119,8 @@ export function useTableQuery<T = any>(
     ...queryOptions
   } = options;
 
+  const queryClient = useQueryClient();
+
   // Build query key
   const queryKey = customQueryKey || [table, userId].filter(Boolean);
   
@@ -87,30 +154,50 @@ export function useTableQuery<T = any>(
     ...queryOptions
   });
 
-  // Set up real-time subscriptions
-  const allTables = [table, ...additionalTables];
-  const tableConfigs = allTables.map(tableName => {
-    // For shared data like attachments, notes, quotes - these affect all request queries
-    if (['quote_attachments', 'request_notes', 'quotes'].includes(tableName)) {
-      return {
-        table: tableName,
-        invalidateQueries: [[tableName], ['requests'], ['request']] // This will invalidate ALL queries starting with 'requests' or 'request'
-      };
-    }
-    // For user-specific data, just invalidate the table's queries
-    return {
-      table: tableName,
-      invalidateQueries: [[tableName]]
-    };
+  // --- START OF THE FIX ---
+
+  // This logic is now simplified and more robust. It is no longer dependent on the specific `userId`,
+  // ensuring that an invalidation event from any user will correctly refresh data for all other users.
+  const tableConfigs = useMemo(() => {
+    const allSubscribedTables = [table, ...additionalTables];
+    return allSubscribedTables.map(tableName => {
+        // Define the ROOT query keys to invalidate when this table changes.
+        // By invalidating the root ['requests'], TanStack Query (with exact: false)
+        // will correctly invalidate both the admin's ['requests'] query and the
+        // user's ['requests', 'user-id-123'] query.
+        let queriesToInvalidate: string[][] = [];
+
+        // Any change on a critical table should invalidate all 'requests' queries.
+        if (tableName === 'requests' || ['quotes', 'request_notes', 'quote_attachments'].includes(tableName)) {
+            queriesToInvalidate.push(['requests']); // Root for all request lists.
+            queriesToInvalidate.push(['request']);  // Root for all single request detail views.
+            if (userId) {
+                queriesToInvalidate.push(['requests', userId]); // Specific user requests
+            }
+        }
+
+        // Always invalidate the queries for the table that actually changed (e.g., ['quotes']).
+        queriesToInvalidate.push([tableName]);
+
+        // Remove duplicates just in case
+        queriesToInvalidate = queriesToInvalidate.filter((arr, index, self) =>
+            index === self.findIndex((t) => JSON.stringify(t) === JSON.stringify(arr))
+        );
+
+        return {
+            table: tableName,
+            invalidateQueries: queriesToInvalidate
+        };
+    });
+  }, [table, additionalTables]); // IMPORTANT: The `userId` dependency has been removed.
+
+  // The `onEvent` handler has been removed. We now rely exclusively on the `invalidateQueries`
+  // array passed to the hook, creating a single, clear source of truth for real-time logic.
+  useSupabaseRealtimeV3(tableConfigs, {
+    enabled: enableRealtime,
   });
 
-  // Set up real-time subscriptions using v3 system
-  useSupabaseRealtimeV3(tableConfigs, {
-    enabled: enableRealtime && !query.isLoading,
-    onEvent: (event, tableName, payload) => {
-      console.log(`🔄 Real-time v3 update for ${table} query due to ${event} on ${tableName}`);
-    }
-  });
+  // --- END OF THE FIX ---
 
   return {
     data: query.data || [],
@@ -132,6 +219,7 @@ export function useRequestsQuery(userId?: string, options?: Omit<TableQueryOptio
     ...options,
     userId,
     additionalTables: ['quotes', 'request_notes', 'quote_attachments'],
+    enableRealtime: true,
     queryKey: ['requests', userId].filter(Boolean)
   });
 }

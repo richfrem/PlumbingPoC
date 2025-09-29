@@ -1,6 +1,8 @@
-// capture_code_snapshot.js (v4.0 - Workspace & CJS Aware)
+// capture_code_snapshot.js (v4.1 - Standardized Path Output)
 // This version is updated to correctly handle the new NPM workspace structure
 // and recognizes the `.cjs` file extension for our CommonJS backend files.
+// The primary change is to ensure all captured file paths in the headers
+// are consistently prefixed with './' for easier parsing and consistency.
 
 const fs = require('fs');
 const path = require('path');
@@ -40,7 +42,8 @@ const fileSeparatorStart = '--- START OF FILE';
 const fileSeparatorEnd = '--- END OF FILE';
 
 function appendFileContent(filePath, basePath) {
-    const relativePath = path.relative(basePath, filePath).replace(/\\/g, '/');
+    // Ensure relativePath always starts with ./
+    const relativePath = './' + path.relative(basePath, filePath).replace(/\\/g, '/');
     let fileContent = '';
     try {
         fileContent = fs.readFileSync(filePath, 'utf8');
@@ -48,14 +51,15 @@ function appendFileContent(filePath, basePath) {
         fileContent = `[Content not captured due to read error: ${readError.message}.]`;
     }
 
+    // Use the standardized relativePath with ./ prefix in the separator
     let output = `${fileSeparatorStart} ${relativePath} ---\n\n`;
     output += fileContent;
-    output += `\n${fileSeparatorEnd} ---\n\n`; // Simplified end separator for consistency
+    output += `\n${fileSeparatorEnd} ---\n\n`;
     return output;
 }
 
 console.log(`[INFO] Starting project scan from root: ${projectRoot}`);
-console.log(`[INFO] Script version: v4.0 (Workspace & CJS Aware)`);
+console.log(`[INFO] Script version: v4.1 (Standardized Path Output)`);
 
 try {
     const fileTreeLines = [];
@@ -81,9 +85,9 @@ try {
             }
         }
         
-        // Add item to the directory tree structure
+        // Add item to the directory tree structure, also prefixed with ./
         if (relativePath) { // Don't add the root itself to the tree list
-            fileTreeLines.push(relativePath + (fs.statSync(currentPath).isDirectory() ? '/' : ''));
+            fileTreeLines.push('./' + relativePath + (fs.statSync(currentPath).isDirectory() ? '/' : ''));
         }
 
         if (fs.statSync(currentPath).isDirectory()) {
@@ -118,7 +122,8 @@ try {
 
     traverseAndCapture(projectRoot);
     
-    const fileTreeContent = '# Directory Structure (relative to project root)\n' + fileTreeLines.map(line => '  ./' + line).join('\n') + '\n\n';
+    // The file tree already includes './' from the traverseAndCapture function
+    const fileTreeContent = '# Directory Structure (relative to project root)\n' + fileTreeLines.map(line => '  ' + line).join('\n') + '\n\n';
 
     // --- Forge the final output file ---
     let header = `# All Markdown Files Snapshot (LLM-Distilled)\n\nGenerated On: ${new Date().toISOString()}\n\n{TOKEN_COUNT_PLACEHOLDER}\n\n`;
@@ -132,8 +137,7 @@ try {
     console.log(`[METRIC] Total Token Count: ~${tokenCount.toLocaleString()} tokens`);
     console.log(`[STATS] Files Captured: ${filesCaptured} | Directories/Files Skipped: ${itemsSkipped}`);
 
-// ... previous code ...
 } catch (err) {
     console.error(`[FATAL] An error occurred during snapshot generation: ${err.message}`);
     console.error(err.stack);
-} 
+}

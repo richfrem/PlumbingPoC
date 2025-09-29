@@ -3,9 +3,9 @@ import axios from 'axios';
 import { supabase } from './supabaseClient';
 
 const apiClient = axios.create({
-  // The base URL is already handled by Vite's proxy,
-  // so we just need to start with the '/api' prefix.
-  baseURL: '/api',
+  // For development, use direct backend URL
+  // In production, Vite proxy handles '/api' routing
+  baseURL: import.meta.env.DEV ? 'http://localhost:3000/api' : '/api',
 });
 
 // Axios interceptor to automatically add the auth token to every request

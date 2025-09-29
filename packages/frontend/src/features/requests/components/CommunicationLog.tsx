@@ -5,7 +5,7 @@ import apiClient from '../../../lib/apiClient';
 import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
 import { RequestNote } from '../types'; // Import the type from the central location
-import { useRequestById } from '../../../hooks/useSpecializedQueries';
+import { useRequestById } from '../../../hooks';
 
 interface CommunicationLogProps {
   requestId: string;
