@@ -65,7 +65,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // --- Core Quote Intake Routes ---
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
-router.post('/', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
