@@ -291,7 +291,7 @@ export function useUpdateQuote() {
       quoteId: string;
       quote: any;
     }) => {
-      const response = await apiClient.patch(
+      const response = await apiClient.put(
         `/requests/${requestId}/quotes/${quoteId}`,
         quote
       );
@@ -458,6 +458,46 @@ export function useMarkRequestAsViewed() {
     },
     onSuccess: () => {
       // silent success is fine; invalidate already runs
+    },
+  });
+}
+
+export function useDeleteQuote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      requestId,
+      quoteId,
+    }: {
+      requestId: string;
+      quoteId: string;
+    }) => {
+      const response = await apiClient.delete(
+        `/requests/${requestId}/quotes/${quoteId}`
+      );
+      return response.data;
+    },
+    onSuccess: async (data, variables) => {
+      console.log('useDeleteQuote: Success', { data, variables });
+      await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
+      await queryClient.invalidateQueries({
+        queryKey: ['request', variables.requestId],
+      });
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote deleted successfully!', severity: 'success' },
+      });
+      window.dispatchEvent(event);
+    },
+    onError: (error, variables) => {
+      console.error('useDeleteQuote: Error', { error, variables });
+      const event = new CustomEvent('show-snackbar', {
+        detail: {
+          message: '❌ Failed to delete quote. Please try again.',
+          severity: 'error',
+        },
+      });
+      window.dispatchEvent(event);
     },
   });
 }

@@ -786,6 +786,44 @@ const cleanupTestData = async (req, res, next) => {
 };
 
 /**
+ * Handles an admin deleting a draft quote (only if not accepted).
+ */
+const deleteQuote = async (req, res, next) => {
+  try {
+    const { id, quoteId } = req.params;
+
+    // First check if the quote exists and is not accepted
+    const { data: quote, error: fetchError } = await supabase
+      .from('quotes')
+      .select('status')
+      .eq('id', quoteId)
+      .eq('request_id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!quote) return res.status(404).json({ error: 'Quote not found.' });
+
+    // Only allow deletion if the quote is not accepted
+    if (quote.status === 'accepted') {
+      return res.status(400).json({ error: 'Cannot delete an accepted quote. Cancel the request instead.' });
+    }
+
+    // Delete the quote
+    const { error: deleteError } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', quoteId)
+      .eq('request_id', id);
+
+    if (deleteError) throw deleteError;
+
+    res.status(200).json({ message: 'Quote deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -827,6 +865,7 @@ export {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,

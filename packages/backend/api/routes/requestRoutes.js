@@ -13,6 +13,7 @@ import {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,
@@ -60,6 +61,7 @@ router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote)
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.delete('/:id/quotes/:quoteId', authenticate, isAdmin, deleteQuote);
 router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:id', authenticate, getRequestById);
 

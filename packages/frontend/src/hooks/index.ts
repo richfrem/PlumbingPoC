@@ -140,6 +140,7 @@ export {
   useAcceptQuote,
   useCreateQuote,
   useUpdateQuote,
+  useDeleteQuote,
   useTriageRequest,
   useUpdateAddressMutation,
 } from './useRequestMutations';
