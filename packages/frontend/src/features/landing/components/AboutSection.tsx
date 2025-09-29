@@ -1,3 +1,48 @@
+/**
+ * =============================================================================
+ * AboutSection.tsx - About Section Component
+ * =============================================================================
+ *
+ * WHAT IS THIS COMPONENT?
+ * -----------------------
+ * The AboutSection component displays information about AquaFlow Plumbing
+ * company, including their experience, values, and key differentiators.
+ * This is part of the landing page and helps build trust with potential customers.
+ *
+ * COMPONENT FEATURES:
+ * -------------------
+ * - Company overview with 15+ years experience
+ * - Professional credentials (licensed, insured, 24/7 emergency)
+ * - Quality guarantees and customer satisfaction metrics
+ * - Responsive design with mobile-first approach
+ * - Visual elements with icons and company photo
+ *
+ * LAYOUT STRUCTURE:
+ * -----------------
+ * - Left side: Company photo (hidden on mobile)
+ * - Right side: Company description and feature grid
+ * - Feature grid: 4 key value propositions with icons
+ *
+ * RESPONSIVE BEHAVIOR:
+ * -------------------
+ * - Desktop: 2-column grid with photo and content
+ * - Mobile: Single column with content only
+ *
+ * ICONS USED:
+ * -----------
+ * - Shield: Licensed & Insured
+ * - Clock: 24/7 Emergency Service
+ * - CheckCircle: Quality Guarantee
+ * - Star: 5-Star Rated
+ *
+ * STYLING:
+ * --------
+ * - Uses Tailwind CSS classes
+ * - Blue color scheme matching brand
+ * - Rounded corners and shadows for visual appeal
+ * - Hover effects on interactive elements
+ */
+
 import React from 'react';
 import { Shield, Clock, CheckCircle, Star } from 'lucide-react';
 

@@ -18,6 +18,7 @@ interface ServiceLocationManagerProps {
   onSave?: (addressData: AddressData) => Promise<void>;
   onCancel?: () => void;
   onDataChange?: (addressData: Partial<AddressData>) => void;
+  onModeChange?: (useProfileAddress: boolean) => void;
   isUpdating?: boolean;
 }
 
@@ -28,6 +29,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
   onSave,
   onCancel,
   onDataChange,
+  onModeChange,
   isUpdating = false,
 }) => {
   // State for edit mode
@@ -35,6 +37,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
   const [useProfileAddress, setUseProfileAddress] = useState(true);
   const [serviceAddress, setServiceAddress] = useState('');
   const [serviceCity, setServiceCity] = useState('');
+  const [serviceProvince, setServiceProvince] = useState('BC'); // Default to BC
   const [servicePostalCode, setServicePostalCode] = useState('');
   const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -76,7 +79,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
     setGeocodingStatus('loading');
 
     try {
-      const fullAddress = `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`;
+      const fullAddress = `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`;
       console.log('Geocoding address:', fullAddress);
 
       // Load Google Maps API if not already loaded
@@ -105,8 +108,19 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
       geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
         if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
           const location = results[0].geometry.location;
-          setServiceCoordinates({ lat: location.lat(), lng: location.lng() });
+          const coords = { lat: location.lat(), lng: location.lng() };
+          setServiceCoordinates(coords);
           setGeocodingStatus('success');
+
+          // Notify parent of geocoding success
+          if (onDataChange) {
+            onDataChange({
+              service_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}`,
+              latitude: coords.lat,
+              longitude: coords.lng,
+              geocoded_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`,
+            });
+          }
         } else {
           setGeocodingStatus('error');
         }
@@ -120,14 +134,26 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
 
   // Handle field changes
   const handleFieldChange = (field: string, value: string) => {
+    let newAddress = serviceAddress;
+    let newCity = serviceCity;
+    let newProvince = serviceProvince;
+    let newPostalCode = servicePostalCode;
+
     switch (field) {
       case 'street':
+        newAddress = value;
         setServiceAddress(value);
         break;
       case 'city':
+        newCity = value;
         setServiceCity(value);
         break;
+      case 'province':
+        newProvince = value;
+        setServiceProvince(value);
+        break;
       case 'postalCode':
+        newPostalCode = value;
         setServicePostalCode(value);
         break;
     }
@@ -138,13 +164,14 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
       setServiceCoordinates(null);
     }
 
-    // Notify parent of data changes
+    // Notify parent of data changes with full address
     if (onDataChange) {
+      const fullAddress = `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}`;
       onDataChange({
-        service_address: field === 'street' ? value : serviceAddress,
-        latitude: null,
-        longitude: null,
-        geocoded_address: null,
+        service_address: fullAddress,
+        latitude: serviceCoordinates?.lat || null,
+        longitude: serviceCoordinates?.lng || null,
+        geocoded_address: serviceCoordinates ? `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}, Canada` : null,
       });
     }
   };
@@ -317,9 +344,13 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
                 setUseProfileAddress(true);
                 setServiceAddress("");
                 setServiceCity("");
+                setServiceProvince("BC");
                 setServicePostalCode("");
                 setServiceCoordinates(null);
                 setGeocodingStatus('idle');
+                if (onModeChange) {
+                  onModeChange(true);
+                }
               }}
               sx={{ flex: 1 }}
             >
@@ -328,7 +359,12 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
             <Button
               variant={!useProfileAddress ? "contained" : "outlined"}
               size="small"
-              onClick={() => setUseProfileAddress(false)}
+              onClick={() => {
+                setUseProfileAddress(false);
+                if (onModeChange) {
+                  onModeChange(false);
+                }
+              }}
               sx={{ flex: 1 }}
             >
               Different Address
@@ -363,6 +399,14 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
                   fullWidth
                   size="small"
                   placeholder="Victoria"
+                />
+                <TextField
+                  label="Province"
+                  value={serviceProvince}
+                  onChange={(e) => handleFieldChange('province', e.target.value)}
+                  size="small"
+                  placeholder="BC"
+                  sx={{ minWidth: 80 }}
                 />
                 <TextField
                   label="Postal Code"

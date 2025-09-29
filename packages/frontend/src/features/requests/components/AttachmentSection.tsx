@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabaseClient';
 import apiClient from '../../../lib/apiClient';
 import { Box, Typography, Paper, Button, CircularProgress, Alert, IconButton, Divider } from '@mui/material';
 import { FileText as FileTextIcon, Paperclip, X as XIcon, UploadCloud } from 'lucide-react';
 import { QuoteAttachment } from '../types';
+import { useRequestById } from '../../../hooks';
 
 interface AttachmentSectionProps {
   requestId: string;
-  attachments: QuoteAttachment[];
+  attachments?: QuoteAttachment[]; // Made optional since we'll use the hook
   pendingFiles?: File[];
   editable: boolean;
-  onUpdate: () => void;
+  onUpdate?: () => void; // Made optional since real-time handles updates
   onNewFiles?: (files: File[]) => void;
   onRemovePendingFile?: (index: number) => void;
   quoteId?: string | null;
@@ -61,14 +63,47 @@ const AttachmentGroup: React.FC<{ title: string; attachments: (QuoteAttachment |
 };
 
 
-const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attachments, pendingFiles = [], editable, onUpdate, onNewFiles, onRemovePendingFile, quoteId = null }) => {
+const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attachments: initialAttachments, pendingFiles = [], editable, onUpdate, onNewFiles, onRemovePendingFile, quoteId = null }) => {
   const [signedUrls, setSignedUrls] = useState<{ [key: string]: string }>({});
   const [pendingImageUrls, setPendingImageUrls] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  console.log('🔧 AttachmentSection DEBUG:', {
+    requestId,
+    editable,
+    typeof_editable: typeof editable,
+    pendingFiles_length: pendingFiles.length,
+    quoteId
+  });
+
+  // Use standardized real-time system to get fresh request data including attachments
+  const { data: requestArray, loading: requestLoading, error: requestError } = useRequestById(requestId, {
+    enabled: !!requestId // Only fetch when we have a requestId
+  });
+  const request = requestArray?.[0];
+  const attachments = request?.quote_attachments || initialAttachments || [];
+  
+  console.log('🔍 AttachmentSection using standardized real-time system:', {
+    requestId,
+    attachmentsLength: attachments?.length,
+    attachmentIds: attachments?.map(a => a.id) || [],
+    requestLoading,
+    requestError,
+    hasRealTimeData: !!request,
+    timestamp: new Date().toISOString()
+  });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
+      console.log('🔧 AttachmentSection onDrop triggered:', {
+        filesCount: acceptedFiles.length,
+        hasOnNewFiles: !!onNewFiles,
+        requestId,
+        editable
+      });
+      
       if (onNewFiles) {
         onNewFiles(acceptedFiles);
       } else {
@@ -134,6 +169,13 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const uploadFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
 
+    console.log('🚀 AttachmentSection uploadFiles called:', {
+      filesCount: files.length,
+      requestId,
+      quoteId,
+      fileNames: files.map(f => f.name)
+    });
+
     setLoading(true);
     setError(null);
     try {
@@ -146,11 +188,17 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         formData.append('attachment', file);
       });
 
-      await apiClient.post('/requests/attachments', formData, {
+      const response = await apiClient.post('/requests/attachments', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      onUpdate();
+      
+      console.log('✅ Attachment uploaded successfully:', response.data);
+      console.log('✅ Attachment upload complete, real-time system will handle updates automatically');
+      
+      // Call onUpdate callback if parent component needs additional side effects
+      onUpdate?.();
     } catch (err: any) {
+      console.error('❌ Attachment upload failed:', err);
       setError(err?.response?.data?.error || err.message || 'Failed to upload files.');
     } finally {
       setLoading(false);
@@ -160,6 +208,13 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    console.log('🔧 AttachmentSection handleFileUpload:', {
+      filesCount: files.length,
+      hasOnNewFiles: !!onNewFiles,
+      requestId,
+      editable
+    });
 
     if (onNewFiles) {
       onNewFiles(Array.from(files));

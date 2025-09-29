@@ -505,9 +505,9 @@ CREATE POLICY "Enable all actions for admins" ON "public"."request_notes" USING 
 
 
 
-CREATE POLICY "Enable all actions for request owners" ON "public"."request_notes" USING (("auth"."uid"() = ( SELECT "requests"."user_id"
+CREATE POLICY "Enable all actions for request owners" ON "public"."request_notes" USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
    FROM "public"."requests"
-  WHERE ("requests"."id" = "request_notes"."request_id"))));
+  WHERE ("requests"."id" = "request_notes"."request_id"))) OR "public"."is_admin"()));
 
 
 
@@ -537,9 +537,7 @@ CREATE POLICY "Enable insert for owners" ON "public"."quote_attachments" FOR INS
 
 
 
-CREATE POLICY "Enable read for admins and owners" ON "public"."quote_attachments" FOR SELECT USING (("public"."is_admin"() OR ("auth"."uid"() = ( SELECT "requests"."user_id"
-   FROM "public"."requests"
-  WHERE ("requests"."id" = "quote_attachments"."request_id")))));
+CREATE POLICY "Enable read for admins and owners" ON "public"."requests" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
 
 
 
@@ -547,11 +545,15 @@ CREATE POLICY "Enable read for own invoices" ON "public"."invoices" FOR SELECT U
 
 
 
-CREATE POLICY "Enable read for own quotes" ON "public"."quotes" FOR SELECT USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Enable read for request owners" ON "public"."quote_attachments" FOR SELECT USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
+   FROM "public"."requests"
+  WHERE ("requests"."id" = "quote_attachments"."request_id"))) OR "public"."is_admin"()));
 
 
 
-CREATE POLICY "Enable read for users and admins" ON "public"."requests" FOR SELECT USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
+CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
+   FROM "public"."requests"
+  WHERE ("requests"."id" = "quotes"."request_id"))) OR "public"."is_admin"()));
 
 
 

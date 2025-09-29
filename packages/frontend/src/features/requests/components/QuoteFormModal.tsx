@@ -1,12 +1,12 @@
 // packages/frontend/src/features/requests/components/QuoteFormModal.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid, CircularProgress } from '@mui/material';
 import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
-import { useUpdateQuote } from '../hooks/useRequestMutations';
+import { useCreateQuote, useUpdateQuote, useDeleteQuote } from '../../../hooks';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -40,7 +40,9 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const isAdmin = profile?.role === 'admin';
     const editable = mode !== 'view';
 
+    const createQuoteMutation = useCreateQuote();
     const updateQuoteMutation = useUpdateQuote();
+    const deleteQuoteMutation = useDeleteQuote();
 
   useEffect(() => {
     if (isOpen) {
@@ -62,7 +64,10 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setLaborItems([{ description: '', price: '' }]);
         setMaterialItems([{ description: '', price: '' }]);
         setNotes('');
-        setGoodUntil('');
+        // Default "good until" to 1 month from today
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+        setGoodUntil(oneMonthFromNow.toISOString().split('T')[0]);
       }
 
       // Auto-focus the first field when modal opens
@@ -103,64 +108,82 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       }),
     };
 
-    try {
-      if (mode === 'change_order') {
-        // Create a new change order quote
-        const changeOrderPayload = {
-          ...payload,
-          status: 'change_order',
-          details: JSON.stringify({
-            ...JSON.parse(payload.details),
-            is_change_order: true,
-            original_quote_id: quote.id,
-            change_reason: 'Additional work requested'
-          })
-        };
+    if (mode === 'change_order') {
+      // Create a new change order quote
+      const changeOrderPayload = {
+        ...payload,
+        status: 'change_order',
+        details: JSON.stringify({
+          ...JSON.parse(payload.details),
+          is_change_order: true,
+          original_quote_id: quote.id,
+          change_reason: 'Additional work requested'
+        })
+      };
 
-        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
+      const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
 
-        // Change orders don't change the main request status
-        // They remain as separate quotes that need acceptance
+      // Change orders don't change the main request status
+      // They remain as separate quotes that need acceptance
 
-        if (newAttachments.length > 0 && savedQuote?.id) {
-          const formData = new FormData();
-          formData.append('request_id', requestId);
-          formData.append('quote_id', savedQuote.id);
-          newAttachments.forEach(file => formData.append('attachment', file));
-          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        }
-      } else if (quote?.id && mode === 'update') {
-        // Update existing quote
-        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, payload });
-      } else if (mode === 'create') {
-        // Create new quote
-        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, payload);
-
-        // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
-        if (isAdmin) {
-          try {
-            await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
-          } catch (statusError) {
-            console.error('Failed to update request status to quoted:', statusError);
-            // Don't fail the quote creation if status update fails
-          }
-        }
-
-        if (newAttachments.length > 0 && savedQuote?.id) {
-          const formData = new FormData();
-          formData.append('request_id', requestId);
-          formData.append('quote_id', savedQuote.id);
-          newAttachments.forEach(file => formData.append('attachment', file));
-          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        }
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => formData.append('attachment', file));
+        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
+
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Change order created successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
 
       // Close modal after successful save
       onClose(true);
+    } else if (quote?.id && mode === 'update') {
+      // Update existing quote
+      await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, quote: payload });
 
-    } catch (err: any) {
-      // Error is handled by the mutation hook
-      console.error('Failed to save quote:', err);
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote updated successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+
+      // Close modal after successful save
+      onClose(true);
+    } else if (mode === 'create') {
+      // Create new quote
+      const savedQuote = await createQuoteMutation.mutateAsync({ requestId, quote: payload });
+
+      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+      if (isAdmin) {
+        try {
+          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+        } catch (statusError) {
+          console.error('Failed to update request status to quoted:', statusError);
+          // Don't fail the quote creation if status update fails
+        }
+      }
+
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => formData.append('attachment', file));
+        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
+
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote saved successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+
+      // Close modal after successful save
+      onClose(true);
     }
   };
 
@@ -287,17 +310,37 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         </Box>
 
         <ModalFooter>
-           <Box>
-             {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
-           </Box>
-           {editable && (
-             <Box>
-               <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={updateQuoteMutation.isPending}>
-                 {updateQuoteMutation.isPending ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
-               </Button>
-             </Box>
-           )}
-         </ModalFooter>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
+              {isAdmin && quote?.id && quote?.status !== 'accepted' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+                      deleteQuoteMutation.mutate({ requestId, quoteId: quote.id });
+                    }
+                  }}
+                  disabled={deleteQuoteMutation.isPending}
+                >
+                  {deleteQuoteMutation.isPending ? 'Deleting...' : 'Delete Quote'}
+                </Button>
+              )}
+            </Box>
+            {editable && (
+              <Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSaveQuote}
+                  disabled={createQuoteMutation.isPending || updateQuoteMutation.isPending}
+                  startIcon={(createQuoteMutation.isPending || updateQuoteMutation.isPending) ? <CircularProgress size={16} color="inherit" /> : null}
+                >
+                  {(createQuoteMutation.isPending || updateQuoteMutation.isPending) ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
+                </Button>
+              </Box>
+            )}
+          </ModalFooter>
       </Paper>
     </div>
   );

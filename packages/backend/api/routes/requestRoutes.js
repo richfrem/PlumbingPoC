@@ -13,6 +13,7 @@ import {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,
@@ -36,7 +37,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // --- Core Quote Intake Routes ---
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
-router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+router.post('/', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
@@ -44,6 +45,15 @@ router.get('/storage-object/*', authenticate, validate(getObjectSchema), getStor
 
 // --- Client Portal & Admin Routes ---
 router.get('/', authenticate, getAllRequests); // Get all requests for admin table
+router.get('/new-request', authenticate, getAllRequests); // Temporary route for frontend bug
+router.get('/debug-auth', authenticate, (req, res) => {
+  res.json({
+    userId: req.user.id,
+    email: req.user.email,
+    timestamp: new Date().toISOString(),
+    message: 'Authentication successful'
+  });
+}); // Debug endpoint for auth issues
 router.patch('/:id', authenticate, updateRequest); // Update request (address, etc.)
 router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request as viewed by user
 router.delete('/cleanup-test-data', authenticate, isAdmin, cleanupTestData); // Admin cleanup of test data
@@ -51,6 +61,7 @@ router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote)
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.delete('/:id/quotes/:quoteId', authenticate, isAdmin, deleteQuote);
 router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:id', authenticate, getRequestById);
 

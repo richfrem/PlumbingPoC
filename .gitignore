@@ -27,5 +27,7 @@ node_modules
 # Agent-generated files (should not be in version control)
 agents/feedback/
 agents/screenshots/
+# E2E debug screenshots (temporary debugging files)
+tests/e2e/debug/
 # Local Netlify folder
 .netlify

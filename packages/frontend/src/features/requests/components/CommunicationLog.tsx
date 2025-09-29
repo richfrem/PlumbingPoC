@@ -1,64 +1,73 @@
 // packages/frontend/src/features/requests/components/CommunicationLog.tsx
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
+import React, { useState } from 'react';
 import apiClient from '../../../lib/apiClient';
 import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
 import { RequestNote } from '../types'; // Import the type from the central location
+import { useRequestById } from '../../../hooks';
 
 interface CommunicationLogProps {
   requestId: string;
-  initialNotes: RequestNote[];
-  onNoteAdded: () => void;
+  initialNotes?: RequestNote[]; // Kept for backward compatibility but not used
+  onNoteAdded?: () => void; // Kept for backward compatibility
 }
 
-const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialNotes, onNoteAdded }) => {
+const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAdded }) => {
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // This real-time listener is the SINGLE SOURCE OF TRUTH for all updates to the log.
-  // It works for both the sender and the receiver.
-  useEffect(() => {
-    if (!requestId) return;
+  // Use standardized real-time system to get request data including notes
+  const { data: requestArray, loading, error, refetch } = useRequestById(requestId, {
+    enabled: !!requestId // Only fetch when we have a requestId
+  });
+  const request = requestArray?.[0]; // Extract single request from array
+  const notes = request?.request_notes || [];
+  
+  console.log('🔍 CommunicationLog render:', {
+    notesLength: notes?.length,
+    noteIds: notes?.map(n => n.id) || [],
+    noteTexts: notes?.map(n => n.note.substring(0, 30) + '...') || [],
+    requestId,
+    loading,
+    error,
+    hasRequest: !!request,
+    timestamp: new Date().toISOString()
+  });
 
-    const channel = supabase
-      .channel(`request-notes-${requestId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'request_notes',
-          filter: `request_id=eq.${requestId}`
-        },
-        (payload) => {
-          console.log('Real-time note received. Telling parent to re-fetch.', payload);
-          // This call is the key. It tells the Dashboard/MyRequests to get fresh data,
-          // which then flows down to this component.
-          onNoteAdded();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [requestId, onNoteAdded]);
+  // Log when notes change to detect realtime updates
+  React.useEffect(() => {
+    console.log('📝 CommunicationLog notes updated:', {
+      notesCount: notes?.length,
+      latestNote: notes?.[notes.length - 1]?.note?.substring(0, 50) + '...',
+      timestamp: new Date().toISOString()
+    });
+  }, [notes?.length]);
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !requestId) return;
+
+    console.log('💬 BEFORE adding note:', {
+      noteText: newNote,
+      requestId,
+      currentNotesCount: notes?.length,
+      currentNotes: notes?.map(n => ({ id: n.id, note: n.note.substring(0, 20) + '...' }))
+    });
+
     setIsSubmitting(true);
     try {
-      // We simply post the new note to the database.
-      await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
+      // Add the note to the database
+      const response = await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
+      console.log('🗄️ API response for adding note:', response.data);
+
       setNewNote("");
-      // *** THE FIX: The manual `onNoteAdded()` call is REMOVED from here. ***
-      // We now confidently rely on the useEffect listener above to receive the
-      // broadcast from Supabase, just like the other user will. This ensures
-      // both clients use the exact same update mechanism.
+
+      // Trigger refresh of the request data to show the new message
+      console.log('🔄 Refreshing request data to show new message...');
+      onNoteAdded?.();
+      console.log('✅ Note added successfully and UI updated');
     } catch (error) {
-      console.error("Failed to add note:", error);
+      console.error("💥 Failed to add note:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -71,8 +80,16 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, initialN
       </Typography>
 
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, minHeight: '200px' }}>
-        {initialNotes.length > 0 ? (
-          initialNotes.map(note => (
+        {loading ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+            Loading notes...
+          </Typography>
+        ) : error ? (
+          <Typography variant="body2" color="error" sx={{ p: 2, textAlign: 'center' }}>
+            Error loading notes: {error}
+          </Typography>
+        ) : notes.length > 0 ? (
+          notes.map((note: RequestNote) => (
             <Box
               key={note.id}
               sx={{ mb: 1.5, display: 'flex', justifyContent: note.author_role === 'admin' ? 'flex-start' : 'flex-end' }}

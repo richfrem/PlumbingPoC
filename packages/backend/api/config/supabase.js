@@ -1,7 +1,11 @@
 // packages/backend/api/config/supabase.js
 import { createClient } from '@supabase/supabase-js';
 
-// dotenv is NO LONGER needed. The variables are injected by the environment.
+// Load environment variables early for development
+// This is safe - in production (Netlify), env vars are injected automatically
+import dotenv from 'dotenv';
+dotenv.config({ path: '../../../../.env' });
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

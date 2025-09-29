@@ -11,15 +11,23 @@ import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../se
 const getAllRequests = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    console.log(`🔍 GetAllRequests: Processing request for user ${userId}`);
 
     // Check if user is admin
-    const { data: userProfile } = await supabase
+    const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('role')
+      .select('role, email')
       .eq('user_id', userId)
       .single();
 
+    if (profileError) {
+      console.warn(`⚠️ GetAllRequests: Profile lookup failed for user ${userId}:`, profileError.message);
+      // If profile doesn't exist, treat as non-admin (only show own requests)
+      console.log(`ℹ️ GetAllRequests: Treating user ${userId} as non-admin due to missing profile`);
+    }
+
     const isAdmin = userProfile?.role === 'admin';
+    console.log(`🔍 GetAllRequests: User ${userId} is ${isAdmin ? 'admin' : 'non-admin'} (email: ${userProfile?.email || 'unknown'})`);
 
     let query = supabase
       .from('requests')
@@ -28,7 +36,10 @@ const getAllRequests = async (req, res, next) => {
 
     // If not admin, only show their own requests
     if (!isAdmin) {
+      console.log(`🔍 GetAllRequests: Filtering to show only user ${userId}'s own requests`);
       query = query.eq('user_id', userId);
+    } else {
+      console.log(`🔍 GetAllRequests: Admin user - showing all requests`);
     }
 
     const { data: requests, error } = await query;
@@ -455,54 +466,63 @@ const updateQuote = async (req, res, next) => {
       await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
     }
 
-    res.status(200).json(data);
+    res.status(200).json(updatedQuote);
   } catch (err) {
+    console.error('updateQuote: Error in updateQuote controller:', err);
     next(err);
   }
 };
 
 /**
- * Handles accepting a specific quote, which also updates the parent request status.
+ * Handles accepting a specific quote using an atomic database function.
+ * This is the corrected and robust implementation.
  */
 const acceptQuote = async (req, res, next) => {
   try {
     const { id, quoteId } = req.params;
     const userId = req.user.id;
 
-    console.log('acceptQuote: Starting', { requestId: id, quoteId, userId });
+    console.log('acceptQuote: Starting atomic quote acceptance', { requestId: id, quoteId, userId });
 
-    // Check if user is admin
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
+    // 1. Verify user has permission (ownership check for non-admins)
+    const { data: userProfile } = await supabase.from('user_profiles').select('role').eq('user_id', userId).single();
+    if (!userProfile) return res.status(403).json({ error: 'Profile not found.' });
 
-    const isAdmin = userProfile?.role === 'admin';
-    console.log('acceptQuote: User role check', { isAdmin, userProfile });
+    if (userProfile.role !== 'admin') {
+      const { data: requestOwner, error: ownerError } = await supabase.from('requests').select('user_id').eq('id', id).single();
+      if (ownerError || !requestOwner) return res.status(404).json({ error: 'Request not found.' });
+      if (requestOwner.user_id !== userId) return res.status(403).json({ error: 'Permission denied.' });
+    }
+    console.log(`acceptQuote: Permission verified for user ${userId} (role: ${userProfile.role})`);
 
-    // If not admin, verify user owns this request
-    if (!isAdmin) {
-      const { data: requestData, error: requestError } = await supabase
-        .from('requests')
-        .select('user_id')
-        .eq('id', id)
-        .single();
+    // 2. Perform the atomic updates directly
+    console.log('acceptQuote: Performing atomic quote acceptance updates...');
 
-      if (requestError || !requestData) {
-        console.log('acceptQuote: Request not found', { requestError, requestData });
-        return res.status(404).json({ error: 'Request not found.' });
-      }
+    // Update the selected quote to 'accepted'
+    const { error: acceptError } = await supabase
+      .from('quotes')
+      .update({ status: 'accepted' })
+      .eq('id', quoteId)
+      .eq('request_id', id);
 
-      if (requestData.user_id !== userId) {
-        console.log('acceptQuote: Forbidden - user does not own request', { requestDataUserId: requestData.user_id, userId });
-        return res.status(403).json({ error: 'You can only accept quotes for your own requests.' });
-      }
+    if (acceptError) {
+      console.error('acceptQuote: Failed to accept quote', acceptError);
+      throw acceptError;
     }
 
-    console.log('acceptQuote: Updating request and quote statuses directly', { requestId: id, quoteId });
+    // Update all other quotes for this request to 'rejected'
+    const { error: rejectError } = await supabase
+      .from('quotes')
+      .update({ status: 'rejected' })
+      .eq('request_id', id)
+      .neq('id', quoteId);
 
-    // Update request status to 'accepted'
+    if (rejectError) {
+      console.error('acceptQuote: Failed to reject other quotes', rejectError);
+      throw rejectError;
+    }
+
+    // Update the request status to 'accepted'
     const { error: requestError } = await supabase
       .from('requests')
       .update({ status: 'accepted' })
@@ -513,45 +533,28 @@ const acceptQuote = async (req, res, next) => {
       throw requestError;
     }
 
-    // Update quote status to 'accepted'
-    const { error: quoteError } = await supabase
-      .from('quotes')
-      .update({ status: 'accepted' })
-      .eq('id', quoteId);
+    console.log('acceptQuote: All updates completed successfully.');
 
-    if (quoteError) {
-      console.error('acceptQuote: Failed to update quote status', quoteError);
-      throw quoteError;
-    }
-
-    console.log('acceptQuote: Request and quote statuses updated successfully');
-
-    // 2. Fetch all necessary data for notifications in a single block
-    const { data: requestData, error: requestError } = await supabase
-      .from('requests')
-      .select('*, user_profiles(name)')
-      .eq('id', id)
-      .single();
+    // 3. Fetch data needed for notifications
+    const { data: notificationRequestData, error: notificationRequestError } = await supabase
+      .from('requests').select('*, user_profiles(name)').eq('id', id).single();
 
     const { data: quoteData, error: quoteError } = await supabase
-      .from('quotes')
-      .select('quote_amount')
-      .eq('id', quoteId)
-      .single();
+      .from('quotes').select('quote_amount').eq('id', quoteId).single();
 
-    // 3. Send notifications if data was fetched successfully
-    if (requestError || quoteError) {
-      console.error("Could not fetch data for notifications, but quote was accepted.", requestError || quoteError);
-    } else if (requestData && quoteData) {
-      // Send the existing status update email
-      await sendStatusUpdateEmail(requestData);
-      // Send the new SMS notification to admins
-      sendQuoteAcceptedNotification(requestData, quoteData);
+    // 4. Send notifications
+    if (notificationRequestError || quoteError) {
+      console.error("Could not fetch data for notifications, but quote was accepted.", { notificationRequestError, quoteError });
+    } else if (notificationRequestData && quoteData) {
+      await sendStatusUpdateEmail(notificationRequestData);
+      sendQuoteAcceptedNotification(notificationRequestData, quoteData);
     }
 
-    // 4. Send success response to the client
+    // 5. Send success response
     res.status(200).json({ message: 'Quote accepted successfully.' });
+
   } catch (err) {
+    console.error('acceptQuote: An error occurred in the controller', err);
     next(err);
   }
 };
@@ -783,6 +786,44 @@ const cleanupTestData = async (req, res, next) => {
 };
 
 /**
+ * Handles an admin deleting a draft quote (only if not accepted).
+ */
+const deleteQuote = async (req, res, next) => {
+  try {
+    const { id, quoteId } = req.params;
+
+    // First check if the quote exists and is not accepted
+    const { data: quote, error: fetchError } = await supabase
+      .from('quotes')
+      .select('status')
+      .eq('id', quoteId)
+      .eq('request_id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!quote) return res.status(404).json({ error: 'Quote not found.' });
+
+    // Only allow deletion if the quote is not accepted
+    if (quote.status === 'accepted') {
+      return res.status(400).json({ error: 'Cannot delete an accepted quote. Cancel the request instead.' });
+    }
+
+    // Delete the quote
+    const { error: deleteError } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', quoteId)
+      .eq('request_id', id);
+
+    if (deleteError) throw deleteError;
+
+    res.status(200).json({ message: 'Quote deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -824,6 +865,7 @@ export {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,

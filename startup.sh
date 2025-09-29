@@ -173,15 +173,10 @@ else
     echo -e "${BLUE}🚀${NC} Starting development services..."
     echo -e "${BLUE}═══${NC}═══════════════════════════════════════════════"
 
-    # Start backend service in background
-    echo -e "${BLUE}⏳${NC} Starting backend service..."
-    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev:backend &
-    BACKEND_PID=$!
-
-    # Start frontend service in background
-    echo -e "${BLUE}⏳${NC} Starting frontend service..."
-    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev:frontend &
-    FRONTEND_PID=$!
+    # Start both services using npm-run-all
+    echo -e "${BLUE}⏳${NC} Starting both frontend and backend services..."
+    BACKEND_PORT=$BACKEND_PORT FRONTEND_PORT=$FRONTEND_PORT npm run dev &
+    DEV_PID=$!
 
     # Wait a moment for services to start
     sleep 5

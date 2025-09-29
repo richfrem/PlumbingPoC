@@ -7,6 +7,7 @@ import RequestDetailModal from './RequestDetailModal';
 import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
+import { useRealtimeInvalidation } from '../../../hooks/useSupabaseRealtimeV3';
 
 interface MyRequestsProps {
   requests: QuoteRequest[];
@@ -20,10 +21,23 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Enable centralized real-time invalidation for user requests
+  useRealtimeInvalidation(user?.id);
+
   useEffect(() => {
+    console.log('📋 MyRequests: requests prop updated', {
+      requestCount: requests.length,
+      requestIds: requests.map(r => ({ id: r.id, status: r.status }))
+    });
+
     if (selectedRequest && requests.length > 0) {
       const newRequestData = requests.find(r => r.id === selectedRequest.id);
       if (newRequestData) {
+        console.log('📋 MyRequests: updating selectedRequest', {
+          id: newRequestData.id,
+          oldStatus: selectedRequest.status,
+          newStatus: newRequestData.status
+        });
         setSelectedRequest(newRequestData);
       }
     }
@@ -53,13 +67,13 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
             My Quote Requests
           </Typography>
-          
+
           {requests.length > 0 ? (
             <Box sx={{ maxWidth: '800px', margin: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {requests.map((req) => {
                 const mostRecentQuote = req.quotes?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
                 return (
-                  <button key={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
+                  <button key={`${req.id}-${req.status}-${req.quotes?.length || 0}`} data-request-id={req.id} onClick={() => handleOpenModal(req)} className="w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
                     <Box>
                       <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize' }}>
                         {req.problem_category.replace(/_/g, " ")}

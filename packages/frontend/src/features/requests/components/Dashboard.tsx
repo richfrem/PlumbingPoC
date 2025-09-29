@@ -1,6 +1,6 @@
 // packages/frontend/src/features/requests/components/Dashboard.tsx
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
@@ -10,6 +10,7 @@ import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../li
 import statusColors from '../../../lib/statusColors.json';
 import { QuoteRequest, Quote } from '../types';
 import MapView from '../../admin/components/MapView';
+import { useRealtimeInvalidation } from '../../../hooks/useSupabaseRealtimeV3';
 
 interface DashboardProps {
   requests: QuoteRequest[];
@@ -26,11 +27,27 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const dataGridRef = useRef<HTMLDivElement>(null);
+
+  // Enable centralized real-time invalidation for admin dashboard
+  useRealtimeInvalidation();
 
   useEffect(() => {
+    console.log('📊 Dashboard: allRequests prop updated', {
+      requestCount: allRequests.length,
+      requestStatuses: allRequests.map(r => ({ id: r.id, status: r.status, hasQuotes: r.quotes?.length || 0 })),
+      timestamp: new Date().toISOString()
+    });
+
     if (selectedRequest && allRequests.length > 0) {
       const newRequestData = allRequests.find(r => r.id === selectedRequest.id);
       if (newRequestData) {
+        console.log('📊 Dashboard: updating selectedRequest', {
+          id: newRequestData.id,
+          oldStatus: selectedRequest.status,
+          newStatus: newRequestData.status,
+          timestamp: new Date().toISOString()
+        });
         setSelectedRequest(newRequestData);
       }
     }
@@ -78,6 +95,28 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
     return requests;
   }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
+
+  // Add data-request-id attributes to DataGrid rows for integration testing
+  useEffect(() => {
+    console.log('🔍 DataGrid useEffect running:', {
+      hasRef: !!dataGridRef.current,
+      requestCount: filteredRequests.length,
+      viewMode
+    });
+
+    if (dataGridRef.current && filteredRequests.length > 0) {
+      const rows = dataGridRef.current.querySelectorAll('[role="row"]');
+      console.log(`🔍 Found ${rows.length} rows in DataGrid`);
+
+      rows.forEach((row, index) => {
+        if (index > 0 && filteredRequests[index - 1]) { // Skip header row
+          const requestId = filteredRequests[index - 1].id;
+          row.setAttribute('data-request-id', requestId);
+          console.log(`✅ Added data-request-id="${requestId}" to row ${index}`);
+        }
+      });
+    }
+  }, [filteredRequests, viewMode]);
 
   const handleRowClick = (params: any) => {
     const fullRequestData = allRequests.find(r => r.id === params.id);
@@ -170,7 +209,37 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
       valueGetter: (value) => value ? new Date(value) : null,
       valueFormatter: (value) => value ? new Date(value).toLocaleString() : '',
     },
-    // 7. ADDRESS: Geographic context. Takes remaining space.
+    // 7. SCHEDULED DATE: When is the job scheduled?
+    {
+      field: 'scheduled_start_date',
+      headerName: 'Scheduled',
+      width: 180,
+      type: 'dateTime',
+      valueGetter: (value, row) => {
+        // Only show scheduled date if status is 'scheduled' or 'accepted' with a date
+        if (row.status === 'scheduled' && value) {
+          return new Date(value);
+        }
+        if (row.status === 'accepted' && value) {
+          return new Date(value);
+        }
+        return null;
+      },
+      valueFormatter: (value) => value ? new Date(value).toLocaleString() : '',
+      renderCell: (params) => {
+        const scheduledDate = params.value;
+        if (!scheduledDate) {
+          // Show different text based on status
+          const status = params.row.status;
+          if (status === 'accepted') {
+            return <Typography variant="body2" color="warning.main" sx={{ fontStyle: 'italic' }}>Needs Scheduling</Typography>;
+          }
+          return <Typography variant="body2" color="text.secondary">—</Typography>;
+        }
+        return <Typography variant="body2">{new Date(scheduledDate).toLocaleString()}</Typography>;
+      }
+    },
+    // 8. ADDRESS: Geographic context. Takes remaining space.
     {
       field: 'service_address',
       headerName: 'Address',
@@ -271,10 +340,11 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             />
           </Paper>
           {viewMode === 'table' ? (
-            <Paper sx={{ height: 600, width: '100%' }}>
+            <Paper ref={dataGridRef} sx={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={filteredRequests}
                 columns={columns}
+                getRowId={(row) => row.id}
                 onRowClick={handleRowClick}
                 disableColumnFilter={false}
                 initialState={{
