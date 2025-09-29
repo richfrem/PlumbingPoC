@@ -354,7 +354,7 @@ export function useTriageRequest() {
 
   return useMutation({
     mutationFn: async ({ requestId }: { requestId: string }) => {
-      const response = await apiClient.post(`/requests/${requestId}/triage`);
+      const response = await apiClient.post(`/triage/${requestId}`);
       return response.data;
     },
     onSuccess: async (data, variables) => {
