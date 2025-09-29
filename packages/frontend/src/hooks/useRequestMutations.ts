@@ -7,6 +7,7 @@ import { useAuth } from '../features/auth/AuthContext';
 
 export function useUpdateRequestStatus() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -31,6 +32,82 @@ export function useUpdateRequestStatus() {
       });
       await apiClient.patch(`/requests/${requestId}/status`, payload);
     },
+    onMutate: async (variables) => {
+      const { requestId, status, scheduledStartDate } = variables;
+      console.log('useUpdateRequestStatus: Optimistic update', { requestId, status, scheduledStartDate });
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['requests'] });
+      await queryClient.cancelQueries({ queryKey: ['request', requestId] });
+
+      // Snapshot previous values
+      const previousRequests = queryClient.getQueryData<QuoteRequest[]>(['requests']);
+      const previousUserRequests = user ? queryClient.getQueryData<QuoteRequest[]>(['requests', user.id]) : null;
+      const previousRequestDetail = queryClient.getQueryData<QuoteRequest[]>(['request', requestId]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<QuoteRequest[]>(['requests'], (old = []) =>
+        old.map(req =>
+          req.id === requestId
+            ? {
+                ...req,
+                status,
+                scheduled_start_date: scheduledStartDate ?? req.scheduled_start_date,
+              }
+            : req
+        )
+      );
+
+      if (user) {
+        queryClient.setQueryData<QuoteRequest[]>(['requests', user.id], (old = []) =>
+          old.map(req =>
+            req.id === requestId
+              ? {
+                  ...req,
+                  status,
+                  scheduled_start_date: scheduledStartDate ?? req.scheduled_start_date,
+                }
+              : req
+          )
+        );
+      }
+
+      if (previousRequestDetail) {
+        queryClient.setQueryData(['request', requestId], (old: any) => {
+          if (!old || old.length === 0) return old;
+          const first = old[0];
+          return [
+            {
+              ...first,
+              status,
+              scheduled_start_date: scheduledStartDate ?? first.scheduled_start_date,
+            },
+          ];
+        });
+      }
+
+      return { previousRequests, previousUserRequests, previousRequestDetail };
+    },
+    onError: (err, variables, context) => {
+      console.error('useUpdateRequestStatus: Error, rolling back', { err, variables });
+      // Rollback optimistic updates
+      if (context?.previousRequests) {
+        queryClient.setQueryData(['requests'], context.previousRequests);
+      }
+      if (context?.previousUserRequests && user) {
+        queryClient.setQueryData(['requests', user.id], context.previousUserRequests);
+      }
+      if (context?.previousRequestDetail) {
+        queryClient.setQueryData(['request', variables.requestId], context.previousRequestDetail);
+      }
+      const event = new CustomEvent('show-snackbar', {
+        detail: {
+          message: '❌ Failed to update request status. Please try again.',
+          severity: 'error',
+        },
+      });
+      window.dispatchEvent(event);
+    },
     onSuccess: async (data, variables) => {
       console.log('useUpdateRequestStatus: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
@@ -41,16 +118,6 @@ export function useUpdateRequestStatus() {
         detail: {
           message: `✅ Request status updated to ${variables.status}!`,
           severity: 'success',
-        },
-      });
-      window.dispatchEvent(event);
-    },
-    onError: (error, variables) => {
-      console.error('useUpdateRequestStatus: Error', { error, variables });
-      const event = new CustomEvent('show-snackbar', {
-        detail: {
-          message: '❌ Failed to update request status. Please try again.',
-          severity: 'error',
         },
       });
       window.dispatchEvent(event);
