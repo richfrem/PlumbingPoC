@@ -116,7 +116,7 @@ const triggerSms = async (to, body) => {
 
 // SCENARIO 1: New Quote Request
 export const sendNewRequestNotification = async (request) => {
-  console.log('📱 SMS SERVICE: sendNewRequestNotification called - DEBUG VERSION 2');
+  console.log('📱 SMS SERVICE: sendNewRequestNotification called');
   console.log('📱 SMS SERVICE: Request ID:', request.id);
   console.log('📱 SMS SERVICE: Request data structure:', JSON.stringify(request, null, 2));
   console.log('📱 SMS SERVICE: customer_name:', request.customer_name);
