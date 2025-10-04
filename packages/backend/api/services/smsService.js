@@ -13,6 +13,8 @@ const fromPhone = process.env.TWILIO_PHONE_NUMBER;
 // Fetches phone numbers for all users with the 'admin' role from Supabase.
 // Automatically formats phone numbers to E.164 format for Twilio.
 const getAdminPhoneNumbers = async () => {
+  console.log('📱 SMS SERVICE: getAdminPhoneNumbers called');
+
   // Use a more efficient query that gets unique phone numbers directly
   // This simulates: SELECT DISTINCT phone FROM user_profiles WHERE role='admin' AND phone IS NOT NULL
   const { data, error } = await supabase
@@ -22,14 +24,19 @@ const getAdminPhoneNumbers = async () => {
     .not('phone', 'is', null)
     .order('phone'); // Order by phone to group duplicates together
 
+  console.log('📱 SMS SERVICE: Database query result:', { data, error });
+
   if (error) {
     console.error('❌ SMS Service: Database error:', error);
     return [];
   }
 
   if (!data || data.length === 0) {
+    console.log('📱 SMS SERVICE: No admin users with phone numbers found in database');
     return [];
   }
+
+  console.log('📱 SMS SERVICE: Found', data.length, 'admin users with phones');
 
   // Format phone numbers to E.164 format
   const formattedNumbers = data.map(admin => {
@@ -114,6 +121,17 @@ export const sendNewRequestNotification = async (request) => {
   console.log('📱 SMS SERVICE: Request data structure:', JSON.stringify(request, null, 2));
   console.log('📱 SMS SERVICE: customer_name:', request.customer_name);
   console.log('📱 SMS SERVICE: user_profiles:', request.user_profiles);
+
+  // DEBUG: Check environment
+  console.log('📱 SMS SERVICE: NODE_ENV:', process.env.NODE_ENV);
+  console.log('📱 SMS SERVICE: NETLIFY:', process.env.NETLIFY);
+  console.log('📱 SMS SERVICE: isProduction check:', process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true');
+
+  // DEBUG: Check Twilio credentials
+  console.log('📱 SMS SERVICE: TWILIO_ACCOUNT_SID present:', !!process.env.TWILIO_ACCOUNT_SID);
+  console.log('📱 SMS SERVICE: TWILIO_AUTH_TOKEN present:', !!process.env.TWILIO_AUTH_TOKEN);
+  console.log('📱 SMS SERVICE: TWILIO_PHONE_NUMBER present:', !!process.env.TWILIO_PHONE_NUMBER);
+  console.log('📱 SMS SERVICE: TWILIO_DEFAULT_ADMIN_NUMBER:', process.env.TWILIO_DEFAULT_ADMIN_NUMBER);
 
   // First try to get admin numbers from database
   const adminNumbers = await getAdminPhoneNumbers();
