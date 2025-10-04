@@ -2,7 +2,7 @@
 
 [build]
   base = "." # Repository root
-  command = "npm run build" # This will now trigger the root 'build' script
+  command = "npm install && npm install --workspace=@plumbingpoc/frontend && npm --workspace=@plumbingpoc/frontend run build" # Install deps then build
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }

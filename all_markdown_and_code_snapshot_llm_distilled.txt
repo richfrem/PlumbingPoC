@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-04T20:52:54.165Z
+Generated On: 2025-10-04T20:56:52.217Z
 
-# Mnemonic Weight (Token Count): ~262,959 tokens
+# Mnemonic Weight (Token Count): ~262,979 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -6639,7 +6639,7 @@ DROP POLICY "Enable read for own quotes" ON "public"."quotes";
 
 [build]
   base = "." # Repository root
-  command = "npm run build" # This will now trigger the root 'build' script
+  command = "npm install && npm install --workspace=@plumbingpoc/frontend && npm --workspace=@plumbingpoc/frontend run build" # Install deps then build
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
@@ -9205,7 +9205,7 @@ app.listen(PORT, () => {
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npx tsc --noEmit && npx vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
