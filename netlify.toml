@@ -2,7 +2,7 @@
 
 [build]
   base = "." # Repository root
-  command = "npm run test:ci && npm run build"
+  command = "npm install && npm run test:ci && npm run build"
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
