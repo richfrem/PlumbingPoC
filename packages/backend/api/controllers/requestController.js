@@ -223,7 +223,13 @@ const submitQuoteRequest = async (req, res, next) => {
 
     await sendRequestSubmittedEmail(data);
 
-    sendNewRequestNotification(data);
+    console.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
+    try {
+      sendNewRequestNotification(data);
+      console.log('📱 SMS DEBUG: sendNewRequestNotification called successfully');
+    } catch (smsError) {
+      console.error('📱 SMS DEBUG: sendNewRequestNotification failed:', smsError);
+    }
 
     res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
   } catch (err) {
