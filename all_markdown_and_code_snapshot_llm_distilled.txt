@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-09-29T01:49:06.931Z
+Generated On: 2025-10-04T19:53:37.801Z
 
-# Mnemonic Weight (Token Count): ~259,633 tokens
+# Mnemonic Weight (Token Count): ~262,519 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -7347,7 +7347,13 @@ const submitQuoteRequest = async (req, res, next) => {
 
     await sendRequestSubmittedEmail(data);
 
-    sendNewRequestNotification(data);
+    console.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
+    try {
+      sendNewRequestNotification(data);
+      console.log('📱 SMS DEBUG: sendNewRequestNotification called successfully');
+    } catch (smsError) {
+      console.error('📱 SMS DEBUG: sendNewRequestNotification failed:', smsError);
+    }
 
     res.status(201).json({ message: 'Quote request submitted successfully.', request: data });
   } catch (err) {
@@ -7910,6 +7916,44 @@ const cleanupTestData = async (req, res, next) => {
 };
 
 /**
+ * Handles an admin deleting a draft quote (only if not accepted).
+ */
+const deleteQuote = async (req, res, next) => {
+  try {
+    const { id, quoteId } = req.params;
+
+    // First check if the quote exists and is not accepted
+    const { data: quote, error: fetchError } = await supabase
+      .from('quotes')
+      .select('status')
+      .eq('id', quoteId)
+      .eq('request_id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!quote) return res.status(404).json({ error: 'Quote not found.' });
+
+    // Only allow deletion if the quote is not accepted
+    if (quote.status === 'accepted') {
+      return res.status(400).json({ error: 'Cannot delete an accepted quote. Cancel the request instead.' });
+    }
+
+    // Delete the quote
+    const { error: deleteError } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', quoteId)
+      .eq('request_id', id);
+
+    if (deleteError) throw deleteError;
+
+    res.status(200).json({ message: 'Quote deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Handles an admin updating the status of a request.
  */
 const updateRequestStatus = async (req, res, next) => {
@@ -7951,6 +7995,7 @@ export {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,
@@ -8268,6 +8313,38 @@ export { validate };
 --- START OF FILE ./packages/backend/api/routes/followUpRoutes.js ---
 
 // packages/backend/api/routes/followUpRoutes.js
+//
+// FOLLOW-UP ROUTES - Automated Customer Communication
+//
+// This file defines routes for automated follow-up email campaigns to customers
+// with outstanding quotes, helping improve response rates and conversion.
+//
+// ARCHITECTURE:
+// - Single POST endpoint to trigger follow-up campaigns
+// - Admin-only access for controlled execution
+// - Processes all requests in 'quoted' status
+// - Sends personalized emails via Resend service
+//
+// DEPLOYMENT:
+// - In development: runs as Express server at http://localhost:3000/api/follow-up/*
+// - In production: deployed as Netlify Function via /.netlify/functions/api/*
+// - Mounted at '/api/follow-up' in server.js
+//
+// EMAIL CAMPAIGN LOGIC:
+// - Finds all requests with status='quoted' (customer has quote but hasn't responded)
+// - Sends follow-up emails with quote details and call-to-action
+// - Tracks email delivery and engagement
+// - Updates request records with follow-up timestamps
+//
+// INTEGRATIONS:
+// - Resend API for email delivery (RESEND_API_KEY required)
+// - Email templates defined in emailService.js
+// - SMS notifications may be sent alongside emails
+//
+// SECURITY:
+// - Requires admin authentication
+// - Should be rate-limited to prevent spam
+// - Email content is templated and safe
 
 import express from 'express';
 import { sendFollowUpEmails } from '../controllers/followUpController.js';
@@ -8287,6 +8364,34 @@ export default router;
 --- START OF FILE ./packages/backend/api/routes/requestRoutes.js ---
 
 // packages/backend/api/routes/requestRoutes.js
+//
+// REQUEST ROUTES - Express Router for Plumbing Quote Request Management
+//
+// This file defines all HTTP routes for the plumbing quote request system.
+// Routes are organized into logical sections and mounted at '/api/requests' in server.js.
+//
+// ARCHITECTURE:
+// - Express Router handles route definitions and middleware
+// - Routes are grouped by functionality (quote intake, admin operations, etc.)
+// - Middleware: authentication, admin checks, input validation
+// - Controllers handle business logic, this file only defines endpoints
+//
+// DEPLOYMENT:
+// - In development: runs as Express server at http://localhost:3000/api/requests/*
+// - In production: deployed as Netlify Function, routes via /.netlify/functions/api/*
+// - Netlify redirects /api/* to the function with path parameters
+//
+// MIDDLEWARE CHAIN:
+// 1. authenticate - verifies JWT token and attaches user to req.user
+// 2. isAdmin - checks if user has admin role (for admin-only routes)
+// 3. validate(schema) - validates request body against Joi schema
+// 4. controller - handles the actual business logic
+//
+// SECURITY:
+// - All routes require authentication
+// - Admin routes have additional isAdmin middleware
+// - Input validation prevents malformed requests
+// - File uploads use memory storage (no disk writes in serverless)
 
 import express from 'express';
 import multer from 'multer';
@@ -8301,6 +8406,7 @@ import {
   getRequestById,
   updateRequest,
   updateQuote,
+  deleteQuote,
   acceptQuote,
   updateRequestStatus,
   markRequestAsViewed,
@@ -8324,7 +8430,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // --- Core Quote Intake Routes ---
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
-router.post('/', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
@@ -8348,6 +8454,7 @@ router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote)
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
+router.delete('/:id/quotes/:quoteId', authenticate, isAdmin, deleteQuote);
 router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:id', authenticate, getRequestById);
 
@@ -8357,6 +8464,33 @@ export default router;
 --- START OF FILE ./packages/backend/api/routes/triageRoutes.js ---
 
 // packages/backend/api/routes/triageRoutes.js
+//
+// TRIAGE ROUTES - AI-Powered Request Analysis
+//
+// This file defines routes for AI-powered triage functionality that analyzes
+// plumbing requests to generate priority scores and profitability assessments.
+//
+// ARCHITECTURE:
+// - Single POST endpoint for request triage
+// - Admin-only access to prevent abuse
+// - Calls OpenAI API for intelligent analysis
+// - Updates request records with AI-generated scores
+//
+// DEPLOYMENT:
+// - In development: runs as Express server at http://localhost:3000/api/triage/*
+// - In production: deployed as Netlify Function via /.netlify/functions/api/*
+// - Mounted at '/api/triage' in server.js
+//
+// AI ANALYSIS:
+// - Analyzes problem descriptions, categories, and customer info
+// - Generates priority scores (1-10) for urgency ranking
+// - Provides profitability assessments for business decisions
+// - Stores results in request.triage_summary, priority_score, profitability_score
+//
+// SECURITY:
+// - Requires admin authentication
+// - Rate limiting should be considered for production use
+// - OpenAI API key required in environment variables
 
 import express from 'express';
 import { triageRequest } from '../controllers/triageController.js';
@@ -8376,6 +8510,39 @@ export default router;
 --- START OF FILE ./packages/backend/api/routes/userRoutes.js ---
 
 // packages/backend/api/routes/userRoutes.js
+//
+// USER ROUTES - Customer Profile Management
+//
+// This file defines routes for managing user profiles in the plumbing quote system.
+// Handles customer information storage, updates, and retrieval for personalized service.
+//
+// ARCHITECTURE:
+// - RESTful CRUD operations for user profiles
+// - User-scoped access (users can only manage their own profiles)
+// - Flexible profile updates without strict schema validation
+// - Integration with Supabase auth system
+//
+// DEPLOYMENT:
+// - In development: runs as Express server at http://localhost:3000/api/users/*
+// - In production: deployed as Netlify Function via /.netlify/functions/api/*
+// - Mounted at '/api/users' in server.js
+//
+// PROFILE DATA:
+// - Stores customer contact information (name, email, phone, address)
+// - Geographic data for service area calculations
+// - User preferences and account settings
+// - Links to Supabase auth.users table via user_id
+//
+// SECURITY:
+// - All routes require user authentication
+// - Users can only access/modify their own profile data
+// - No admin routes (self-service only)
+// - Input validation recommended for production
+//
+// DATABASE:
+// - user_profiles table in Supabase
+// - Foreign key relationship to auth.users
+// - Optional fields allow flexible profile completion
 
 import express from 'express';
 import { updateUserProfile, createUserProfile, getUserProfile } from '../controllers/userController.js';
@@ -8574,6 +8741,8 @@ const fromPhone = process.env.TWILIO_PHONE_NUMBER;
 // Fetches phone numbers for all users with the 'admin' role from Supabase.
 // Automatically formats phone numbers to E.164 format for Twilio.
 const getAdminPhoneNumbers = async () => {
+  console.log('📱 SMS SERVICE: getAdminPhoneNumbers called');
+
   // Use a more efficient query that gets unique phone numbers directly
   // This simulates: SELECT DISTINCT phone FROM user_profiles WHERE role='admin' AND phone IS NOT NULL
   const { data, error } = await supabase
@@ -8583,14 +8752,19 @@ const getAdminPhoneNumbers = async () => {
     .not('phone', 'is', null)
     .order('phone'); // Order by phone to group duplicates together
 
+  console.log('📱 SMS SERVICE: Database query result:', { data, error });
+
   if (error) {
     console.error('❌ SMS Service: Database error:', error);
     return [];
   }
 
   if (!data || data.length === 0) {
+    console.log('📱 SMS SERVICE: No admin users with phone numbers found in database');
     return [];
   }
+
+  console.log('📱 SMS SERVICE: Found', data.length, 'admin users with phones');
 
   // Format phone numbers to E.164 format
   const formattedNumbers = data.map(admin => {
@@ -8675,6 +8849,17 @@ export const sendNewRequestNotification = async (request) => {
   console.log('📱 SMS SERVICE: Request data structure:', JSON.stringify(request, null, 2));
   console.log('📱 SMS SERVICE: customer_name:', request.customer_name);
   console.log('📱 SMS SERVICE: user_profiles:', request.user_profiles);
+
+  // DEBUG: Check environment
+  console.log('📱 SMS SERVICE: NODE_ENV:', process.env.NODE_ENV);
+  console.log('📱 SMS SERVICE: NETLIFY:', process.env.NETLIFY);
+  console.log('📱 SMS SERVICE: isProduction check:', process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true');
+
+  // DEBUG: Check Twilio credentials
+  console.log('📱 SMS SERVICE: TWILIO_ACCOUNT_SID present:', !!process.env.TWILIO_ACCOUNT_SID);
+  console.log('📱 SMS SERVICE: TWILIO_AUTH_TOKEN present:', !!process.env.TWILIO_AUTH_TOKEN);
+  console.log('📱 SMS SERVICE: TWILIO_PHONE_NUMBER present:', !!process.env.TWILIO_PHONE_NUMBER);
+  console.log('📱 SMS SERVICE: TWILIO_DEFAULT_ADMIN_NUMBER:', process.env.TWILIO_DEFAULT_ADMIN_NUMBER);
 
   // First try to get admin numbers from database
   const adminNumbers = await getAdminPhoneNumbers();
@@ -11003,6 +11188,13 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   });
   const request = requestArray?.[0];
   const attachments = request?.quote_attachments || initialAttachments || [];
+
+  // Clear signed URLs when requestId changes to prevent showing old attachments
+  useEffect(() => {
+    setSignedUrls({});
+    setPendingImageUrls({});
+    setError(null);
+  }, [requestId]);
   
   console.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
@@ -11011,6 +11203,8 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     requestLoading,
     requestError,
     hasRealTimeData: !!request,
+    signedUrlsCount: Object.keys(signedUrls).length,
+    pendingUrlsCount: Object.keys(pendingImageUrls).length,
     timestamp: new Date().toISOString()
   });
 
@@ -13030,12 +13224,12 @@ export default QuoteAgentModal;
 // packages/frontend/src/features/requests/components/QuoteFormModal.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Divider, InputAdornment, Chip, Grid, CircularProgress } from '@mui/material';
 import { useAuth } from '../../auth/AuthContext';
 import apiClient from '../../../lib/apiClient';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
 import { QuoteRequest, QuoteAttachment } from '../types';
-import { useCreateQuote, useUpdateQuote } from '../../../hooks';
+import { useCreateQuote, useUpdateQuote, useDeleteQuote } from '../../../hooks';
 
 // Import all our reusable components
 import ModalHeader from './ModalHeader';
@@ -13071,6 +13265,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
 
     const createQuoteMutation = useCreateQuote();
     const updateQuoteMutation = useUpdateQuote();
+    const deleteQuoteMutation = useDeleteQuote();
 
   useEffect(() => {
     if (isOpen) {
@@ -13092,7 +13287,10 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         setLaborItems([{ description: '', price: '' }]);
         setMaterialItems([{ description: '', price: '' }]);
         setNotes('');
-        setGoodUntil('');
+        // Default "good until" to 1 month from today
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+        setGoodUntil(oneMonthFromNow.toISOString().split('T')[0]);
       }
 
       // Auto-focus the first field when modal opens
@@ -13133,70 +13331,82 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
       }),
     };
 
-    try {
-      if (mode === 'change_order') {
-        // Create a new change order quote
-        const changeOrderPayload = {
-          ...payload,
-          status: 'change_order',
-          details: JSON.stringify({
-            ...JSON.parse(payload.details),
-            is_change_order: true,
-            original_quote_id: quote.id,
-            change_reason: 'Additional work requested'
-          })
-        };
+    if (mode === 'change_order') {
+      // Create a new change order quote
+      const changeOrderPayload = {
+        ...payload,
+        status: 'change_order',
+        details: JSON.stringify({
+          ...JSON.parse(payload.details),
+          is_change_order: true,
+          original_quote_id: quote.id,
+          change_reason: 'Additional work requested'
+        })
+      };
 
-        const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
+      const { data: savedQuote } = await apiClient.post(`/requests/${requestId}/quotes`, changeOrderPayload);
 
-        // Change orders don't change the main request status
-        // They remain as separate quotes that need acceptance
+      // Change orders don't change the main request status
+      // They remain as separate quotes that need acceptance
 
-        if (newAttachments.length > 0 && savedQuote?.id) {
-          const formData = new FormData();
-          formData.append('request_id', requestId);
-          formData.append('quote_id', savedQuote.id);
-          newAttachments.forEach(file => formData.append('attachment', file));
-          await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        }
-      } else if (quote?.id && mode === 'update') {
-        // Update existing quote
-        await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, quote: payload });
-      } else if (mode === 'create') {
-        // Create new quote
-        try {
-          const savedQuote = await createQuoteMutation.mutateAsync({ requestId, quote: payload });
-
-          // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
-          if (isAdmin) {
-            try {
-              await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
-            } catch (statusError) {
-              console.error('Failed to update request status to quoted:', statusError);
-              // Don't fail the quote creation if status update fails
-            }
-          }
-
-          if (newAttachments.length > 0 && savedQuote?.id) {
-            const formData = new FormData();
-            formData.append('request_id', requestId);
-            formData.append('quote_id', savedQuote.id);
-            newAttachments.forEach(file => formData.append('attachment', file));
-            await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-          }
-        } catch (error) {
-          // Error is handled by the mutation hook's onError
-          console.error('Failed to create quote:', error);
-          return;
-        }
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => formData.append('attachment', file));
+        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
+
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Change order created successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
 
       // Close modal after successful save
       onClose(true);
+    } else if (quote?.id && mode === 'update') {
+      // Update existing quote
+      await updateQuoteMutation.mutateAsync({ requestId, quoteId: quote.id, quote: payload });
 
-    } catch (err: any) {
-      // Error is handled by the mutation hook
-      console.error('Failed to save quote:', err);
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote updated successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+
+      // Close modal after successful save
+      onClose(true);
+    } else if (mode === 'create') {
+      // Create new quote
+      const savedQuote = await createQuoteMutation.mutateAsync({ requestId, quote: payload });
+
+      // If admin created a new quote, reset request status to "quoted" to restart the lifecycle
+      if (isAdmin) {
+        try {
+          await apiClient.put(`/requests/${requestId}/status`, { status: 'quoted' });
+        } catch (statusError) {
+          console.error('Failed to update request status to quoted:', statusError);
+          // Don't fail the quote creation if status update fails
+        }
+      }
+
+      if (newAttachments.length > 0 && savedQuote?.id) {
+        const formData = new FormData();
+        formData.append('request_id', requestId);
+        formData.append('quote_id', savedQuote.id);
+        newAttachments.forEach(file => formData.append('attachment', file));
+        await apiClient.post('/requests/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
+
+      // Show success message
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote saved successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+
+      // Close modal after successful save
+      onClose(true);
     }
   };
 
@@ -13323,17 +13533,37 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         </Box>
 
         <ModalFooter>
-           <Box>
-             {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
-           </Box>
-           {editable && (
-             <Box>
-               <Button variant="contained" color="primary" onClick={handleSaveQuote} disabled={updateQuoteMutation.isPending}>
-                 {updateQuoteMutation.isPending ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
-               </Button>
-             </Box>
-           )}
-         </ModalFooter>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {quote?.status && <Chip label={`Status: ${quote.status}`} color={getQuoteStatusChipColor(quote.status)} sx={{ textTransform: 'capitalize' }} />}
+              {isAdmin && quote?.id && quote?.status !== 'accepted' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+                      deleteQuoteMutation.mutate({ requestId, quoteId: quote.id });
+                    }
+                  }}
+                  disabled={deleteQuoteMutation.isPending}
+                >
+                  {deleteQuoteMutation.isPending ? 'Deleting...' : 'Delete Quote'}
+                </Button>
+              )}
+            </Box>
+            {editable && (
+              <Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSaveQuote}
+                  disabled={createQuoteMutation.isPending || updateQuoteMutation.isPending}
+                  startIcon={(createQuoteMutation.isPending || updateQuoteMutation.isPending) ? <CircularProgress size={16} color="inherit" /> : null}
+                >
+                  {(createQuoteMutation.isPending || updateQuoteMutation.isPending) ? 'Saving...' : (quote?.id ? 'Update Quote' : 'Save Quote')}
+                </Button>
+              </Box>
+            )}
+          </ModalFooter>
       </Paper>
     </div>
   );
@@ -14632,6 +14862,7 @@ export {
   useAcceptQuote,
   useCreateQuote,
   useUpdateQuote,
+  useDeleteQuote,
   useTriageRequest,
   useUpdateAddressMutation,
 } from './useRequestMutations';
@@ -14649,6 +14880,7 @@ import { useAuth } from '../features/auth/AuthContext';
 
 export function useUpdateRequestStatus() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -14673,6 +14905,82 @@ export function useUpdateRequestStatus() {
       });
       await apiClient.patch(`/requests/${requestId}/status`, payload);
     },
+    onMutate: async (variables) => {
+      const { requestId, status, scheduledStartDate } = variables;
+      console.log('useUpdateRequestStatus: Optimistic update', { requestId, status, scheduledStartDate });
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['requests'] });
+      await queryClient.cancelQueries({ queryKey: ['request', requestId] });
+
+      // Snapshot previous values
+      const previousRequests = queryClient.getQueryData<QuoteRequest[]>(['requests']);
+      const previousUserRequests = user ? queryClient.getQueryData<QuoteRequest[]>(['requests', user.id]) : null;
+      const previousRequestDetail = queryClient.getQueryData<QuoteRequest[]>(['request', requestId]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<QuoteRequest[]>(['requests'], (old = []) =>
+        old.map(req =>
+          req.id === requestId
+            ? {
+                ...req,
+                status,
+                scheduled_start_date: scheduledStartDate ?? req.scheduled_start_date,
+              }
+            : req
+        )
+      );
+
+      if (user) {
+        queryClient.setQueryData<QuoteRequest[]>(['requests', user.id], (old = []) =>
+          old.map(req =>
+            req.id === requestId
+              ? {
+                  ...req,
+                  status,
+                  scheduled_start_date: scheduledStartDate ?? req.scheduled_start_date,
+                }
+              : req
+          )
+        );
+      }
+
+      if (previousRequestDetail) {
+        queryClient.setQueryData(['request', requestId], (old: any) => {
+          if (!old || old.length === 0) return old;
+          const first = old[0];
+          return [
+            {
+              ...first,
+              status,
+              scheduled_start_date: scheduledStartDate ?? first.scheduled_start_date,
+            },
+          ];
+        });
+      }
+
+      return { previousRequests, previousUserRequests, previousRequestDetail };
+    },
+    onError: (err, variables, context) => {
+      console.error('useUpdateRequestStatus: Error, rolling back', { err, variables });
+      // Rollback optimistic updates
+      if (context?.previousRequests) {
+        queryClient.setQueryData(['requests'], context.previousRequests);
+      }
+      if (context?.previousUserRequests && user) {
+        queryClient.setQueryData(['requests', user.id], context.previousUserRequests);
+      }
+      if (context?.previousRequestDetail) {
+        queryClient.setQueryData(['request', variables.requestId], context.previousRequestDetail);
+      }
+      const event = new CustomEvent('show-snackbar', {
+        detail: {
+          message: '❌ Failed to update request status. Please try again.',
+          severity: 'error',
+        },
+      });
+      window.dispatchEvent(event);
+    },
     onSuccess: async (data, variables) => {
       console.log('useUpdateRequestStatus: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
@@ -14683,16 +14991,6 @@ export function useUpdateRequestStatus() {
         detail: {
           message: `✅ Request status updated to ${variables.status}!`,
           severity: 'success',
-        },
-      });
-      window.dispatchEvent(event);
-    },
-    onError: (error, variables) => {
-      console.error('useUpdateRequestStatus: Error', { error, variables });
-      const event = new CustomEvent('show-snackbar', {
-        detail: {
-          message: '❌ Failed to update request status. Please try again.',
-          severity: 'error',
         },
       });
       window.dispatchEvent(event);
@@ -14866,7 +15164,7 @@ export function useUpdateQuote() {
       quoteId: string;
       quote: any;
     }) => {
-      const response = await apiClient.patch(
+      const response = await apiClient.put(
         `/requests/${requestId}/quotes/${quoteId}`,
         quote
       );
@@ -14900,8 +15198,8 @@ export function useSubmitQuoteRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: QuoteRequest) => {
-      const response = await apiClient.post('/requests', request);
+    mutationFn: async (payload: any) => {
+      const response = await apiClient.post('/requests/submit', payload);
       return response.data;
     },
     onSuccess: async () => {
@@ -14929,7 +15227,7 @@ export function useTriageRequest() {
 
   return useMutation({
     mutationFn: async ({ requestId }: { requestId: string }) => {
-      const response = await apiClient.post(`/requests/${requestId}/triage`);
+      const response = await apiClient.post(`/triage/${requestId}`);
       return response.data;
     },
     onSuccess: async (data, variables) => {
@@ -15033,6 +15331,46 @@ export function useMarkRequestAsViewed() {
     },
     onSuccess: () => {
       // silent success is fine; invalidate already runs
+    },
+  });
+}
+
+export function useDeleteQuote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      requestId,
+      quoteId,
+    }: {
+      requestId: string;
+      quoteId: string;
+    }) => {
+      const response = await apiClient.delete(
+        `/requests/${requestId}/quotes/${quoteId}`
+      );
+      return response.data;
+    },
+    onSuccess: async (data, variables) => {
+      console.log('useDeleteQuote: Success', { data, variables });
+      await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
+      await queryClient.invalidateQueries({
+        queryKey: ['request', variables.requestId],
+      });
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: '✅ Quote deleted successfully!', severity: 'success' },
+      });
+      window.dispatchEvent(event);
+    },
+    onError: (error, variables) => {
+      console.error('useDeleteQuote: Error', { error, variables });
+      const event = new CustomEvent('show-snackbar', {
+        detail: {
+          message: '❌ Failed to delete quote. Please try again.',
+          severity: 'error',
+        },
+      });
+      window.dispatchEvent(event);
     },
   });
 }
