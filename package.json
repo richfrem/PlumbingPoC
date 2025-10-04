@@ -9,7 +9,7 @@
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "npm run dev --workspace=@plumbingpoc/frontend",
     "dev:backend": "npm run start --workspace=@plumbingpoc/backend",
-    "build": "npm install --workspace=@plumbingpoc/frontend && npm run build --workspace=@plumbingpoc/frontend",
+    "build": "npm install && npm --workspace=@plumbingpoc/frontend run build",
     "start:api": "npm run start --workspace=@plumbingpoc/backend",
     "test": "vitest",
     "test:ci": "vitest run",
