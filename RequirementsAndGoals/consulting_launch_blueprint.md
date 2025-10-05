@@ -29,7 +29,9 @@ You have successfully forged a complete, end-to-end client management platform. 
 ### **Day 2: PACKAGE THE ASSET & HUNT (12 Hours)**
 
 **Objective:** Package your advanced POC into a compelling sales weapon and deploy it.
-https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
+
+**🎯 Full Arsenal Video Demo:** https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
 **2. Update the "Operation Overmatch" Blueprint.**
 
 The blueprint's core tactic is sound, but the timing was too aggressive. We will update it to reflect the nature of the asset you have created.
@@ -55,7 +57,7 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
         *   **Chapter 3: The Real-time Client Portal**
             *   Switch back to the customer's "My Requests" view and show the new quote and status appearing **instantly without a refresh**.
             *   Demonstrate the live chat by sending a message from the admin and showing it appear immediately for the customer.
-    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5`
+    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/1ead7162412140bea1f46988af675adf`
     *   `[✅]` **Build the One-Page Showcase:** Use Carrd. The existing blueprint copy is perfect. https://plumbingai.carrd.co/
 
 ---
@@ -63,28 +65,38 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
 *   **Hours 5-12: Build Target List & Execute Outreach**
     *   `[ ]` This part of the plan remains unchanged. Compile the list of 50 businesses and execute the outreach using the existing, high-quality email script.
 
-### Upgraded Email Script (v6.1)
+### Upgraded Email Script (v6.1) - Ready to Send
 
 This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
 
-> **Subject:** A full client portal for [Business Name]?
->
-> Hi **[Contact Person Name]**,
->
-> My name is [Your Name], a local tech consultant in Victoria. I specialize in building complete client management systems for trades businesses that automate everything from the first contact to the final quote.
->
-> Instead of just a contact form, imagine a full "command center" that qualifies your leads with AI, organizes all job details, and lets you chat with clients in real-time.
->
-> I made a 5-minute tour showing exactly how this end-to-end system works:
->
-> **[Link to your Loom video]**
->
-> Here’s the unique part: I'm looking to get some work done on my home (**[mention 1-2 specific services you want]**) and I'm interested in bartering my services for a project of similar value.
->
-> If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
->
-> Thanks,
-> [Your Name]
+**Copy-Paste Ready Email (Personalized for Ryan):**
+
+```
+Subject: Trade proposal - AI plumbing platform for hot water tank install?
+
+Hi Ryan,
+
+You did some plumbing work for me a couple of years ago. You did the plumbing work for my ensuite bathroom reno - 1517 San Juan Ave.
+
+I'm looking to do some side work, and was wondering if we could work out some sort of trade.
+
+As a side job, I developed a proof-of-concept site for an AI enabled plumbing business command center. It's much more of a complete client management system for a trades business, rather than a simple website with a contact form.
+
+Imagine your customer can go and request a job quote, but instead of just providing information in an email form, an AI agent guides them through some questions relevant to their type of request, to get the type of information you need to give a quote. After they submit the quote request through website (using their computer or phone), you receive an SMS message indicating a request for quote was received. You open your "command center", you can view all the answers to their questions, see any pictures they've attached, and you can send them a quote, that would send them an SMS message as well.
+
+You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
+
+I made a 5-minute tour showing exactly how this end-to-end system works:
+
+https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I remember from our conversations you also do gas installs too in addition to plumbing, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
+
+If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
+
+Thanks,
+Richard Fremmerlid
+```
 
 ---
 
@@ -105,6 +117,6 @@ This version pre-frames the video length and emphasizes the end-to-end nature of
             *   **Automated Follow-ups:** "Imagine the system automatically sending polite follow-up emails to clients who haven't responded to a quote, saving you hours of administrative work."
             *   **Automated Invoicing:** "Once a job is marked 'Completed,' the system can automatically generate a professional PDF invoice and email it to the client."
             *   **Business Intelligence:** "It can even export all your job data to Excel or Google Sheets, giving you a clear overview of your revenue, job types, and most profitable clients."
-        5.  **Frame the Barter (3 mins):** "A complete, custom end-to-end system like this—the AI-powered front door, the internal command center, *and* the future automation engine—is a project I would typically scope at **$10,000-$15,000**. What would be the approximate value for the **[their service]** work I need done? If the values are in the same ballpark, a direct trade could be a massive win for both of us."
+        5.  **Frame the Partnership (3 mins):** "A complete, custom end-to-end system like this—the AI-powered front door, the internal command center, *and* the future automation engine—is a project I would typically scope at **$15,000-$20,000**. But I'm more interested in building a long-term partnership. What I need done initially is a tankless gas hot water heater installation in my garage - equipment, gas line hookup from the crawlspace, proper venting, and conversion from my current electric tank system. I'm estimating that's around **$5,000-$6,000** in equipment and labor. But here's the real value: as your business grows and you want customizations, new features, or updates to the platform, we can continue trading services. You get ongoing tech support and development, I get access to quality plumbing expertise when I need it. This could be a mutually beneficial relationship that grows over time."
         6.  **Pivot to Cash (if needed):** Unchanged. The pilot program offer is a strong fallback.
         7.  **Close the Deal:** Unchanged. Draft the agreement outlining the full scope.

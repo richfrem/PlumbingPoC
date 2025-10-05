@@ -42,7 +42,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
         <div>Loading:</div><div>{String(loading)}</div>
         <div>SaveError:</div><div>{saveError || 'none'}</div>
         <div>SaveSuccess:</div><div>{String(saveSuccess)}</div>
-        <div>PhoneError:</div><div>{phoneError || 'none'}</div>
       </div>
     </div>
   );
@@ -51,11 +50,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState(contextProfile?.name || '');
   const [phone, setPhone] = useState(contextProfile?.phone || '');
-  const [province, setProvince] = useState(contextProfile?.province || '');
-  const [city, setCity] = useState(contextProfile?.city || '');
+  const [province, setProvince] = useState(contextProfile?.province || 'BC');
+  const [city, setCity] = useState(contextProfile?.city || 'Victoria');
   const [address, setAddress] = useState(contextProfile?.address || '');
   const [postalCode, setPostalCode] = useState(contextProfile?.postal_code || '');
-  const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -65,8 +63,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
     if (contextProfile) {
       setName(contextProfile.name || '');
       setPhone(contextProfile.phone || '');
-      setProvince(contextProfile.province || '');
-      setCity(contextProfile.city || '');
+      setProvince(contextProfile.province || 'BC');
+      setCity(contextProfile.city || 'Victoria');
       setAddress(contextProfile.address || '');
       setPostalCode(contextProfile.postal_code || '');
     }
@@ -159,19 +157,151 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setPhoneError('');
-    setSaveError('');
+    setSaveError(''); // Clear both error states
     setSaveSuccess(false);
 
-    if (!/^\d{3}-\d{3}-\d{4}$/.test(phone)) {
-      setPhoneError('Enter a valid phone number in the format 250-885-7003');
+    // 1. EMAIL VALIDATION (read-only but check it exists)
+    if (!email || !email.trim()) {
+      setSaveError('Email is required but missing. Please refresh and try again.');
+      setLoading(false);
+      return;
+    }
+
+    // 2. NAME VALIDATION  
+    if (!name || !name.trim()) {
+      setSaveError('Name is required');
+      setLoading(false);
+      return;
+    }
+    if (name.trim().length < 2) {
+      setSaveError('Name must be at least 2 characters long');
+      setLoading(false);
+      return;
+    }
+    if (name.trim().length > 100) {
+      setSaveError('Name cannot be longer than 100 characters');
+      setLoading(false);
+      return;
+    }
+
+    // 3. PHONE VALIDATION
+    if (!phone || !phone.trim()) {
+      setSaveError('Phone number is required');
+      setLoading(false);
+      return;
+    }
+
+    // More detailed phone validation with specific error messages
+    const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+    if (!phoneRegex.test(phone)) {
+      if (!phone.includes('-')) {
+        setSaveError('Phone number must include dashes. Format: 250-885-7003');
+      } else if (phone.length < 12) {
+        setSaveError('Phone number is too short. Format: 250-885-7003 (12 characters)');
+      } else if (phone.length > 12) {
+        setSaveError('Phone number is too long. Format: 250-885-7003 (12 characters)');
+      } else if (!/^\d/.test(phone)) {
+        setSaveError('Phone number must start with a digit. Format: 250-885-7003');
+      } else if (!/^\d{3}-/.test(phone)) {
+        setSaveError('First 3 digits must be followed by a dash. Format: 250-885-7003');
+      } else if (!/^\d{3}-\d{3}-/.test(phone)) {
+        setSaveError('Missing dash after area code and prefix. Format: 250-885-7003');
+      } else if (!/\d{4}$/.test(phone)) {
+        setSaveError('Phone number must end with 4 digits. Format: 250-885-7003');
+      } else {
+        setSaveError('Phone number format is invalid. Use only numbers and dashes: 250-885-7003');
+      }
+      setLoading(false);
+      return;
+    }
+
+    // 4. PROVINCE VALIDATION
+    if (!province || !province.trim()) {
+      setSaveError('Province is required');
+      setLoading(false);
+      return;
+    }
+    const validProvinces = ['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'ON', 'PE', 'QC', 'SK', 'NT', 'NU', 'YT'];
+    if (!validProvinces.includes(province)) {
+      setSaveError('Please select a valid Canadian province or territory');
+      setLoading(false);
+      return;
+    }
+
+    // 5. CITY VALIDATION
+    if (!city || !city.trim()) {
+      setSaveError('City is required');
+      setLoading(false);
+      return;
+    }
+    if (city.trim().length < 2) {
+      setSaveError('City name must be at least 2 characters long');
+      setLoading(false);
+      return;
+    }
+    if (city.trim().length > 100) {
+      setSaveError('City name cannot be longer than 100 characters');
+      setLoading(false);
+      return;
+    }
+    if (!/^[a-zA-Z\s\-'\.]+$/.test(city.trim())) {
+      setSaveError('City name can only contain letters, spaces, hyphens, apostrophes, and periods');
+      setLoading(false);
+      return;
+    }
+
+    // 6. ADDRESS VALIDATION
+    if (!address || !address.trim()) {
+      setSaveError('Street address is required');
+      setLoading(false);
+      return;
+    }
+    if (address.trim().length < 5) {
+      setSaveError('Street address must be at least 5 characters long (e.g., "123 Main St")');
+      setLoading(false);
+      return;
+    }
+    if (address.trim().length > 200) {
+      setSaveError('Street address cannot be longer than 200 characters');
+      setLoading(false);
+      return;
+    }
+    // Basic address format validation (should contain at least a number and some letters)
+    if (!/\d/.test(address)) {
+      setSaveError('Street address should include a house/building number');
+      setLoading(false);
+      return;
+    }
+    if (!/[a-zA-Z]/.test(address)) {
+      setSaveError('Street address should include a street name');
+      setLoading(false);
+      return;
+    }
+
+    // 7. POSTAL CODE VALIDATION
+    if (!postalCode || !postalCode.trim()) {
+      setSaveError('Postal code is required');
       setLoading(false);
       return;
     }
 
     const postalCodePattern = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
     if (!postalCodePattern.test(postalCode)) {
-      setSaveError('Enter a valid Canadian postal code (e.g., V8N 2L4 or V8N-2L4)');
+      if (postalCode.length < 6) {
+        setSaveError('Postal code is too short. Format: V8N 2L4 or V8N-2L4');
+      } else if (postalCode.length > 7) {
+        setSaveError('Postal code is too long. Format: V8N 2L4 or V8N-2L4');
+      } else if (!/^[A-Za-z]/.test(postalCode)) {
+        setSaveError('Postal code must start with a letter. Format: V8N 2L4');
+      } else if (!/^[A-Za-z]\d/.test(postalCode)) {
+        setSaveError('Second character must be a number. Format: V8N 2L4');
+      } else if (!/^[A-Za-z]\d[A-Za-z]/.test(postalCode)) {
+        setSaveError('Third character must be a letter. Format: V8N 2L4');
+      } else if (!/\d[A-Za-z]\d$/.test(postalCode)) {
+        setSaveError('Last 3 characters must be: number-letter-number. Format: V8N 2L4');
+      } else {
+        setSaveError('Invalid postal code format. Use Canadian format: V8N 2L4 or V8N-2L4');
+      }
       setLoading(false);
       return;
     }

@@ -6,9 +6,200 @@ This document chronicles the major issues encountered during Netlify deployment 
 
 The PlumbingPOC application uses an npm workspaces monorepo structure with separate frontend and backend packages, deployed to Netlify with serverless functions. This architecture presents unique challenges for dependency resolution, build commands, and module loading in a CI/CD environment.
 
+## Current Working Configuration
+
+### Netlify Build Configuration (`netlify.toml`)
+
+```toml
+[build]
+  base = "." # Repository root
+  command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+  publish = "packages/frontend/dist/"
+  functions = "packages/backend/netlify/functions/"
+  environment = { NPM_FLAGS = "--legacy-peer-deps" }
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[functions]
+  [functions."api-mjs"]
+    external_node_modules = ["express", "cors", "serverless-http", "dotenv", "supabase", "@supabase/supabase-js"]
+  [functions."send-sms-mjs"]
+    external_node_modules = ["twilio"]
+```
+
+**Key Configuration Elements:**
+- **Base Directory**: Repository root (`.`) to access all workspace dependencies
+- **Build Command**: Three-stage process ensuring all dependencies are available
+- **Publish Directory**: Frontend build output (`packages/frontend/dist/`)
+- **Functions Directory**: Backend serverless functions
+- **External Node Modules**: Prevents bundling of specific dependencies in functions
+
+### Package.json Structure & Dependencies
+
+#### Root Package.json (`/package.json`)
+**Purpose**: Centralized dependency management for the entire monorepo
+
+```json
+{
+  "name": "plumbingpoc-root",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:frontend dev:backend",
+    "build": "npm install && npm --workspace=@plumbingpoc/frontend run build",
+    "test": "vitest",
+    "test:ci": "vitest run"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@supabase/supabase-js": "^2.44.4",
+    "@tanstack/react-query": "^5.51.11",
+    "react": "^18.3.1",
+    "express": "^4.19.2",
+    "twilio": "^5.2.2",
+    // ... all production dependencies
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.4",
+    "vitest": "^2.0.4",
+    // ... all development tools
+  }
+}
+```
+
+**Key Patterns:**
+- **All dependencies centralized**: Both production and dev dependencies in root
+- **Workspace configuration**: `"workspaces": ["packages/*"]` enables npm workspaces
+- **Cross-workspace scripts**: Orchestrate builds across multiple packages
+
+#### Frontend Package.json (`/packages/frontend/package.json`)
+**Purpose**: Minimal workspace-specific configuration
+
+```json
+{
+  "name": "@plumbingpoc/frontend",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
+```
+
+**Key Patterns:**
+- **No dependencies**: Relies entirely on root package.json
+- **Build script**: Uses `tsc --noEmit` for type checking, then `vite build`
+- **Workspace name**: `@plumbingpoc/frontend` for npm workspace targeting
+
+#### Backend Package.json (`/packages/backend/package.json`)
+**Purpose**: Development scripts and local server configuration
+
+```json
+{
+  "name": "@plumbingpoc/backend",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "nodemon server.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
+```
+
+**Key Patterns:**
+- **ESM configuration**: `"type": "module"` for ES modules
+- **No dependencies**: Relies on root package.json
+- **Local development**: Scripts for running backend server locally
+
+## Official Netlify Documentation References
+
+### Primary Documentation Sources
+1. **[Manage Dependencies](https://docs.netlify.com/configure-builds/manage-dependencies/)** - Core dependency management patterns
+2. **[Build Configuration Overview](https://docs.netlify.com/configure-builds/get-started/)** - Build settings and best practices
+3. **[File-based Configuration](https://docs.netlify.com/configure-builds/file-based-configuration/)** - netlify.toml configuration options
+4. **[Build Troubleshooting Tips](https://docs.netlify.com/configure-builds/troubleshooting-tips/)** - Common build issues and solutions
+
+### Key Documentation Insights
+
+#### NODE_ENV and devDependencies Behavior
+From Netlify's dependency management documentation:
+> "If you set the `NODE_ENV` to `production`, any `devDependencies` in your `package.json` file will not be installed for the build."
+
+> "By default, Netlify's build system sets `NODE_ENV` to `development`."
+
+**Critical Finding**: Netlify can set `NODE_ENV=production` in certain contexts, preventing `devDependencies` installation. Our solution uses `--include=dev` to force installation regardless of NODE_ENV.
+
+#### npm Installation Patterns
+From Netlify's npm documentation:
+> "By default, if your site's repository does not include a `yarn.lock`, `pnpm-lock.yaml` or `bun.lockb` file, we will run `npm install` to install the dependencies listed in your `package.json`."
+
+**Best Practice**: Explicit `npm install --include=dev` ensures all dependencies are available for testing and building.
+
+#### Build Command Patterns
+From Netlify's file-based configuration documentation:
+> "The `[build]` command runs in the Bash shell, allowing you to add Bash-⁠compatible syntax to the command."
+
+**Standard Pattern**: Command chaining with `&&` is officially supported and recommended.
+
 ## Major Issues & Solutions
 
-### Issue 1: Frontend Build Failures - MUI Dependency Resolution
+### Issue 4: DevDependencies Not Installed - vitest Not Found
+
+**Problem:** Netlify builds failed with `vitest: not found` despite vitest being listed in devDependencies:
+```
+sh: 1: vitest: not found
+npm install && npm run test:ci && npm run build
+```
+
+**Root Cause:** Netlify set `NODE_ENV=production` which prevents `devDependencies` from being installed by default. Even though `npm install` ran, it only installed production dependencies (323 packages vs expected 578 packages).
+
+**Solution:** Force installation of dev dependencies and use npx for reliable tool execution:
+```toml
+# netlify.toml
+[build]
+  command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+```
+
+**Key Changes:**
+- `--include=dev`: Forces npm to install devDependencies regardless of NODE_ENV
+- `npx vitest run`: Direct execution from node_modules/.bin (bypasses PATH issues)
+- Direct workspace build: Eliminates redundant npm install operations
+
+### Issue 5: TypeScript Compiler (`tsc`) Not Found in Workspace Build
+
+**Problem:** After fixing vitest, the frontend build failed with `tsc: not found` during workspace build:
+```
+> @plumbingpoc/frontend@1.0.0 build
+> tsc --noEmit && vite build
+sh: 1: tsc: not found
+```
+
+**Root Cause:** The root build script triggered another `npm install` that didn't properly make TypeScript available to the workspace build context.
+
+**Solution:** Streamlined build process with direct workspace targeting:
+```toml
+# Before (problematic)
+command = "npm install --include=dev && npx vitest run && npm run build"
+
+# After (working)
+command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+```
+
+**Benefits:**
+- Single dependency installation phase
+- Direct workspace access to root dependencies
+- Eliminates double npm install operations
+- TypeScript accessible from root node_modules
+
+### Issue 6: Frontend Build Failures - MUI Dependency Resolution
 
 **Problem:** The Vite bundler failed to resolve Material-UI dependencies in the CI environment with errors like:
 ```
@@ -25,7 +216,7 @@ optimizeDeps: {
 },
 ```
 
-### Issue 2: Serverless Function Crashes - `import.meta.url` Undefined
+### Issue 7: Serverless Function Crashes - `import.meta.url` Undefined
 
 **Problem:** Netlify functions crashed with a `TypeError` because `import.meta.url` was `undefined`:
 ```
@@ -47,7 +238,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 ```
 
-### Issue 3: ESM vs CommonJS Module Conflicts
+### Issue 8: ESM vs CommonJS Module Conflicts
 
 **Problem:** Netlify functions initially used CommonJS syntax (`.cjs`, `require()`) but the backend application code was written using ES Modules (`.js` with `"type": "module"`, `import`), causing module loading failures.
 
@@ -101,31 +292,111 @@ The frontend's build script was updated to use `npx` to reliably execute the now
 
 This combination is the robust and correct pattern for building TypeScript-based monorepos on Netlify.
 
+## Current Working Build Process
+
+### Build Pipeline (32.6s total)
+1. **Dependency Installation** (6s): `npm install --include=dev` ensures all 578 packages are available
+2. **Testing** (2.8s): `npx vitest run` executes 21 tests across 2 test files
+3. **Frontend Build** (5.7s): TypeScript compilation + Vite production build
+4. **Function Bundling** (1.5s): Packages serverless functions with external dependencies
+5. **Deployment** (7.1s): Uploads assets and functions to Netlify CDN
+
+### Successful Build Metrics
+- **Dependencies**: 578 packages audited (full dependency tree)
+- **Tests**: 21 tests passed in 2.80s
+- **Build Output**: 1.2MB main bundle (warning about chunk size > 500KB)
+- **Functions**: 2 serverless functions (api.mjs, send-sms.mjs)
+- **Secrets Scanning**: 246 files scanned, no secrets detected
+
+## Monorepo Architecture Best Practices
+
+### Dependency Strategy
+- **Centralized Dependencies**: All packages (production + dev) in root package.json
+- **Workspace Isolation**: Individual packages have minimal package.json files
+- **Hoisting Benefits**: npm workspaces automatically hoists shared dependencies
+- **Version Consistency**: Single source of truth for dependency versions
+
+### Build Strategy
+- **Root Orchestration**: Main build script coordinates workspace builds
+- **Tool Access**: Use npx for dev tools to ensure correct versions
+- **Single Install**: One npm install phase provides dependencies to all workspaces
+- **Direct Targeting**: Use `npm --workspace=<name>` for specific package operations
+
+### Environment Variable Strategy
+- **Local Development**: .env file in repository root
+- **Production Deployment**: Netlify environment variables (override local .env)
+- **Precedence Order**: Netlify vars > .env file > default values in code
+- **Consistency**: Same variable names across environments ensure compatibility
+
 ## Deployment Checklist
 
 Before deploying to Netlify:
 
-1.  ✅ All shared dependencies are consolidated in the root `package.json`.
-2.  ✅ The root `package.json` `build` script is: `"npm install && npm --workspace=@plumbingpoc/frontend run build"`.
-3.  ✅ The frontend `package.json` `build` script is: `"npx tsc --noEmit && vite build"`.
-4.  ✅ The backend `package.json` is minimal and mainly for local development.
-5.  ✅ All Netlify function handlers use the `.mjs` extension and ESM syntax.
-6.  ✅ Environment variables are configured in the Netlify UI dashboard.
-7.  ✅ The `vite.config.js` includes `optimizeDeps` for any problematic packages like MUI.
-8.  ✅ No dynamic `import.meta.url` usage exists in serverless function code.
-9.  ✅ Relative paths within function files correctly reference other modules.
+1. ✅ **Dependencies**: All shared dependencies consolidated in root `package.json`
+2. ✅ **Build Command**: Uses `npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build`
+3. ✅ **Frontend Build**: Uses `tsc --noEmit && vite build` for type checking + bundling
+4. ✅ **Backend Functions**: All use `.mjs` extension with ESM syntax
+5. ✅ **Environment Variables**: Configured in Netlify UI dashboard
+6. ✅ **Vite Config**: Includes `optimizeDeps` for problematic packages like MUI
+7. ✅ **Function Code**: No `import.meta.url` usage in serverless functions
+8. ✅ **Module System**: Consistent ESM usage across backend and functions
+9. ✅ **External Modules**: Properly configured in netlify.toml functions section
 
 ## Prevention Strategies
 
-1.  **Monorepo Dependency Management:** Always consolidate dependencies at the root level. Use `npm install` at the root to manage all workspace dependencies at once.
-2.  **CI/CD Build Commands:** For monorepos, the main build command should orchestrate dependency installation *before* running workspace-specific tasks.
-3.  **Local Binaries:** Always use `npx` (or `yarn dlx`) to execute binaries from `devDependencies` (e.g., `tsc`, `eslint`, `prettier`) to ensure the project's specific version is used.
-4.  **Module Systems:** Choose one module system (preferably ESM for modern Node.js) and use it consistently across your entire backend and serverless functions.
-5.  **Environment-Agnostic Code:** Write serverless functions to be independent of the underlying file system. Avoid constructing paths with tools like `import.meta.url` that may not be present in all runtimes.
+### Dependency Management
+1. **Centralize Dependencies**: Keep all dependencies in root package.json for monorepos
+2. **Use --include=dev**: Force dev dependency installation in CI environments
+3. **Version Pinning**: Use exact versions for critical dependencies
+4. **Regular Audits**: Monitor `npm audit` output and security vulnerabilities
+
+### Build Reliability
+1. **Explicit Tool Execution**: Use `npx` for dev tools rather than global installations
+2. **Single Install Phase**: Avoid multiple npm install operations in build pipeline
+3. **Workspace Targeting**: Use direct workspace commands to avoid script complexity
+4. **Build Caching**: Leverage Netlify's dependency caching for faster builds
+
+### Environment Consistency
+1. **Environment Parity**: Match local NODE_ENV to production for testing
+2. **Variable Documentation**: Document all required environment variables
+3. **Fallback Handling**: Provide sensible defaults for optional variables
+4. **Security**: Use Netlify UI for sensitive variables, not repository files
 
 ## Monitoring & Debugging
 
-- Check Netlify's "Deploys" section for detailed build logs.
-- Check the "Functions" section for runtime logs of your serverless functions.
-- Use `console.log` liberally during debugging; output will appear in the function logs.
-- Use the Netlify CLI and `netlify dev` to test the entire production environment locally.
+### Netlify Dashboard
+- **Build Logs**: Check "Deploys" section for detailed build process
+- **Function Logs**: Monitor "Functions" section for runtime issues
+- **Performance**: Review build times and identify bottlenecks
+- **Environment**: Verify all required variables are set
+
+### Local Development
+- **Netlify CLI**: Use `netlify dev` to test production environment locally
+- **Build Testing**: Run exact build command locally before deploying
+- **Function Testing**: Test serverless functions with `netlify functions:serve`
+- **Environment Validation**: Verify .env file matches Netlify configuration
+
+### Debug Techniques
+- **Verbose Logging**: Add console.log statements for debugging (appear in function logs)
+- **Dependency Verification**: Check package count in build logs (should be ~578)
+- **Build Timing**: Monitor build phases to identify performance issues
+- **Cache Management**: Clear Netlify build cache if experiencing strange issues
+
+## Links & References
+
+### Official Netlify Documentation
+- [Manage Dependencies](https://docs.netlify.com/configure-builds/manage-dependencies/) - Dependency installation patterns and NODE_ENV behavior
+- [Build Configuration](https://docs.netlify.com/configure-builds/get-started/) - Build settings and directory configuration
+- [File-based Configuration](https://docs.netlify.com/configure-builds/file-based-configuration/) - netlify.toml syntax and options
+- [Troubleshooting Tips](https://docs.netlify.com/configure-builds/troubleshooting-tips/) - Common build failures and solutions
+- [Monorepos](https://docs.netlify.com/configure-builds/monorepos/) - Monorepo-specific configuration patterns
+- [Serverless Functions](https://docs.netlify.com/functions/) - Function configuration and best practices
+
+### npm Workspaces
+- [npm Workspaces Documentation](https://docs.npmjs.com/cli/v7/using-npm/workspaces) - Official npm workspaces guide
+- [Workspace Commands](https://docs.npmjs.com/cli/v7/commands/npm-workspace) - npm workspace command reference
+
+### Build Tools
+- [Vite Configuration](https://vitejs.dev/config/) - Vite build configuration options
+- [TypeScript Compiler](https://www.typescriptlang.org/docs/handbook/compiler-options.html) - tsc command line options
+- [Vitest](https://vitest.dev/) - Testing framework configuration and usage

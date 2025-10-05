@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-04T21:00:01.460Z
+Generated On: 2025-10-05T20:09:42.532Z
 
-# Mnemonic Weight (Token Count): ~262,982 tokens
+# Mnemonic Weight (Token Count): ~267,189 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -2112,7 +2112,9 @@ You have successfully forged a complete, end-to-end client management platform. 
 ### **Day 2: PACKAGE THE ASSET & HUNT (12 Hours)**
 
 **Objective:** Package your advanced POC into a compelling sales weapon and deploy it.
-https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5
+
+**🎯 Full Arsenal Video Demo:** https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
 **2. Update the "Operation Overmatch" Blueprint.**
 
 The blueprint's core tactic is sound, but the timing was too aggressive. We will update it to reflect the nature of the asset you have created.
@@ -2138,7 +2140,7 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
         *   **Chapter 3: The Real-time Client Portal**
             *   Switch back to the customer's "My Requests" view and show the new quote and status appearing **instantly without a refresh**.
             *   Demonstrate the live chat by sending a message from the admin and showing it appear immediately for the customer.
-    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/4427a5fad19342debfd0b47e27c39ff5`
+    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/1ead7162412140bea1f46988af675adf`
     *   `[✅]` **Build the One-Page Showcase:** Use Carrd. The existing blueprint copy is perfect. https://plumbingai.carrd.co/
 
 ---
@@ -2146,28 +2148,38 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
 *   **Hours 5-12: Build Target List & Execute Outreach**
     *   `[ ]` This part of the plan remains unchanged. Compile the list of 50 businesses and execute the outreach using the existing, high-quality email script.
 
-### Upgraded Email Script (v6.1)
+### Upgraded Email Script (v6.1) - Ready to Send
 
 This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
 
-> **Subject:** A full client portal for [Business Name]?
->
-> Hi **[Contact Person Name]**,
->
-> My name is [Your Name], a local tech consultant in Victoria. I specialize in building complete client management systems for trades businesses that automate everything from the first contact to the final quote.
->
-> Instead of just a contact form, imagine a full "command center" that qualifies your leads with AI, organizes all job details, and lets you chat with clients in real-time.
->
-> I made a 5-minute tour showing exactly how this end-to-end system works:
->
-> **[Link to your Loom video]**
->
-> Here’s the unique part: I'm looking to get some work done on my home (**[mention 1-2 specific services you want]**) and I'm interested in bartering my services for a project of similar value.
->
-> If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
->
-> Thanks,
-> [Your Name]
+**Copy-Paste Ready Email (Personalized for Ryan):**
+
+```
+Subject: Trade proposal - AI plumbing platform for hot water tank install?
+
+Hi Ryan,
+
+You did some plumbing work for me a couple of years ago. You did the plumbing work for my ensuite bathroom reno - 1517 San Juan Ave.
+
+I'm looking to do some side work, and was wondering if we could work out some sort of trade.
+
+As a side job, I developed a proof-of-concept site for an AI enabled plumbing business command center. It's much more of a complete client management system for a trades business, rather than a simple website with a contact form.
+
+Imagine your customer can go and request a job quote, but instead of just providing information in an email form, an AI agent guides them through some questions relevant to their type of request, to get the type of information you need to give a quote. After they submit the quote request through website (using their computer or phone), you receive an SMS message indicating a request for quote was received. You open your "command center", you can view all the answers to their questions, see any pictures they've attached, and you can send them a quote, that would send them an SMS message as well.
+
+You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
+
+I made a 5-minute tour showing exactly how this end-to-end system works:
+
+https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I remember from our conversations you also do gas installs too in addition to plumbing, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
+
+If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
+
+Thanks,
+Richard Fremmerlid
+```
 
 ---
 
@@ -2188,7 +2200,7 @@ This version pre-frames the video length and emphasizes the end-to-end nature of
             *   **Automated Follow-ups:** "Imagine the system automatically sending polite follow-up emails to clients who haven't responded to a quote, saving you hours of administrative work."
             *   **Automated Invoicing:** "Once a job is marked 'Completed,' the system can automatically generate a professional PDF invoice and email it to the client."
             *   **Business Intelligence:** "It can even export all your job data to Excel or Google Sheets, giving you a clear overview of your revenue, job types, and most profitable clients."
-        5.  **Frame the Barter (3 mins):** "A complete, custom end-to-end system like this—the AI-powered front door, the internal command center, *and* the future automation engine—is a project I would typically scope at **$10,000-$15,000**. What would be the approximate value for the **[their service]** work I need done? If the values are in the same ballpark, a direct trade could be a massive win for both of us."
+        5.  **Frame the Partnership (3 mins):** "A complete, custom end-to-end system like this—the AI-powered front door, the internal command center, *and* the future automation engine—is a project I would typically scope at **$15,000-$20,000**. But I'm more interested in building a long-term partnership. What I need done initially is a tankless gas hot water heater installation in my garage - equipment, gas line hookup from the crawlspace, proper venting, and conversion from my current electric tank system. I'm estimating that's around **$5,000-$6,000** in equipment and labor. But here's the real value: as your business grows and you want customizations, new features, or updates to the platform, we can continue trading services. You get ongoing tech support and development, I get access to quality plumbing expertise when I need it. This could be a mutually beneficial relationship that grows over time."
         6.  **Pivot to Cash (if needed):** Unchanged. The pilot program offer is a strong fallback.
         7.  **Close the Deal:** Unchanged. Draft the agreement outlining the full scope.
 
@@ -5752,9 +5764,200 @@ This document chronicles the major issues encountered during Netlify deployment 
 
 The PlumbingPOC application uses an npm workspaces monorepo structure with separate frontend and backend packages, deployed to Netlify with serverless functions. This architecture presents unique challenges for dependency resolution, build commands, and module loading in a CI/CD environment.
 
+## Current Working Configuration
+
+### Netlify Build Configuration (`netlify.toml`)
+
+```toml
+[build]
+  base = "." # Repository root
+  command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+  publish = "packages/frontend/dist/"
+  functions = "packages/backend/netlify/functions/"
+  environment = { NPM_FLAGS = "--legacy-peer-deps" }
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[functions]
+  [functions."api-mjs"]
+    external_node_modules = ["express", "cors", "serverless-http", "dotenv", "supabase", "@supabase/supabase-js"]
+  [functions."send-sms-mjs"]
+    external_node_modules = ["twilio"]
+```
+
+**Key Configuration Elements:**
+- **Base Directory**: Repository root (`.`) to access all workspace dependencies
+- **Build Command**: Three-stage process ensuring all dependencies are available
+- **Publish Directory**: Frontend build output (`packages/frontend/dist/`)
+- **Functions Directory**: Backend serverless functions
+- **External Node Modules**: Prevents bundling of specific dependencies in functions
+
+### Package.json Structure & Dependencies
+
+#### Root Package.json (`/package.json`)
+**Purpose**: Centralized dependency management for the entire monorepo
+
+```json
+{
+  "name": "plumbingpoc-root",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:frontend dev:backend",
+    "build": "npm install && npm --workspace=@plumbingpoc/frontend run build",
+    "test": "vitest",
+    "test:ci": "vitest run"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@supabase/supabase-js": "^2.44.4",
+    "@tanstack/react-query": "^5.51.11",
+    "react": "^18.3.1",
+    "express": "^4.19.2",
+    "twilio": "^5.2.2",
+    // ... all production dependencies
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.4",
+    "vitest": "^2.0.4",
+    // ... all development tools
+  }
+}
+```
+
+**Key Patterns:**
+- **All dependencies centralized**: Both production and dev dependencies in root
+- **Workspace configuration**: `"workspaces": ["packages/*"]` enables npm workspaces
+- **Cross-workspace scripts**: Orchestrate builds across multiple packages
+
+#### Frontend Package.json (`/packages/frontend/package.json`)
+**Purpose**: Minimal workspace-specific configuration
+
+```json
+{
+  "name": "@plumbingpoc/frontend",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
+```
+
+**Key Patterns:**
+- **No dependencies**: Relies entirely on root package.json
+- **Build script**: Uses `tsc --noEmit` for type checking, then `vite build`
+- **Workspace name**: `@plumbingpoc/frontend` for npm workspace targeting
+
+#### Backend Package.json (`/packages/backend/package.json`)
+**Purpose**: Development scripts and local server configuration
+
+```json
+{
+  "name": "@plumbingpoc/backend",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "nodemon server.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
+```
+
+**Key Patterns:**
+- **ESM configuration**: `"type": "module"` for ES modules
+- **No dependencies**: Relies on root package.json
+- **Local development**: Scripts for running backend server locally
+
+## Official Netlify Documentation References
+
+### Primary Documentation Sources
+1. **[Manage Dependencies](https://docs.netlify.com/configure-builds/manage-dependencies/)** - Core dependency management patterns
+2. **[Build Configuration Overview](https://docs.netlify.com/configure-builds/get-started/)** - Build settings and best practices
+3. **[File-based Configuration](https://docs.netlify.com/configure-builds/file-based-configuration/)** - netlify.toml configuration options
+4. **[Build Troubleshooting Tips](https://docs.netlify.com/configure-builds/troubleshooting-tips/)** - Common build issues and solutions
+
+### Key Documentation Insights
+
+#### NODE_ENV and devDependencies Behavior
+From Netlify's dependency management documentation:
+> "If you set the `NODE_ENV` to `production`, any `devDependencies` in your `package.json` file will not be installed for the build."
+
+> "By default, Netlify's build system sets `NODE_ENV` to `development`."
+
+**Critical Finding**: Netlify can set `NODE_ENV=production` in certain contexts, preventing `devDependencies` installation. Our solution uses `--include=dev` to force installation regardless of NODE_ENV.
+
+#### npm Installation Patterns
+From Netlify's npm documentation:
+> "By default, if your site's repository does not include a `yarn.lock`, `pnpm-lock.yaml` or `bun.lockb` file, we will run `npm install` to install the dependencies listed in your `package.json`."
+
+**Best Practice**: Explicit `npm install --include=dev` ensures all dependencies are available for testing and building.
+
+#### Build Command Patterns
+From Netlify's file-based configuration documentation:
+> "The `[build]` command runs in the Bash shell, allowing you to add Bash-⁠compatible syntax to the command."
+
+**Standard Pattern**: Command chaining with `&&` is officially supported and recommended.
+
 ## Major Issues & Solutions
 
-### Issue 1: Frontend Build Failures - MUI Dependency Resolution
+### Issue 4: DevDependencies Not Installed - vitest Not Found
+
+**Problem:** Netlify builds failed with `vitest: not found` despite vitest being listed in devDependencies:
+```
+sh: 1: vitest: not found
+npm install && npm run test:ci && npm run build
+```
+
+**Root Cause:** Netlify set `NODE_ENV=production` which prevents `devDependencies` from being installed by default. Even though `npm install` ran, it only installed production dependencies (323 packages vs expected 578 packages).
+
+**Solution:** Force installation of dev dependencies and use npx for reliable tool execution:
+```toml
+# netlify.toml
+[build]
+  command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+```
+
+**Key Changes:**
+- `--include=dev`: Forces npm to install devDependencies regardless of NODE_ENV
+- `npx vitest run`: Direct execution from node_modules/.bin (bypasses PATH issues)
+- Direct workspace build: Eliminates redundant npm install operations
+
+### Issue 5: TypeScript Compiler (`tsc`) Not Found in Workspace Build
+
+**Problem:** After fixing vitest, the frontend build failed with `tsc: not found` during workspace build:
+```
+> @plumbingpoc/frontend@1.0.0 build
+> tsc --noEmit && vite build
+sh: 1: tsc: not found
+```
+
+**Root Cause:** The root build script triggered another `npm install` that didn't properly make TypeScript available to the workspace build context.
+
+**Solution:** Streamlined build process with direct workspace targeting:
+```toml
+# Before (problematic)
+command = "npm install --include=dev && npx vitest run && npm run build"
+
+# After (working)
+command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
+```
+
+**Benefits:**
+- Single dependency installation phase
+- Direct workspace access to root dependencies
+- Eliminates double npm install operations
+- TypeScript accessible from root node_modules
+
+### Issue 6: Frontend Build Failures - MUI Dependency Resolution
 
 **Problem:** The Vite bundler failed to resolve Material-UI dependencies in the CI environment with errors like:
 ```
@@ -5771,7 +5974,7 @@ optimizeDeps: {
 },
 ```
 
-### Issue 2: Serverless Function Crashes - `import.meta.url` Undefined
+### Issue 7: Serverless Function Crashes - `import.meta.url` Undefined
 
 **Problem:** Netlify functions crashed with a `TypeError` because `import.meta.url` was `undefined`:
 ```
@@ -5793,7 +5996,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 ```
 
-### Issue 3: ESM vs CommonJS Module Conflicts
+### Issue 8: ESM vs CommonJS Module Conflicts
 
 **Problem:** Netlify functions initially used CommonJS syntax (`.cjs`, `require()`) but the backend application code was written using ES Modules (`.js` with `"type": "module"`, `import`), causing module loading failures.
 
@@ -5847,34 +6050,114 @@ The frontend's build script was updated to use `npx` to reliably execute the now
 
 This combination is the robust and correct pattern for building TypeScript-based monorepos on Netlify.
 
+## Current Working Build Process
+
+### Build Pipeline (32.6s total)
+1. **Dependency Installation** (6s): `npm install --include=dev` ensures all 578 packages are available
+2. **Testing** (2.8s): `npx vitest run` executes 21 tests across 2 test files
+3. **Frontend Build** (5.7s): TypeScript compilation + Vite production build
+4. **Function Bundling** (1.5s): Packages serverless functions with external dependencies
+5. **Deployment** (7.1s): Uploads assets and functions to Netlify CDN
+
+### Successful Build Metrics
+- **Dependencies**: 578 packages audited (full dependency tree)
+- **Tests**: 21 tests passed in 2.80s
+- **Build Output**: 1.2MB main bundle (warning about chunk size > 500KB)
+- **Functions**: 2 serverless functions (api.mjs, send-sms.mjs)
+- **Secrets Scanning**: 246 files scanned, no secrets detected
+
+## Monorepo Architecture Best Practices
+
+### Dependency Strategy
+- **Centralized Dependencies**: All packages (production + dev) in root package.json
+- **Workspace Isolation**: Individual packages have minimal package.json files
+- **Hoisting Benefits**: npm workspaces automatically hoists shared dependencies
+- **Version Consistency**: Single source of truth for dependency versions
+
+### Build Strategy
+- **Root Orchestration**: Main build script coordinates workspace builds
+- **Tool Access**: Use npx for dev tools to ensure correct versions
+- **Single Install**: One npm install phase provides dependencies to all workspaces
+- **Direct Targeting**: Use `npm --workspace=<name>` for specific package operations
+
+### Environment Variable Strategy
+- **Local Development**: .env file in repository root
+- **Production Deployment**: Netlify environment variables (override local .env)
+- **Precedence Order**: Netlify vars > .env file > default values in code
+- **Consistency**: Same variable names across environments ensure compatibility
+
 ## Deployment Checklist
 
 Before deploying to Netlify:
 
-1.  ✅ All shared dependencies are consolidated in the root `package.json`.
-2.  ✅ The root `package.json` `build` script is: `"npm install && npm --workspace=@plumbingpoc/frontend run build"`.
-3.  ✅ The frontend `package.json` `build` script is: `"npx tsc --noEmit && vite build"`.
-4.  ✅ The backend `package.json` is minimal and mainly for local development.
-5.  ✅ All Netlify function handlers use the `.mjs` extension and ESM syntax.
-6.  ✅ Environment variables are configured in the Netlify UI dashboard.
-7.  ✅ The `vite.config.js` includes `optimizeDeps` for any problematic packages like MUI.
-8.  ✅ No dynamic `import.meta.url` usage exists in serverless function code.
-9.  ✅ Relative paths within function files correctly reference other modules.
+1. ✅ **Dependencies**: All shared dependencies consolidated in root `package.json`
+2. ✅ **Build Command**: Uses `npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build`
+3. ✅ **Frontend Build**: Uses `tsc --noEmit && vite build` for type checking + bundling
+4. ✅ **Backend Functions**: All use `.mjs` extension with ESM syntax
+5. ✅ **Environment Variables**: Configured in Netlify UI dashboard
+6. ✅ **Vite Config**: Includes `optimizeDeps` for problematic packages like MUI
+7. ✅ **Function Code**: No `import.meta.url` usage in serverless functions
+8. ✅ **Module System**: Consistent ESM usage across backend and functions
+9. ✅ **External Modules**: Properly configured in netlify.toml functions section
 
 ## Prevention Strategies
 
-1.  **Monorepo Dependency Management:** Always consolidate dependencies at the root level. Use `npm install` at the root to manage all workspace dependencies at once.
-2.  **CI/CD Build Commands:** For monorepos, the main build command should orchestrate dependency installation *before* running workspace-specific tasks.
-3.  **Local Binaries:** Always use `npx` (or `yarn dlx`) to execute binaries from `devDependencies` (e.g., `tsc`, `eslint`, `prettier`) to ensure the project's specific version is used.
-4.  **Module Systems:** Choose one module system (preferably ESM for modern Node.js) and use it consistently across your entire backend and serverless functions.
-5.  **Environment-Agnostic Code:** Write serverless functions to be independent of the underlying file system. Avoid constructing paths with tools like `import.meta.url` that may not be present in all runtimes.
+### Dependency Management
+1. **Centralize Dependencies**: Keep all dependencies in root package.json for monorepos
+2. **Use --include=dev**: Force dev dependency installation in CI environments
+3. **Version Pinning**: Use exact versions for critical dependencies
+4. **Regular Audits**: Monitor `npm audit` output and security vulnerabilities
+
+### Build Reliability
+1. **Explicit Tool Execution**: Use `npx` for dev tools rather than global installations
+2. **Single Install Phase**: Avoid multiple npm install operations in build pipeline
+3. **Workspace Targeting**: Use direct workspace commands to avoid script complexity
+4. **Build Caching**: Leverage Netlify's dependency caching for faster builds
+
+### Environment Consistency
+1. **Environment Parity**: Match local NODE_ENV to production for testing
+2. **Variable Documentation**: Document all required environment variables
+3. **Fallback Handling**: Provide sensible defaults for optional variables
+4. **Security**: Use Netlify UI for sensitive variables, not repository files
 
 ## Monitoring & Debugging
 
-- Check Netlify's "Deploys" section for detailed build logs.
-- Check the "Functions" section for runtime logs of your serverless functions.
-- Use `console.log` liberally during debugging; output will appear in the function logs.
-- Use the Netlify CLI and `netlify dev` to test the entire production environment locally.
+### Netlify Dashboard
+- **Build Logs**: Check "Deploys" section for detailed build process
+- **Function Logs**: Monitor "Functions" section for runtime issues
+- **Performance**: Review build times and identify bottlenecks
+- **Environment**: Verify all required variables are set
+
+### Local Development
+- **Netlify CLI**: Use `netlify dev` to test production environment locally
+- **Build Testing**: Run exact build command locally before deploying
+- **Function Testing**: Test serverless functions with `netlify functions:serve`
+- **Environment Validation**: Verify .env file matches Netlify configuration
+
+### Debug Techniques
+- **Verbose Logging**: Add console.log statements for debugging (appear in function logs)
+- **Dependency Verification**: Check package count in build logs (should be ~578)
+- **Build Timing**: Monitor build phases to identify performance issues
+- **Cache Management**: Clear Netlify build cache if experiencing strange issues
+
+## Links & References
+
+### Official Netlify Documentation
+- [Manage Dependencies](https://docs.netlify.com/configure-builds/manage-dependencies/) - Dependency installation patterns and NODE_ENV behavior
+- [Build Configuration](https://docs.netlify.com/configure-builds/get-started/) - Build settings and directory configuration
+- [File-based Configuration](https://docs.netlify.com/configure-builds/file-based-configuration/) - netlify.toml syntax and options
+- [Troubleshooting Tips](https://docs.netlify.com/configure-builds/troubleshooting-tips/) - Common build failures and solutions
+- [Monorepos](https://docs.netlify.com/configure-builds/monorepos/) - Monorepo-specific configuration patterns
+- [Serverless Functions](https://docs.netlify.com/functions/) - Function configuration and best practices
+
+### npm Workspaces
+- [npm Workspaces Documentation](https://docs.npmjs.com/cli/v7/using-npm/workspaces) - Official npm workspaces guide
+- [Workspace Commands](https://docs.npmjs.com/cli/v7/commands/npm-workspace) - npm workspace command reference
+
+### Build Tools
+- [Vite Configuration](https://vitejs.dev/config/) - Vite build configuration options
+- [TypeScript Compiler](https://www.typescriptlang.org/docs/handbook/compiler-options.html) - tsc command line options
+- [Vitest](https://vitest.dev/) - Testing framework configuration and usage
 --- END OF FILE ---
 
 --- START OF FILE ./docs/QuoteStateChangesWorkflow.md ---
@@ -6639,7 +6922,7 @@ DROP POLICY "Enable read for own quotes" ON "public"."quotes";
 
 [build]
   base = "." # Repository root
-  command = "npm install && npm install --workspace=@plumbingpoc/frontend && npm --workspace=@plumbingpoc/frontend run build" # Install deps then build
+  command = "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build"
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
@@ -6704,15 +6987,46 @@ DROP POLICY "Enable read for own quotes" ON "public"."quotes";
     "test:ci": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
+  "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@google/generative-ai": "^0.15.0",
+    "@mui/material": "^5.16.1",
+    "@mui/system": "^5.16.1",
+    "@mui/x-data-grid": "^7.17.0",
+    "@supabase/supabase-js": "^2.44.4",
+    "@tanstack/react-query": "^5.51.11",
+    "@vis.gl/react-google-maps": "^1.1.0",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "lucide-react": "^0.411.0",
+    "multer": "^1.4.5-lts.2",
+    "openai": "^4.52.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-dropzone": "^14.2.3",
+    "resend": "^3.5.0",
+    "serverless-http": "^3.2.0",
+    "twilio": "^5.2.2",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
     "@playwright/test": "^1.45.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
+    "@types/node": "^20.14.12",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^24.1.1",
     "npm-run-all": "^4.1.5",
     "playwright": "^1.45.2",
     "supertest": "^7.0.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.4",
     "vitest": "^2.0.4"
   }
 }
@@ -9164,19 +9478,6 @@ export async function handler(event) {
   "main": "api/server.js",
   "scripts": {
     "start": "node start.js"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.15.0",
-    "@supabase/supabase-js": "^2.44.4",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.2",
-    "openai": "^4.52.7",
-    "resend": "^3.5.0",
-    "serverless-http": "^3.2.0",
-    "twilio": "^5.2.2",
-    "zod": "^3.23.8"
   }
 }
 --- END OF FILE ---
@@ -9205,32 +9506,9 @@ app.listen(PORT, () => {
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "../../node_modules/.bin/tsc --noEmit && npx vite build",
+    "build": "tsc --noEmit && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "@mui/material": "^5.16.1",
-    "@mui/system": "^5.16.1",
-    "@mui/x-data-grid": "^7.17.0",
-    "@supabase/supabase-js": "^2.44.4",
-    "@tanstack/react-query": "^5.51.11",
-    "@vis.gl/react-google-maps": "^1.1.0",
-    "axios": "^1.7.2",
-    "lucide-react": "^0.411.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-dropzone": "^14.2.3"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.12",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.3.4"
   }
 }
 
@@ -10444,7 +10722,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
         <div>Loading:</div><div>{String(loading)}</div>
         <div>SaveError:</div><div>{saveError || 'none'}</div>
         <div>SaveSuccess:</div><div>{String(saveSuccess)}</div>
-        <div>PhoneError:</div><div>{phoneError || 'none'}</div>
       </div>
     </div>
   );
@@ -10453,11 +10730,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState(contextProfile?.name || '');
   const [phone, setPhone] = useState(contextProfile?.phone || '');
-  const [province, setProvince] = useState(contextProfile?.province || '');
-  const [city, setCity] = useState(contextProfile?.city || '');
+  const [province, setProvince] = useState(contextProfile?.province || 'BC');
+  const [city, setCity] = useState(contextProfile?.city || 'Victoria');
   const [address, setAddress] = useState(contextProfile?.address || '');
   const [postalCode, setPostalCode] = useState(contextProfile?.postal_code || '');
-  const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -10467,8 +10743,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
     if (contextProfile) {
       setName(contextProfile.name || '');
       setPhone(contextProfile.phone || '');
-      setProvince(contextProfile.province || '');
-      setCity(contextProfile.city || '');
+      setProvince(contextProfile.province || 'BC');
+      setCity(contextProfile.city || 'Victoria');
       setAddress(contextProfile.address || '');
       setPostalCode(contextProfile.postal_code || '');
     }
@@ -10561,19 +10837,151 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setPhoneError('');
-    setSaveError('');
+    setSaveError(''); // Clear both error states
     setSaveSuccess(false);
 
-    if (!/^\d{3}-\d{3}-\d{4}$/.test(phone)) {
-      setPhoneError('Enter a valid phone number in the format 250-885-7003');
+    // 1. EMAIL VALIDATION (read-only but check it exists)
+    if (!email || !email.trim()) {
+      setSaveError('Email is required but missing. Please refresh and try again.');
+      setLoading(false);
+      return;
+    }
+
+    // 2. NAME VALIDATION  
+    if (!name || !name.trim()) {
+      setSaveError('Name is required');
+      setLoading(false);
+      return;
+    }
+    if (name.trim().length < 2) {
+      setSaveError('Name must be at least 2 characters long');
+      setLoading(false);
+      return;
+    }
+    if (name.trim().length > 100) {
+      setSaveError('Name cannot be longer than 100 characters');
+      setLoading(false);
+      return;
+    }
+
+    // 3. PHONE VALIDATION
+    if (!phone || !phone.trim()) {
+      setSaveError('Phone number is required');
+      setLoading(false);
+      return;
+    }
+
+    // More detailed phone validation with specific error messages
+    const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+    if (!phoneRegex.test(phone)) {
+      if (!phone.includes('-')) {
+        setSaveError('Phone number must include dashes. Format: 250-885-7003');
+      } else if (phone.length < 12) {
+        setSaveError('Phone number is too short. Format: 250-885-7003 (12 characters)');
+      } else if (phone.length > 12) {
+        setSaveError('Phone number is too long. Format: 250-885-7003 (12 characters)');
+      } else if (!/^\d/.test(phone)) {
+        setSaveError('Phone number must start with a digit. Format: 250-885-7003');
+      } else if (!/^\d{3}-/.test(phone)) {
+        setSaveError('First 3 digits must be followed by a dash. Format: 250-885-7003');
+      } else if (!/^\d{3}-\d{3}-/.test(phone)) {
+        setSaveError('Missing dash after area code and prefix. Format: 250-885-7003');
+      } else if (!/\d{4}$/.test(phone)) {
+        setSaveError('Phone number must end with 4 digits. Format: 250-885-7003');
+      } else {
+        setSaveError('Phone number format is invalid. Use only numbers and dashes: 250-885-7003');
+      }
+      setLoading(false);
+      return;
+    }
+
+    // 4. PROVINCE VALIDATION
+    if (!province || !province.trim()) {
+      setSaveError('Province is required');
+      setLoading(false);
+      return;
+    }
+    const validProvinces = ['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'ON', 'PE', 'QC', 'SK', 'NT', 'NU', 'YT'];
+    if (!validProvinces.includes(province)) {
+      setSaveError('Please select a valid Canadian province or territory');
+      setLoading(false);
+      return;
+    }
+
+    // 5. CITY VALIDATION
+    if (!city || !city.trim()) {
+      setSaveError('City is required');
+      setLoading(false);
+      return;
+    }
+    if (city.trim().length < 2) {
+      setSaveError('City name must be at least 2 characters long');
+      setLoading(false);
+      return;
+    }
+    if (city.trim().length > 100) {
+      setSaveError('City name cannot be longer than 100 characters');
+      setLoading(false);
+      return;
+    }
+    if (!/^[a-zA-Z\s\-'\.]+$/.test(city.trim())) {
+      setSaveError('City name can only contain letters, spaces, hyphens, apostrophes, and periods');
+      setLoading(false);
+      return;
+    }
+
+    // 6. ADDRESS VALIDATION
+    if (!address || !address.trim()) {
+      setSaveError('Street address is required');
+      setLoading(false);
+      return;
+    }
+    if (address.trim().length < 5) {
+      setSaveError('Street address must be at least 5 characters long (e.g., "123 Main St")');
+      setLoading(false);
+      return;
+    }
+    if (address.trim().length > 200) {
+      setSaveError('Street address cannot be longer than 200 characters');
+      setLoading(false);
+      return;
+    }
+    // Basic address format validation (should contain at least a number and some letters)
+    if (!/\d/.test(address)) {
+      setSaveError('Street address should include a house/building number');
+      setLoading(false);
+      return;
+    }
+    if (!/[a-zA-Z]/.test(address)) {
+      setSaveError('Street address should include a street name');
+      setLoading(false);
+      return;
+    }
+
+    // 7. POSTAL CODE VALIDATION
+    if (!postalCode || !postalCode.trim()) {
+      setSaveError('Postal code is required');
       setLoading(false);
       return;
     }
 
     const postalCodePattern = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
     if (!postalCodePattern.test(postalCode)) {
-      setSaveError('Enter a valid Canadian postal code (e.g., V8N 2L4 or V8N-2L4)');
+      if (postalCode.length < 6) {
+        setSaveError('Postal code is too short. Format: V8N 2L4 or V8N-2L4');
+      } else if (postalCode.length > 7) {
+        setSaveError('Postal code is too long. Format: V8N 2L4 or V8N-2L4');
+      } else if (!/^[A-Za-z]/.test(postalCode)) {
+        setSaveError('Postal code must start with a letter. Format: V8N 2L4');
+      } else if (!/^[A-Za-z]\d/.test(postalCode)) {
+        setSaveError('Second character must be a number. Format: V8N 2L4');
+      } else if (!/^[A-Za-z]\d[A-Za-z]/.test(postalCode)) {
+        setSaveError('Third character must be a letter. Format: V8N 2L4');
+      } else if (!/\d[A-Za-z]\d$/.test(postalCode)) {
+        setSaveError('Last 3 characters must be: number-letter-number. Format: V8N 2L4');
+      } else {
+        setSaveError('Invalid postal code format. Use Canadian format: V8N 2L4 or V8N-2L4');
+      }
       setLoading(false);
       return;
     }
