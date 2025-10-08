@@ -791,27 +791,29 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedServ
                        </Paper>
                      )}
 
-                     {/* Attachments Section */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider',
-                       bgcolor: 'grey.50'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Attachments
-                       </Typography>
-                       <AttachmentSection
-                         requestId="new-request"
-                         attachments={[]}
-                         pendingFiles={newAttachments}
-                         editable={true}
-                         onUpdate={() => {}}
-                         onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
-                         onRemovePendingFile={handleRemovePendingFile}
-                       />
-                     </Paper>
+                     {/* Attachments Section - Only show if there are attachments */}
+                     {newAttachments.length > 0 && (
+                       <Paper sx={{
+                         p: 3,
+                         borderRadius: 2,
+                         border: '1px solid',
+                         borderColor: 'divider',
+                         bgcolor: 'grey.50'
+                       }}>
+                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                           Attachments
+                         </Typography>
+                         <AttachmentSection
+                           requestId="new-request"
+                           attachments={[]}
+                           pendingFiles={newAttachments}
+                           editable={true}
+                           onUpdate={() => {}}
+                           onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
+                           onRemovePendingFile={handleRemovePendingFile}
+                         />
+                       </Paper>
+                     )}
                    </Box>
                </Box>
                {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
