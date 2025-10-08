@@ -1,14 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { SERVICE_QUOTE_CATEGORIES } from '../../../packages/frontend/src/lib/serviceQuoteQuestions';
+import { services as SERVICE_QUOTE_CATEGORIES } from '../../../packages/frontend/src/lib/serviceDefinitions';
 
 describe('Service Quote Categories', () => {
   it('should have all required plumbing categories', () => {
     const expectedCategories = [
-      'bathroom_reno',
-      'perimeter_drains',
-      'water_heater_install',
       'leak_repair',
+      'pipe_installation',
+      'drain_cleaning',
+      'water_heater',
       'fixture_install',
+      'gas_line_services',
+      'perimeter_drains',
+      'bathroom_reno',
       'main_line_repair',
       'emergency_service',
       'other'
@@ -32,11 +35,11 @@ describe('Service Quote Categories', () => {
     expect(uniqueKeys.size).toBe(keys.length);
   });
 
-  it('should have descriptive labels', () => {
+  it('should have descriptive titles', () => {
     SERVICE_QUOTE_CATEGORIES.forEach(category => {
-      expect(category.label).toBeDefined();
-      expect(typeof category.label).toBe('string');
-      expect(category.label.length).toBeGreaterThan(0);
+      expect(category.title).toBeDefined();
+      expect(typeof category.title).toBe('string');
+      expect(category.title.length).toBeGreaterThan(0);
     });
   });
 });
@@ -45,7 +48,7 @@ describe('Emergency Service Category', () => {
   it('should exist in the categories list', () => {
     const emergencyCategory = SERVICE_QUOTE_CATEGORIES.find(cat => cat.key === 'emergency_service');
     expect(emergencyCategory).toBeDefined();
-    expect(emergencyCategory!.label).toBe('Emergency Service');
+    expect(emergencyCategory!.title).toBe('Emergency Service');
   });
 
   it('should have appropriate emergency questions', () => {
