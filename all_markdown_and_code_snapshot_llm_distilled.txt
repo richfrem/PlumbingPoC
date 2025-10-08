@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-05T20:09:42.532Z
+Generated On: 2025-10-08T00:26:15.966Z
 
-# Mnemonic Weight (Token Count): ~267,189 tokens
+# Mnemonic Weight (Token Count): ~278,278 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -54,6 +54,7 @@ Generated On: 2025-10-05T20:09:42.532Z
   ./adrs/015-choice-of-monorepo-structure.md
   ./adrs/016-choice-of-e2e-testing-architecture.md
   ./adrs/017-choice-of-options-object-pattern-for-test-method-parameters.md
+  ./adrs/018-choice-of-seo-implementation-strategy.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -93,8 +94,11 @@ Generated On: 2025-10-05T20:09:42.532Z
   ./debug-admin-auth.mjs
   ./docs/
   ./docs/AIContracts.md
-  ./docs/ClientOnboardingPlan_Template.md
-  ./docs/Consultant_Onboarding_Checklist.md
+  ./docs/CONSULTANT_00_MASTER_GUIDE.md
+  ./docs/CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
+  ./docs/CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md
+  ./docs/CONSULTANT_03_DEPLOYMENT_CHECKLIST.md
+  ./docs/CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md
   ./docs/DataContracts.md
   ./docs/FutureRoadmap.md
   ./docs/NETLIFY_TROUBLESHOOTING.md
@@ -187,6 +191,8 @@ Generated On: 2025-10-05T20:09:42.532Z
   ./packages/frontend/src/features/requests/components/ServiceLocationManager.tsx
   ./packages/frontend/src/features/requests/types/
   ./packages/frontend/src/features/requests/types/index.ts
+  ./packages/frontend/src/features/services/
+  ./packages/frontend/src/features/services/ServiceDetailPage.tsx
   ./packages/frontend/src/hooks/
   ./packages/frontend/src/hooks/index.ts
   ./packages/frontend/src/hooks/useRequestMutations.ts
@@ -195,8 +201,7 @@ Generated On: 2025-10-05T20:09:42.532Z
   ./packages/frontend/src/hooks/useTableQuery.ts
   ./packages/frontend/src/lib/
   ./packages/frontend/src/lib/apiClient.ts
-  ./packages/frontend/src/lib/serviceQuoteQuestions.ts
-  ./packages/frontend/src/lib/servicesData.ts
+  ./packages/frontend/src/lib/serviceDefinitions.ts
   ./packages/frontend/src/lib/statusColors.json
   ./packages/frontend/src/lib/statusColors.ts
   ./packages/frontend/src/lib/supabaseClient.ts
@@ -2152,12 +2157,12 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
 
 This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
 
-**Copy-Paste Ready Email (Personalized for Ryan):**
+**Copy-Paste Ready Email Template:**
 
 ```
-Subject: Trade proposal - AI plumbing platform for hot water tank install?
+Subject: Trade proposal - AI plumbing platform for service work?
 
-Hi Ryan,
+Hi,
 
 You did some plumbing work for me a couple of years ago. You did the plumbing work for my ensuite bathroom reno - 1517 San Juan Ave.
 
@@ -2170,8 +2175,12 @@ Imagine your customer can go and request a job quote, but instead of just provid
 You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
 
 I made a 5-minute tour showing exactly how this end-to-end system works:
-
 https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+You can also try the client experience yourself at:
+https://plumbingpoc.netlify.app/
+
+Feel free to register/sign in (using your Microsoft or Gmail account) and go through requesting a quote - you'll see how the AI guides customers through the questions and how they can upload photos of their plumbing issues. I can show you the business owner side separately if you're interested - that's where you'd see all the incoming requests, use the AI triage, send quotes, etc.
 
 Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I remember from our conversations you also do gas installs too in addition to plumbing, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
 
@@ -2179,6 +2188,7 @@ If you have 5 minutes, I think you'll see something that could put you years ahe
 
 Thanks,
 Richard Fremmerlid
+2508857003
 ```
 
 ---
@@ -3592,6 +3602,89 @@ async createQuoteRequest(categoryKey: string, options?: QuoteRequestOptions): Pr
 
 ## Author
 Kilo Code (AI Assistant)
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/018-choice-of-seo-implementation-strategy.md ---
+
+# ADR-018: Choice of SEO Implementation Strategy
+
+**Date:** 2025-10-07
+
+**Status:** Decided & Implemented
+
+## Context
+
+The PlumbingPOC application required comprehensive SEO optimization to improve search engine visibility and local search rankings. As a Single Page Application (SPA), it faced inherent SEO challenges including dynamic content rendering, lack of server-side meta tag management, and absence of structured data markup. The implementation needed to address technical SEO, on-page SEO, and local SEO while maintaining the React SPA architecture.
+
+## Decision
+
+We will implement a comprehensive SEO strategy using **react-helmet-async** for dynamic meta tag management, combined with JSON-LD structured data markup and content optimization techniques. This approach provides:
+
+1. **Dynamic Meta Tag Management**: react-helmet-async for title, description, and other meta tags
+2. **Local Business Schema Markup**: JSON-LD structured data for Google Business Profile integration
+3. **Content Optimization**: Local keyword integration and improved accessibility
+4. **Technical SEO**: Proper document head management for SPA routing
+
+## Implementation Details
+
+### Technical SEO Implementation
+- **react-helmet-async**: Provides HelmetProvider context and Helmet component for dynamic document head management
+- **SPA Routing Support**: Meta tags update dynamically based on route changes
+- **Server-Side Rendering Ready**: Architecture supports future SSR implementation if needed
+
+### Local Business Schema Markup
+- **Dynamic JSON-LD**: Structured data generated dynamically in React using Helmet
+- **Environment-Aware URLs**: Schema URLs automatically use current domain (window.location.origin)
+- **Business Information**: Complete local business details including address, phone, hours, and service area
+- **GeoCoordinates**: Precise location data for local search optimization
+- **Opening Hours**: 24/7 availability specification
+- **Social Media Links**: Facebook and Instagram integration
+
+### On-Page SEO Optimization
+- **Header Tag Optimization**: H2 tags updated with local keywords ("Victoria, BC")
+- **Image Alt Text**: Descriptive alt attributes for accessibility and image search
+- **Content Enhancement**: Local area mentions (Oak Bay, Saanich, Langford) in about section
+
+## Consequences
+
+*   **Pros:**
+    *   **SPA Compatibility**: react-helmet-async specifically designed for React SPAs, providing reliable meta tag management
+    *   **Local Search Optimization**: JSON-LD schema markup directly supports Google My Business and local pack rankings
+    *   **Search Engine Friendly**: Structured data helps search engines understand business information and services
+    *   **Future-Proof**: Architecture supports additional SEO features like Open Graph and Twitter Cards
+    *   **Performance**: Lightweight library with minimal bundle impact
+    *   **Accessibility**: Improved alt text benefits both SEO and screen readers
+
+*   **Cons:**
+    *   **SPA Limitations**: Client-side rendering means initial page loads lack meta tags until JavaScript executes
+    *   **Additional Dependency**: react-helmet-async adds to bundle size (though minimal)
+    *   **Maintenance**: Schema markup requires updates when business information changes
+    *   **Limited Server-Side SEO**: No server-side rendering means slower initial indexing
+
+*   **Implementation Notes:**
+    *   HelmetProvider wraps the entire App component for global context
+    *   Dynamic meta tags and schema markup set in renderHomePage function using Helmet
+    *   Schema URLs automatically resolve to current domain for environment flexibility
+    *   Content updates made to ServicesSection and AboutSection components
+
+*   **Alternatives Considered:**
+    *   **Server-Side Rendering (Next.js/Nuxt)**: Would provide better initial SEO but significantly increase complexity and hosting requirements
+    *   **Static Site Generation**: Not suitable for dynamic application with real-time features
+    *   **Manual Meta Tag Management**: Error-prone and difficult to maintain across routes
+    *   **SEO Libraries (React SEO, etc.)**: react-helmet-async provides better React integration and active maintenance
+
+## Related Decisions
+
+- ADR-004: Choice of Frontend Framework (React)
+- ADR-005: Choice of Hosting and Deployment Platform (Netlify)
+- ADR-015: Choice of Monorepo Structure
+
+## Future Considerations
+
+- Monitor Core Web Vitals impact
+- Consider implementing Open Graph meta tags for social sharing
+- Evaluate need for server-side rendering as application scales
+- Regular updates to schema markup for changing business information
 --- END OF FILE ---
 
 --- START OF FILE ./agents/AGENT_REPOS.md ---
@@ -5204,7 +5297,952 @@ These contracts define the interaction between our backend and the external Open
 ```
 --- END OF FILE ---
 
---- START OF FILE ./docs/ClientOnboardingPlan_Template.md ---
+--- START OF FILE ./docs/CONSULTANT_00_MASTER_GUIDE.md ---
+
+# 🚀 PLUMBING POC CONSULTANT GUIDE
+**Complete Documentation Navigation & Workflow Guide**
+
+---
+
+## 📖 WHAT IS THIS GU#### **[CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md](./CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md)**DE?
+
+This is your **master navigation document** that explains how all the consultant documentation works tog## 🔗 DOCUMENT LINKS QUICK REFERENCE
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| [consulting_launch_blueprint.md](./RequirementsAndGoals/consulting_launch_blueprint.md) | Business development strategy | Initial outreach and prospect engagement |
+| [CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md](./CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md) | Business model guidance | Strategy and billing decisions |
+| [CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md](./CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md) | Client-facing proposal | Responding to prospect inquiries |
+| [CONSULTANT_03_DEPLOYMENT_CHECKLIST.md](./CONSULTANT_03_DEPLOYMENT_CHECKLIST.md) | Technical deployment checklist | Active client project management |
+| [CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md](./CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md) | Comprehensive deployment guide | Planning and training reference |e this as your starting point to understand the complete client onboarding and deployment process.
+
+---
+
+## 🗂️ DOCUMENT STRUCTURE OVERVIEW
+
+Your consulting documentation is organized into **4 main categories**:
+
+### **📋 PLANNING & STRATEGY**
+- Business models and approaches
+- Cost analysis and pricing
+- Strategic decision making
+
+### **📞 CLIENT-FACING MATERIALS** 
+- Proposals and presentations
+- Cost estimates and timelines
+- Professional client communication
+
+### **⚙️ TECHNICAL IMPLEMENTATION**
+- Step-by-step deployment checklists
+- Technical configuration guides
+- Testing and validation procedures
+
+### **📊 BUSINESS OPERATIONS**
+- Billing and account management
+- Legal considerations
+- Scaling strategies
+
+---
+
+## 📚 COMPLETE DOCUMENT LIBRARY
+
+### **🎯 1. BUSINESS STRATEGY DOCUMENTS**
+
+#### **[consulting_launch_blueprint.md](./RequirementsAndGoals/consulting_launch_blueprint.md)**
+**Purpose:** Your original 72-hour mission plan and email outreach strategy
+**When to use:** 
+- Planning initial client outreach
+- Crafting personalized emails to prospects
+- Understanding the overall business development approach
+**Key sections:**
+- Email templates with demo and POC links
+- Value proposition framing
+- Partnership positioning strategy
+
+---
+
+### **📋 2. CLIENT-FACING DOCUMENTS**
+
+#### **[CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md](./CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md)**
+**Purpose:** Professional proposal document to send to prospective clients
+**When to use:**
+- Responding to client inquiries
+- Formal project proposals
+- Setting client expectations
+**Key sections:**
+- Project timeline (3-5 business days)
+- Monthly cost breakdown ($115-155 CAD)
+- Feature descriptions and business value
+- Professional service positioning
+
+**💡 How to use:**
+1. Duplicate this file for each prospect
+2. Replace `[Client Business Name]` with their actual name
+3. Customize service descriptions to their specialties
+4. Send as PDF attachment in follow-up emails
+
+---
+
+### **⚙️ 3. TECHNICAL IMPLEMENTATION DOCUMENTS**
+
+#### **[CONSULTANT_03_DEPLOYMENT_CHECKLIST.md](./CONSULTANT_03_DEPLOYMENT_CHECKLIST.md)**
+**Purpose:** Detailed technical checklist for actual client deployment
+**When to use:**
+- After client signs agreement
+- During technical implementation phase
+- Tracking progress through deployment
+**Key sections:**
+- Account setup procedures
+- Technical configuration steps
+- Content customization tasks
+- Testing and handoff procedures
+
+**💡 How to use:**
+1. Duplicate and rename: `[ClientName]_Onboarding.md`
+2. Work through each checkbox systematically
+3. Update client on progress regularly
+4. Use as final delivery confirmation
+
+#### **[CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md](./CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md)**
+**Purpose:** Comprehensive 16-hour deployment process breakdown
+**When to use:**
+- Planning time and resource allocation
+- Understanding complete scope of work
+- Training additional team members
+**Key sections:**
+- Phase-by-phase time estimates
+- Every file requiring customization
+- Success metrics and validation
+- Common issues and solutions
+
+**💡 How to use:**
+- Reference for project planning
+- Training guide for scaling operations
+- Comprehensive backup to other checklists
+
+---
+
+### **💰 4. BUSINESS OPERATIONS DOCUMENTS**
+
+#### **[CLIENT_BILLING_AND_ACCOUNT_MANAGEMENT_STRATEGIES.md](./docs/CLIENT_BILLING_AND_ACCOUNT_MANAGEMENT_STRATEGIES.md)**
+**Purpose:** Complete guide to billing models and account management approaches
+**When to use:**
+- Deciding on business model approach
+- Understanding client vs agency-owned accounts
+- Setting up delegated access procedures
+**Key sections:**
+- Client-owned vs Agency-owned comparison
+- Revenue projections for different models
+- Delegated access technical procedures
+- Legal and ethical considerations
+
+**💡 How to use:**
+- Read before first client to choose approach
+- Reference during client discussions about billing
+- Guide for setting up technical access
+
+---
+
+## 🔄 WORKFLOW: HOW TO USE THESE DOCUMENTS TOGETHER
+
+### **🎯 PHASE 1: BUSINESS DEVELOPMENT**
+```
+Start here → consulting_launch_blueprint.md
+↓
+Use email templates to reach out to prospects
+↓
+When prospect shows interest →
+↓
+Send them → CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md (customized)
+```
+
+### **📋 PHASE 2: CLIENT DECISION**
+```
+Client wants to proceed →
+↓
+Decide billing model using → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
+↓
+Schedule account setup call
+↓
+Create project checklist → Duplicate CONSULTANT_03_DEPLOYMENT_CHECKLIST.md
+```
+
+### **⚙️ PHASE 3: TECHNICAL IMPLEMENTATION**
+```
+Follow → [ClientName]_Deployment.md (your duplicated checklist)
+↓
+Reference → CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md for detailed guidance
+↓
+Use → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md for access setup
+↓
+Complete deployment and testing
+```
+
+### **🎉 PHASE 4: PROJECT COMPLETION**
+```
+Handoff training with client
+↓
+Document lessons learned
+↓
+Update templates based on experience
+↓
+Scale to next client
+```
+
+---
+
+## 🚀 QUICK START GUIDE
+
+### **👆 If you're just getting started:**
+
+1. **Read first:** `CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md`
+   - Decide: Client-owned vs Agency-owned accounts
+   - Understand delegated access model
+
+2. **Customize:** `consulting_launch_blueprint.md`
+   - Update email templates with your details
+   - Practice your pitch and demo
+
+3. **Prepare:** `CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md`
+   - Create your standard client proposal
+   - Set your pricing and timeline
+
+4. **Study:** `CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md`
+   - Understand full scope of technical work
+   - Prepare for time and complexity
+
+### **👨‍💼 If you have a prospect ready:**
+
+1. **Send:** Customized `CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md`
+2. **Prepare:** Duplicate `CONSULTANT_03_DEPLOYMENT_CHECKLIST.md`
+3. **Schedule:** Account setup call
+4. **Execute:** Follow your checklist step-by-step
+
+---
+
+## 📁 FILE CUSTOMIZATION REFERENCE
+
+### **Files You'll Customize for Each Client:**
+
+#### **Frontend Content Files:**
+```
+/packages/frontend/src/lib/servicesData.ts
+- Update with client's specific services
+
+/packages/frontend/src/main.tsx  
+- Replace "AquaFlow Plumbing" (3 locations)
+
+/packages/frontend/src/features/landing/components/
+├── AboutSection.tsx (company story)
+├── ContactSection.tsx (contact info)  
+└── ReviewsSection.tsx (testimonials)
+```
+
+#### **Configuration Files:**
+```
+Environment Variables (12 total):
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- OPENAI_API_KEY
+- VITE_GOOGLE_MAPS_API_KEY
+- RESEND_API_KEY
+- RESEND_FROM_EMAIL
+- TWILIO_ACCOUNT_SID
+- TWILIO_AUTH_TOKEN
+- TWILIO_PHONE_NUMBER
+- ADMIN_PHONE_NUMBER
+```
+
+---
+
+## 💡 PRO TIPS
+
+### **📋 Documentation Management:**
+- Keep a `clients/` folder with individual project folders
+- Each client gets: `[ClientName]_Onboarding.md` + `[ClientName]_Proposal.md`
+- Track which templates need updates based on real client feedback
+
+### **⏰ Time Management:**
+- **Phase 1 (Setup):** 2-3 hours with client
+- **Phase 2 (Config):** 4-6 hours independent work  
+- **Phase 3 (Customization):** 4-6 hours independent work
+- **Phase 4 (Testing/Handoff):** 2-3 hours total
+
+### **🔄 Process Improvement:**
+- After each client, update templates with lessons learned
+- Note common customization requests for future automation
+- Build library of service descriptions for different trade specialties
+
+### **📞 Client Communication:**
+- Use proposal template for all formal communication
+- Reference specific document sections in emails
+- Always confirm scope before starting technical work
+
+---
+
+## 🆘 TROUBLESHOOTING GUIDE
+
+### **"Which document do I use when?"**
+```
+Prospect inquiry → CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md
+Signed client → CONSULTANT_03_DEPLOYMENT_CHECKLIST.md  
+Technical questions → CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md
+Billing questions → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
+```
+
+### **"Client wants changes to pricing/timeline"**
+```
+1. Reference CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
+2. Update CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md with new terms
+3. Resend updated proposal
+```
+
+### **"Technical deployment issues"**
+```
+1. Check CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md troubleshooting section
+2. Verify all environment variables in checklist
+3. Confirm delegated access is working properly
+```
+
+---
+
+## 🎯 SUCCESS METRICS
+
+### **Business Development:**
+- Response rate to initial outreach emails
+- Proposal-to-signed-client conversion rate
+- Average project value and timeline
+
+### **Technical Delivery:**
+- Time to complete each phase
+- Client satisfaction with final platform
+- Number of post-launch support requests
+
+### **Business Operations:**
+- Monthly recurring revenue per client
+- Client retention and referral rates
+- Operational efficiency improvements
+
+---
+
+## 📈 SCALING YOUR CONSULTING PRACTICE
+
+### **After 3-5 Successful Clients:**
+1. **Automate common customizations** - Build templates for common plumbing specialties
+2. **Standardize pricing** - Update templates with proven pricing models
+3. **Develop specialized offerings** - Create packages for different business sizes
+4. **Build case studies** - Document successful client outcomes
+
+### **After 10+ Clients:**
+1. **Consider team expansion** - Use documents to train additional consultants  
+2. **Develop client tiers** - Bronze/Silver/Gold service levels
+3. **Create passive income streams** - Self-service options using your templates
+4. **Explore partnerships** - Work with trade organizations and referral networks
+
+---
+
+## 🔗 DOCUMENT LINKS QUICK REFERENCE
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| [consulting_launch_blueprint.md](./RequirementsAndGoals/consulting_launch_blueprint.md) | Business development strategy | Initial outreach and prospect engagement |
+| [ClientOnboardingPlan_Template.md](./docs/ClientOnboardingPlan_Template.md) | Client-facing proposal | Responding to prospect inquiries |
+| [Consultant_Onboarding_Checklist.md](./docs/Consultant_Onboarding_Checklist.md) | Technical deployment checklist | Active client project management |
+| [MASTER_CLIENT_DEPLOYMENT_CHECKLIST.md](./docs/MASTER_CLIENT_DEPLOYMENT_CHECKLIST.md) | Comprehensive deployment guide | Planning and training reference |
+| [CLIENT_BILLING_AND_ACCOUNT_MANAGEMENT_STRATEGIES.md](./docs/CLIENT_BILLING_AND_ACCOUNT_MANAGEMENT_STRATEGIES.md) | Business model guidance | Strategy and billing decisions |
+
+---
+
+**🎯 Remember: Start with the business strategy, move to client-facing materials, then execute with technical checklists. Each document builds on the others to create a complete consulting practice!**
+--- END OF FILE ---
+
+--- START OF FILE ./docs/CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md ---
+
+# Client Billing & Account Management Strategies
+
+**Document Purpose:** Compare different approaches to managing client infrastructure accounts and billing for web development/SaaS consulting services.
+
+---
+
+## 🏢 How Web Companies Typically Handle This
+
+### **Model 1: Agency/Reseller Model (Most Common)**
+**What most web agencies do:**
+- Agency owns all hosting/service accounts
+- Client pays monthly fee to agency
+- Agency manages all technical aspects
+- Agency can instantly turn off services for non-payment
+
+**Examples:**
+- **WP Engine Reseller:** Agency has master account, creates sub-sites
+- **Shopify Partners:** Partner handles billing, client gets service
+- **AWS Reseller Programs:** Agency consolidates billing
+
+### **Model 2: Client Direct Model**
+**What consultants/freelancers often do:**
+- Client owns accounts directly
+- Consultant gets delegated access
+- Client pays services directly
+- Consultant bills separately for management
+
+### **Model 3: Hybrid Model**
+**What larger tech companies do:**
+- Core infrastructure: Agency owned
+- Domain/email: Client owned
+- Clear data portability guarantees
+
+---
+
+## 📊 COMPARISON: Agency-Owned vs Client-Owned Accounts
+
+| Factor | Agency-Owned Accounts | Client-Owned Accounts |
+|--------|----------------------|----------------------|
+| **Control** | Full control over services | Client controls, you manage |
+| **Revenue** | Markup + recurring revenue | Service fee only |
+| **Payment Leverage** | Can shut off for non-payment | No payment leverage |
+| **Client Trust** | Lower (vendor lock-in concern) | Higher (transparent costs) |
+| **Legal Liability** | Higher (responsible for uptime) | Lower (client's infrastructure) |
+| **Scalability** | Easier to manage at scale | More complex per-client setup |
+| **Exit Strategy** | Complex migration process | Simple access revocation |
+| **Cash Flow** | You float costs until payment | No cash flow risk |
+| **Markup Transparency** | Can hide true costs | Fully transparent costs |
+
+---
+
+## 💰 BUSINESS MODEL OPTIONS
+
+### **Option A: Agency Reseller Model**
+
+#### **Setup:**
+```
+Your Master Accounts:
+- Netlify Team account with multiple sites
+- Supabase Organization with multiple projects  
+- OpenAI Organization with API key management
+- Twilio parent account with sub-accounts
+- Google Cloud Organization
+- Resend business account
+```
+
+#### **Pricing Structure:**
+```
+Monthly Service Package: $350-500 CAD
+Includes:
+- All infrastructure costs ($115-155)
+- Platform management and support
+- Updates and maintenance  
+- Technical support
+- Markup/profit margin ($200-300)
+```
+
+#### **Pros:**
+- ✅ **Higher revenue** - markup on services + management fee
+- ✅ **Payment control** - can shut off non-paying clients instantly
+- ✅ **Simpler client relationship** - one bill, full service
+- ✅ **Easier scaling** - streamlined account management
+- ✅ **Predictable revenue** - recurring monthly payments
+
+#### **Cons:**
+- ❌ **Higher liability** - responsible for uptime and data
+- ❌ **Cash flow risk** - you pay services before client pays you
+- ❌ **Client dependency** - harder for them to leave
+- ❌ **Complex migrations** - if client wants to leave
+- ❌ **Trust issues** - clients may question markup
+
+### **Option B: Managed Services Model (Client-Owned)**
+
+#### **Setup:**
+```
+Client's Accounts (guided setup):
+- Each client owns their Netlify/Supabase/etc accounts
+- You get team member/admin access
+- Client pays services directly
+```
+
+#### **Pricing Structure:**
+```
+Setup Fee: $2,500-4,000 CAD (one-time)
+Monthly Management: $150-300 CAD
+Infrastructure: $115-155 CAD (client pays directly)
+
+Total Client Cost: $265-455 CAD/month
+Your Revenue: $150-300 CAD/month
+```
+
+#### **Pros:**
+- ✅ **Higher trust** - transparent costs, client ownership
+- ✅ **Lower liability** - client's infrastructure, client's responsibility
+- ✅ **No cash flow risk** - client pays services directly
+- ✅ **Professional positioning** - consultant vs vendor
+- ✅ **Easy scaling** - clear service boundaries
+
+#### **Cons:**
+- ❌ **Lower revenue** - no markup on infrastructure
+- ❌ **No payment leverage** - can't shut off services
+- ❌ **Complex setup** - multiple accounts per client
+- ❌ **Client management** - they handle service billing
+
+### **Option C: Hybrid Model**
+
+#### **Setup:**
+```
+Split Ownership:
+- Domain & Email: Client owned
+- Core Platform: Your accounts
+- Data Exports: Regular backups provided
+```
+
+#### **Pricing Structure:**
+```
+Platform Service: $300-400 CAD/month
+Client Responsibilities: Domain + Email (~$10/month)
+Includes: Infrastructure + management + data portability
+```
+
+---
+
+## 🎯 INDUSTRY STANDARD PRACTICES
+
+### **Small Web Agencies (1-10 clients):**
+**Typical Model:** Client-owned accounts with management fees
+- Lower overhead and complexity
+- Higher client trust
+- Easier to start
+
+### **Medium Agencies (10-50 clients):**
+**Typical Model:** Hybrid approach
+- Core services agency-managed
+- Client owns domain/email
+- Clear migration policies
+
+### **Large Agencies (50+ clients):**
+**Typical Model:** Full reseller/white-label
+- Enterprise agreements with providers
+- Volume discounts passed to clients
+- Comprehensive SLA agreements
+
+---
+
+## ⚖️ LEGAL & ETHICAL CONSIDERATIONS
+
+---
+
+## 🔐 TECHNICAL ACCESS: HOW DELEGATED PERMISSIONS WORK
+
+### **The Reality: No Password Sharing Required**
+
+**Modern SaaS platforms support team-based access** - you don't need client passwords, just proper access delegation.
+
+### **Platform-Specific Access Methods:**
+
+### **Platform-Specific Access Methods:**
+
+#### **✅ Netlify - FULL TEAM SUPPORT:**
+```
+Client Setup:
+1. Creates Netlify account with their business email
+2. Invites your email as "Team Member" or "Collaborator"  
+3. You get full deployment/configuration access
+
+Your Access:
+- Site configuration and builds
+- Environment variables and functions
+- Domain and DNS settings
+- Analytics and logs
+- Cannot access billing or account settings
+
+Status: ✅ Perfect delegated access - no credential sharing needed
+```
+
+#### **✅ Supabase - FULL ORGANIZATION SUPPORT:**
+```
+Client Setup:
+1. Creates Supabase account and organization
+2. Invites your email as "Administrator" or "Developer"
+3. You access through your own Supabase login
+
+Your Access:
+- Database schema and configuration
+- Authentication settings
+- Storage bucket management  
+- API access and monitoring
+- Cannot access billing or organization settings
+
+Status: ✅ Perfect delegated access - no credential sharing needed
+```
+
+#### **✅ Google Cloud - FULL IAM SUPPORT:**
+```
+Client Setup:
+1. Creates Google Cloud project
+2. Adds your Google account with "Editor" or "Project Editor" role
+3. You access through Google Cloud Console
+
+Your Access:
+- APIs and services configuration
+- Credentials and API key management
+- Monitoring and logs
+- Cannot access billing account
+
+Status: ✅ Perfect delegated access - no credential sharing needed
+```
+
+#### **🔑 Resend - LIMITED TEAM FEATURES:**
+```
+Client Setup:
+1. Creates Resend account
+2. Generates API key for email sending
+3. Shares API key securely with you
+
+Why API Key Approach:
+- Basic team features available but limited
+- API key sharing is simpler and more secure
+- You configure email sending using their key
+
+Status: 🔑 API key sharing preferred over team access
+```
+
+#### **🔑 Twilio - BASIC SUBUSER SUPPORT:**
+```
+Client Setup:
+1. Creates Twilio account
+2. Purchases phone number for SMS
+3. Shares Account SID + Auth Token securely
+
+Why API Credential Approach:
+- Subuser accounts available but complex setup
+- Direct credential sharing is industry standard
+- You configure SMS using their credentials
+
+Status: 🔑 API credential sharing preferred over subusers
+```
+
+#### **❌ OpenAI - NO TEAM FEATURES:**
+```
+Client Setup:
+1. Creates OpenAI account
+2. Generates API key for AI services
+3. Shares API key securely with you
+
+Why API Key Required:
+- No team features for standard accounts
+- Organization access only for Enterprise (expensive)
+- API key sharing is only practical option
+
+Status: ❌ API key sharing required - no team features available
+```
+
+### **Practical Setup Workflow:**
+
+#### **During Guided Setup Call (Screen Share):**
+```
+Hour 1: Account Creation & Access Setup
+
+Modern Platform Accounts (Delegated Access):
+1. Client creates Netlify account → Invites your email as Team Member
+2. Client creates Supabase account → Invites your email as Administrator  
+3. Client creates Google Cloud project → Adds your email as Editor
+
+API Service Accounts (Credential Sharing):
+4. Client creates OpenAI account → Generates API key → Shares securely
+5. Client creates Resend account → Generates API key → Shares securely
+6. Client creates Twilio account → Shares Account SID + Auth Token securely
+
+All access delegation completed during this session
+```
+
+#### **Post-Setup Technical Work:**
+```
+You work independently using:
+- Delegated platform access (Netlify, Supabase, Google Cloud)
+- Shared API credentials (OpenAI, Resend, Twilio)
+- Configure databases, deployments, and integrations
+- Monitor performance and troubleshoot issues
+- All actions logged under your account for audit trail
+```
+
+### **🔒 Security Best Practices for API Key Sharing:**
+
+#### **Secure Sharing Methods:**
+```
+✅ Password managers with shared vaults (1Password, Bitwarden)
+✅ Encrypted messaging platforms (Signal, ProtonMail)
+✅ Secure document sharing with encryption
+❌ Never email or text API keys in plain text
+❌ Never store in unencrypted documents or screenshots
+```
+
+#### **API Key Management Protocol:**
+```
+Setup Phase:
+- Client generates keys during guided setup call
+- Client stores master copies in their password manager
+- You receive copies through secure sharing method
+- Keys documented in project management system
+
+Ongoing Management:
+- Keys rotated every 6-12 months for security
+- Immediate revocation capability if needed
+- Client maintains master access to all accounts
+- Regular access audits and confirmation
+```
+
+### **What This Means for Client Onboarding:**
+
+#### **Client Retains Full Control:**
+- ✅ **Account ownership** - registered under their business
+- ✅ **Billing control** - payment methods and invoices  
+- ✅ **Data ownership** - all customer/business data
+- ✅ **Access revocation** - can remove you instantly
+- ✅ **Vendor independence** - not locked into your services
+
+#### **You Get Technical Freedom:**
+- ✅ **Configuration access** - full technical control
+- ✅ **Deployment control** - manage builds and releases
+- ✅ **Integration setup** - connect all services
+- ✅ **Monitoring access** - performance and error tracking
+- ✅ **Support access** - can open tickets on their behalf
+
+### **Security & Professional Benefits:**
+
+#### **Better Security:**
+```
+- No password sharing required
+- All actions audited and logged
+- Granular permission controls
+- Easy access revocation if needed
+```
+
+#### **Professional Positioning:**
+```
+- Industry standard practice
+- Builds client trust and confidence
+- Clear technical vs business boundaries
+- Scalable for multiple clients
+```
+
+### **The One Exception: Domain Management**
+
+**Challenge:** Many domain registrars lack proper team access features.
+
+**Solutions:**
+```
+Option A: Client-Managed DNS
+- Provide client with DNS record instructions
+- Client makes changes through their registrar panel
+- You verify configuration remotely
+
+Option B: Temporary Access
+- Client provides temporary access for initial setup
+- Client changes password immediately after configuration
+- Document all changes made during access period
+
+Option C: Modern DNS Providers
+- Recommend registrars with team features (Cloudflare, etc.)
+- Transfer DNS management to team-friendly platform
+- Client retains domain ownership, you manage DNS
+```
+
+### **Updated Service Agreement Language:**
+
+```markdown
+## Technical Access & Security
+
+### Access Methods by Platform Type
+
+#### Modern SaaS Platforms (Delegated Access)
+- **Netlify**: Team Member invitation with deployment/configuration access
+- **Supabase**: Organization Administrator access with database/auth control
+- **Google Cloud**: Project Editor role with API/credential management access
+- No password sharing required for these platforms
+- Client retains full ownership and billing control
+
+#### API Services (Secure Credential Sharing)  
+- **OpenAI**: Secure API key sharing (no team features available)
+- **Resend**: Secure API key sharing (preferred over limited team features)
+- **Twilio**: Account SID and Auth Token sharing (preferred over complex subuser setup)
+- All credentials shared through encrypted channels only
+- Client maintains master copies in secure password management
+
+### Security Protocols
+- **Platform Access**: Industry-standard delegated access where supported
+- **API Credentials**: Secure sharing through encrypted channels only
+- **Credential Rotation**: Regular rotation schedule (6-12 months)
+- **Audit Trail**: All actions logged and traceable to consultant account
+- **Revocation**: Client can immediately revoke all access if needed
+- **No Password Access**: Consultant never receives client account passwords
+
+### Data Ownership & Control
+- Client maintains full ownership of all accounts and data
+- Client controls all billing and payment information
+- Client can monitor all consultant actions through platform logs
+- Client retains ability to export data at any time
+- Clear termination and transition procedures documented
+```
+
+---
+
+## ⚖️ LEGAL & ETHICAL CONSIDERATIONS
+
+### **Data Ownership Requirements:**
+```
+Canadian Privacy Laws (PIPEDA):
+- Clients must have access to their data
+- Clear data retention/deletion policies
+- Transparent about data location and access
+```
+
+### **Service Agreement Essentials:**
+```
+Must Include:
+- Data ownership and portability rights
+- Service level agreements (uptime guarantees)
+- Termination and migration procedures
+- Liability limitations
+- Payment terms and consequences
+```
+
+### **Recommended Termination Clause:**
+```
+Upon termination:
+- 30-day notice period
+- Data export provided in standard formats
+- Transition assistance (up to 10 hours)
+- Client retains all data ownership rights
+- No data deletion until client confirms migration
+```
+
+---
+
+## 💡 RECOMMENDATION FOR YOUR SITUATION
+
+### **Best Approach: Start with Client-Owned, Scale to Hybrid**
+
+#### **Phase 1: First 5 Clients (Client-Owned)**
+```
+Benefits:
+- Lower complexity to start
+- Build trust and reputation
+- Learn client needs and pain points
+- Minimal cash flow risk
+```
+
+#### **Phase 2: Growth Phase (Introduce Hybrid Options)**
+```
+Offer both models:
+- Budget option: Client-owned ($265-455/month total)
+- Premium option: Fully managed ($350-500/month)
+- Let clients choose based on their preferences
+```
+
+#### **Phase 3: Scale (Consider Full Reseller)**
+```
+With 10+ clients:
+- Negotiate volume discounts
+- Standardize on reseller programs
+- Higher margin, streamlined operations
+```
+
+---
+
+## 🚀 PRACTICAL IMPLEMENTATION
+
+### **Service Package Options to Offer:**
+
+#### **"DIY Plus" Package ($200/month)**
+```
+Client pays infrastructure directly ($115-155)
+You provide:
+- Initial setup and configuration
+- Monthly maintenance and updates
+- Email support
+- Emergency fixes
+```
+
+#### **"Fully Managed" Package ($400/month)**
+```
+You handle everything:
+- All infrastructure costs included
+- Proactive monitoring
+- Priority support
+- Regular feature updates
+- Performance optimization
+```
+
+#### **"Enterprise" Package ($600+/month)**
+```
+Premium service:
+- Dedicated support
+- Custom feature development
+- Advanced analytics
+- Multiple team member access
+- SLA guarantees
+```
+
+---
+
+## 🔒 RISK MITIGATION STRATEGIES
+
+### **For Agency-Owned Model:**
+```
+- Comprehensive insurance coverage
+- Regular automated backups
+- Clear SLA agreements
+- Emergency contact procedures
+- Financial reserves for service costs
+```
+
+### **For Client-Owned Model:**
+```
+- Service agreement with clear boundaries
+- Regular access audits
+- Backup access credentials (escrow)
+- Clear termination procedures
+- Professional liability insurance
+```
+
+---
+
+## 📈 REVENUE PROJECTIONS
+
+### **Client-Owned Model (10 clients):**
+```
+Monthly Revenue: 10 × $200 = $2,000 CAD
+Annual Revenue: $24,000 CAD
+Plus setup fees: 10 × $3,000 = $30,000 CAD
+Total Year 1: $54,000 CAD
+```
+
+### **Agency-Owned Model (10 clients):**
+```
+Monthly Revenue: 10 × $400 = $4,000 CAD
+Infrastructure Costs: 10 × $135 = $1,350 CAD
+Net Monthly: $2,650 CAD
+Annual Net: $31,800 CAD
+Plus setup fees: 10 × $2,000 = $20,000 CAD
+Total Year 1: $51,800 CAD
+```
+
+**Key Insight:** Client-owned model can be more profitable due to higher setup fees and no infrastructure float costs.
+
+---
+
+## 🎯 CONCLUSION
+
+**For starting out:** **Client-owned model** is recommended because:
+- Lower complexity and risk
+- Builds trust faster
+- No cash flow management
+- Easier to scale initially
+- Professional consultant positioning
+
+**For growth phase:** Offer both models and let the market decide. Many clients will prefer the transparency of client-owned accounts, while others will pay premium for fully managed service.
+
+The key is being **transparent about your approach** and **delivering exceptional value** regardless of the billing model chosen.
+--- END OF FILE ---
+
+--- START OF FILE ./docs/CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md ---
 
 # Onboarding Plan & Cost Estimate for [Client Business Name]
 
@@ -5247,8 +6285,21 @@ This is a collaborative process where **I handle all the technical complexity fo
 *   **My Role:** I will guide you through every click, then you will grant me secure, delegated access so I can manage all the technical configuration on your behalf.
 
 ### **Phase 2: Platform Customization**
-*   **Your Role:** Provide your business logo, a list of your services, and any text or photos you'd like on the website.
-*   **My Role:** I will integrate all your content and branding into the platform, customizing the look and feel to perfectly match your business.
+*   **Your Role:** Provide the following materials:
+    *   Business logo (SVG or high-resolution PNG)
+    *   Complete list of your services with descriptions
+    *   Your business story and years of experience
+    *   Customer testimonials or Google Reviews (with permission)
+    *   Professional photos of your work (optional)
+    *   Your certifications, warranties, and specialties
+    *   Service area coverage details
+*   **My Role:** I will completely customize the platform including:
+    *   **Visual Branding:** Logo integration, color scheme, professional styling
+    *   **Content Integration:** Your services, about section, contact information
+    *   **Review Integration:** Customer testimonials and Google Reviews showcase
+    *   **Service Customization:** AI intake questions tailored to your specific services
+    *   **Local SEO:** Optimized for your service area and specialties
+    *   **Business Identity:** Complete replacement of placeholder content with your brand
 
 ### **Phase 3: Deployment & Final Testing**
 *   **My Role:** I will handle the full technical deployment of the application to your custom domain. I will conduct a complete end-to-end test to ensure all features are working perfectly before we go live.
@@ -5268,13 +6319,13 @@ A key principle of a professional setup is that you own your own infrastructure.
 | :--- | :--- | :--- | :--- |
 | **Netlify** | Website Hosting & Functions | ~$25 CAD (`$19 USD`) | The engine that runs your site and automation. |
 | **Supabase**| Database & File Storage | ~$35 CAD (`$25 USD`) | Securely stores all your customer and job data. |
-| **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
-| **Google Maps** | Interactive Map View | ~$5 - $15 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
-| **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
-| **Twilio** | SMS Notifications | ~$15-30 CAD | For sending real-time SMS alerts to admin on new quote requests and approved quotes. |
+| **OpenAI** | AI-Powered Features | ~$10 - $30 CAD | Pay-as-you-go for the AI Triage & quoting features. |
+| **Google Maps** | Interactive Map View | ~$10 - $20 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
+| **Resend** | Email Notifications | ~$20 CAD | Professional email delivery service. |
+| **Twilio** | SMS Notifications | ~$15-25 CAD | Real-time SMS alerts for new requests and quote approvals. |
 | **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
 | **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
-| **TOTAL** | | **~$95 - $135 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+| **TOTAL** | | **~$115 - $155 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
 
 *(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
 
@@ -5320,7 +6371,7 @@ Once your core platform is live, we can add these powerful automation features a
 We can discuss these value-added services after your core system is up and running.
 --- END OF FILE ---
 
---- START OF FILE ./docs/Consultant_Onboarding_Checklist.md ---
+--- START OF FILE ./docs/CONSULTANT_03_DEPLOYMENT_CHECKLIST.md ---
 
 # Consultant's Onboarding Checklist
 
@@ -5376,6 +6427,12 @@ The client should be sharing their screen for this entire phase. Your job is to 
     *   [ ] Create a new **API Key**.
     *   [ ] **Crucially:** Instruct client to **immediately copy this API key**.
     *   [ ] Guide client to restrict the API key (Application restrictions: HTTP referrers, API restrictions: Maps JavaScript API + Geocoding API).
+*   **Twilio Account (for SMS):**
+    *   [ ] Guide client to sign up for a Twilio account.
+    *   [ ] Guide client to purchase a phone number for SMS sending.
+    *   [ ] Navigate to Account → API Keys & Tokens.
+    *   [ ] Copy the Account SID and Auth Token.
+    *   [ ] **Crucially:** Instruct client to **immediately copy these credentials**.
 
 ---
 
@@ -5405,7 +6462,10 @@ The client should be sharing their screen for this entire phase. Your job is to 
         *   `VITE_GOOGLE_MAPS_API_KEY` (the Google Maps API key the client generated)
         *   `RESEND_API_KEY` (the key the client generated)
         *   `RESEND_FROM_EMAIL` (e.g., `contact@clientdomain.com`)
-        *   ... and any other variables your app requires.
+        *   `TWILIO_ACCOUNT_SID` (from the client's Twilio account)
+        *   `TWILIO_AUTH_TOKEN` (from the client's Twilio account)
+        *   `TWILIO_PHONE_NUMBER` (the phone number purchased from Twilio)
+        *   `ADMIN_PHONE_NUMBER` (client's phone number for SMS notifications)
     *   [ ] Go to Domain management and add the client's custom domain.
     *   [ ] Follow the steps to configure DNS (usually by pointing the domain's nameservers to Netlify).
     *   [ ] **Add DNS records for Email Hosting:** Log in to the domain registrar/Netlify DNS panel and add the **MX, SPF, and DKIM records** provided by Google/Microsoft to direct email traffic correctly.
@@ -5417,11 +6477,38 @@ The client should be sharing their screen for this entire phase. Your job is to 
 *   **Branding:**
     *   [ ] Replace logo files in `packages/frontend/public/`.
     *   [ ] Update the primary color theme in the Tailwind/MUI config.
-*   **Content:**
-    *   [ ] Update the `packages/frontend/src/lib/servicesData.ts` file with the client's services.
-    *   [ ] Update the `packages/frontend/src/lib/serviceQuoteQuestions.ts` file with any custom questions.
-    *   [ ] Update text content in landing page components (`packages/frontend/src/features/landing/components/AboutSection.tsx`, `packages/frontend/src/features/landing/components/ReviewsSection.tsx`, etc.).
-    *   [ ] Update business contact info (name, address, phone) throughout the app.
+*   **Content Customization:**
+    *   [ ] **Services Configuration:** Update `packages/frontend/src/lib/servicesData.ts` with client's specific services, descriptions, and features.
+    *   [ ] **Service Questions:** Update `packages/frontend/src/lib/serviceQuoteQuestions.ts` with client-specific intake questions.
+    *   [ ] **Business Identity:** Replace "AquaFlow Plumbing" with client's business name in:
+        *   [ ] `packages/frontend/src/main.tsx` (3 locations)
+        *   [ ] `packages/frontend/src/features/landing/components/AboutSection.tsx` (2 locations)
+        *   [ ] `packages/frontend/src/features/landing/components/ServicesSection.tsx` (comment)
+        *   [ ] `packages/frontend/src/features/landing/components/ContactSection.tsx` (comment)
+        *   [ ] `packages/frontend/src/features/landing/components/ReviewsSection.tsx` (comment)
+    *   [ ] **Contact Information:** Update throughout app:
+        *   [ ] Email: Replace `info@aquaflowplumbing.com` in `ContactSection.tsx`
+        *   [ ] Phone number in contact sections
+        *   [ ] Business address and service area
+        *   [ ] Update footer copyright information
+    *   [ ] **About Section:** Update `AboutSection.tsx` with:
+        *   [ ] Client's years of experience
+        *   [ ] Client's unique value proposition
+        *   [ ] Service area description
+        *   [ ] Company history/background
+    *   [ ] **Reviews/Testimonials:** Update `ReviewsSection.tsx` with:
+        *   [ ] Real Google Reviews (with permission)
+        *   [ ] Client testimonials
+        *   [ ] Add Google Reviews link if available
+    *   [ ] **Services Content:** Customize service descriptions to match:
+        *   [ ] Client's specialties (e.g., tankless water heaters, gas lines)
+        *   [ ] Certifications and warranties offered
+        *   [ ] Emergency service availability
+        *   [ ] Service area coverage
+    *   [ ] **Meta Data:** Update:
+        *   [ ] Page titles and descriptions
+        *   [ ] SEO keywords for local area
+        *   [ ] Business schema markup
 *   **Commit and Push:**
     *   [ ] Commit all customization changes to the client's Git branch.
     *   [ ] Pushing the changes will trigger the first build on their Netlify account.
@@ -5444,6 +6531,298 @@ The client should be sharing their screen for this entire phase. Your job is to 
 *   [ ] During the call, walk the client through the entire system.
 *   [ ] Send a follow-up email with links to their live site, a reminder of their monthly costs, and an offer for an ongoing support/maintenance plan.
 *   [ ] **Mark project as complete.**
+--- END OF FILE ---
+
+--- START OF FILE ./docs/CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md ---
+
+# MASTER CLIENT DEPLOYMENT CHECKLIST
+
+**Client:** [Client Business Name]
+**Project Start Date:** YYYY-MM-DD
+**Target Launch Date:** YYYY-MM-DD
+
+---
+
+## ⚡ QUICK SUMMARY
+
+This checklist covers everything needed to deploy a fully customized AI-powered plumbing management platform for a real client. Total time investment: **12-16 hours** over **3-5 business days**.
+
+**Required Accounts/Services:**
+- Domain registrar (Namecheap/Netlify)
+- Google Workspace/Microsoft 365 (email)
+- Netlify Pro (~$25 CAD/month)
+- Supabase Pro (~$35 CAD/month)  
+- OpenAI API (~$10-30 CAD/month)
+- Google Cloud/Maps (~$10-20 CAD/month)
+- Resend Email (~$20 CAD/month)
+- Twilio SMS (~$15-25 CAD/month)
+
+**Total Monthly Cost: ~$115-155 CAD**
+
+---
+
+## 📋 PHASE 0: PRE-ONBOARDING PREPARATION
+
+### Git & Development Setup
+- [ ] **Create client branch:** `git checkout -b client/[client-name]`
+- [ ] **Prepare schema.sql** with latest database structure
+- [ ] **Duplicate this checklist** → `[ClientName]_Deployment_Checklist.md`
+- [ ] **Schedule 1-hour Account Setup Call** with client
+- [ ] **Prepare customization materials request** (logo, content, etc.)
+
+### Client Information Gathering
+- [ ] **Business name** and legal entity details
+- [ ] **Service area** (cities, regions covered)
+- [ ] **Specialties** (tankless water heaters, gas lines, emergency service, etc.)
+- [ ] **Years in business** and company story
+- [ ] **Certifications** and warranties offered
+- [ ] **Current phone number** for admin SMS notifications
+- [ ] **Preferred domain name** options
+- [ ] **Existing Google Reviews** (for testimonials integration)
+
+---
+
+## 📞 PHASE 1: GUIDED ACCOUNT SETUP (2-3 hours)
+
+### Domain & Email
+- [ ] **Domain Purchase:** Guide client through domain registration
+- [ ] **Professional Email:** Set up Google Workspace or Microsoft 365
+- [ ] **Email Configuration:** Configure MX, SPF, DKIM records
+
+### Core Platform Accounts
+- [ ] **Netlify Account:**
+  - [ ] Sign up for new account
+  - [ ] Upgrade to Pro Plan (~$25 CAD/month)
+  - [ ] Invite your email as Team Member
+- [ ] **Supabase Account:**
+  - [ ] Sign up for new account
+  - [ ] Create Organization and Project
+  - [ ] Upgrade to Pro Plan (~$35 CAD/month)
+  - [ ] Invite your email as Administrator
+
+### API Services
+- [ ] **OpenAI Account:**
+  - [ ] Sign up for OpenAI account
+  - [ ] Generate API key
+  - [ ] Secure key in client's password manager
+- [ ] **Google Cloud Account:**
+  - [ ] Sign up or use existing account
+  - [ ] Create new project
+  - [ ] Enable Maps JavaScript API
+  - [ ] Enable Geocoding API
+  - [ ] Create and restrict API key
+- [ ] **Resend Account:**
+  - [ ] Sign up for Resend account
+  - [ ] Complete domain verification
+  - [ ] Generate API key
+- [ ] **Twilio Account:**
+  - [ ] Sign up for Twilio account
+  - [ ] Purchase phone number for SMS
+  - [ ] Copy Account SID and Auth Token
+
+---
+
+## 🔧 PHASE 2: TECHNICAL CONFIGURATION (4-6 hours)
+
+### Supabase Database Setup
+- [ ] **Database Schema:**
+  - [ ] Run `schema.sql` in SQL Editor
+  - [ ] Create `PlumbingPoCBucket` storage bucket
+  - [ ] Apply storage policies
+- [ ] **Authentication Setup:**
+  - [ ] Configure Google OAuth provider
+  - [ ] Configure Microsoft/Azure OAuth provider
+  - [ ] Update Site URL and Redirect URLs
+  - [ ] Create initial admin user account
+  - [ ] Set admin role in `user_profiles` table
+
+### Netlify Deployment Configuration
+- [ ] **Site Setup:**
+  - [ ] Create new site from Git (client branch)
+  - [ ] Configure build settings: `npm run build`, `packages/frontend/dist`
+- [ ] **Environment Variables:**
+  - [ ] `VITE_SUPABASE_URL`
+  - [ ] `VITE_SUPABASE_ANON_KEY`
+  - [ ] `SUPABASE_SERVICE_ROLE_KEY`
+  - [ ] `OPENAI_API_KEY`
+  - [ ] `VITE_GOOGLE_MAPS_API_KEY`
+  - [ ] `RESEND_API_KEY`
+  - [ ] `RESEND_FROM_EMAIL`
+  - [ ] `TWILIO_ACCOUNT_SID`
+  - [ ] `TWILIO_AUTH_TOKEN`
+  - [ ] `TWILIO_PHONE_NUMBER`
+  - [ ] `ADMIN_PHONE_NUMBER`
+- [ ] **Domain Configuration:**
+  - [ ] Add custom domain
+  - [ ] Configure DNS settings
+  - [ ] Verify SSL certificate
+
+---
+
+## 🎨 PHASE 3: CONTENT & BRANDING CUSTOMIZATION (4-6 hours)
+
+### Visual Branding
+- [ ] **Logo Integration:**
+  - [ ] Replace logo files in `packages/frontend/public/`
+  - [ ] Update favicon and app icons
+- [ ] **Color Scheme:**
+  - [ ] Update primary colors in Tailwind config
+  - [ ] Adjust brand colors throughout components
+
+### Business Identity Replacement
+- [ ] **Main App File** (`packages/frontend/src/main.tsx`):
+  - [ ] Replace "AquaFlow Plumbing" in header (line ~256)
+  - [ ] Replace company name in footer (line ~368)
+  - [ ] Update copyright notice (line ~371)
+
+### Landing Page Content
+- [ ] **About Section** (`AboutSection.tsx`):
+  - [ ] Update company name (line ~56)
+  - [ ] Replace experience years and company story (line ~57)
+  - [ ] Customize value proposition and background
+- [ ] **Contact Section** (`ContactSection.tsx`):
+  - [ ] Replace email address (`info@aquaflowplumbing.com`)
+  - [ ] Update phone number
+  - [ ] Update business address
+  - [ ] Update service area description
+- [ ] **Services Section** (`ServicesSection.tsx`):
+  - [ ] Update component documentation comments
+
+### Services Configuration
+- [ ] **Services Data** (`packages/frontend/src/lib/servicesData.ts`):
+  - [ ] Replace with client's specific services
+  - [ ] Update service descriptions and features
+  - [ ] Customize icons to match services
+  - [ ] Add client's specialties (e.g., tankless, gas lines)
+- [ ] **Quote Questions** (`packages/frontend/src/lib/serviceQuoteQuestions.ts`):
+  - [ ] Customize intake questions for client's services
+  - [ ] Add service-specific qualification questions
+
+### Reviews & Testimonials
+- [ ] **Reviews Section** (`ReviewsSection.tsx`):
+  - [ ] Replace placeholder testimonials
+  - [ ] Add real Google Reviews (with permission)
+  - [ ] Include customer names (first name + last initial)
+  - [ ] Add link to Google Reviews if desired
+
+### SEO & Metadata
+- [ ] **Page Titles:** Update for local SEO
+- [ ] **Meta Descriptions:** Customize for service area
+- [ ] **Keywords:** Add local plumbing terms
+- [ ] **Schema Markup:** Update business information
+
+---
+
+## 🧪 PHASE 4: TESTING & VALIDATION (2 hours)
+
+### End-to-End Testing
+- [ ] **Customer Journey Test:**
+  - [ ] Register new test user
+  - [ ] Request quote with real local address
+  - [ ] Verify address geocoding works
+  - [ ] Check photo upload functionality
+  - [ ] Verify AI conversation flow
+- [ ] **Admin Dashboard Test:**
+  - [ ] Log in as admin
+  - [ ] Verify quote appears in Command Center
+  - [ ] Check Map View with correct pin location
+  - [ ] Test quote creation and sending
+  - [ ] Verify SMS notifications work
+  - [ ] Check email delivery through Resend logs
+
+### Final Deployment
+- [ ] **Git Commit & Push:**
+  - [ ] Commit all customization changes
+  - [ ] Push to client branch
+  - [ ] Verify Netlify build succeeds
+- [ ] **Production Verification:**
+  - [ ] Test on client's custom domain
+  - [ ] Verify SSL certificate
+  - [ ] Check all functionality on production
+
+---
+
+## 📚 PHASE 5: HANDOFF & TRAINING (1 hour)
+
+### Training Call Preparation
+- [ ] **Demo Account Setup:** Create sample data for demonstration
+- [ ] **Training Materials:** Prepare user guide/walkthrough
+- [ ] **Support Documentation:** Provide ongoing maintenance info
+
+### Client Training Session
+- [ ] **System Walkthrough:**
+  - [ ] Customer quote request process
+  - [ ] Admin Command Center tour
+  - [ ] Map View and job management
+  - [ ] Quote creation and communication
+  - [ ] SMS and email notifications
+- [ ] **Q&A Session:** Address client questions and concerns
+- [ ] **Next Steps:** Discuss ongoing support options
+
+### Project Completion
+- [ ] **Handoff Documentation:**
+  - [ ] Provide login credentials
+  - [ ] Document monthly service costs
+  - [ ] Outline support/maintenance plan
+- [ ] **Follow-up Email:** Send summary with important links
+- [ ] **Project Closure:** Mark project as complete
+
+---
+
+## 📊 SUCCESS METRICS
+
+### Technical Validation
+- [ ] Site loads properly on custom domain
+- [ ] All forms submit without errors
+- [ ] SMS notifications deliver within 30 seconds
+- [ ] Email notifications deliver successfully
+- [ ] Map view shows correct job locations
+- [ ] File uploads work (images, documents)
+
+### Business Validation  
+- [ ] Client can navigate admin dashboard independently
+- [ ] Quote creation process is understood
+- [ ] Customer journey feels professional
+- [ ] Branding accurately represents client business
+- [ ] All contact information is correct
+
+---
+
+## 🚨 COMMON ISSUES & SOLUTIONS
+
+### Account Setup Issues
+- **OAuth Setup:** Ensure callback URLs match Supabase project
+- **Email Delivery:** Verify domain verification in Resend
+- **SMS Delivery:** Check Twilio phone number region settings
+
+### Content Issues
+- **Logo Quality:** Ensure SVG or high-res PNG for crisp display
+- **Service Descriptions:** Keep concise but informative
+- **Local SEO:** Include city/region names in content
+
+### Technical Issues
+- **Environment Variables:** Double-check all keys are correct
+- **Build Failures:** Verify all dependencies are in package.json
+- **Map Functionality:** Ensure Google Maps API has correct restrictions
+
+---
+
+## 💰 FINAL COST SUMMARY
+
+| Service | Monthly Cost (CAD) | Annual Cost (CAD) |
+|---------|-------------------|-------------------|
+| Netlify Pro | $25 | $300 |
+| Supabase Pro | $35 | $420 |
+| OpenAI API | $10-30 | $120-360 |
+| Google Maps | $10-20 | $120-240 |
+| Resend Email | $20 | $240 |
+| Twilio SMS | $15-25 | $180-300 |
+| Domain | $2 | $20 |
+| Professional Email | $8 | $96 |
+| **TOTAL** | **$115-155** | **$1,380-1,860** |
+
+**🎯 Client Value Proposition:** 
+Complete AI-powered business management platform for the cost of 1-2 service calls per month.
 --- END OF FILE ---
 
 --- START OF FILE ./docs/DataContracts.md ---
@@ -7007,6 +8386,7 @@ DROP POLICY "Enable read for own quotes" ON "public"."quotes";
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.2.3",
+    "react-helmet-async": "^2.0.5",
     "resend": "^3.5.0",
     "serverless-http": "^3.2.0",
     "twilio": "^5.2.2",
@@ -10114,7 +11494,7 @@ export default AuthModal;
 --- START OF FILE ./packages/frontend/src/features/auth/components/UserMenu.tsx ---
 
 import React, { useState } from 'react';
-import { User, LogOut, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, LayoutDashboard, ListChecks } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface UserMenuProps {
@@ -10189,8 +11569,22 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
                     Command Center
                   </button>
                 );
-              })()}
-              <button
+               })()}
+               {profile && profile.role !== 'admin' && (
+                 <a
+                   href="/#/dashboard"
+                   onClick={(e) => {
+                     e.preventDefault();
+                     window.location.hash = '#/dashboard';
+                     setIsOpen(false);
+                   }}
+                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                 >
+                   <ListChecks className="w-4 h-4" />
+                   My Quote Requests
+                 </a>
+               )}
+               <button
                 onClick={() => {
                   onOpenProfile();
                   setIsOpen(false);
@@ -10272,39 +11666,39 @@ const AboutSection: React.FC = () => (
   <section id="about" className="py-20 bg-white">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
       <div className="hidden lg:block">
-        <img src="/plumber.jpg" alt="Plumbing team" className="rounded-lg shadow-lg w-full h-64 object-cover" />
+        <img src="/plumber.jpg" alt="AquaFlow Plumbing company team photo" className="rounded-lg shadow-lg w-full h-64 object-cover" />
       </div>
       <div>
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">About AquaFlow Plumbing</h2>
-        <p className="text-lg text-gray-600 mb-6">With over 15 years of experience serving our community, AquaFlow Plumbing has built a reputation for reliable, professional service and competitive pricing.</p>
+        <p className="text-lg text-gray-600 mb-6">With over 15 years of experience serving communities across Greater Victoria, from Oak Bay to Saanich and Langford, AquaFlow Plumbing has built a reputation for reliable, professional service and competitive pricing.</p>
         <p className="text-lg text-gray-600 mb-8">Our team of licensed professionals is committed to providing the highest quality workmanship and customer service. We use the latest tools and techniques to ensure your plumbing systems work perfectly.</p>
-        <div className="grid sm:grid-cols-2 gap-6">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Shield className="w-8 h-8 text-blue-600" />
             <div>
-              <div className="font-semibold text-gray-900">Licensed & Insured</div>
-              <div className="text-gray-600">Full coverage protection</div>
+              <h4 className="font-semibold text-gray-900">Licensed & Insured</h4>
+              <p className="text-gray-600 text-sm">Full coverage protection for your peace of mind.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Clock className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Clock className="w-8 h-8 text-blue-600" />
             <div>
-              <div className="font-semibold text-gray-900">24/7 Emergency</div>
-              <div className="text-gray-600">Always available</div>
+              <h4 className="font-semibold text-gray-900">24/7 Emergency</h4>
+              <p className="text-gray-600 text-sm">Always available when you need us most.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <CheckCircle className="w-8 h-8 text-green-500" />
             <div>
-              <div className="font-semibold text-gray-900">Quality Guarantee</div>
-              <div className="text-gray-600">100% satisfaction</div>
+              <h4 className="font-semibold text-gray-900">Quality Guarantee</h4>
+              <p className="text-gray-600 text-sm">100% satisfaction on all workmanship.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Star className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Star className="w-8 h-8 text-yellow-500" />
             <div>
-              <div className="font-semibold text-gray-900">5-Star Rated</div>
-              <div className="text-gray-600">Proven customer satisfaction</div>
+              <h4 className="font-semibold text-gray-900">5-Star Rated</h4>
+              <p className="text-gray-600 text-sm">Proven customer satisfaction and top reviews.</p>
             </div>
           </div>
         </div>
@@ -10526,147 +11920,55 @@ export default ReviewsSection;
 
 --- START OF FILE ./packages/frontend/src/features/landing/components/ServicesSection.tsx ---
 
-/**
- * =============================================================================
- * ServicesSection.tsx - Services Overview Component
- * =============================================================================
- *
- * WHAT IS THIS COMPONENT?
- * -----------------------
- * The ServicesSection component displays AquaFlow Plumbing's service offerings
- * in an attractive bento grid layout. It showcases the main plumbing services
- * with icons, descriptions, and key features to help customers understand
- * the range of services available.
- *
- * COMPONENT FEATURES:
- * -------------------
- * - Dynamic service data from servicesData.ts
- * - Bento grid layout with varying card sizes
- * - Icon mapping system for visual consistency
- * - Hover effects and smooth transitions
- * - Responsive design with mobile-first approach
- * - Feature lists with checkmark icons
- *
- * GRID LAYOUT STRUCTURE:
- * ---------------------
- * - Large featured service: 2x2 grid span (Leak Detection & Repair)
- * - Medium service: 2x1 grid span (Pipe Installation & Repiping)
- * - Small service cards: 1x1 grid (4 additional services)
- * - Total: 6 services displayed in asymmetric grid
- *
- * ICON MAPPING SYSTEM:
- * -------------------
- * Maps string names to Lucide React icon components:
- * - Droplets: Leak Detection & Repair
- * - Wrench: Pipe Installation & Repiping
- * - Wind: Drain Cleaning
- * - Thermometer: Water Heater Services
- * - ShowerHead: Fixture Repair & Installation
- * - Settings: Gas Line Services
- *
- * RESPONSIVE BEHAVIOR:
- * -------------------
- * - Desktop: 4-column bento grid with size variations
- * - Tablet: 2-column grid with adjusted spans
- * - Mobile: Single column stack
- *
- * DATA SOURCE:
- * -----------
- * - Imports service data from ../../../lib/servicesData.ts
- * - Each service includes: key, title, description, features array, icon name
- *
- * STYLING:
- * --------
- * - Light gray background (bg-gray-50)
- * - White service cards with rounded corners
- * - Blue icons and gradient hover effects
- * - Green checkmarks for features
- * - Scale and shadow animations on hover
- * - Gradient overlays for visual depth
- */
-
 import React from 'react';
-import { CheckCircle, Droplets, Wrench, Wind, Thermometer, ShowerHead, Settings } from 'lucide-react';
-import { services } from '../../../lib/servicesData';
+import { ArrowRight, CheckCircle, Droplets, Wrench, Wind, Thermometer, ShowerHead, Settings } from 'lucide-react';
+import { services as allServices, ServiceDefinition } from '../../../lib/serviceDefinitions';
 
-// Create a mapping from the string name to the actual icon component
 const iconComponents: { [key: string]: React.ReactElement } = {
-  Droplets: <Droplets className="w-8 h-8 text-blue-600" />,
-  Wrench: <Wrench className="w-8 h-8 text-blue-600" />,
-  Wind: <Wind className="w-8 h-8 text-blue-600" />,
-  Thermometer: <Thermometer className="w-8 h-8 text-blue-600" />,
-  ShowerHead: <ShowerHead className="w-8 h-8 text-blue-600" />,
-  Settings: <Settings className="w-8 h-8 text-blue-600" />,
+  Droplets: <Droplets className="w-8 h-8 text-blue-700" />,
+  Wrench: <Wrench className="w-8 h-8 text-blue-700" />,
+  Wind: <Wind className="w-8 h-8 text-blue-700" />,
+  Thermometer: <Thermometer className="w-8 h-8 text-blue-700" />,
+  ShowerHead: <ShowerHead className="w-8 h-8 text-blue-700" />,
+  Settings: <Settings className="w-8 h-8 text-blue-700" />,
 };
 
-const ServicesSection: React.FC = () => (
+// Display all 8 services in the correct order
+const mainServiceKeys = ["leak_repair", "pipe_installation", "drain_cleaning", "water_heater", "fixture_install", "gas_line_services", "perimeter_drains", "other"];
+const displayServices = allServices.filter(s => mainServiceKeys.includes(s.key))
+  .sort((a, b) => mainServiceKeys.indexOf(a.key) - mainServiceKeys.indexOf(b.key));
+
+interface ServicesSectionProps {
+  onServiceSelect: (service: ServiceDefinition) => void;
+}
+
+const ServicesSection: React.FC<ServicesSectionProps> = ({ onServiceSelect }) => (
   <section id="services" className="py-20 bg-gray-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Professional Plumbing Services</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">Professional Plumbing Services in Victoria, BC</h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">From emergency repairs to complete installations, we provide comprehensive plumbing solutions for homes and businesses.</p>
       </div>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-[200px]">
-        {/* Large featured service - spans 2 columns and 2 rows */}
-        {services[0] && (
-          <div className="md:col-span-2 lg:col-span-2 lg:row-span-2 bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative z-10">
-              <div className="mb-4">{iconComponents[services[0].icon]}</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">{services[0].title}</h3>
-              <p className="text-gray-600 mb-6 flex-grow">{services[0].description}</p>
-              <ul className="space-y-3">
-                {services[0].features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center text-base text-gray-700">
-                    <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {displayServices.map((service) => (
+          <button key={service.key} onClick={() => onServiceSelect(service)} className="text-left bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-105 relative overflow-hidden">
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="bg-blue-100 p-3 rounded-full inline-flex mb-4 w-min">
+                {iconComponents[service.icon]}
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-gray-900">{service.title}</h3>
+                {(service.key === 'leak_repair' || service.key === 'water_heater') && (
+                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">Emergency</span>
+                )}
+              </div>
+              <p className="text-gray-600 mb-4 text-sm flex-grow line-clamp-3">{service.description}</p>
+              <div className="absolute bottom-6 right-6 bg-blue-600 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110">
+                <ArrowRight className="text-white w-5 h-5" />
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Medium service - spans 2 columns */}
-        {services[1] && (
-          <div className="md:col-span-2 lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative z-10">
-              <div className="mb-3">{iconComponents[services[1].icon]}</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{services[1].title}</h3>
-              <p className="text-gray-600 mb-4 text-sm flex-grow">{services[1].description}</p>
-              <ul className="space-y-2">
-                {services[1].features.slice(0, 2).map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center text-sm text-gray-700">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Small service cards */}
-        {services.slice(2, 6).map((service, index) => (
-          <div key={service.key} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:scale-[1.02] relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative z-10">
-              <div className="mb-3">{iconComponents[service.icon]}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{service.title}</h3>
-              <p className="text-gray-600 mb-4 text-sm flex-grow line-clamp-2">{service.description}</p>
-              <ul className="space-y-1">
-                {service.features.slice(0, 2).map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center text-sm text-gray-700">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                    <span className="truncate">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -12758,7 +14060,8 @@ export default MyRequests;
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
-import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory, GENERIC_QUESTIONS } from "../../../lib/serviceQuoteQuestions";
+// Use aliases to map the new data structure to the existing variable names
+import { services as SERVICE_QUOTE_CATEGORIES, ServiceDefinition as ServiceQuoteCategory, GENERIC_QUESTIONS } from "../../../lib/serviceDefinitions";
 import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
@@ -12875,9 +14178,10 @@ interface QuoteAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmissionSuccess: (newRequest: any) => void;
+  preselectedService?: ServiceQuoteCategory | null;
 }
 
-const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentModalProps) => {
+const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedService }: QuoteAgentModalProps) => {
   const { profile, user } = useAuth();
 
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
@@ -12936,7 +14240,12 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
 
   const resetState = () => {
     setChatHistory([]);
-    setStatus('ASKING_EMERGENCY');
+    // If a service is pre-selected, we skip the first steps. Otherwise, start from the beginning.
+    if (preselectedService) {
+      // We will let the new useEffect handle the status update
+    } else {
+      setStatus('ASKING_EMERGENCY');
+    }
     setIsEmergency(null);
     setNewAttachments([]);
     setUserInput("");
@@ -13053,6 +14362,23 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen && preselectedService) {
+      console.log('Modal opened with pre-selected service:', preselectedService.title);
+
+      // Find the full category object from the imported data
+      const category = SERVICE_QUOTE_CATEGORIES.find(c => c.key === preselectedService.key);
+
+      if (category) {
+        // Set a default for the emergency question since we're skipping it
+        setIsEmergency(false);
+
+        // Directly call the category selection handler to start the question flow
+        handleSelectCategory(category);
+      }
+    }
+  }, [isOpen, preselectedService]);
+
   const handleEmergencyChoice = (choice: boolean) => {
     setIsEmergency(choice);
     setChatHistory([
@@ -13067,7 +14393,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     setSelectedCategory(category);
     const combinedQuestions = [...GENERIC_QUESTIONS.map(q => q.question), ...category.questions];
     setInitialQuestions(combinedQuestions);
-    setChatHistory((prev) => [...prev, { sender: "user", message: category.label }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
+    setChatHistory((prev) => [...prev, { sender: "user", message: category.title }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
     setCurrentQuestionIndex(0);
     setStatus('INITIAL_QUESTIONS');
   };
@@ -13289,7 +14615,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                             '&:hover': { bgcolor: 'primary.main', color: 'white' }
                           }}
                         >
-                          {cat.label}
+                          {cat.title}
                         </Button>
                       ))}
                     </Box>
@@ -13422,7 +14748,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                          <Wrench size={20} />
                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                           {selectedCategory?.label}
+                           {selectedCategory?.title}
                          </Typography>
                        </Box>
                      </Paper>
@@ -15109,6 +16435,55 @@ export interface QuoteRequest {
 
 --- END OF FILE ---
 
+--- START OF FILE ./packages/frontend/src/features/services/ServiceDetailPage.tsx ---
+
+import React from 'react';
+import { services, ServiceDefinition } from '../../lib/serviceDefinitions';
+import { ArrowLeft } from 'lucide-react';
+
+interface ServiceDetailPageProps {
+  serviceKey: string;
+}
+
+const ServiceDetailPage: React.FC<ServiceDetailPageProps> = ({ serviceKey }) => {
+  const service = services.find(s => s.key === serviceKey);
+
+  if (!service) {
+    return (
+      <div className="text-center p-8">
+        <h2 className="text-2xl font-bold">Service Not Found</h2>
+        <a href="/#" className="text-blue-600 hover:underline mt-4 inline-block">← Back to Home</a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+      <a href="/#" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6">
+        <ArrowLeft size={18} />
+        Back to All Services
+      </a>
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">{service.title}</h1>
+      <p className="text-lg text-gray-600 mb-8">{service.description}</p>
+
+      {/* Placeholder for more content */}
+      <div className="bg-gray-100 p-6 rounded-lg">
+        <h3 className="text-2xl font-semibold mb-4">More Details Coming Soon</h3>
+        <p>This page will include project photos, customer testimonials for this specific service, and a detailed breakdown of our process.</p>
+        <button
+            onClick={() => {/* This will need to be wired up to open the quote modal */}}
+            className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+        >
+            Request a Quote for {service.title}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ServiceDetailPage;
+--- END OF FILE ---
+
 --- START OF FILE ./packages/frontend/src/hooks/index.ts ---
 
 // packages/frontend/src/hooks/index.ts
@@ -16694,13 +18069,18 @@ export const uploadAttachments = async (requestId: string, files: File[], quoteI
 export default apiClient;
 --- END OF FILE ---
 
---- START OF FILE ./packages/frontend/src/lib/serviceQuoteQuestions.ts ---
+--- START OF FILE ./packages/frontend/src/lib/serviceDefinitions.ts ---
 
-export interface ServiceQuoteCategory {
+// THE NEW SINGLE SOURCE OF TRUTH FOR ALL SERVICE DEFINITIONS
+
+export interface ServiceDefinition {
   key: string;
-  label: string;
+  title: string;
+  icon: string;
+  description: string;
+  features: string[];
   questions: string[];
-  exampleAnswers?: string[]; // For E2E testing - example answers for each question
+  exampleAnswers?: string[];
 }
 
 export interface GenericQuestion {
@@ -16708,7 +18088,7 @@ export interface GenericQuestion {
   question: string;
   choices?: string[];
   textarea?: boolean;
-  exampleAnswer?: string; // For E2E testing - shows expected answer format
+  exampleAnswer?: string;
 }
 
 export const GENERIC_QUESTIONS: GenericQuestion[] = [
@@ -16731,62 +18111,13 @@ export const GENERIC_QUESTIONS: GenericQuestion[] = [
   },
 ];
 
-export const SERVICE_QUOTE_CATEGORIES: ServiceQuoteCategory[] = [
-  {
-    key: "bathroom_reno",
-    label: "Bathroom Renovation",
-    questions: [
-      "Are you changing the plumbing layout (e.g., moving the toilet, sink, or shower location)?",
-      "Are you replacing the main shower/tub valve that is inside the wall?",
-      "What specific fixtures does the homeowner plan to use, or would they like options/recommendations?",
-      "Will any additional renovations be happening simultaneously that might affect the plumbing work?",
-      "Are there any known issues with the existing plumbing that might complicate the renovation process?"
-    ],
-    exampleAnswers: [
-      "Yes, moving the toilet 6 inches to the left and adding a new shower stall",
-      "Yes, the old valve is corroded and needs replacement",
-      "Kohler Memoirs toilet, Delta shower fixtures, and a vessel sink basin",
-      "Yes, tile work and electrical updates happening at the same time",
-      "The existing pipes are galvanized steel and may need upgrading to PEX"
-    ]
-  },
-  {
-    key: "perimeter_drains",
-    label: "Perimeter Drains",
-    questions: [
-      "Have you experienced flooding or pooling water near the foundation?",
-      "What is the ground surface around the foundation (e.g., grass, concrete patio, garden beds)?",
-      "Do you have a sump pump, or does the system drain directly to a city storm connection?",
-      "Do you know the approximate age of your property?",
-    ],
-    exampleAnswers: [
-      "Yes, water pools along the foundation after heavy rain",
-      "Grass lawn with some concrete walkways",
-      "We have a sump pump in the basement that discharges to a dry well",
-      "The house was built in 1995"
-    ]
-  },
-  {
-    key: "water_heater_install",
-    label: "Water Heater Installation",
-    questions: [
-      "Is the new water heater gas or electric?",
-      "Will you be providing the new water heater, or should we include one in the quote?",
-      "Is this a replacement for an existing water heater, or a new installation?",
-      "What is the size of the new unit (e.g., 40-gallon, 50-gallon tank), if you know?",
-      "Where is the installation location, and are there any space or access constraints?"
-    ],
-    exampleAnswers: [
-      "Gas - we have natural gas available",
-      "Please include a new water heater in the quote",
-      "Replacement for existing unit that's 15 years old",
-      "50-gallon tank to serve a family of 4",
-      "Garage utility room with good access, about 6 feet of clearance"
-    ]
-  },
+export const services: ServiceDefinition[] = [
   {
     key: "leak_repair",
-    label: "Leak Repair",
+    title: "Leak Detection & Repair",
+    icon: "Droplets",
+    description: "Fast detection and repair of water leaks to prevent damage and save water.",
+    features: ["Emergency leak repair", "Pipe inspection", "Slab leak detection"],
     questions: [
       "Where is the leak located (e.g., under a sink, in a wall/ceiling, outside)?",
       "Is water actively leaking right now, and have you been able to shut off the main water valve?",
@@ -16801,123 +18132,119 @@ export const SERVICE_QUOTE_CATEGORIES: ServiceQuoteCategory[] = [
     ]
   },
   {
-    key: "fixture_install",
-    label: "Fixture Installation",
-    questions: [
-      "What type of fixture do you need installed (e.g., faucet, toilet, shower head, garburator)?",
-      "Do you already have the new fixture and all its parts on-site?",
-      "Is this a replacement for an old fixture or a brand new installation?",
-      "Is the new fixture the same size and configuration as the old one (e.g., 4-inch vs 8-inch faucet spread)?",
-    ],
-    exampleAnswers: [
-      "Kitchen faucet - single handle with pull-out sprayer",
-      "Yes, I purchased a Moen Brantford faucet with all necessary parts",
-      "Replacement for an old faucet that's leaking",
-      "Same 4-inch centerset configuration as the old one"
-    ]
-  },
-  {
-    key: "main_line_repair",
-    label: "Main Line (Sewer/Water) Repair",
-    questions: [
-      "What issues are you experiencing (e.g., slow drains everywhere, water in the yard, backup)?",
-      "Where is the main line located on your property (e.g., under the front lawn, in the basement slab, in a crawlspace)?",
-      "Do you know the approximate age of your home?",
-      "Has the main line been repaired or cleared recently?",
-    ],
-    exampleAnswers: [
-      "Slow drains in all bathrooms and kitchen, sewage backing up into basement floor drain",
-      "Under the front lawn, runs from the house to the street",
-      "The house was built in 1985",
-      "Had a drain cleaning service out 6 months ago but problems returned"
-    ]
-  },
-  {
-    key: "emergency_service",
-    label: "Emergency Service",
-    questions: [
-      "Please describe the nature of your plumbing emergency in detail.",
-      "Is water currently shut off to the affected area or the whole house?",
-      "Is there any risk of significant water damage occurring?",
-    ],
-    exampleAnswers: [
-      "EMERGENCY: Burst pipe flooding the basement!",
-      "No",
-      "Yes"
-    ]
-  },
-  {
-    key: "other",
-    label: "Other (Describe Your Request)",
-    questions: [
-      "Please describe your plumbing request or issue in detail.",
-      "Are there any specific requirements or concerns?",
-      "When would you like the service performed?"
-    ],
-    exampleAnswers: [
-      "Need help with a custom plumbing installation for a home brewery setup",
-      "Must comply with local building codes and health department regulations",
-      "As soon as possible, project deadline approaching"
-    ]
-  }
-];
---- END OF FILE ---
-
---- START OF FILE ./packages/frontend/src/lib/servicesData.ts ---
-
-// This file now contains ONLY pure data. No components, no JSX.
-
-export interface ServiceData {
-  key: string;
-  icon: string; // The icon is now represented by its name (a string)
-  title: string;
-  description: string;
-  features: string[];
-}
-
-export const services: ServiceData[] = [
-  {
-    key: "leak_repair",
-    icon: "Droplets",
-    title: "Leak Detection & Repair",
-    description: "Fast detection and repair of water leaks to prevent damage and save water.",
-    features: ["Emergency leak repair", "Pipe inspection", "Slab leak detection"]
-  },
-  {
     key: "pipe_installation",
-    icon: "Wrench",
     title: "Pipe Installation & Repiping",
+    icon: "Wrench",
     description: "Professional installation and replacement for new construction or aging systems.",
-    features: ["Full home repiping", "New construction plumbing", "System upgrades"]
+    features: ["Full home repiping", "New construction plumbing", "System upgrades"],
+    questions: [
+        "Is this for a new construction, a renovation, or a repair of an existing pipe?",
+        "What type of piping material are you considering (e.g., PEX, copper, PVC)?",
+        "What is the approximate length of pipe that needs to be installed or replaced?",
+    ],
   },
   {
     key: "drain_cleaning",
-    icon: "Wind",
     title: "Drain Cleaning",
+    icon: "Wind",
     description: "Clear clogged drains and prevent future blockages with our expert services.",
-    features: ["Kitchen & bathroom drains", "Main line sewer cleaning", "Hydro-jetting"]
+    features: ["Kitchen & bathroom drains", "Main line sewer cleaning", "Hydro-jetting"],
+    questions: [
+        "Which fixture is clogged (e.g., kitchen sink, toilet, shower)?",
+        "Is the drain completely blocked or just draining slowly?",
+        "Have you tried any chemical drain cleaners yourself?",
+    ],
   },
   {
     key: "water_heater",
-    icon: "Thermometer",
     title: "Water Heater Services",
+    icon: "Thermometer",
     description: "Reliable installation and repair for tankless and traditional water heaters.",
-    features: ["New installations", "24/7 emergency repairs", "Regular maintenance"]
+    features: ["New installations", "24/7 emergency repairs", "Regular maintenance"],
+    questions: [
+      "Is your current water heater gas or electric?",
+      "Are you looking to repair your existing unit or install a new one?",
+      "If installing a new one, are you considering a traditional tank or a tankless system?",
+    ],
   },
   {
-    key: "fixture_services",
-    icon: "ShowerHead",
+    key: "fixture_install",
     title: "Fixture Repair & Installation",
+    icon: "ShowerHead",
     description: "We service all types of plumbing fixtures for your home or business.",
-    features: ["Faucets & sinks", "Toilets & bidets", "Showers & tubs"]
+    features: ["Faucets & sinks", "Toilets & bidets", "Showers & tubs"],
+     questions: [
+      "What type of fixture do you need installed or repaired (e.g., faucet, toilet, shower head)?",
+      "Do you already have the new fixture, or should we supply one?",
+      "Is this a simple replacement or does it require moving plumbing lines?",
+    ],
   },
   {
     key: "gas_line_services",
-    icon: "Settings",
     title: "Gas Line Services",
+    icon: "Settings",
     description: "Safe and certified installation and repair of natural gas lines.",
-    features: ["New appliance hookups", "Leak detection & repair", "System installations"]
-  }
+    features: ["New appliance hookups", "Leak detection & repair", "System installations"],
+    questions: [
+        "Is this for a new gas line installation, an extension, or a repair?",
+        "What appliance is the gas line for (e.g., BBQ, stove, fireplace)?",
+        "Do you currently have natural gas service at your property?",
+    ],
+  },
+  {
+    key: "perimeter_drains",
+    title: "Perimeter Drains",
+    icon: "Wind", // Using the drain icon for consistency
+    description: "Protect your foundation with expert installation and repair of perimeter drainage systems.",
+    features: ["Camera inspection & diagnosis", "Sump pump solutions", "Foundation water-proofing"],
+    questions: [
+      "Have you experienced flooding or pooling water near the foundation?",
+      "What is the ground surface around the foundation (e.g., grass, concrete)?",
+      "Do you have a sump pump, or does the system drain to a city storm connection?",
+    ],
+  },
+  // --- THESE CATEGORIES ARE FOR THE MODAL ONLY AND WILL NOT RENDER ON THE HOMEPAGE ---
+  {
+    key: "bathroom_reno",
+    title: "Bathroom Renovation",
+    icon: "Wrench", // Placeholder icon
+    description: "Full-scale bathroom plumbing renovations.",
+    features: [],
+    questions: [
+      "Are you changing the plumbing layout (e.g., moving the toilet, sink, or shower location)?",
+      "Are you replacing the main shower/tub valve that is inside the wall?",
+    ],
+  },
+  {
+    key: "main_line_repair",
+    title: "Main Line (Sewer/Water) Repair",
+    icon: "Wrench", // Placeholder icon
+    description: "Repair and replacement of main water and sewer lines.",
+    features: [],
+    questions: [
+      "What issues are you experiencing (e.g., slow drains everywhere, water in the yard, backup)?",
+      "Do you know the approximate age of your home?",
+    ],
+  },
+  {
+    key: "emergency_service",
+    title: "Emergency Service",
+    icon: "Droplets", // Placeholder icon
+    description: "Urgent response for plumbing emergencies.",
+    features: [],
+    questions: [
+      "Please describe the nature of your plumbing emergency in detail.",
+      "Is water currently shut off to the affected area or the whole house?",
+    ],
+  },
+  {
+    key: "other",
+    title: "Other (Describe Your Request)",
+    icon: "Wrench", // Placeholder icon
+    description: "For any other plumbing needs not listed.",
+    features: [],
+    questions: ["Please describe your plumbing request or issue in detail."],
+  },
 ];
 --- END OF FILE ---
 
@@ -17012,6 +18339,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import AuthModal from './features/auth/components/AuthModal';
@@ -17025,6 +18353,8 @@ import ProfileModal from './features/profile/components/ProfileModal';
 import Dashboard from './features/requests/components/Dashboard';
 import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
+import { ServiceDefinition } from './lib/serviceDefinitions';
+import ServiceDetailPage from './features/services/ServiceDetailPage';
 import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
 import {
   Phone,
@@ -17086,6 +18416,7 @@ const AppContent: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [preselectedService, setPreselectedService] = useState<ServiceDefinition | null>(null);
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -17108,153 +18439,233 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleServiceSelect = (service: ServiceDefinition) => {
+    console.log(`Service selected: ${service.title}`);
+    setPreselectedService(service);
+    handleOpenQuoteModal(); // Reuse the existing function to open the modal
+  };
+
   // *** THE FIX: This callback now has access to the central refresh function. ***
   const handleNewRequestSuccess = () => {
     console.log("New request submitted. Triggering a manual refresh.");
     refetch();
   };
+  const renderContent = () => {
+    // Check for a service page route, e.g., #/services/leak_repair
+    if (route.startsWith('#/services/')) {
+      const serviceKey = route.split('/')[2];
+      return <ServiceDetailPage serviceKey={serviceKey} />;
+    }
 
-  const renderHomePage = () => (
-    <>
-      {user && profileIncomplete && (
-        <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
+    // THE CORE CHANGE: The /dashboard route now handles BOTH user roles.
+    if (route === '#/dashboard') {
+      if (authLoading) {
+        return <div className="text-center p-8"><p>Loading Dashboard...</p></div>;
+      }
+      if (!user) {
+        // If not logged in, show a message and prompt to sign in.
+        return (
+          <div className="text-center p-8 max-w-lg mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Access Your Portal</h2>
+            <p className="mb-6">Please sign in to view your quote requests or manage your business dashboard.</p>
+            <button onClick={() => setShowAuthModal(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">
+              Sign In
+            </button>
+          </div>
+        );
+      }
+      // If user is logged in, decide which dashboard to show based on role.
+      return isAdmin ? (
+        <Dashboard requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+      ) : (
+        <MyRequests requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+      );
+    }
+
+    // Default to the home page content
+    return (
+      <>
+        <Helmet>
+          <title>AquaFlow Plumbing | 24/7 Emergency Plumber in Victoria, BC</title>
+          <meta name="description" content="Trusted, licensed plumbers in Victoria, BC. We offer 24/7 emergency services, drain cleaning, and leak repairs. Call AquaFlow for a fast, professional quote today!" />
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Plumber",
+              "name": "AquaFlow Plumbing",
+              "image": `${window.location.origin}/plumber.jpg`,
+              "@id": window.location.origin,
+              "url": window.location.origin,
+              "telephone": "(555) 123-4567",
+              "priceRange": "$$",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "123 Main Street",
+                "addressLocality": "Victoria",
+                "addressRegion": "BC",
+                "postalCode": "V8W 1A1",
+                "addressCountry": "CA"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 48.4284,
+                "longitude": -123.3656
+              },
+              "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday"
+                ],
+                "opens": "00:00",
+                "closes": "23:59"
+              },
+              "sameAs": [
+                "https://www.facebook.com/your-plumbing-page",
+                "https://www.instagram.com/your-plumbing-page"
+              ],
+              "areaServed": {
+                "@type": "GeoCircle",
+                "geoMidpoint": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 48.4284,
+                  "longitude": -123.3656
+                },
+                "geoRadius": "30000"
+              }
+            })}
+          </script>
+        </Helmet>
+
+        {user && profileIncomplete && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
+            <div className="flex items-center justify-between">
               <div className="ml-3">
                 <p className="text-sm text-amber-800">
                   Welcome! To request a quote, please complete your profile first.
                 </p>
               </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="bg-amber-50 px-3 py-2 rounded-md text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 focus:ring-amber-600"
+                  >
+                    Complete Profile
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="ml-auto pl-3">
-              <div className="-mx-1.5 -my-1.5">
+          </div>
+        )}
+
+        <section className="relative pt-12 pb-20 text-white overflow-hidden">
+          {/* Aurora Gradient Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-purple-500/30"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
+
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="animate-fade-in-up">
+              <h1 className="text-5xl font-bold leading-tight mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                Professional Plumbing Services You Can Trust
+              </h1>
+              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+                24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.
+              </p>
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <button
-                  onClick={() => setShowProfileModal(true)}
-                  className="bg-amber-50 px-3 py-2 rounded-md text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 focus:ring-amber-600"
+                  className="group bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 hover:scale-105 hover:shadow-xl transition-all duration-300 text-lg shadow-lg"
+                  onClick={handleOpenQuoteModal}
                 >
-                  Complete Profile
+                  <span className="group-hover:scale-105 transition-transform duration-300 inline-block">Request a Quote</span>
                 </button>
+                <a
+                  href="tel:555-123-4567"
+                  className="group border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center space-x-2 shadow-lg"
+                >
+                  <Phone className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                  <span>Call Now</span>
+                </a>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      <section className="relative pt-12 pb-20 text-white overflow-hidden">
-        {/* Aurora Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-transparent to-purple-500/30"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
-          <div className="animate-fade-in-up">
-            <h1 className="text-5xl font-bold leading-tight mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-              Professional Plumbing Services You Can Trust
-            </h1>
-            <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              24/7 emergency service, licensed professionals, and guaranteed satisfaction. Serving your community for over 15 years.
-            </p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <button
-                className="group bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 hover:scale-105 hover:shadow-xl transition-all duration-300 text-lg shadow-lg"
-                onClick={handleOpenQuoteModal}
-              >
-                <span className="group-hover:scale-105 transition-transform duration-300 inline-block">Request a Quote</span>
-              </button>
-              <a
-                href="tel:555-123-4567"
-                className="group border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center space-x-2 shadow-lg"
-              >
-                <Phone className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                <span>Call Now</span>
-              </a>
-            </div>
-          </div>
-          <div className="relative flex justify-center lg:justify-end animate-fade-in-up animation-delay-200">
-            <div className="relative">
-              <img
-                src="/plumber.jpg"
-                alt="Professional plumber at work"
-                className="rounded-lg shadow-2xl w-full max-w-md object-cover hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 animate-bounce-in animation-delay-500">
-                <div className="bg-green-100 p-3 rounded-full inline-flex items-center justify-center mb-2">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Licensed & Insured</div>
-                  <div className="text-gray-600 text-sm">Fully certified professionals</div>
+            <div className="relative flex justify-center lg:justify-end animate-fade-in-up animation-delay-200">
+              <div className="relative">
+                <img
+                  src="/plumber.jpg"
+                  alt="Licensed AquaFlow plumber repairing a kitchen sink in a Victoria, BC home"
+                  className="rounded-lg shadow-2xl w-full max-w-md object-cover hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute -bottom-8 left-8 bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 animate-bounce-in animation-delay-500">
+                  <div className="bg-green-100 p-3 rounded-full inline-flex items-center justify-center mb-2">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Licensed & Insured</div>
+                    <div className="text-gray-600 text-sm">Fully certified professionals</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Custom CSS for animations */}
-        <style>{`
-          @keyframes fade-in-up {
-            from {
-              opacity: 0;
-              transform: translateY(30px);
+          {/* Custom CSS for animations */}
+          <style>{`
+            @keyframes fade-in-up {
+              from {
+                opacity: 0;
+                transform: translateY(30px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
             }
-            to {
-              opacity: 1;
-              transform: translateY(0);
+            @keyframes bounce-in {
+              0% {
+                opacity: 0;
+                transform: scale(0.3);
+              }
+              50% {
+                opacity: 1;
+                transform: scale(1.05);
+              }
+              70% {
+                transform: scale(0.9);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1);
+              }
             }
-          }
-          @keyframes bounce-in {
-            0% {
-              opacity: 0;
-              transform: scale(0.3);
+            .animate-fade-in-up {
+              animation: fade-in-up 0.8s ease-out forwards;
             }
-            50% {
-              opacity: 1;
-              transform: scale(1.05);
+            .animation-delay-200 {
+              animation-delay: 0.2s;
             }
-            70% {
-              transform: scale(0.9);
+            .animation-delay-500 {
+              animation-delay: 0.5s;
             }
-            100% {
-              opacity: 1;
-              transform: scale(1);
+            .animate-bounce-in {
+              animation: bounce-in 0.8s ease-out forwards;
             }
-          }
-          .animate-fade-in-up {
-            animation: fade-in-up 0.8s ease-out forwards;
-          }
-          .animation-delay-200 {
-            animation-delay: 0.2s;
-          }
-          .animation-delay-500 {
-            animation-delay: 0.5s;
-          }
-          .animate-bounce-in {
-            animation: bounce-in 0.8s ease-out forwards;
-          }
-        `}</style>
-      </section>
+          `}</style>
+        </section>
 
-      {user && !profileIncomplete && profile?.role !== 'admin' && (
-        // *** THE FIX: MyRequests now receives its data and functions as props. ***
-        <MyRequests
-          requests={requests}
-          loading={loading}
-          error={error}
-          refreshRequests={refetch}
-        />
-      )}
-      
-      <ServicesSection />
-      <AboutSection />
-      <ReviewsSection />
-      <ContactSection />
-    </>
-  );
+        <ServicesSection onServiceSelect={handleServiceSelect} />
+        <AboutSection />
+        <ReviewsSection />
+        <ContactSection />
+      </>
+    );
+  };
+
 
   return (
     <React.Fragment>
@@ -17270,6 +18681,12 @@ const AppContent: React.FC = () => {
               <a href="/#about" className="text-gray-700 hover:text-blue-600 transition-colors">About</a>
               <a href="/#testimonials" className="text-gray-700 hover:text-blue-600 transition-colors">Reviews</a>
               <a href="/#contact" className="text-gray-700 hover:text-blue-600 transition-colors">Contact</a>
+              <button
+                onClick={handleOpenQuoteModal}
+                className="bg-gray-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
+              >
+                Request a Quote
+              </button>
               <a href="tel:555-123-4567" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
                 <Phone className="w-4 h-4" />
                 <span>Call Now</span>
@@ -17309,6 +18726,15 @@ const AppContent: React.FC = () => {
               <a href="/#about" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>About</a>
               <a href="/#testimonials" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Reviews</a>
               <a href="/#contact" className="text-gray-700 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>Contact</a>
+              <button
+                onClick={() => {
+                  handleOpenQuoteModal();
+                  setIsMenuOpen(false);
+                }}
+                className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-700 w-full max-w-xs justify-center"
+              >
+                Request a Quote
+              </button>
               <a href="tel:555-123-4567" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2" onClick={() => setIsMenuOpen(false)}>
                 <Phone className="w-5 h-5" />
                 <span>Call Now</span>
@@ -17349,25 +18775,18 @@ const AppContent: React.FC = () => {
         )}
 
         <main className="pt-20 flex-grow">
-          {(() => {
-            console.log('🎯 Route check:', { route, isDashboard: route === '#/dashboard', userRole: profile?.role });
-            return route === '#/dashboard' ? (
-              // *** THE FIX: Dashboard now receives its data and functions as props. ***
-              <Dashboard
-                requests={requests}
-                loading={loading}
-                error={error}
-                refreshRequests={refetch}
-              />
-            ) : renderHomePage();
-          })()}
+          {renderContent()}
         </main>
 
         {user && !profileIncomplete && (
           <QuoteAgentModal
             isOpen={showAgentModal}
-            onClose={() => setShowAgentModal(false)}
+            onClose={() => {
+              setShowAgentModal(false);
+              setPreselectedService(null); // Clear the pre-selection when closing
+            }}
             onSubmissionSuccess={handleNewRequestSuccess}
+            preselectedService={preselectedService}
           />
         )}
         
@@ -17426,7 +18845,11 @@ const App: React.FC = () => {
 
 const root = document.getElementById('root');
 if (root) {
-  ReactDOM.createRoot(root).render(<App />);
+  ReactDOM.createRoot(root).render(
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
+  );
 }
 --- END OF FILE ---
 

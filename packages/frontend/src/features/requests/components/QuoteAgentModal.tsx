@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
-import { SERVICE_QUOTE_CATEGORIES, ServiceQuoteCategory, GENERIC_QUESTIONS } from "../../../lib/serviceQuoteQuestions";
+// Use aliases to map the new data structure to the existing variable names
+import { services as SERVICE_QUOTE_CATEGORIES, ServiceDefinition as ServiceQuoteCategory, GENERIC_QUESTIONS } from "../../../lib/serviceDefinitions";
 import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
 import AttachmentSection from "./AttachmentSection";
@@ -119,9 +120,10 @@ interface QuoteAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmissionSuccess: (newRequest: any) => void;
+  preselectedService?: ServiceQuoteCategory | null;
 }
 
-const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentModalProps) => {
+const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedService }: QuoteAgentModalProps) => {
   const { profile, user } = useAuth();
 
   const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
@@ -180,7 +182,12 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
 
   const resetState = () => {
     setChatHistory([]);
-    setStatus('ASKING_EMERGENCY');
+    // If a service is pre-selected, we skip the first steps. Otherwise, start from the beginning.
+    if (preselectedService) {
+      // We will let the new useEffect handle the status update
+    } else {
+      setStatus('ASKING_EMERGENCY');
+    }
     setIsEmergency(null);
     setNewAttachments([]);
     setUserInput("");
@@ -297,6 +304,23 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen && preselectedService) {
+      console.log('Modal opened with pre-selected service:', preselectedService.title);
+
+      // Find the full category object from the imported data
+      const category = SERVICE_QUOTE_CATEGORIES.find(c => c.key === preselectedService.key);
+
+      if (category) {
+        // Set a default for the emergency question since we're skipping it
+        setIsEmergency(false);
+
+        // Directly call the category selection handler to start the question flow
+        handleSelectCategory(category);
+      }
+    }
+  }, [isOpen, preselectedService]);
+
   const handleEmergencyChoice = (choice: boolean) => {
     setIsEmergency(choice);
     setChatHistory([
@@ -311,7 +335,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
     setSelectedCategory(category);
     const combinedQuestions = [...GENERIC_QUESTIONS.map(q => q.question), ...category.questions];
     setInitialQuestions(combinedQuestions);
-    setChatHistory((prev) => [...prev, { sender: "user", message: category.label }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
+    setChatHistory((prev) => [...prev, { sender: "user", message: category.title }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
     setCurrentQuestionIndex(0);
     setStatus('INITIAL_QUESTIONS');
   };
@@ -533,7 +557,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                             '&:hover': { bgcolor: 'primary.main', color: 'white' }
                           }}
                         >
-                          {cat.label}
+                          {cat.title}
                         </Button>
                       ))}
                     </Box>
@@ -666,7 +690,7 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess }: QuoteAgentMod
                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                          <Wrench size={20} />
                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                           {selectedCategory?.label}
+                           {selectedCategory?.title}
                          </Typography>
                        </Box>
                      </Paper>

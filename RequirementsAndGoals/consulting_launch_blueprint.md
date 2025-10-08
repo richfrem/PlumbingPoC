@@ -69,12 +69,12 @@ Here is the revised "Package the Asset" section. I have updated the time, refine
 
 This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
 
-**Copy-Paste Ready Email (Personalized for Ryan):**
+**Copy-Paste Ready Email Template:**
 
 ```
-Subject: Trade proposal - AI plumbing platform for hot water tank install?
+Subject: Trade proposal - AI plumbing platform for service work?
 
-Hi Ryan,
+Hi,
 
 You did some plumbing work for me a couple of years ago. You did the plumbing work for my ensuite bathroom reno - 1517 San Juan Ave.
 
@@ -87,8 +87,12 @@ Imagine your customer can go and request a job quote, but instead of just provid
 You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
 
 I made a 5-minute tour showing exactly how this end-to-end system works:
-
 https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+You can also try the client experience yourself at:
+https://plumbingpoc.netlify.app/
+
+Feel free to register/sign in (using your Microsoft or Gmail account) and go through requesting a quote - you'll see how the AI guides customers through the questions and how they can upload photos of their plumbing issues. I can show you the business owner side separately if you're interested - that's where you'd see all the incoming requests, use the AI triage, send quotes, etc.
 
 Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I remember from our conversations you also do gas installs too in addition to plumbing, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
 
@@ -96,6 +100,7 @@ If you have 5 minutes, I think you'll see something that could put you years ahe
 
 Thanks,
 Richard Fremmerlid
+2508857003
 ```
 
 ---

@@ -50,39 +50,39 @@ const AboutSection: React.FC = () => (
   <section id="about" className="py-20 bg-white">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
       <div className="hidden lg:block">
-        <img src="/plumber.jpg" alt="Plumbing team" className="rounded-lg shadow-lg w-full h-64 object-cover" />
+        <img src="/plumber.jpg" alt="AquaFlow Plumbing company team photo" className="rounded-lg shadow-lg w-full h-64 object-cover" />
       </div>
       <div>
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">About AquaFlow Plumbing</h2>
-        <p className="text-lg text-gray-600 mb-6">With over 15 years of experience serving our community, AquaFlow Plumbing has built a reputation for reliable, professional service and competitive pricing.</p>
+        <p className="text-lg text-gray-600 mb-6">With over 15 years of experience serving communities across Greater Victoria, from Oak Bay to Saanich and Langford, AquaFlow Plumbing has built a reputation for reliable, professional service and competitive pricing.</p>
         <p className="text-lg text-gray-600 mb-8">Our team of licensed professionals is committed to providing the highest quality workmanship and customer service. We use the latest tools and techniques to ensure your plumbing systems work perfectly.</p>
-        <div className="grid sm:grid-cols-2 gap-6">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Shield className="w-8 h-8 text-blue-600" />
             <div>
-              <div className="font-semibold text-gray-900">Licensed & Insured</div>
-              <div className="text-gray-600">Full coverage protection</div>
+              <h4 className="font-semibold text-gray-900">Licensed & Insured</h4>
+              <p className="text-gray-600 text-sm">Full coverage protection for your peace of mind.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Clock className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Clock className="w-8 h-8 text-blue-600" />
             <div>
-              <div className="font-semibold text-gray-900">24/7 Emergency</div>
-              <div className="text-gray-600">Always available</div>
+              <h4 className="font-semibold text-gray-900">24/7 Emergency</h4>
+              <p className="text-gray-600 text-sm">Always available when you need us most.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <CheckCircle className="w-8 h-8 text-green-500" />
             <div>
-              <div className="font-semibold text-gray-900">Quality Guarantee</div>
-              <div className="text-gray-600">100% satisfaction</div>
+              <h4 className="font-semibold text-gray-900">Quality Guarantee</h4>
+              <p className="text-gray-600 text-sm">100% satisfaction on all workmanship.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Star className="w-6 h-6 text-blue-600 bg-blue-100 p-2 rounded-full" />
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 flex items-center gap-4">
+            <Star className="w-8 h-8 text-yellow-500" />
             <div>
-              <div className="font-semibold text-gray-900">5-Star Rated</div>
-              <div className="text-gray-600">Proven customer satisfaction</div>
+              <h4 className="font-semibold text-gray-900">5-Star Rated</h4>
+              <p className="text-gray-600 text-sm">Proven customer satisfaction and top reviews.</p>
             </div>
           </div>
         </div>

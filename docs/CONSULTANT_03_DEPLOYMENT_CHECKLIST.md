@@ -52,6 +52,12 @@ The client should be sharing their screen for this entire phase. Your job is to 
     *   [ ] Create a new **API Key**.
     *   [ ] **Crucially:** Instruct client to **immediately copy this API key**.
     *   [ ] Guide client to restrict the API key (Application restrictions: HTTP referrers, API restrictions: Maps JavaScript API + Geocoding API).
+*   **Twilio Account (for SMS):**
+    *   [ ] Guide client to sign up for a Twilio account.
+    *   [ ] Guide client to purchase a phone number for SMS sending.
+    *   [ ] Navigate to Account → API Keys & Tokens.
+    *   [ ] Copy the Account SID and Auth Token.
+    *   [ ] **Crucially:** Instruct client to **immediately copy these credentials**.
 
 ---
 
@@ -81,7 +87,10 @@ The client should be sharing their screen for this entire phase. Your job is to 
         *   `VITE_GOOGLE_MAPS_API_KEY` (the Google Maps API key the client generated)
         *   `RESEND_API_KEY` (the key the client generated)
         *   `RESEND_FROM_EMAIL` (e.g., `contact@clientdomain.com`)
-        *   ... and any other variables your app requires.
+        *   `TWILIO_ACCOUNT_SID` (from the client's Twilio account)
+        *   `TWILIO_AUTH_TOKEN` (from the client's Twilio account)
+        *   `TWILIO_PHONE_NUMBER` (the phone number purchased from Twilio)
+        *   `ADMIN_PHONE_NUMBER` (client's phone number for SMS notifications)
     *   [ ] Go to Domain management and add the client's custom domain.
     *   [ ] Follow the steps to configure DNS (usually by pointing the domain's nameservers to Netlify).
     *   [ ] **Add DNS records for Email Hosting:** Log in to the domain registrar/Netlify DNS panel and add the **MX, SPF, and DKIM records** provided by Google/Microsoft to direct email traffic correctly.
@@ -93,11 +102,38 @@ The client should be sharing their screen for this entire phase. Your job is to 
 *   **Branding:**
     *   [ ] Replace logo files in `packages/frontend/public/`.
     *   [ ] Update the primary color theme in the Tailwind/MUI config.
-*   **Content:**
-    *   [ ] Update the `packages/frontend/src/lib/servicesData.ts` file with the client's services.
-    *   [ ] Update the `packages/frontend/src/lib/serviceQuoteQuestions.ts` file with any custom questions.
-    *   [ ] Update text content in landing page components (`packages/frontend/src/features/landing/components/AboutSection.tsx`, `packages/frontend/src/features/landing/components/ReviewsSection.tsx`, etc.).
-    *   [ ] Update business contact info (name, address, phone) throughout the app.
+*   **Content Customization:**
+    *   [ ] **Services Configuration:** Update `packages/frontend/src/lib/servicesData.ts` with client's specific services, descriptions, and features.
+    *   [ ] **Service Questions:** Update `packages/frontend/src/lib/serviceQuoteQuestions.ts` with client-specific intake questions.
+    *   [ ] **Business Identity:** Replace "AquaFlow Plumbing" with client's business name in:
+        *   [ ] `packages/frontend/src/main.tsx` (3 locations)
+        *   [ ] `packages/frontend/src/features/landing/components/AboutSection.tsx` (2 locations)
+        *   [ ] `packages/frontend/src/features/landing/components/ServicesSection.tsx` (comment)
+        *   [ ] `packages/frontend/src/features/landing/components/ContactSection.tsx` (comment)
+        *   [ ] `packages/frontend/src/features/landing/components/ReviewsSection.tsx` (comment)
+    *   [ ] **Contact Information:** Update throughout app:
+        *   [ ] Email: Replace `info@aquaflowplumbing.com` in `ContactSection.tsx`
+        *   [ ] Phone number in contact sections
+        *   [ ] Business address and service area
+        *   [ ] Update footer copyright information
+    *   [ ] **About Section:** Update `AboutSection.tsx` with:
+        *   [ ] Client's years of experience
+        *   [ ] Client's unique value proposition
+        *   [ ] Service area description
+        *   [ ] Company history/background
+    *   [ ] **Reviews/Testimonials:** Update `ReviewsSection.tsx` with:
+        *   [ ] Real Google Reviews (with permission)
+        *   [ ] Client testimonials
+        *   [ ] Add Google Reviews link if available
+    *   [ ] **Services Content:** Customize service descriptions to match:
+        *   [ ] Client's specialties (e.g., tankless water heaters, gas lines)
+        *   [ ] Certifications and warranties offered
+        *   [ ] Emergency service availability
+        *   [ ] Service area coverage
+    *   [ ] **Meta Data:** Update:
+        *   [ ] Page titles and descriptions
+        *   [ ] SEO keywords for local area
+        *   [ ] Business schema markup
 *   **Commit and Push:**
     *   [ ] Commit all customization changes to the client's Git branch.
     *   [ ] Pushing the changes will trigger the first build on their Netlify account.

@@ -39,8 +39,21 @@ This is a collaborative process where **I handle all the technical complexity fo
 *   **My Role:** I will guide you through every click, then you will grant me secure, delegated access so I can manage all the technical configuration on your behalf.
 
 ### **Phase 2: Platform Customization**
-*   **Your Role:** Provide your business logo, a list of your services, and any text or photos you'd like on the website.
-*   **My Role:** I will integrate all your content and branding into the platform, customizing the look and feel to perfectly match your business.
+*   **Your Role:** Provide the following materials:
+    *   Business logo (SVG or high-resolution PNG)
+    *   Complete list of your services with descriptions
+    *   Your business story and years of experience
+    *   Customer testimonials or Google Reviews (with permission)
+    *   Professional photos of your work (optional)
+    *   Your certifications, warranties, and specialties
+    *   Service area coverage details
+*   **My Role:** I will completely customize the platform including:
+    *   **Visual Branding:** Logo integration, color scheme, professional styling
+    *   **Content Integration:** Your services, about section, contact information
+    *   **Review Integration:** Customer testimonials and Google Reviews showcase
+    *   **Service Customization:** AI intake questions tailored to your specific services
+    *   **Local SEO:** Optimized for your service area and specialties
+    *   **Business Identity:** Complete replacement of placeholder content with your brand
 
 ### **Phase 3: Deployment & Final Testing**
 *   **My Role:** I will handle the full technical deployment of the application to your custom domain. I will conduct a complete end-to-end test to ensure all features are working perfectly before we go live.
@@ -60,13 +73,13 @@ A key principle of a professional setup is that you own your own infrastructure.
 | :--- | :--- | :--- | :--- |
 | **Netlify** | Website Hosting & Functions | ~$25 CAD (`$19 USD`) | The engine that runs your site and automation. |
 | **Supabase**| Database & File Storage | ~$35 CAD (`$25 USD`) | Securely stores all your customer and job data. |
-| **OpenAI** | AI-Powered Features | ~$5 - $20 CAD | Pay-as-you-go for the AI Triage & quoting features. |
-| **Google Maps** | Interactive Map View | ~$5 - $15 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
-| **Resend** | Email Notifications | ~$0 (Free Tier) | For sending professional quote and status updates. |
-| **Twilio** | SMS Notifications | ~$15-30 CAD | For sending real-time SMS alerts to admin on new quote requests and approved quotes. |
+| **OpenAI** | AI-Powered Features | ~$10 - $30 CAD | Pay-as-you-go for the AI Triage & quoting features. |
+| **Google Maps** | Interactive Map View | ~$10 - $20 CAD | Pay-as-you-go for the job location mapping and geocoding features. |
+| **Resend** | Email Notifications | ~$20 CAD | Professional email delivery service. |
+| **Twilio** | SMS Notifications | ~$15-25 CAD | Real-time SMS alerts for new requests and quote approvals. |
 | **Domain Name** | `yourbusiness.com` | ~$2 CAD (`~$20/year`) | Billed annually. |
 | **Professional Email** | `info@yourbusiness.com` | ~$8 CAD (per user) | **(Optional but Recommended)** Via Google Workspace or Microsoft 365. |
-| **TOTAL** | | **~$95 - $135 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
+| **TOTAL** | | **~$115 - $155 CAD / Month** | **Your estimated total monthly operating cost for the entire system.** |
 
 *(Note: These are estimates based on current provider pricing and typical usage for a small business.)*
 

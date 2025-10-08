@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, LogOut, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, LayoutDashboard, ListChecks } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface UserMenuProps {
@@ -74,8 +74,22 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
                     Command Center
                   </button>
                 );
-              })()}
-              <button
+               })()}
+               {profile && profile.role !== 'admin' && (
+                 <a
+                   href="/#/dashboard"
+                   onClick={(e) => {
+                     e.preventDefault();
+                     window.location.hash = '#/dashboard';
+                     setIsOpen(false);
+                   }}
+                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                 >
+                   <ListChecks className="w-4 h-4" />
+                   My Quote Requests
+                 </a>
+               )}
+               <button
                 onClick={() => {
                   onOpenProfile();
                   setIsOpen(false);
