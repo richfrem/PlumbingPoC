@@ -71,9 +71,18 @@ PlumbingPOC/ (single repository)
 - Test suites and documentation
 - Utility functions and helpers
 
-### Build Process
+### Build Process (Updated with Adapter Pattern)
 
-**Netlify Build:**
+**Environment Variable Selection (Recommended):**
+```bash
+# Netlify Build
+VITE_PLATFORM=netlify npm run build
+
+# Azure Build
+VITE_PLATFORM=azure npm run build
+```
+
+**Legacy File Copy Approach (Alternative):**
 ```bash
 # Copy Netlify-specific configs
 cp packages/frontend/config/netlify/vite.config.js packages/frontend/
@@ -81,10 +90,7 @@ cp packages/backend/config/supabase/database.js packages/backend/api/config/
 
 # Build for Netlify
 npm run build:netlify
-```
 
-**Azure Build:**
-```bash
 # Copy Azure-specific configs
 cp packages/frontend/config/azure/vite.config.js packages/frontend/
 cp packages/backend/config/azure/database.js packages/backend/api/config/
@@ -103,18 +109,21 @@ npm run build:azure
 *   **Shared Git History**: Easy to track changes across environments
 *   **Easier Collaboration**: No confusion about which repository to use
 *   **Unified Documentation**: Single source for all environment docs
+*   **Adapter Pattern Benefits**: Clean separation of platform-specific logic through interfaces and implementations
 
 ### Negative
 
-*   **Build Complexity**: Requires different build scripts for each platform
+*   **Build Complexity**: Requires different build scripts for each platform (mitigated by environment variables)
 *   **Configuration Management**: Need to maintain environment-specific files
 *   **Git History Clarity**: Mixed commits may be harder to categorize
 *   **Risk Management**: Azure changes could potentially affect production branch
 *   **Testing Complexity**: Must ensure proper environment isolation
+*   **Platform Sprawl Risk**: Potential for platform-specific logic to leak into shared code (mitigated by Adapter Pattern)
 
 ### Mitigation Strategies
 
 **Build Complexity:**
+- Environment variable selection over file copying (recommended)
 - Clear naming conventions for build scripts
 - Documentation for each environment's build process
 - Automated build validation
@@ -123,16 +132,25 @@ npm run build:azure
 - Environment-specific config directories
 - Clear naming conventions (netlify/ vs azure/)
 - Version control for all configuration files
+- Adapter Pattern for platform abstraction
 
 **Risk Management:**
 - Use feature flags for Azure-specific functionality
 - Regular code reviews for azure-poc branch changes
 - Clear commit message conventions ("Azure: ..." prefix)
+- Branch protection rules for main branch
+
+**Platform Sprawl Prevention:**
+- Adapter Pattern for all platform-dependent services
+- Interface definitions for platform abstractions
+- Environment variable selection of implementations
+- Strict code review for platform-specific logic in shared code
 
 **Testing:**
 - Environment-specific test configurations
 - Parallel testing of both environments
 - Automated validation of environment isolation
+- Integration tests for adapter implementations
 
 ## Alternatives Considered
 
@@ -191,6 +209,136 @@ npm run build:azure
 - [ ] Easy to maintain and extend configurations
 - [ ] Rollback procedures are well-defined
 
+## Adapter Pattern Implementation Guide
+
+### Interface Definitions
+
+**Create platform-agnostic interfaces in shared code:**
+
+```typescript
+// packages/backend/api/services/realtimeService.ts
+export interface IRealtimeService {
+  notifyRequestUpdate(requestId: string, data: any): Promise<void>;
+  notifyNewQuote(quoteId: string, data: any): Promise<void>;
+  notifyQuoteAccepted(requestId: string, data: any): Promise<void>;
+}
+
+// packages/backend/api/services/authService.ts
+export interface IAuthService {
+  getCurrentUser(): Promise<User | null>;
+  validateToken(token: string): Promise<boolean>;
+  getUserRoles(userId: string): Promise<string[]>;
+}
+
+// packages/backend/api/services/databaseService.ts
+export interface IDatabaseService {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  executeQuery(query: string, params?: any[]): Promise<any>;
+}
+```
+
+### Platform-Specific Implementations
+
+**Supabase Implementation:**
+```typescript
+// packages/backend/config/supabase/supabaseRealtimeService.ts
+import { IRealtimeService } from '../../api/services/realtimeService';
+
+export class SupabaseRealtimeService implements IRealtimeService {
+  async notifyRequestUpdate(requestId: string, data: any): Promise<void> {
+    // Supabase handles this automatically via database triggers
+    console.log("Supabase Realtime: automatic notification for", requestId);
+    return Promise.resolve();
+  }
+
+  async notifyNewQuote(quoteId: string, data: any): Promise<void> {
+    // Automatic via Supabase
+    return Promise.resolve();
+  }
+
+  async notifyQuoteAccepted(requestId: string, data: any): Promise<void> {
+    // Automatic via Supabase
+    return Promise.resolve();
+  }
+}
+```
+
+**Azure Implementation:**
+```typescript
+// packages/backend/config/azure/azureSignalRService.ts
+import { IRealtimeService } from '../../api/services/realtimeService';
+
+export class AzureSignalRService implements IRealtimeService {
+  private signalRClient: any; // Azure SignalR client
+
+  async notifyRequestUpdate(requestId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('request_updated', { requestId, data });
+  }
+
+  async notifyNewQuote(quoteId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('quote_created', { quoteId, data });
+  }
+
+  async notifyQuoteAccepted(requestId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('quote_accepted', { requestId, data });
+  }
+}
+```
+
+### Configuration Barrel File
+
+**Environment-based service selection:**
+```typescript
+// packages/backend/api/config/index.ts
+import { IRealtimeService } from '../services/realtimeService';
+import { IAuthService } from '../services/authService';
+import { IDatabaseService } from '../services/databaseService';
+
+import { SupabaseRealtimeService } from './supabase/supabaseRealtimeService';
+import { AzureSignalRService } from './azure/azureSignalRService';
+import { SupabaseAuthService } from './supabase/supabaseAuthService';
+import { AzureADAuthService } from './azure/azureADAuthService';
+import { SupabaseDatabaseService } from './supabase/supabaseDatabaseService';
+import { AzureDatabaseService } from './azure/azureDatabaseService';
+
+// Environment-based service instantiation
+const platform = process.env.VITE_PLATFORM || 'netlify';
+
+export const realtimeService: IRealtimeService = platform === 'azure'
+  ? new AzureSignalRService()
+  : new SupabaseRealtimeService();
+
+export const authService: IAuthService = platform === 'azure'
+  ? new AzureADAuthService()
+  : new SupabaseAuthService();
+
+export const databaseService: IDatabaseService = platform === 'azure'
+  ? new AzureDatabaseService()
+  : new SupabaseDatabaseService();
+```
+
+### Shared Code Usage
+
+**Platform-agnostic controller:**
+```typescript
+// packages/backend/api/controllers/requestController.js
+import { realtimeService, databaseService } from '../config';
+
+export async function updateRequest(requestId, updates) {
+  // Update database (works for both platforms)
+  const updatedRequest = await databaseService.executeQuery(
+    'UPDATE requests SET ... WHERE id = $1',
+    [requestId, ...updates]
+  );
+
+  // Notify clients (automatic for Supabase, manual for Azure)
+  await realtimeService.notifyRequestUpdate(requestId, updatedRequest);
+
+  return updatedRequest;
+}
+```
+
 ## Future Considerations
 
 **Post-POC Evaluation:**
@@ -202,6 +350,7 @@ npm run build:azure
 - For multiple developers, may need stricter branch protection rules
 - Consider automated testing across both environments
 - May need more sophisticated configuration management
+- Adapter Pattern scales well as new platforms are added
 
 ---
 
