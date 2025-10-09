@@ -1,4 +1,4 @@
-// packages/backend/api/services/emailService.js
+// packages/backend/api/services/email/resend/client.js
 
 import { Resend } from 'resend';
 

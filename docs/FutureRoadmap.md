@@ -35,7 +35,7 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 **Objective:** Prevent leads from going cold by automatically sending polite follow-up emails for quotes that have not been accepted after a set period.
 
 **Implementation Strategy:**
-*   **Technology:** Resend API (already integrated in `emailService.js`).
+*   **Technology:** Resend API (already integrated in `packages/backend/api/services/email/resend/client.js`).
 *   **Trigger:** A **Netlify Scheduled Function**. This is a special type of function that Netlify can run automatically on a cron schedule (e.g., "every morning at 9 AM").
 *   **Logic:** The scheduled function will query the Supabase database for all requests with a `status` of 'quoted' where the quote was sent more than [e.g., 3 days] ago and no follow-up has been sent. It will then loop through the results and send a templated follow-up email.
 

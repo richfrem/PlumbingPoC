@@ -24,7 +24,7 @@
 //
 // INTEGRATIONS:
 // - Resend API for email delivery (RESEND_API_KEY required)
-// - Email templates defined in emailService.js
+// - Email templates defined in packages/backend/api/services/email/resend/client.js
 // - SMS notifications may be sent alongside emails
 //
 // SECURITY:

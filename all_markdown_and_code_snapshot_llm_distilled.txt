@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T16:49:26.171Z
+Generated On: 2025-10-09T16:51:46.289Z
 
-# Mnemonic Weight (Token Count): ~297,608 tokens
+# Mnemonic Weight (Token Count): ~297,664 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -6304,7 +6304,10 @@ const editableFileManifest = [
   'packages/backend/api/routes/triageRoutes.js',
   'packages/backend/api/routes/userRoutes.js',
   'packages/backend/api/server.js',
-  'packages/backend/api/services/emailService.js',
+  'packages/backend/api/services/email/resend/client.js',
+  'packages/backend/api/services/email/resend/index.js',
+  'packages/backend/api/services/sms/twilio/client.js',
+  'packages/backend/api/services/sms/twilio/index.js',
   'packages/backend/api/validation/schemas.js',
   'packages/backend/netlify/functions/api.cjs',
   'packages/backend/netlify/functions/send-sms.cjs',
@@ -9362,7 +9365,7 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 **Objective:** Prevent leads from going cold by automatically sending polite follow-up emails for quotes that have not been accepted after a set period.
 
 **Implementation Strategy:**
-*   **Technology:** Resend API (already integrated in `emailService.js`).
+*   **Technology:** Resend API (already integrated in `packages/backend/api/services/email/resend/client.js`).
 *   **Trigger:** A **Netlify Scheduled Function**. This is a special type of function that Netlify can run automatically on a cron schedule (e.g., "every morning at 9 AM").
 *   **Logic:** The scheduled function will query the Supabase database for all requests with a `status` of 'quoted' where the quote was sent more than [e.g., 3 days] ago and no follow-up has been sent. It will then loop through the results and send a templated follow-up email.
 
@@ -12359,7 +12362,7 @@ export { validate };
 //
 // INTEGRATIONS:
 // - Resend API for email delivery (RESEND_API_KEY required)
-// - Email templates defined in emailService.js
+// - Email templates defined in packages/backend/api/services/email/resend/client.js
 // - SMS notifications may be sent alongside emails
 //
 // SECURITY:
@@ -12633,7 +12636,7 @@ export default app;
 
 --- START OF FILE ./packages/backend/api/services/email/resend/client.js ---
 
-// packages/backend/api/services/emailService.js
+// packages/backend/api/services/email/resend/client.js
 
 import { Resend } from 'resend';
 
