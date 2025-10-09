@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T14:29:22.499Z
+Generated On: 2025-10-09T14:41:57.175Z
 
-# Mnemonic Weight (Token Count): ~294,258 tokens
+# Mnemonic Weight (Token Count): ~294,590 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -10,6 +10,7 @@ Generated On: 2025-10-09T14:29:22.499Z
   ./.env.example
   ./.github/
   ./.github/copilot-instructions.md
+  ./.github/workflows/
   ./.gitignore
   ./.netlify/
   ./.netlify/blobs-serve/
@@ -112,6 +113,7 @@ Generated On: 2025-10-09T14:29:22.499Z
   ./docs/RealTimeSynchronization.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
+  ./environments/
   ./fix_quotes_rls.sql
   ./netlify.toml
   ./package-lock.json
@@ -141,6 +143,11 @@ Generated On: 2025-10-09T14:29:22.499Z
   ./packages/backend/api/services/smsService.js
   ./packages/backend/api/validation/
   ./packages/backend/api/validation/schemas.js
+  ./packages/backend/config/
+  ./packages/backend/config/azure/
+  ./packages/backend/config/supabase/
+  ./packages/backend/config/supabase/database.js
+  ./packages/backend/deploy/
   ./packages/backend/netlify/
   ./packages/backend/netlify/functions/
   ./packages/backend/netlify/functions/README.md
@@ -149,6 +156,11 @@ Generated On: 2025-10-09T14:29:22.499Z
   ./packages/backend/package.json
   ./packages/backend/start.js
   ./packages/frontend/
+  ./packages/frontend/build-scripts/
+  ./packages/frontend/config/
+  ./packages/frontend/config/azure/
+  ./packages/frontend/config/netlify/
+  ./packages/frontend/config/netlify/vite.config.js
   ./packages/frontend/index.html
   ./packages/frontend/package.json
   ./packages/frontend/public/
@@ -214,6 +226,7 @@ Generated On: 2025-10-09T14:29:22.499Z
   ./packages/frontend/tsconfig.json
   ./packages/frontend/vite.config.js
   ./playwright.config.ts
+  ./scripts/
   ./shutdown.sh
   ./startup.sh
   ./supabase/
@@ -6915,25 +6928,11 @@ Based on the project's Architectural Decision Records (ADRs), here's how current
   * [x] Set up repository settings and branch protection
   * [x] Configure repository visibility (private)
 
-* **Task 2: Code Replication** ⏳ *Pending*
-  ```bash
-  # Replicate current codebase to new repository
-  # Option 1: Clone to different local folder name
-  git clone https://github.com/richfrem/PlumbingPOC.git PlumbingPOC-Azure
-  cd PlumbingPOC-Azure
-  gh repo create richfrem/plumbingpoc-azure --private --source=. --remote=origin --push
-
-  # Option 2: Clone to same folder but rename after
-  git clone https://github.com/richfrem/PlumbingPOC.git plumbingpoc-azure-local
-  cd plumbingpoc-azure-local
-  gh repo create richfrem/plumbingpoc-azure --private --source=. --remote=origin --push
-
-  # Option 3: Use git worktree (advanced)
-  cd PlumbingPOC  # Your existing folder
-  git worktree add ../PlumbingPOC-Azure azure-migration
-  cd ../PlumbingPOC-Azure
-  # Create new remote and push
-  ```
+* **Task 2: Code Replication** ✅ **COMPLETED**
+  * [x] **Single Repository Strategy**: Using `azure-poc` branch in main repository (ADR-019)
+  * [x] **Branch Created**: `azure-poc` branch created from main
+  * [x] **Environment Separation**: Platform-specific configs via environment variables
+  * [x] **Adapter Pattern**: Implemented for clean platform abstraction (ADR-019)
 
 * **Task 3: Outlook Account Creation** ✅ **COMPLETED**
   * [x] Create `plumbingpoc@outlook.com` email account
@@ -12695,6 +12694,28 @@ export {
 };
 --- END OF FILE ---
 
+--- START OF FILE ./packages/backend/config/supabase/database.js ---
+
+// packages/backend/api/config/supabase.js
+import { createClient } from '@supabase/supabase-js';
+
+// Load environment variables early for development
+// This is safe - in production (Netlify), env vars are injected automatically
+import dotenv from 'dotenv';
+dotenv.config({ path: '../../../../.env' });
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Supabase URL or Service Role Key is missing. Check Netlify environment variables.");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default supabase;
+--- END OF FILE ---
+
 --- START OF FILE ./packages/backend/netlify/functions/README.md ---
 
 # Netlify Functions
@@ -12910,6 +12931,30 @@ const PORT = process.env.BACKEND_PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`LOCAL DEV: API server running on http://localhost:${PORT}`);
+});
+--- END OF FILE ---
+
+--- START OF FILE ./packages/frontend/config/netlify/vite.config.js ---
+
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path'; // Import path module
+
+export default defineConfig(({ mode }) => {
+  // Load environment variables from .env file based on the current mode
+  const env = loadEnv(mode, path.resolve(process.cwd(), '..', '..'), ''); // Load from project root
+
+  // Check if we're running under Netlify dev (which handles API routing itself)
+  const isNetlifyDev = process.env.NETLIFY_DEV || process.env.NETLIFY;
+
+  return {
+    plugins: [react()],
+    server: {
+      proxy: isNetlifyDev ? undefined : {
+        '/api': (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+      }
+    }
+  };
 });
 --- END OF FILE ---
 
