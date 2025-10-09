@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  console.log('🔥 AppContent component RENDERED - Testing Netlify webhook');
+  console.log('🔥 AppContent component RENDERED - Final Netlify config test');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.
