@@ -1,4 +1,4 @@
-// packages/backend/api/config/supabase.js
+// packages/backend/api/config/supabase/database.js
 import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables early for development

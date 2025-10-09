@@ -1,6 +1,6 @@
 // packages/backend/api/middleware/authMiddleware.js
 import { createClient } from '@supabase/supabase-js';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;

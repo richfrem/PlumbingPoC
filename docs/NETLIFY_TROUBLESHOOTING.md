@@ -382,6 +382,102 @@ Before deploying to Netlify:
 - **Build Timing**: Monitor build phases to identify performance issues
 - **Cache Management**: Clear Netlify build cache if experiencing strange issues
 
+### Issue 9: Webhook Not Triggering Automatic Deployments
+
+**Problem:** GitHub commits were not triggering automatic deployments in Netlify, despite repository connection appearing fine in the UI.
+
+**Symptoms:**
+- Manual deployments worked perfectly
+- Repository connection showed as "connected" in Netlify UI
+- Commits pushed successfully to GitHub
+- No automatic deployments triggered
+
+**Root Cause:** Missing webhook in GitHub repository. The Netlify UI showed the repository as connected, but the underlying webhook that notifies Netlify of new commits was not created or was deleted.
+
+**Timeline Analysis:**
+- ✅ Commits worked until merge commit `26c6d39` ("Merge azure-poc: Move configs...")
+- ❌ No deployments triggered after this merge
+- ✅ Manual deployments continued to work perfectly
+
+**Solution:** Repository disconnection and reconnection to recreate the missing webhook.
+
+**Steps Taken:**
+1. **Disconnected repository** in Netlify UI (Site Settings → Build & Deploy → Repository)
+2. **Reconnected repository** with corrected settings:
+   - Repository: `richfrem/PlumbingPoC`
+   - Branch: `main`
+   - **Base directory:** `.` (repository root)
+   - **Package directory:** `Not set` (blank)
+   - Build command: `npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build`
+   - Publish directory: `./packages/frontend/dist/`
+   - Functions directory: `./packages/backend/netlify/functions/`
+3. **Verified environment variables** remained intact
+4. **Tested with new commit** - automatic deployment triggered successfully
+
+**Result:** ✅ Automatic deployments restored. Webhook recreated and functioning properly.
+
+**Prevention:** When making significant repository changes (merges, branch restructuring), verify webhook functionality by checking GitHub repository webhooks or testing with a commit.
+
+**Key Learning:** UI showing "connected" doesn't guarantee webhook exists. Repository reconnection is the reliable fix for webhook issues.
+
+## How to Relink Repository in Netlify
+
+If you need to relink your repository (e.g., after repository restructuring, webhook issues, or changing repository settings), follow these steps:
+
+### Step-by-Step Repository Relinking Process
+
+1. **Access Netlify Site Settings:**
+   - Go to your Netlify dashboard
+   - Select your PlumbingPOC site
+   - Navigate to **Site settings** → **Build & deploy** → **Repository**
+
+2. **Disconnect Current Repository:**
+   - Click the **"Disconnect repository"** button
+   - Confirm the disconnection when prompted
+   - This removes the webhook from GitHub
+
+3. **Reconnect Repository:**
+   - Click **"Connect repository"**
+   - Select **"Deploy with GitHub"**
+   - Choose your repository: `richfrem/PlumbingPoC`
+   - Select branch: `main`
+
+4. **Configure Build Settings:**
+   ```
+   Build settings
+   Runtime: Not set
+   Base directory: /
+   Package directory: packages/frontend
+   Build command: npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build
+   Publish directory: packages/frontend/dist/
+   Functions directory: packages/backend/netlify/functions/
+   Build status: Active
+   ```
+
+5. **Verify Environment Variables:**
+   - Ensure all required environment variables are still configured
+   - Check that sensitive variables (API keys, secrets) are intact
+
+6. **Test Deployment:**
+   - Push a small commit to trigger automatic deployment
+   - Monitor the build logs for any issues
+   - Verify the deployment completes successfully
+
+### Common Reasons for Repository Relinking
+
+- **Webhook Issues:** Automatic deployments not triggering
+- **Repository Restructuring:** Major changes to repository structure
+- **Branch Changes:** Switching deployment branches
+- **Permission Issues:** Repository access problems
+- **Configuration Reset:** Need to reset all build settings
+
+### Prevention Tips
+
+- **Regular Testing:** Periodically test automatic deployments with small commits
+- **Webhook Monitoring:** Check GitHub repository webhooks if deployments stop
+- **Documentation:** Keep build settings documented for quick reconfiguration
+- **Backup Settings:** Screenshot or document current settings before major changes
+
 ## Links & References
 
 ### Official Netlify Documentation

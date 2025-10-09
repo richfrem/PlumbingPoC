@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T15:09:16.914Z
+Generated On: 2025-10-09T16:29:59.232Z
 
-# Mnemonic Weight (Token Count): ~294,624 tokens
+# Mnemonic Weight (Token Count): ~296,308 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -60,6 +60,7 @@ Generated On: 2025-10-09T15:09:16.914Z
   ./adrs/020-choice-of-azure-static-web-apps-for-frontend-hosting.md
   ./adrs/021-choice-of-azure-database-for-postgresql.md
   ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md
+  ./adrs/023-choice-of-backend-config-architecture.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -123,7 +124,10 @@ Generated On: 2025-10-09T15:09:16.914Z
   ./packages/backend/api/
   ./packages/backend/api/README.md
   ./packages/backend/api/config/
-  ./packages/backend/api/config/supabase.js
+  ./packages/backend/api/config/azure/
+  ./packages/backend/api/config/supabase/
+  ./packages/backend/api/config/supabase/database.js
+  ./packages/backend/api/config/supabase/index.js
   ./packages/backend/api/controllers/
   ./packages/backend/api/controllers/followUpController.js
   ./packages/backend/api/controllers/requestController.js
@@ -143,11 +147,6 @@ Generated On: 2025-10-09T15:09:16.914Z
   ./packages/backend/api/services/smsService.js
   ./packages/backend/api/validation/
   ./packages/backend/api/validation/schemas.js
-  ./packages/backend/config/
-  ./packages/backend/config/azure/
-  ./packages/backend/config/supabase/
-  ./packages/backend/config/supabase/database.js
-  ./packages/backend/deploy/
   ./packages/backend/netlify/
   ./packages/backend/netlify/functions/
   ./packages/backend/netlify/functions/README.md
@@ -4889,6 +4888,109 @@ USING (
 **Note:** Azure AD B2C is ideal for consumer-facing applications requiring multiple authentication methods. For enterprise-only applications, consider Azure AD instead.
 --- END OF FILE ---
 
+--- START OF FILE ./adrs/023-choice-of-backend-config-architecture.md ---
+
+# ADR-023: Backend Configuration Architecture for Multi-Platform Support
+
+**Date:** 2025-10-09
+
+**Status:** Decided & Implemented
+
+## Context
+
+The PlumbingPOC backend needed a cleaner configuration architecture to support multiple deployment platforms (Netlify + Azure). The original structure had configuration files scattered across different locations with unclear separation of concerns.
+
+This ADR documents the decision to organize platform-specific configurations in a structured way that supports future multi-platform deployments.
+
+This structure creates maintenance challenges and makes it difficult to add new platforms or switch between existing ones.
+
+## Decision
+
+We will refactor the backend configuration architecture to use **Option A: Platform-Agnostic Config** with the following structure:
+
+```
+packages/backend/
+├── api/                    # API logic with config
+│   ├── config/             # Platform-specific configurations
+│   │   ├── supabase/
+│   │   │   ├── database.js # Supabase database client
+│   │   │   └── index.js    # Exports all Supabase services
+│   │   └── azure/          # Ready for Azure services
+│   ├── controllers/        # ✅ Updated imports
+│   ├── services/          # ✅ Updated imports
+│   └── middleware/        # ✅ Updated imports
+└── netlify/               # Platform-specific deployment
+    └── functions/
+```
+
+### Key Principles
+
+1. **Separation of Concerns**: API logic is completely separate from configuration
+2. **Platform Agnosticism**: Core API doesn't know about specific platforms
+3. **Clean Imports**: `import { database as supabase } from '../config/supabase/index.js'`
+4. **Future-Proof**: Easy to add new platforms (AWS, GCP, etc.)
+5. **Single Source of Truth**: No duplicate configuration files
+
+## Implementation Plan
+
+### Implementation
+- Create `packages/backend/api/config/supabase/` directory structure
+- Move Supabase client to `database.js` with clean exports via `index.js`
+- Update all backend imports to use new structured approach
+- Remove duplicate configuration files
+- Organize for future multi-platform support
+
+### Phase 4: Platform Abstraction
+- Create environment-based config loading
+- Implement platform-specific overrides
+- Add configuration validation
+
+## Consequences
+
+### Positive
+- **Clean Architecture**: Clear separation between API logic and configuration
+- **Multi-Platform Ready**: Easy to add Azure, AWS, or other platforms
+- **Maintainable**: No duplicate files, single source of truth
+- **Testable**: Platform-specific configs can be easily mocked
+- **Scalable**: New platforms don't require API logic changes
+
+### Negative
+- **Migration Effort**: Requires updating import paths across multiple files
+- **Breaking Changes**: All existing imports need to be updated
+- **Temporary Complexity**: Dual structure during migration period
+
+### Implementation Timeline
+- **Estimated Effort**: 2-3 hours
+- **Files to Update**: ~6 controller files + services + tests
+- **Risk Level**: Low (pure refactoring, no functional changes)
+
+## Alternatives Considered
+
+### Option B: Platform-Specific Config (Current Structure)
+- **Pros**: Minimal changes to existing imports
+- **Cons**: Mixed concerns, harder to add new platforms
+- **Decision**: Rejected due to architectural limitations
+
+### Option C: Environment-Based Config Loading
+- **Pros**: Single config file with environment switching
+- **Cons**: Runtime complexity, harder to test platform differences
+- **Decision**: Rejected in favor of compile-time separation
+
+## Related Decisions
+
+- ADR-015: Choice of Monorepo Structure
+- ADR-019: Azure Migration Strategy (upcoming)
+- ADR-016: E2E Testing Architecture
+
+## Success Criteria
+
+- [ ] All imports updated and working
+- [ ] No duplicate configuration files
+- [ ] Clean directory structure
+- [ ] Tests pass with new import paths
+- [ ] Easy to add new platform configurations
+--- END OF FILE ---
+
 --- START OF FILE ./agents/AGENT_REPOS.md ---
 
 # Plumbing Quote Agent MCP Persona Repos
@@ -6052,7 +6154,8 @@ persona: |
 // in the packages directory that you want the agents to interact with.
 
 const editableFileManifest = [
-  'packages/backend/api/config/supabase.js',
+  'packages/backend/api/config/supabase/database.js',
+  'packages/backend/api/config/supabase/index.js',
   'packages/backend/api/controllers/followUpController.js',
   'packages/backend/api/controllers/requestController.js',
   'packages/backend/api/controllers/triageController.js',
@@ -9556,6 +9659,102 @@ Before deploying to Netlify:
 - **Build Timing**: Monitor build phases to identify performance issues
 - **Cache Management**: Clear Netlify build cache if experiencing strange issues
 
+### Issue 9: Webhook Not Triggering Automatic Deployments
+
+**Problem:** GitHub commits were not triggering automatic deployments in Netlify, despite repository connection appearing fine in the UI.
+
+**Symptoms:**
+- Manual deployments worked perfectly
+- Repository connection showed as "connected" in Netlify UI
+- Commits pushed successfully to GitHub
+- No automatic deployments triggered
+
+**Root Cause:** Missing webhook in GitHub repository. The Netlify UI showed the repository as connected, but the underlying webhook that notifies Netlify of new commits was not created or was deleted.
+
+**Timeline Analysis:**
+- ✅ Commits worked until merge commit `26c6d39` ("Merge azure-poc: Move configs...")
+- ❌ No deployments triggered after this merge
+- ✅ Manual deployments continued to work perfectly
+
+**Solution:** Repository disconnection and reconnection to recreate the missing webhook.
+
+**Steps Taken:**
+1. **Disconnected repository** in Netlify UI (Site Settings → Build & Deploy → Repository)
+2. **Reconnected repository** with corrected settings:
+   - Repository: `richfrem/PlumbingPoC`
+   - Branch: `main`
+   - **Base directory:** `.` (repository root)
+   - **Package directory:** `Not set` (blank)
+   - Build command: `npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build`
+   - Publish directory: `./packages/frontend/dist/`
+   - Functions directory: `./packages/backend/netlify/functions/`
+3. **Verified environment variables** remained intact
+4. **Tested with new commit** - automatic deployment triggered successfully
+
+**Result:** ✅ Automatic deployments restored. Webhook recreated and functioning properly.
+
+**Prevention:** When making significant repository changes (merges, branch restructuring), verify webhook functionality by checking GitHub repository webhooks or testing with a commit.
+
+**Key Learning:** UI showing "connected" doesn't guarantee webhook exists. Repository reconnection is the reliable fix for webhook issues.
+
+## How to Relink Repository in Netlify
+
+If you need to relink your repository (e.g., after repository restructuring, webhook issues, or changing repository settings), follow these steps:
+
+### Step-by-Step Repository Relinking Process
+
+1. **Access Netlify Site Settings:**
+   - Go to your Netlify dashboard
+   - Select your PlumbingPOC site
+   - Navigate to **Site settings** → **Build & deploy** → **Repository**
+
+2. **Disconnect Current Repository:**
+   - Click the **"Disconnect repository"** button
+   - Confirm the disconnection when prompted
+   - This removes the webhook from GitHub
+
+3. **Reconnect Repository:**
+   - Click **"Connect repository"**
+   - Select **"Deploy with GitHub"**
+   - Choose your repository: `richfrem/PlumbingPoC`
+   - Select branch: `main`
+
+4. **Configure Build Settings:**
+   ```
+   Build settings
+   Runtime: Not set
+   Base directory: /
+   Package directory: packages/frontend
+   Build command: npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build
+   Publish directory: packages/frontend/dist/
+   Functions directory: packages/backend/netlify/functions/
+   Build status: Active
+   ```
+
+5. **Verify Environment Variables:**
+   - Ensure all required environment variables are still configured
+   - Check that sensitive variables (API keys, secrets) are intact
+
+6. **Test Deployment:**
+   - Push a small commit to trigger automatic deployment
+   - Monitor the build logs for any issues
+   - Verify the deployment completes successfully
+
+### Common Reasons for Repository Relinking
+
+- **Webhook Issues:** Automatic deployments not triggering
+- **Repository Restructuring:** Major changes to repository structure
+- **Branch Changes:** Switching deployment branches
+- **Permission Issues:** Repository access problems
+- **Configuration Reset:** Need to reset all build settings
+
+### Prevention Tips
+
+- **Regular Testing:** Periodically test automatic deployments with small commits
+- **Webhook Monitoring:** Check GitHub repository webhooks if deployments stop
+- **Documentation:** Keep build settings documented for quick reconfiguration
+- **Backup Settings:** Screenshot or document current settings before major changes
+
 ## Links & References
 
 ### Official Netlify Documentation
@@ -10723,9 +10922,9 @@ sequenceDiagram
 ```
 --- END OF FILE ---
 
---- START OF FILE ./packages/backend/api/config/supabase.js ---
+--- START OF FILE ./packages/backend/api/config/supabase/database.js ---
 
-// packages/backend/api/config/supabase.js
+// packages/backend/api/config/supabase/database.js
 import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables early for development
@@ -10745,11 +10944,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export default supabase;
 --- END OF FILE ---
 
+--- START OF FILE ./packages/backend/api/config/supabase/index.js ---
+
+// packages/backend/api/config/supabase/index.js
+
+export { default as database } from './database.js';
+--- END OF FILE ---
+
 --- START OF FILE ./packages/backend/api/controllers/followUpController.js ---
 
 // packages/backend/api/controllers/followUpController.js
 
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import { sendFollowUpEmail } from '../services/emailService.js';
 
 const sendFollowUpEmails = async (req, res) => {
@@ -10803,7 +11009,7 @@ export { sendFollowUpEmails };
 // packages/backend/api/controllers/requestController.js
 import path from 'path';
 import axios from 'axios';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/emailService.js';
 import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/smsService.js';
 
@@ -11685,7 +11891,7 @@ export {
 
 // packages/backend/api/controllers/triageController.js
 
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -11773,7 +11979,7 @@ export { triageRequest };
 
 // packages/backend/api/controllers/userController.js
 
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 
 /**
  * Handles fetching the profile for the currently authenticated user.
@@ -11871,7 +12077,7 @@ export {
 
 // packages/backend/api/middleware/authMiddleware.js
 import { createClient } from '@supabase/supabase-js';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -12407,7 +12613,7 @@ export {
 // packages/backend/api/services/smsService.js
 
 import axios from 'axios';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import twilio from 'twilio';
 
 
@@ -12694,28 +12900,6 @@ export {
   getObjectSchema,
   updateStatusSchema,
 };
---- END OF FILE ---
-
---- START OF FILE ./packages/backend/config/supabase/database.js ---
-
-// packages/backend/api/config/supabase.js
-import { createClient } from '@supabase/supabase-js';
-
-// Load environment variables early for development
-// This is safe - in production (Netlify), env vars are injected automatically
-import dotenv from 'dotenv';
-dotenv.config({ path: '../../../../.env' });
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Supabase URL or Service Role Key is missing. Check Netlify environment variables.");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default supabase;
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/netlify/functions/README.md ---
@@ -20450,7 +20634,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  console.log('🔥 AppContent component RENDERED - Testing Netlify webhook');
+  console.log('🔥 AppContent component RENDERED - Testing webhook after reconnection');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.

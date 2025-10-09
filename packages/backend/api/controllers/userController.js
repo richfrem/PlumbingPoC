@@ -1,6 +1,6 @@
 // packages/backend/api/controllers/userController.js
 
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 
 /**
  * Handles fetching the profile for the currently authenticated user.

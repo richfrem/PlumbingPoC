@@ -1,6 +1,6 @@
 // packages/backend/api/controllers/triageController.js
 
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({

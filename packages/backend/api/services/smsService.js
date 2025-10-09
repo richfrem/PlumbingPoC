@@ -1,7 +1,7 @@
 // packages/backend/api/services/smsService.js
 
 import axios from 'axios';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import twilio from 'twilio';
 
 

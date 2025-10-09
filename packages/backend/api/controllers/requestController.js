@@ -1,7 +1,7 @@
 // packages/backend/api/controllers/requestController.js
 import path from 'path';
 import axios from 'axios';
-import supabase from '../config/supabase.js';
+import { database as supabase } from '../config/supabase/index.js';
 import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/emailService.js';
 import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/smsService.js';
 

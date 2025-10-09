@@ -7,7 +7,8 @@
 // in the packages directory that you want the agents to interact with.
 
 const editableFileManifest = [
-  'packages/backend/api/config/supabase.js',
+  'packages/backend/api/config/supabase/database.js',
+  'packages/backend/api/config/supabase/index.js',
   'packages/backend/api/controllers/followUpController.js',
   'packages/backend/api/controllers/requestController.js',
   'packages/backend/api/controllers/triageController.js',
