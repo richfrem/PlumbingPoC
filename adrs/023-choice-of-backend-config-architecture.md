@@ -10,7 +10,6 @@ The PlumbingPOC backend needed a cleaner configuration architecture to support m
 
 This ADR documents the decision to organize platform-specific configurations in a structured way that supports future multi-platform deployments.
 
-This structure creates maintenance challenges and makes it difficult to add new platforms or switch between existing ones.
 
 ## Decision
 

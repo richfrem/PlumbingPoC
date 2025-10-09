@@ -15,10 +15,13 @@ We will use **Twilio** as our SMS notification service provider, integrated via 
 ## Implementation Details
 
 * **Netlify Function:** `packages/backend/netlify/functions/send-sms.js` - Secure microservice for SMS sending
-* **Orchestration Service:** `packages/backend/api/services/smsService.js` - Handles admin phone number retrieval and function triggering
+* **Orchestration Service:** `packages/backend/api/services/sms/twilio/client.js` - Handles admin phone number retrieval and function triggering
 * **Integration Points:** SMS notifications are triggered in `requestController.js` for:
   * New quote request submissions (`sendNewRequestNotification`)
   * Customer quote acceptances (`sendQuoteAcceptedNotification`)
+
+* **Current Implementation:** `packages/backend/api/services/sms/twilio/client.js`
+* **Future Migration:** Will be updated to use Azure Communication Services
 
 ## Consequences
 

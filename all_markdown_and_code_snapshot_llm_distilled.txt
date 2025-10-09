@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T16:29:59.232Z
+Generated On: 2025-10-09T16:49:26.171Z
 
-# Mnemonic Weight (Token Count): ~296,308 tokens
+# Mnemonic Weight (Token Count): ~297,608 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -61,6 +61,7 @@ Generated On: 2025-10-09T16:29:59.232Z
   ./adrs/021-choice-of-azure-database-for-postgresql.md
   ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md
   ./adrs/023-choice-of-backend-config-architecture.md
+  ./adrs/024-choice-of-service-organization-strategy.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -143,8 +144,14 @@ Generated On: 2025-10-09T16:29:59.232Z
   ./packages/backend/api/routes/userRoutes.js
   ./packages/backend/api/server.js
   ./packages/backend/api/services/
-  ./packages/backend/api/services/emailService.js
-  ./packages/backend/api/services/smsService.js
+  ./packages/backend/api/services/email/
+  ./packages/backend/api/services/email/resend/
+  ./packages/backend/api/services/email/resend/client.js
+  ./packages/backend/api/services/email/resend/index.js
+  ./packages/backend/api/services/sms/
+  ./packages/backend/api/services/sms/twilio/
+  ./packages/backend/api/services/sms/twilio/client.js
+  ./packages/backend/api/services/sms/twilio/index.js
   ./packages/backend/api/validation/
   ./packages/backend/api/validation/schemas.js
   ./packages/backend/netlify/
@@ -2451,7 +2458,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] **NEW:** Implement SMS notifications for new quote requests (Twilio + Netlify Functions)
 - [x] **NEW:** Implement SMS notifications for quote acceptances (Twilio + Netlify Functions)
 - [x] **NEW:** Create secure Netlify Function for SMS delivery (`send-sms.js`)
-- [x] **NEW:** Create SMS orchestration service (`smsService.js`) with admin phone number retrieval
+- [x] **NEW:** Create SMS orchestration service (`packages/backend/api/services/sms/twilio/client.js`) with admin phone number retrieval
 - [x] **NEW:** Integrate SMS notifications into request controller for real-time alerts
 - [x] Correct RLS policies for `user_profiles` to allow admin access
 - [x] **NEW:** Geocoding data persistence (latitude, longitude, geocoded_address in requests table)
@@ -2978,10 +2985,13 @@ We will use **Twilio** as our SMS notification service provider, integrated via 
 ## Implementation Details
 
 * **Netlify Function:** `packages/backend/netlify/functions/send-sms.js` - Secure microservice for SMS sending
-* **Orchestration Service:** `packages/backend/api/services/smsService.js` - Handles admin phone number retrieval and function triggering
+* **Orchestration Service:** `packages/backend/api/services/sms/twilio/client.js` - Handles admin phone number retrieval and function triggering
 * **Integration Points:** SMS notifications are triggered in `requestController.js` for:
   * New quote request submissions (`sendNewRequestNotification`)
   * Customer quote acceptances (`sendQuoteAcceptedNotification`)
+
+* **Current Implementation:** `packages/backend/api/services/sms/twilio/client.js`
+* **Future Migration:** Will be updated to use Azure Communication Services
 
 ## Consequences
 
@@ -4902,7 +4912,6 @@ The PlumbingPOC backend needed a cleaner configuration architecture to support m
 
 This ADR documents the decision to organize platform-specific configurations in a structured way that supports future multi-platform deployments.
 
-This structure creates maintenance challenges and makes it difficult to add new platforms or switch between existing ones.
 
 ## Decision
 
@@ -4989,6 +4998,134 @@ packages/backend/
 - [ ] Clean directory structure
 - [ ] Tests pass with new import paths
 - [ ] Easy to add new platform configurations
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/024-choice-of-service-organization-strategy.md ---
+
+# ADR-024: Choice of Service Organization Strategy for Multi-Platform Support
+
+**Date:** 2025-10-09
+
+**Status:** Decided & Implemented
+
+## Context
+
+The PlumbingPOC backend includes external service integrations (email via Resend, SMS via Twilio) that will be incrementally migrated to Azure Communication Services during the Azure migration. We needed to decide on a service organization strategy that supports:
+
+1. **Current single-provider usage** (Resend for email, Twilio for SMS)
+2. **Future multi-provider support** (Azure Communication Services)
+3. **Incremental migration** (gradual replacement of providers)
+4. **Clean maintainability** (easy to understand and modify)
+
+## Decision
+
+We will maintain a **flat service organization** in `packages/backend/api/services/` with individual service files, rather than nested provider-specific directories. This approach supports incremental migration while keeping the codebase simple and maintainable.
+
+### Current Structure (Implemented)
+```
+packages/backend/api/services/
+├── email/
+│   └── resend/
+│       ├── client.js    # Email service (Resend implementation)
+│       └── index.js     # Clean exports
+└── sms/
+    └── twilio/
+        ├── client.js    # SMS service (Twilio implementation)
+        └── index.js     # Clean exports
+```
+
+### Future Structure (When Multiple Providers Needed)
+```
+packages/backend/api/services/
+├── emailService.js    # Email service (Azure Communication Services)
+├── smsService.js      # SMS service (Azure Communication Services)
+├── email/
+│   ├── resend.js      # Legacy Resend client (if needed)
+│   └── azure.js       # Azure Communication Services client
+└── sms/
+    ├── twilio.js      # Legacy Twilio client (if needed)
+    └── azure.js       # Azure Communication Services client
+```
+
+## Key Principles
+
+1. **Incremental Migration Support**: Services can be updated individually without directory restructuring
+2. **Single Responsibility**: Each service file handles one communication channel
+3. **Provider Abstraction**: Business logic doesn't know about specific providers
+4. **Future-Proof**: Easy to add nested structure when multiple providers are needed simultaneously
+
+## Implementation
+
+### Current Implementation
+- `packages/backend/api/services/email/resend/client.js`: Handles all email operations using Resend API
+- `packages/backend/api/services/sms/twilio/client.js`: Handles all SMS operations using Twilio API
+- Clean, focused APIs with error handling and environment configuration
+- Organized by service type and provider for clear multi-platform support
+
+### Migration Strategy
+1. **Phase 1**: Update `emailService.js` to use Azure Communication Services
+2. **Phase 2**: Update `smsService.js` to use Azure Communication Services
+3. **Phase 3**: If multiple providers needed, create nested structure with legacy clients
+
+## Consequences
+
+### Positive
+- **Simple Maintenance**: Flat structure is easy to understand and modify
+- **Incremental Migration**: Can update services one at a time
+- **Clean APIs**: Well-defined service interfaces
+- **No Over-Engineering**: Only add complexity when multiple providers are actually needed
+
+### Negative
+- **Potential Future Refactor**: May need directory restructuring if multiple providers required
+- **Less Explicit**: Provider choice is implicit in service implementation
+
+### Implementation Timeline
+- **Current**: Flat structure implemented and working
+- **Migration**: Service-by-service updates (no structural changes needed)
+- **Future**: Nested structure only if multiple providers required simultaneously
+
+## Alternatives Considered
+
+### Option A: Immediate Nested Structure (Rejected)
+```
+services/
+├── email/
+│   └── resend/
+│       └── client.js
+└── sms/
+    └── twilio/
+        └── client.js
+```
+**Rejected because**: Over-engineering for current single-provider needs. Would require immediate restructuring for no current benefit.
+
+### Option B: Service Registry Pattern (Deferred)
+```
+services/
+├── registry.js        # Service factory/registry
+├── email.js          # Email service interface
+├── sms.js            # SMS service interface
+└── providers/        # Provider implementations
+    ├── resend.js
+    ├── twilio.js
+    └── azure.js
+```
+**Deferred because**: Adds unnecessary abstraction complexity. Current flat structure is sufficient for incremental migration.
+
+## Related Decisions
+
+- ADR-019: Single Repository Strategy for Azure POC
+- ADR-020: Azure Static Web Apps for Frontend Hosting
+- ADR-021: Azure Database for PostgreSQL
+- ADR-022: Azure AD B2C for Authentication
+- ADR-023: Backend Configuration Architecture
+
+## Success Criteria
+
+- [x] Services work with current providers (Resend, Twilio)
+- [x] Clean, maintainable service interfaces
+- [x] Easy to update individual services for Azure migration
+- [x] No unnecessary directory complexity
+- [x] Future-ready for multi-provider scenarios
 --- END OF FILE ---
 
 --- START OF FILE ./agents/AGENT_REPOS.md ---
@@ -10956,7 +11093,7 @@ export { default as database } from './database.js';
 // packages/backend/api/controllers/followUpController.js
 
 import { database as supabase } from '../config/supabase/index.js';
-import { sendFollowUpEmail } from '../services/emailService.js';
+import { sendFollowUpEmail } from '../services/email/resend/index.js';
 
 const sendFollowUpEmails = async (req, res) => {
   try {
@@ -11010,8 +11147,8 @@ export { sendFollowUpEmails };
 import path from 'path';
 import axios from 'axios';
 import { database as supabase } from '../config/supabase/index.js';
-import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/emailService.js';
-import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/smsService.js';
+import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/email/resend/index.js';
+import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/sms/twilio/index.js';
 
 /**
  * Handles fetching all requests for admin dashboard or user's own requests.
@@ -12494,7 +12631,7 @@ app.use((err, req, res, next) => {
 export default app;
 --- END OF FILE ---
 
---- START OF FILE ./packages/backend/api/services/emailService.js ---
+--- START OF FILE ./packages/backend/api/services/email/resend/client.js ---
 
 // packages/backend/api/services/emailService.js
 
@@ -12608,9 +12745,16 @@ export {
 
 --- END OF FILE ---
 
---- START OF FILE ./packages/backend/api/services/smsService.js ---
+--- START OF FILE ./packages/backend/api/services/email/resend/index.js ---
 
-// packages/backend/api/services/smsService.js
+// packages/backend/api/services/email/resend/index.js
+
+export * from './client.js';
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/api/services/sms/twilio/client.js ---
+
+// packages/backend/api/services/sms/twilio/client.js
 
 import axios from 'axios';
 import { database as supabase } from '../config/supabase/index.js';
@@ -12801,6 +12945,13 @@ export const sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
 
   adminNumbers.forEach(number => triggerSms(number, messageBody));
 };
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/api/services/sms/twilio/index.js ---
+
+// packages/backend/api/services/sms/twilio/index.js
+
+export * from './client.js';
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/validation/schemas.js ---

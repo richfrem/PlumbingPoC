@@ -1,4 +1,4 @@
-// packages/backend/api/services/smsService.js
+// packages/backend/api/services/sms/twilio/client.js
 
 import axios from 'axios';
 import { database as supabase } from '../config/supabase/index.js';

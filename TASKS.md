@@ -76,7 +76,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - [x] **NEW:** Implement SMS notifications for new quote requests (Twilio + Netlify Functions)
 - [x] **NEW:** Implement SMS notifications for quote acceptances (Twilio + Netlify Functions)
 - [x] **NEW:** Create secure Netlify Function for SMS delivery (`send-sms.js`)
-- [x] **NEW:** Create SMS orchestration service (`smsService.js`) with admin phone number retrieval
+- [x] **NEW:** Create SMS orchestration service (`packages/backend/api/services/sms/twilio/client.js`) with admin phone number retrieval
 - [x] **NEW:** Integrate SMS notifications into request controller for real-time alerts
 - [x] Correct RLS policies for `user_profiles` to allow admin access
 - [x] **NEW:** Geocoding data persistence (latitude, longitude, geocoded_address in requests table)

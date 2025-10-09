@@ -1,7 +1,7 @@
 // packages/backend/api/controllers/followUpController.js
 
 import { database as supabase } from '../config/supabase/index.js';
-import { sendFollowUpEmail } from '../services/emailService.js';
+import { sendFollowUpEmail } from '../services/email/resend/index.js';
 
 const sendFollowUpEmails = async (req, res) => {
   try {

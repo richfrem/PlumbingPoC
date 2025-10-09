@@ -2,8 +2,8 @@
 import path from 'path';
 import axios from 'axios';
 import { database as supabase } from '../config/supabase/index.js';
-import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/emailService.js';
-import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/smsService.js';
+import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/email/resend/index.js';
+import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/sms/twilio/index.js';
 
 /**
  * Handles fetching all requests for admin dashboard or user's own requests.
