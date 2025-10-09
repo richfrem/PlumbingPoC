@@ -261,4 +261,4 @@ sequenceDiagram
     deactivate Customer's Browser (Client B)
     
     deactivate Supabase Realtime Server
-```
+```# Test commit to trigger Netlify deployment
