@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T17:11:54.918Z
+Generated On: 2025-10-09T17:25:32.076Z
 
-# Mnemonic Weight (Token Count): ~297,665 tokens
+# Mnemonic Weight (Token Count): ~297,703 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -12685,9 +12685,12 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 const getRecipientEmail = (request) => {
-  // In a real app, you would have more robust logic to get the customer's email.
-  // This is a simplified example.
-  return request?.user_profiles?.email;
+  // TEMPORARY: For Resend free plan testing, only send to verified admin email
+  // TODO: Revert to customer email once domain is verified or paid plan is active
+  return 'rfremmer@hotmail.com'; // Your verified Resend email
+
+  // Original code (uncomment when ready):
+  // return request?.user_profiles?.email;
 }
 
 const getRequestUrl = (requestId) => {
