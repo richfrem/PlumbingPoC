@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T14:13:58.407Z
+Generated On: 2025-10-09T14:29:22.499Z
 
-# Mnemonic Weight (Token Count): ~285,373 tokens
+# Mnemonic Weight (Token Count): ~294,258 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -55,6 +55,10 @@ Generated On: 2025-10-09T14:13:58.407Z
   ./adrs/016-choice-of-e2e-testing-architecture.md
   ./adrs/017-choice-of-options-object-pattern-for-test-method-parameters.md
   ./adrs/018-choice-of-seo-implementation-strategy.md
+  ./adrs/019-choice-of-single-repository-strategy-for-azure-poc.md
+  ./adrs/020-choice-of-azure-static-web-apps-for-frontend-hosting.md
+  ./adrs/021-choice-of-azure-database-for-postgresql.md
+  ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -3688,6 +3692,1188 @@ We will implement a comprehensive SEO strategy using **react-helmet-async** for 
 - Regular updates to schema markup for changing business information
 --- END OF FILE ---
 
+--- START OF FILE ./adrs/019-choice-of-single-repository-strategy-for-azure-poc.md ---
+
+# ADR-019: Choice of Single Repository Strategy for Azure POC
+
+**Date:** 2025-10-09
+
+**Status:** Accepted
+
+## Context
+
+The PlumbingPOC project requires an Azure migration proof-of-concept (POC) to validate the technical feasibility and cost benefits of moving from the current Netlify/Supabase architecture to Azure cloud services. The codebase consists of approximately 80-90% shared code (React components, business logic, API controllers, tests) with only 10-20% being platform-specific (database connections, authentication, real-time services).
+
+Initial planning considered a separate repository approach for the Azure POC, but this would create synchronization challenges for the large shared codebase. The single repository strategy offers better code management while maintaining clear separation between environments.
+
+## Decision
+
+We will use a **single repository with environment-specific configurations** for the Azure POC. This approach includes:
+
+1. **Single Git Repository**: Maintain all code in the existing `PlumbingPOC` repository
+2. **Branch-Based Development**: Use `azure-poc` branch for Azure-specific development
+3. **Environment-Specific Configurations**: Separate config files for Netlify vs Azure deployments
+4. **Build Script Separation**: Different build and deployment scripts for each platform
+5. **Shared Code Synchronization**: Automatic sync of 80-90% shared codebase
+
+## Implementation Details
+
+### Repository Structure
+
+```
+PlumbingPOC/ (single repository)
+├── packages/
+│   ├── frontend/
+│   │   ├── src/           # Shared React components (80-90%)
+│   │   ├── config/        # Environment-specific configs
+│   │   │   ├── netlify/   # Netlify build configs
+│   │   │   └── azure/     # Azure build configs
+│   │   └── build-scripts/ # Platform-specific build scripts
+│   └── backend/
+│       ├── api/           # Shared API logic (80-90%)
+│       ├── config/        # Environment-specific configs
+│       │   ├── supabase/  # Supabase database/auth configs
+│       │   └── azure/     # Azure database/auth configs
+│       └── deploy/        # Platform deployment scripts
+├── environments/
+│   ├── netlify.env         # Netlify environment variables
+│   └── azure.env           # Azure environment variables
+├── .github/workflows/
+│   ├── netlify-deploy.yml  # Netlify CI/CD
+│   └── azure-deploy.yml    # Azure CI/CD
+└── scripts/
+    ├── build-netlify.sh    # Netlify build script
+    └── build-azure.sh      # Azure build script
+```
+
+### Branch Strategy
+
+- **`main`**: Production Netlify/Supabase deployment
+- **`azure-poc`**: Azure migration development and testing
+- **Feature branches**: Created from appropriate base branch
+
+### Configuration Management
+
+**Environment-Specific Files:**
+- Database connection strings
+- Authentication service configurations
+- Real-time service endpoints
+- Build and deployment configurations
+- Environment variables
+
+**Shared Files (80-90%):**
+- React components and hooks
+- Business logic and API controllers
+- Test suites and documentation
+- Utility functions and helpers
+
+### Build Process (Updated with Adapter Pattern)
+
+**Environment Variable Selection (Recommended):**
+```bash
+# Netlify Build
+VITE_PLATFORM=netlify npm run build
+
+# Azure Build
+VITE_PLATFORM=azure npm run build
+```
+
+**Legacy File Copy Approach (Alternative):**
+```bash
+# Copy Netlify-specific configs
+cp packages/frontend/config/netlify/vite.config.js packages/frontend/
+cp packages/backend/config/supabase/database.js packages/backend/api/config/
+
+# Build for Netlify
+npm run build:netlify
+
+# Copy Azure-specific configs
+cp packages/frontend/config/azure/vite.config.js packages/frontend/
+cp packages/backend/config/azure/database.js packages/backend/api/config/
+
+# Build for Azure
+npm run build:azure
+```
+
+## Consequences
+
+### Positive
+
+*   **Code Synchronization**: Eliminates sync issues for 80-90% shared codebase
+*   **Simplified Development**: Single repository reduces management overhead
+*   **Unified Testing**: Test both environments from same codebase
+*   **Shared Git History**: Easy to track changes across environments
+*   **Easier Collaboration**: No confusion about which repository to use
+*   **Unified Documentation**: Single source for all environment docs
+*   **Adapter Pattern Benefits**: Clean separation of platform-specific logic through interfaces and implementations
+
+### Negative
+
+*   **Build Complexity**: Requires different build scripts for each platform (mitigated by environment variables)
+*   **Configuration Management**: Need to maintain environment-specific files
+*   **Git History Clarity**: Mixed commits may be harder to categorize
+*   **Risk Management**: Azure changes could potentially affect production branch
+*   **Testing Complexity**: Must ensure proper environment isolation
+*   **Platform Sprawl Risk**: Potential for platform-specific logic to leak into shared code (mitigated by Adapter Pattern)
+
+### Mitigation Strategies
+
+**Build Complexity:**
+- Environment variable selection over file copying (recommended)
+- Clear naming conventions for build scripts
+- Documentation for each environment's build process
+- Automated build validation
+
+**Configuration Management:**
+- Environment-specific config directories
+- Clear naming conventions (netlify/ vs azure/)
+- Version control for all configuration files
+- Adapter Pattern for platform abstraction
+
+**Risk Management:**
+- Use feature flags for Azure-specific functionality
+- Regular code reviews for azure-poc branch changes
+- Clear commit message conventions ("Azure: ..." prefix)
+- Branch protection rules for main branch
+
+**Platform Sprawl Prevention:**
+- Adapter Pattern for all platform-dependent services
+- Interface definitions for platform abstractions
+- Environment variable selection of implementations
+- Strict code review for platform-specific logic in shared code
+
+**Testing:**
+- Environment-specific test configurations
+- Parallel testing of both environments
+- Automated validation of environment isolation
+- Integration tests for adapter implementations
+
+## Alternatives Considered
+
+### Separate Repository Approach
+
+**Pros:**
+- Complete isolation between environments
+- No risk of cross-contamination
+- Clear separation of concerns
+
+**Cons:**
+- Code synchronization challenges for 80-90% shared code
+- Dual repository management overhead
+- More complex development workflow
+- Harder to maintain shared components
+
+**Decision:** Rejected due to synchronization overhead with large shared codebase
+
+### Git Worktree Approach
+
+**Pros:**
+- Shared git history with separate working directories
+- Independent development branches
+- Easy to sync shared changes
+
+**Cons:**
+- More complex git workflow
+- Requires understanding of worktree concepts
+- Still requires manual synchronization
+
+**Decision:** Considered but single repo with branches is simpler for POC
+
+## Related Decisions
+
+- ADR-015: Choice of Monorepo Structure
+- ADR-016: Choice of E2E Testing Architecture
+- ADR-018: Choice of SEO Implementation Strategy
+
+## Success Metrics
+
+### Technical Metrics
+- [ ] Both environments build and deploy successfully
+- [ ] Shared components work identically across platforms
+- [ ] Environment-specific configurations are properly isolated
+- [ ] Build scripts execute without manual intervention
+
+### Process Metrics
+- [ ] Development workflow remains efficient
+- [ ] Code reviews can easily distinguish environment changes
+- [ ] Testing covers both environments adequately
+- [ ] Documentation clearly explains environment differences
+
+### Quality Metrics
+- [ ] No cross-contamination between environments
+- [ ] Clear separation of shared vs environment-specific code
+- [ ] Easy to maintain and extend configurations
+- [ ] Rollback procedures are well-defined
+
+## Adapter Pattern Implementation Guide
+
+### Interface Definitions
+
+**Create platform-agnostic interfaces in shared code:**
+
+```typescript
+// packages/backend/api/services/realtimeService.ts
+export interface IRealtimeService {
+  notifyRequestUpdate(requestId: string, data: any): Promise<void>;
+  notifyNewQuote(quoteId: string, data: any): Promise<void>;
+  notifyQuoteAccepted(requestId: string, data: any): Promise<void>;
+}
+
+// packages/backend/api/services/authService.ts
+export interface IAuthService {
+  getCurrentUser(): Promise<User | null>;
+  validateToken(token: string): Promise<boolean>;
+  getUserRoles(userId: string): Promise<string[]>;
+}
+
+// packages/backend/api/services/databaseService.ts
+export interface IDatabaseService {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  executeQuery(query: string, params?: any[]): Promise<any>;
+}
+```
+
+### Platform-Specific Implementations
+
+**Supabase Implementation:**
+```typescript
+// packages/backend/config/supabase/supabaseRealtimeService.ts
+import { IRealtimeService } from '../../api/services/realtimeService';
+
+export class SupabaseRealtimeService implements IRealtimeService {
+  async notifyRequestUpdate(requestId: string, data: any): Promise<void> {
+    // Supabase handles this automatically via database triggers
+    console.log("Supabase Realtime: automatic notification for", requestId);
+    return Promise.resolve();
+  }
+
+  async notifyNewQuote(quoteId: string, data: any): Promise<void> {
+    // Automatic via Supabase
+    return Promise.resolve();
+  }
+
+  async notifyQuoteAccepted(requestId: string, data: any): Promise<void> {
+    // Automatic via Supabase
+    return Promise.resolve();
+  }
+}
+```
+
+**Azure Implementation:**
+```typescript
+// packages/backend/config/azure/azureSignalRService.ts
+import { IRealtimeService } from '../../api/services/realtimeService';
+
+export class AzureSignalRService implements IRealtimeService {
+  private signalRClient: any; // Azure SignalR client
+
+  async notifyRequestUpdate(requestId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('request_updated', { requestId, data });
+  }
+
+  async notifyNewQuote(quoteId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('quote_created', { quoteId, data });
+  }
+
+  async notifyQuoteAccepted(requestId: string, data: any): Promise<void> {
+    await this.signalRClient.sendToAll('quote_accepted', { requestId, data });
+  }
+}
+```
+
+### Configuration Barrel File
+
+**Environment-based service selection:**
+```typescript
+// packages/backend/api/config/index.ts
+import { IRealtimeService } from '../services/realtimeService';
+import { IAuthService } from '../services/authService';
+import { IDatabaseService } from '../services/databaseService';
+
+import { SupabaseRealtimeService } from './supabase/supabaseRealtimeService';
+import { AzureSignalRService } from './azure/azureSignalRService';
+import { SupabaseAuthService } from './supabase/supabaseAuthService';
+import { AzureADAuthService } from './azure/azureADAuthService';
+import { SupabaseDatabaseService } from './supabase/supabaseDatabaseService';
+import { AzureDatabaseService } from './azure/azureDatabaseService';
+
+// Environment-based service instantiation
+const platform = process.env.VITE_PLATFORM || 'netlify';
+
+export const realtimeService: IRealtimeService = platform === 'azure'
+  ? new AzureSignalRService()
+  : new SupabaseRealtimeService();
+
+export const authService: IAuthService = platform === 'azure'
+  ? new AzureADAuthService()
+  : new SupabaseAuthService();
+
+export const databaseService: IDatabaseService = platform === 'azure'
+  ? new AzureDatabaseService()
+  : new SupabaseDatabaseService();
+```
+
+### Shared Code Usage
+
+**Platform-agnostic controller:**
+```typescript
+// packages/backend/api/controllers/requestController.js
+import { realtimeService, databaseService } from '../config';
+
+export async function updateRequest(requestId, updates) {
+  // Update database (works for both platforms)
+  const updatedRequest = await databaseService.executeQuery(
+    'UPDATE requests SET ... WHERE id = $1',
+    [requestId, ...updates]
+  );
+
+  // Notify clients (automatic for Supabase, manual for Azure)
+  await realtimeService.notifyRequestUpdate(requestId, updatedRequest);
+
+  return updatedRequest;
+}
+```
+
+## Future Considerations
+
+**Post-POC Evaluation:**
+- If Azure POC proves successful, consider maintaining dual deployments from single repo
+- If separate repositories prove necessary, can split at that time
+- Consider infrastructure-as-code for environment management
+
+**Scaling Considerations:**
+- For multiple developers, may need stricter branch protection rules
+- Consider automated testing across both environments
+- May need more sophisticated configuration management
+- Adapter Pattern scales well as new platforms are added
+
+---
+
+**Note:** This ADR reflects the decision to use a single repository strategy specifically for the Azure POC phase. The approach may be re-evaluated based on POC results and long-term maintenance requirements.
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/020-choice-of-azure-static-web-apps-for-frontend-hosting.md ---
+
+# ADR-020: Choice of Azure Static Web Apps for Frontend Hosting
+
+**Date:** 2025-10-09
+
+**Status:** Accepted
+
+## Context
+
+The PlumbingPOC application requires a hosting solution for its React/Vite frontend that provides global CDN distribution, automatic SSL certificates, custom domain support, and seamless CI/CD integration. The current Netlify hosting provides these features but at a higher cost for low-traffic applications.
+
+## Decision
+
+We will use **Azure Static Web Apps** as the primary hosting solution for the PlumbingPOC frontend. This service provides:
+
+1. **Global CDN**: Automatic content distribution worldwide
+2. **SSL Certificates**: Free managed certificates for custom domains
+3. **Git Integration**: Direct GitHub repository integration with automatic deployments
+4. **API Integration**: Built-in support for Azure Functions as backend APIs
+5. **Authentication**: Optional integration with Azure AD B2C
+6. **Free Tier**: Generous free tier suitable for low-traffic applications
+
+## Implementation Details
+
+### Service Configuration
+
+**Azure Static Web Apps Setup:**
+```json
+{
+  "name": "plumbingpoc-app",
+  "location": "East US",
+  "resourceGroup": "plumbingpoc-azure-prod",
+  "sku": {
+    "name": "Free",
+    "tier": "Free"
+  },
+  "buildConfig": {
+    "appBuildCommand": "npm install --include=dev && npx vitest run && npm --workspace=@plumbingpoc/frontend run build",
+    "outputLocation": "packages/frontend/dist",
+    "appLocation": "/"
+  }
+}
+```
+
+### CI/CD Integration
+
+**GitHub Actions Workflow:**
+```yaml
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - azure-poc
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+      - azure-poc
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build And Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          api_location: "packages/backend/netlify/functions"
+          output_location: "packages/frontend/dist"
+```
+
+### Custom Domain Configuration
+
+**DNS Setup:**
+```bash
+# Azure DNS Zone
+az network dns zone create \
+  --resource-group plumbingpoc-azure-prod \
+  --name plumbingpoc.com
+
+# CNAME record for custom domain
+az network dns record-set cname create \
+  --resource-group plumbingpoc-azure-prod \
+  --zone-name plumbingpoc.com \
+  --name www \
+  --ttl 3600 \
+  --cname-target plumbingpoc-app.azurestaticapps.net
+```
+
+## Consequences
+
+### Positive
+
+*   **Cost Effective**: Free tier covers low-traffic applications completely
+*   **Global Performance**: Built-in CDN ensures fast content delivery worldwide
+*   **Developer Experience**: Seamless GitHub integration with preview deployments
+*   **Security**: Automatic SSL certificate management and renewal
+*   **Scalability**: Automatic scaling based on traffic without configuration
+*   **API Integration**: Native support for Azure Functions as backend
+
+### Negative
+
+*   **Vendor Lock-in**: Tightly integrated with Azure ecosystem
+*   **Limited Customization**: Less control over CDN configuration compared to Azure Front Door
+*   **Preview Limitations**: Staging environment limitations for complex applications
+*   **Cold Start**: Initial load may be slower for infrequently accessed applications
+
+### Mitigation Strategies
+
+**Performance Optimization:**
+- Implement proper caching headers in application
+- Use Azure CDN as additional layer if needed
+- Optimize bundle size and loading strategies
+
+**Development Workflow:**
+- Use staging environments for testing
+- Implement proper branch protection rules
+- Set up automated testing in CI/CD pipeline
+
+## Alternatives Considered
+
+### Azure App Service
+
+**Pros:**
+- More control over runtime environment
+- Support for multiple frameworks and runtimes
+- Advanced scaling and deployment options
+
+**Cons:**
+- Higher cost for low-traffic applications
+- More complex configuration and management
+- No built-in CDN functionality
+
+**Decision:** Rejected due to cost and complexity for this use case
+
+### Azure Front Door + Storage
+
+**Pros:**
+- Maximum control over CDN and routing
+- Advanced security features
+- Global distribution with custom rules
+
+**Cons:**
+- Significantly more complex setup
+- Higher cost for small applications
+- Requires multiple Azure services coordination
+
+**Decision:** Rejected due to overkill for current scale and traffic
+
+### Vercel
+
+**Pros:**
+- Similar feature set to Netlify
+- Excellent developer experience
+- Good performance and reliability
+
+**Cons:**
+- Not Azure native (vendor diversification goal)
+- Similar pricing structure to Netlify
+
+**Decision:** Rejected to maintain Azure ecosystem consistency
+
+## Related Decisions
+
+- ADR-004: Choice of Frontend Framework (React/TypeScript/Vite)
+- ADR-005: Choice of Hosting and Deployment Platform (Netlify → Azure)
+- ADR-019: Choice of Single Repository Strategy for Azure POC
+
+## Success Metrics
+
+### Technical Metrics
+- [ ] Application deploys successfully via GitHub Actions
+- [ ] Custom domain configured with SSL certificate
+- [ ] Global CDN performance meets or exceeds Netlify
+- [ ] API integration with Azure Functions works correctly
+
+### Performance Metrics
+- [ ] First Contentful Paint < 2 seconds
+- [ ] Time to Interactive < 3 seconds
+- [ ] Lighthouse performance score > 90
+- [ ] Global load times consistent across regions
+
+### Cost Metrics
+- [ ] Monthly hosting cost remains under $5
+- [ ] No unexpected charges from scaling
+- [ ] Bandwidth costs within free tier limits
+
+## Future Considerations
+
+**Scaling Up:**
+- If traffic exceeds free tier limits, consider Azure Front Door
+- For advanced security, implement Azure Application Gateway
+- Consider Azure CDN for additional performance optimization
+
+**Advanced Features:**
+- Implement Azure Front Door for advanced routing rules
+- Add Azure Web Application Firewall for enhanced security
+- Consider Azure API Management for API gateway functionality
+
+---
+
+**Note:** Azure Static Web Apps is ideal for modern SPAs with low to medium traffic. For high-traffic enterprise applications, consider Azure Front Door + Azure App Service combination.
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/021-choice-of-azure-database-for-postgresql.md ---
+
+# ADR-021: Choice of Azure Database for PostgreSQL
+
+**Date:** 2025-10-09
+
+**Status:** Accepted
+
+## Context
+
+The PlumbingPOC application requires a managed PostgreSQL database that supports Row Level Security (RLS), complex queries, and real-time capabilities. The current Supabase PostgreSQL provides these features but at a fixed cost regardless of actual usage. For a low-traffic application (50-100 quote requests/month), we need a cost-effective database solution that maintains feature parity.
+
+## Decision
+
+We will use **Azure Database for PostgreSQL Flexible Server** in the Basic tier as the primary database solution. This provides:
+
+1. **Cost Optimization**: Basic tier specifically designed for small applications
+2. **PostgreSQL Compatibility**: Full PostgreSQL feature support including RLS
+3. **Managed Service**: Automatic backups, patching, and monitoring
+4. **Scalability**: Ability to scale up as application grows
+5. **Security**: Advanced security features and compliance certifications
+
+## Implementation Details
+
+### Database Configuration
+
+**Basic Tier Specification:**
+```json
+{
+  "serverName": "plumbingpoc-db",
+  "resourceGroup": "plumbingpoc-azure-prod",
+  "location": "East US",
+  "sku": {
+    "name": "B_Standard_B1ms",
+    "tier": "Burstable",
+    "capacity": 1
+  },
+  "storage": {
+    "storageSizeGB": 32
+  },
+  "backup": {
+    "backupRetentionDays": 7,
+    "geoRedundantBackup": "Disabled"
+  },
+  "version": "15",
+  "administratorLogin": "plumbingpoc_admin",
+  "network": {
+    "publicNetworkAccess": "Enabled",
+    "firewallRules": [
+      {
+        "name": "AllowAzureServices",
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    ]
+  }
+}
+```
+
+### Connection Configuration
+
+**Environment Variables:**
+```bash
+# Azure Database Connection
+DATABASE_URL="postgresql://plumbingpoc_admin:password@plumbingpoc-db.postgres.database.azure.com:5432/plumbingpoc_db?sslmode=require"
+
+# Connection Pool Settings (for Azure Functions)
+DATABASE_CONNECTION_TIMEOUT=30
+DATABASE_POOL_SIZE=2
+DATABASE_SSL=true
+```
+
+### Schema Migration Strategy
+
+**From Supabase to Azure PostgreSQL:**
+```sql
+-- 1. Extract schema from Supabase
+pg_dump --schema-only --no-owner --no-privileges \
+  "postgresql://user:password@db.supabase.co:5432/postgres" \
+  > plumbingpoc_schema.sql
+
+-- 2. Create Azure database
+createdb plumbingpoc_db
+
+-- 3. Restore schema to Azure
+psql $DATABASE_URL < plumbingpoc_schema.sql
+
+-- 4. Recreate RLS policies for Azure
+-- (Manual recreation required due to auth.uid() differences)
+```
+
+### Row Level Security Implementation
+
+**Azure PostgreSQL RLS Policies:**
+```sql
+-- Enable RLS on tables
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE request_notes ENABLE ROW LEVEL SECURITY;
+
+-- Recreate policies using JWT claims
+CREATE POLICY "Users can view their own requests"
+ON requests FOR SELECT
+USING (auth.jwt() ->> 'sub' = user_id::text);
+
+CREATE POLICY "Admins can view all requests"
+ON requests FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id::text = auth.jwt() ->> 'sub'
+    AND role = 'admin'
+  )
+);
+```
+
+## Consequences
+
+### Positive
+
+*   **Cost Effective**: Basic tier perfectly suited for low-traffic applications
+*   **Feature Complete**: Full PostgreSQL support including advanced features
+*   **Managed Service**: Automatic maintenance, backups, and security updates
+*   **Scalability**: Easy upgrade path to higher tiers as application grows
+*   **Security**: Enterprise-grade security with Azure AD integration
+*   **Compliance**: SOC 2, HIPAA, and other compliance certifications available
+
+### Negative
+
+*   **Vendor Lock-in**: Azure-specific service and pricing
+*   **Connection Limits**: Basic tier has connection limitations
+*   **Backup Retention**: Limited backup retention in Basic tier (7 days)
+*   **Network Latency**: Potential latency for globally distributed users
+*   **Migration Complexity**: RLS policies require manual recreation
+
+### Mitigation Strategies
+
+**Performance Optimization:**
+- Implement connection pooling in Azure Functions
+- Use Azure Cache for Redis for frequently accessed data
+- Optimize queries and add appropriate indexes
+
+**Cost Management:**
+- Monitor usage through Azure Cost Management
+- Set up alerts for unexpected usage spikes
+- Consider reserved instances for long-term usage
+
+**Backup Strategy:**
+- Implement application-level backups for critical data
+- Use Azure Backup for additional retention options
+- Test restore procedures regularly
+
+## Alternatives Considered
+
+### Azure SQL Database
+
+**Pros:**
+- Tightly integrated with Azure ecosystem
+- Advanced security features
+- Lower cost for basic workloads
+
+**Cons:**
+- SQL Server syntax differences from PostgreSQL
+- Less mature PostgreSQL feature support
+- Migration complexity from existing PostgreSQL schema
+
+**Decision:** Rejected due to PostgreSQL compatibility requirements
+
+### Amazon RDS PostgreSQL
+
+**Pros:**
+- Mature PostgreSQL support
+- Flexible pricing options
+- Good performance characteristics
+
+**Cons:**
+- Not Azure native (vendor diversification goal)
+- Additional complexity managing cross-cloud architecture
+- Higher cost for small workloads
+
+**Decision:** Rejected to maintain Azure ecosystem consistency
+
+### Supabase (Continued)
+
+**Pros:**
+- Familiar feature set and developer experience
+- Integrated real-time and authentication
+- Simple pricing for small applications
+
+**Cons:**
+- Fixed cost regardless of usage
+- Vendor lock-in concerns
+- Less enterprise features and compliance options
+
+**Decision:** Rejected due to cost optimization goals
+
+## Related Decisions
+
+- ADR-001: Choice of Backend Platform (Supabase → Azure)
+- ADR-022: Choice of Azure AD B2C for Authentication
+- ADR-023: Choice of Azure SignalR Service for Real-time Features
+
+## Success Metrics
+
+### Technical Metrics
+- [ ] Database schema successfully migrated from Supabase
+- [ ] RLS policies correctly implemented for Azure AD B2C
+- [ ] Application connects and performs CRUD operations
+- [ ] Query performance meets or exceeds Supabase baseline
+
+### Performance Metrics
+- [ ] Average query response time < 100ms
+- [ ] Connection pool utilization < 80%
+- [ ] Database CPU usage < 50% during peak loads
+- [ ] Memory usage within Basic tier limits
+
+### Cost Metrics
+- [ ] Monthly database cost < $15 CAD
+- [ ] No unexpected charges from scaling
+- [ ] Backup and storage costs within budget
+- [ ] Network egress costs minimal
+
+### Reliability Metrics
+- [ ] Uptime > 99.9% (Azure SLA)
+- [ ] Automated backups working correctly
+- [ ] Failover and recovery procedures tested
+- [ ] Monitoring and alerting configured
+
+## Future Considerations
+
+**Scaling Up:**
+- Upgrade to General Purpose or Memory Optimized tiers as traffic grows
+- Implement read replicas for high-read workloads
+- Consider Azure Database for PostgreSQL Hyperscale for massive scale
+
+**Advanced Features:**
+- Implement Azure Defender for SQL for advanced threat protection
+- Set up Azure Monitor for comprehensive database monitoring
+- Consider Azure Arc for hybrid cloud scenarios
+
+**Cost Optimization:**
+- Use Azure Reservations for predictable workloads
+- Implement auto-scaling based on usage patterns
+- Consider development/staging environment cost optimization
+
+---
+
+**Note:** Azure Database for PostgreSQL Basic tier is ideal for development, testing, and small production applications. For enterprise workloads requiring high availability, consider General Purpose or Memory Optimized tiers.
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md ---
+
+# ADR-022: Choice of Azure AD B2C for Authentication
+
+**Date:** 2025-10-09
+
+**Status:** Accepted
+
+## Context
+
+The PlumbingPOC application requires user authentication with support for email/password login and OAuth providers (Google, Microsoft). The current Supabase Auth provides these features with seamless integration to Row Level Security (RLS). For the Azure migration, we need an authentication service that maintains security, supports multiple identity providers, and integrates well with Azure Database for PostgreSQL RLS policies.
+
+## Decision
+
+We will use **Azure Active Directory B2C (Azure AD B2C)** as the authentication and identity management solution. This provides:
+
+1. **Multi-Provider Support**: Email/password and OAuth (Google, Microsoft, Facebook)
+2. **JWT Token Management**: Industry-standard JWT tokens for API authentication
+3. **Scalability**: Handles user registration, password reset, and account management
+4. **Security**: Enterprise-grade security with Azure AD integration
+5. **Cost Effectiveness**: Pay-per-use model suitable for low-traffic applications
+
+## Implementation Details
+
+### Azure AD B2C Configuration
+
+**Tenant Setup:**
+```json
+{
+  "tenantName": "plumbingpoc.onmicrosoft.com",
+  "countryCode": "CA",
+  "location": "Canada Central",
+  "sku": {
+    "name": "Premium P1",
+    "tier": "Premium"
+  }
+}
+```
+
+**Identity Providers Configuration:**
+```json
+{
+  "identityProviders": [
+    {
+      "type": "Google",
+      "clientId": "google-client-id",
+      "clientSecret": "google-client-secret"
+    },
+    {
+      "type": "Microsoft",
+      "clientId": "microsoft-client-id",
+      "clientSecret": "microsoft-client-secret"
+    },
+    {
+      "type": "Local",
+      "signInNameType": "Email"
+    }
+  ]
+}
+```
+
+### User Flows
+
+**Sign-in/Sign-up User Flow:**
+```json
+{
+  "name": "B2C_1_signin_signup",
+  "userFlowType": "SignInOrSignUp",
+  "userFlowTypeVersion": 1,
+  "identityProviders": ["Google", "Microsoft", "Local"],
+  "attributes": ["email", "givenName", "surname"],
+  "claims": ["email", "givenName", "surname", "sub"]
+}
+```
+
+**Password Reset User Flow:**
+```json
+{
+  "name": "B2C_1_password_reset",
+  "userFlowType": "PasswordReset",
+  "userFlowTypeVersion": 1
+}
+```
+
+### Frontend Integration (MSAL)
+
+**MSAL Configuration:**
+```typescript
+// packages/frontend/src/lib/azureAuth.ts
+import { PublicClientApplication, Configuration } from '@azure/msal-browser';
+
+const msalConfig: Configuration = {
+  auth: {
+    clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
+    authority: `https://plumbingpoc.b2clogin.com/plumbingpoc.onmicrosoft.com/B2C_1_signin_signup`,
+    redirectUri: window.location.origin,
+    postLogoutRedirectUri: window.location.origin,
+  },
+  cache: {
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: false,
+  },
+};
+
+export const msalInstance = new PublicClientApplication(msalConfig);
+```
+
+**Authentication Hook:**
+```typescript
+// packages/frontend/src/hooks/useAzureAuth.ts
+import { useMsal } from '@azure/msal-react';
+import { useState, useEffect } from 'react';
+
+export function useAzureAuth() {
+  const { instance, accounts, inProgress } = useMsal();
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (accounts.length > 0) {
+      const account = accounts[0];
+      setUser({
+        id: account.localAccountId,
+        email: account.username,
+      });
+
+      // Fetch additional profile data from API
+      fetchProfile(account.localAccountId);
+    }
+  }, [accounts]);
+
+  const login = async () => {
+    await instance.loginPopup({
+      scopes: ['openid', 'profile', 'email'],
+    });
+  };
+
+  const logout = () => {
+    instance.logoutPopup();
+  };
+
+  return { user, profile, login, logout, loading: inProgress !== 'none' };
+}
+```
+
+### Backend Integration
+
+**JWT Token Validation:**
+```typescript
+// packages/backend/api/middleware/azureAuthMiddleware.js
+import jwt from 'jsonwebtoken';
+
+export function validateAzureToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    // Verify token with Azure AD B2C public keys
+    const decoded = jwt.verify(token, getAzurePublicKey(), {
+      issuer: `https://plumbingpoc.b2clogin.com/${process.env.AZURE_TENANT_ID}/v2.0/`,
+      audience: process.env.AZURE_CLIENT_ID,
+    });
+
+    req.user = {
+      id: decoded.sub,
+      email: decoded.email,
+      name: decoded.name,
+    };
+
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+```
+
+### Database RLS Integration
+
+**PostgreSQL RLS Policies with Azure AD B2C:**
+```sql
+-- Custom function to extract user ID from JWT
+CREATE OR REPLACE FUNCTION auth.jwt()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT current_setting('request.jwt.claims', true)::jsonb;
+$$;
+
+-- RLS policies using JWT claims
+CREATE POLICY "Users can view their own requests"
+ON requests FOR SELECT
+USING (auth.jwt() ->> 'sub' = user_id::text);
+
+CREATE POLICY "Users can insert their own requests"
+ON requests FOR INSERT
+WITH CHECK (auth.jwt() ->> 'sub' = user_id::text);
+
+CREATE POLICY "Admins can view all requests"
+ON requests FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id::text = auth.jwt() ->> 'sub'
+    AND role = 'admin'
+  )
+);
+```
+
+## Consequences
+
+### Positive
+
+*   **Feature Complete**: Supports all required authentication methods
+*   **Scalable**: Handles user management at enterprise scale
+*   **Secure**: Industry-standard security with Azure AD foundation
+*   **Flexible**: Supports custom user attributes and policies
+*   **Integrated**: Deep integration with Azure ecosystem
+*   **Cost Effective**: Pay-per-use model for low-traffic applications
+
+### Negative
+
+*   **Complexity**: More complex setup than Supabase Auth
+*   **Learning Curve**: Requires understanding of Azure AD concepts
+*   **Configuration**: Extensive configuration required for user flows
+*   **Vendor Lock-in**: Azure-specific service and pricing
+*   **Token Management**: Manual JWT validation in backend
+
+### Mitigation Strategies
+
+**Setup Complexity:**
+- Use Azure portal wizards for initial configuration
+- Follow Microsoft's comprehensive documentation
+- Consider using Azure CLI for infrastructure as code
+
+**Development Experience:**
+- Implement comprehensive error handling for auth flows
+- Create reusable authentication hooks and utilities
+- Document authentication flows for future developers
+
+**Testing:**
+- Implement automated tests for authentication flows
+- Test all identity providers thoroughly
+- Validate token expiration and refresh scenarios
+
+## Alternatives Considered
+
+### Azure Active Directory (Azure AD)
+
+**Pros:**
+- Tightly integrated with Azure ecosystem
+- Advanced enterprise features
+- Lower cost for basic authentication
+
+**Cons:**
+- Designed for organizational accounts, not consumer applications
+- Complex setup for external user authentication
+- Not suitable for B2B2C scenarios
+
+**Decision:** Rejected due to consumer application requirements
+
+### Auth0
+
+**Pros:**
+- Feature-rich authentication platform
+- Excellent developer experience
+- Flexible pricing and deployment options
+
+**Cons:**
+- Additional vendor beyond Azure ecosystem
+- Higher cost for small applications
+- Another service to manage and monitor
+
+**Decision:** Rejected to maintain Azure ecosystem consistency
+
+### Firebase Authentication
+
+**Pros:**
+- Simple setup and excellent developer experience
+- Good integration with mobile applications
+- Generous free tier
+
+**Cons:**
+- Google ecosystem lock-in
+- Less enterprise features than Azure AD B2C
+- Not Azure native
+
+**Decision:** Rejected due to Azure migration goals
+
+### Supabase Auth (Continued)
+
+**Pros:**
+- Familiar and well-integrated with current stack
+- Simple RLS integration with auth.uid()
+- Good developer experience
+
+**Cons:**
+- Fixed cost regardless of usage
+- Less enterprise features and compliance
+- Vendor lock-in concerns
+
+**Decision:** Rejected due to cost optimization goals
+
+## Related Decisions
+
+- ADR-001: Choice of Backend Platform (Supabase → Azure)
+- ADR-021: Choice of Azure Database for PostgreSQL
+- ADR-023: Choice of Azure SignalR Service for Real-time Features
+
+## Success Metrics
+
+### Technical Metrics
+- [ ] All identity providers (Google, Microsoft, Email) working
+- [ ] JWT tokens properly validated in backend
+- [ ] RLS policies correctly filtering data by user
+- [ ] Password reset and account management functional
+
+### User Experience Metrics
+- [ ] Login/logout flows smooth and intuitive
+- [ ] Social login options clearly presented
+- [ ] Error messages helpful and actionable
+- [ ] Account creation process streamlined
+
+### Security Metrics
+- [ ] Tokens properly validated and not expired
+- [ ] Secure token storage in frontend
+- [ ] Proper logout clears all session data
+- [ ] Password policies enforced
+
+### Performance Metrics
+- [ ] Authentication requests < 2 seconds
+- [ ] Token refresh seamless in background
+- [ ] No authentication-related errors in production
+- [ ] Memory usage within application limits
+
+## Future Considerations
+
+**Scaling Up:**
+- Implement Azure AD Premium features for advanced security
+- Add multi-factor authentication (MFA)
+- Implement conditional access policies
+
+**Advanced Features:**
+- Custom user attributes and claims
+- Integration with Azure AD for enterprise users
+- Social identity provider expansion
+
+**Compliance:**
+- SOC 2 Type II certification
+- GDPR compliance features
+- HIPAA compliance for healthcare applications
+
+---
+
+**Note:** Azure AD B2C is ideal for consumer-facing applications requiring multiple authentication methods. For enterprise-only applications, consider Azure AD instead.
+--- END OF FILE ---
+
 --- START OF FILE ./agents/AGENT_REPOS.md ---
 
 # Plumbing Quote Agent MCP Persona Repos
@@ -5306,7 +6492,11 @@ These contracts define the interaction between our backend and the external Open
 
 This document provides a comprehensive analysis of migrating the PlumbingPOC platform from its current Netlify/Supabase architecture to Azure cloud services. As an Azure cloud expert, I've evaluated the technical feasibility, effort requirements, cost implications, and migration strategy for this conversion.
 
-**Key Finding:** For your low-usage scenario (50-100 quote requests/month, minimal file storage), **Azure would actually be 45-60% CHEAPER** than your current setup, not more expensive as initially estimated.
+**Key Finding:** For your low-usage scenario (50-100 quote requests/month, minimal file storage), **Azure would actually be 75-85% CHEAPER** than your current setup, not more expensive as initially estimated.
+
+**Critical Technical Insight:** The primary challenges are not in service-to-service mapping (which is straightforward) but in re-implementing Supabase's "batteries-included" features, particularly real-time functionality, authentication, and Row Level Security (RLS). Supabase provides automatic real-time events from database changes, while Azure SignalR requires manual event publishing after every database write.
+
+**ROI Analysis:** At 40-60 hours × $125/hour = $5,000-7,500 development cost, payback period is 4-6 months through $80-120/month savings. However, if purely cost-driven, consider hybrid approach: migrate only database to Azure PostgreSQL (~10-15 hours) for significant savings while retaining Supabase's integrated features.
 
 ## Current Architecture Overview
 
@@ -5688,6 +6878,24 @@ Based on the project's Architectural Decision Records (ADRs), here's how current
 - **Tiny storage needs** = Perfect for Azure's low-cost tiers
 - **Minimal real-time usage** = Fits free tier limitations
 
+### Critical Technical Challenges (Gemini 2.5 Pro Analysis)
+
+**Real-Time Architecture Shift (Most Critical):**
+- **Supabase "Magic"**: Automatic real-time events from database replication stream
+- **Azure "Manual"**: SignalR requires explicit event publishing after every database write
+- **Impact**: Every controller (requests, quotes, notes) needs SignalR event publishing code
+- **Effort**: Significant architectural refactoring, not just library replacement
+
+**Authentication & RLS Complexity:**
+- **Supabase Integration**: auth.uid() deeply integrated with RLS policies
+- **Azure Migration**: Rewrite RLS policies in pure PostgreSQL + JWT token parsing
+- **Security Risk**: Easy to introduce vulnerabilities in custom RLS implementation
+
+**Developer "Death by a Thousand Cuts":**
+- New SDKs, IAM permissions, configuration portals for each service
+- Cognitive load of learning Azure-specific development patterns
+- Sum of small changes often exceeds time estimates
+
 ## Azure Migration POC Roadmap
 
 ### 🎯 Complete Step-by-Step Implementation Plan
@@ -6037,21 +7245,58 @@ Based on the project's Architectural Decision Records (ADRs), here's how current
 - **Quality assurance** through AI-assisted code review
 - **Faster iteration** on configuration and deployment scripts
 
-## Recommendations
+## Strategic Recommendations (Updated with Gemini Analysis)
 
-### Proceed with Migration If:
+### Proceed with Full Migration If:
 
-1. **Cost Optimization**: Want to reduce hosting costs by 45-60% (primary driver for your usage)
-2. **Enterprise Requirements**: Need for advanced security, compliance, or enterprise integrations
-3. **Scalability Planning**: Preparing for future growth beyond current low usage
-4. **Internal Expertise**: Access to Azure-skilled developers or willingness to learn
+1. **Strategic Investment**: Learning Azure for enterprise positioning or future scaling
+2. **Long-term Cost Savings**: 5-year savings of $43,000-65,000 justify development investment
+3. **Technical Learning**: Building Azure expertise for career/business development
+4. **Enterprise Requirements**: Need advanced security, compliance, or Azure integrations
 
-### Consider Staying with Current Stack If:
+### Consider Hybrid Approach If:
 
-1. **Minimal Business Impact**: Current $115-155/month cost is acceptable
-2. **Satisfaction with Current Platform**: Netlify/Supabase meets all current needs
-3. **Migration Resource Constraints**: Team bandwidth needed for product development
-4. **Risk Aversion**: Prefer proven stack over potential migration issues
+1. **Pure Cost Optimization**: Primary goal is immediate cost reduction
+2. **Resource Constraints**: Limited development time/budget
+3. **Risk Aversion**: Prefer proven Supabase features over custom Azure implementation
+
+**Hybrid Option: Database-Only Migration (~10-15 hours)**
+- Migrate PostgreSQL database to Azure Database for PostgreSQL
+- Keep Supabase Auth, Realtime, and Storage for integrated features
+- Retain Netlify Functions connecting to Azure database
+- **Estimated Savings**: $20-27/month (57% of total savings)
+- **Risk Level**: Low (standard database migration)
+- **Complexity**: Medium (database schema + connection updates)
+
+### De-Risk Strategy: Validate Hardest Parts First
+
+**Phase 1 Priority: Real-Time Proof of Concept**
+- Build minimal Azure Function + PostgreSQL + SignalR integration
+- Prove manual event publishing works before full migration
+- **Success Criteria**: Real-time updates work identically to Supabase
+
+**Phase 2 Priority: Auth + RLS Validation**
+- Implement AAD B2C authentication flow
+- Rewrite critical RLS policies for Azure PostgreSQL
+- **Success Criteria**: Secure multi-tenant data access
+
+### Updated Effort Estimates
+
+**Full Migration: 60-80 hours** (conservative with technical challenges)
+**Hybrid Migration: 15-25 hours** (focused on database only)
+**POC Validation: 20-30 hours** (prove core concepts before full commitment)
+
+### Decision Framework
+
+**Choose Full Migration If:**
+- ROI timeframe acceptable (4-6 months payback)
+- Technical challenges viewed as learning opportunities
+- Long-term Azure positioning desired
+
+**Choose Hybrid Migration If:**
+- Immediate cost savings prioritized
+- Supabase's integrated features still valuable
+- Minimal development resources available
 
 ### Optimization Opportunities
 
