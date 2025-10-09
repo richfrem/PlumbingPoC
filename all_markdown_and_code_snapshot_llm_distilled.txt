@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T14:44:57.189Z
+Generated On: 2025-10-09T15:09:16.914Z
 
-# Mnemonic Weight (Token Count): ~294,590 tokens
+# Mnemonic Weight (Token Count): ~294,624 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -1813,7 +1813,9 @@ sequenceDiagram
     deactivate Customer's Browser (Client B)
     
     deactivate Supabase Realtime Server
-```
+```# Test commit to trigger Netlify deployment
+# Force deployment trigger - Thu Oct  9 07:47:11 PDT 2025
+
 --- END OF FILE ---
 
 --- START OF FILE ./RequirementsAndGoals/ARCHITECTURAL_REFACTOR_MANDATE.md ---
@@ -20448,7 +20450,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  console.log('🔥 AppContent component RENDERED');
+  console.log('🔥 AppContent component RENDERED - Testing Netlify webhook');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.
