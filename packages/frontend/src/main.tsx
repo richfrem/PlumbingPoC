@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  console.log('🔥 AppContent component RENDERED');
+  console.log('🔥 AppContent component RENDERED - Config reorganization test');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
   
   // THE FIX: This logic is now robust.
