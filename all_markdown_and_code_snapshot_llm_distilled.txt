@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-09T16:51:46.289Z
+Generated On: 2025-10-09T17:11:54.918Z
 
-# Mnemonic Weight (Token Count): ~297,664 tokens
+# Mnemonic Weight (Token Count): ~297,665 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -2807,7 +2807,7 @@ The application needs to send transactional emails to users for critical events,
 
 ## Decision
 
-We will use **Resend** as our transactional email service provider, integrated via its official `resend` npm package in `packages/backend/api/services/emailService.js`.
+We will use **Resend** as our transactional email service provider, integrated via its official `resend` npm package in `packages/backend/api/email/resend/index.js`.
 
 ## Consequences
 
@@ -12760,7 +12760,7 @@ export * from './client.js';
 // packages/backend/api/services/sms/twilio/client.js
 
 import axios from 'axios';
-import { database as supabase } from '../config/supabase/index.js';
+import { database as supabase } from '../../../config/supabase/index.js';
 import twilio from 'twilio';
 
 

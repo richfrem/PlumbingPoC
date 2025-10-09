@@ -47,9 +47,12 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 const getRecipientEmail = (request) => {
-  // In a real app, you would have more robust logic to get the customer's email.
-  // This is a simplified example.
-  return request?.user_profiles?.email;
+  // TEMPORARY: For Resend free plan testing, only send to verified admin email
+  // TODO: Revert to customer email once domain is verified or paid plan is active
+  return 'rfremmer@hotmail.com'; // Your verified Resend email
+
+  // Original code (uncomment when ready):
+  // return request?.user_profiles?.email;
 }
 
 const getRequestUrl = (requestId) => {
