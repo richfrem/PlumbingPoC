@@ -27,7 +27,7 @@
 [functions]
 
   # Configuration for the main API function
-  [functions."api-mjs"]
+  [functions.api]
     # Tell the bundler to NOT bundle these specific packages.
     # Instead, Netlify will include them in the function's node_modules
     # so they can be required/imported at runtime, just like in local dev.
@@ -41,7 +41,7 @@
     ]
 
   # Configuration for the SMS function
-  [functions."send-sms-mjs"]
+  [functions.send-sms]
     external_node_modules = ["twilio"]
 
   # Configuration for the quote agent function
