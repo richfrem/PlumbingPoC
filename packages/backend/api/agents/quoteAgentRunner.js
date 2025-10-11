@@ -10,8 +10,31 @@ import OpenAI from 'openai';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
-const yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+// Try multiple paths to find the YAML file (works in both local and Netlify environments)
+let YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+if (!fs.existsSync(YAML_PATH)) {
+  // In Netlify, try from the function root
+  YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  // Try relative to repository root
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
+}
+
+let yamlConfig;
+try {
+  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+  console.log('[QuoteAgentRunner] Successfully loaded YAML config from:', YAML_PATH);
+} catch (error) {
+  console.error('[QuoteAgentRunner] Failed to load YAML config. Tried paths:', {
+    path1: path.resolve(__dirname, '../../../../agents/quote-agent.yaml'),
+    path2: path.resolve(process.cwd(), 'agents/quote-agent.yaml'),
+    path3: path.resolve(__dirname, '../../../../../agents/quote-agent.yaml'),
+    cwd: process.cwd(),
+    __dirname
+  });
+  throw new Error(`Failed to load quote-agent.yaml: ${error.message}`);
+}
 
 const openAiClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })

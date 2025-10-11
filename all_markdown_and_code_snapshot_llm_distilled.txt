@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-11T23:02:43.059Z
+Generated On: 2025-10-11T23:15:31.949Z
 
-# Mnemonic Weight (Token Count): ~321,530 tokens
+# Mnemonic Weight (Token Count): ~321,797 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -11649,6 +11649,16 @@ Your work is now done. Provide this guide and the following technical specificat
   [functions."send-sms-mjs"]
     external_node_modules = ["twilio"]
 
+  # Configuration for the quote agent function
+  [functions."quote-agent"]
+    external_node_modules = [
+      "yaml",
+      "openai"
+    ]
+    included_files = [
+      "agents/quote-agent.yaml"
+    ]
+
 # Removed [secrets] section and all secrets scanning related settings
 
 --- END OF FILE ---
@@ -12009,8 +12019,31 @@ import OpenAI from 'openai';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
-const yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+// Try multiple paths to find the YAML file (works in both local and Netlify environments)
+let YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+if (!fs.existsSync(YAML_PATH)) {
+  // In Netlify, try from the function root
+  YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  // Try relative to repository root
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
+}
+
+let yamlConfig;
+try {
+  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+  console.log('[QuoteAgentRunner] Successfully loaded YAML config from:', YAML_PATH);
+} catch (error) {
+  console.error('[QuoteAgentRunner] Failed to load YAML config. Tried paths:', {
+    path1: path.resolve(__dirname, '../../../../agents/quote-agent.yaml'),
+    path2: path.resolve(process.cwd(), 'agents/quote-agent.yaml'),
+    path3: path.resolve(__dirname, '../../../../../agents/quote-agent.yaml'),
+    cwd: process.cwd(),
+    __dirname
+  });
+  throw new Error(`Failed to load quote-agent.yaml: ${error.message}`);
+}
 
 const openAiClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -24007,7 +24040,7 @@ const AppContent: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [preselectedService, setPreselectedService] = useState<ServiceDefinition | null>(null);
+  const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -24032,7 +24065,7 @@ const AppContent: React.FC = () => {
 
   const handleServiceSelect = (service: ServiceDefinition) => {
     console.log(`Service selected: ${service.title}`);
-    setPreselectedService(service);
+    setPreselectedService(service.key);
     handleOpenQuoteModal(); // Reuse the existing function to open the modal
   };
 

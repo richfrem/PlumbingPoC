@@ -50,5 +50,8 @@
       "yaml",
       "openai"
     ]
+    included_files = [
+      "agents/quote-agent.yaml"
+    ]
 
 # Removed [secrets] section and all secrets scanning related settings
