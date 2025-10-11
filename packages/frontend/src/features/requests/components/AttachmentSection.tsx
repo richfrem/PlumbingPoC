@@ -78,24 +78,34 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     quoteId
   });
 
-  // Use standardized real-time system to get fresh request data including attachments
+  // For new requests (requestId === "new-request"), don't fetch existing data
+  // Only fetch for existing requests that have real IDs
+  const isNewRequest = requestId === 'new-request';
   const { data: requestArray, loading: requestLoading, error: requestError } = useRequestById(requestId, {
-    enabled: !!requestId // Only fetch when we have a requestId
+    enabled: !!requestId && !isNewRequest // Only fetch for real request IDs, not "new-request"
   });
   const request = requestArray?.[0];
-  const attachments = request?.quote_attachments || initialAttachments || [];
+  const attachments = isNewRequest ? [] : (request?.quote_attachments || initialAttachments || []);
 
-  // Clear signed URLs when requestId changes to prevent showing old attachments
+  // Clear signed URLs and pending images when requestId changes to prevent showing old attachments
   useEffect(() => {
     setSignedUrls({});
     setPendingImageUrls({});
     setError(null);
+    // Also clear any existing object URLs to prevent memory leaks
+    Object.values(pendingImageUrls).forEach(url => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
   }, [requestId]);
   
   console.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
     attachmentsLength: attachments?.length,
     attachmentIds: attachments?.map(a => a.id) || [],
+    pendingFilesLength: pendingFiles?.length,
+    pendingFileNames: pendingFiles?.map(f => f.name) || [],
     requestLoading,
     requestError,
     hasRealTimeData: !!request,
@@ -171,9 +181,26 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     }
 
     return () => {
-      Object.values(objectUrls).forEach(url => URL.revokeObjectURL(url));
+      // Clean up object URLs when the effect runs again or component unmounts
+      Object.values(objectUrls).forEach(url => {
+        if (url && url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [stablePendingFileKey]); // Use the new stable key here.
+
+  // Cleanup effect when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any remaining object URLs
+      Object.values(pendingImageUrls).forEach(url => {
+        if (url && url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, []);
 
   const uploadFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
