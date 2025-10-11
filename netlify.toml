@@ -44,4 +44,11 @@
   [functions."send-sms-mjs"]
     external_node_modules = ["twilio"]
 
+  # Configuration for the quote agent function
+  [functions."quote-agent"]
+    external_node_modules = [
+      "yaml",
+      "openai"
+    ]
+
 # Removed [secrets] section and all secrets scanning related settings
