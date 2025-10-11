@@ -12,26 +12,28 @@ interface AddressData {
 }
 
 interface ServiceLocationManagerProps {
-  mode: 'view' | 'edit' | 'create';
-  initialAddress?: string | AddressData;
-  isAdmin: boolean;
-  onSave?: (addressData: AddressData) => Promise<void>;
-  onCancel?: () => void;
-  onDataChange?: (addressData: Partial<AddressData>) => void;
-  onModeChange?: (useProfileAddress: boolean) => void;
-  isUpdating?: boolean;
-}
+   mode: 'view' | 'edit' | 'create';
+   initialAddress?: string | AddressData;
+   profileAddress?: string;
+   isAdmin: boolean;
+   onSave?: (addressData: AddressData) => Promise<void>;
+   onCancel?: () => void;
+   onDataChange?: (addressData: Partial<AddressData>) => void;
+   onModeChange?: (useProfileAddress: boolean) => void;
+   isUpdating?: boolean;
+ }
 
 const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
-  mode,
-  initialAddress,
-  isAdmin,
-  onSave,
-  onCancel,
-  onDataChange,
-  onModeChange,
-  isUpdating = false,
-}) => {
+   mode,
+   initialAddress,
+   profileAddress,
+   isAdmin,
+   onSave,
+   onCancel,
+   onDataChange,
+   onModeChange,
+   isUpdating = false,
+ }) => {
   // State for edit mode
   const [isEditing, setIsEditing] = useState(mode === 'edit');
   const [useProfileAddress, setUseProfileAddress] = useState(true);
@@ -377,8 +379,7 @@ const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
                 Service will be at your registered address:
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {/* This would be populated from user profile */}
-                Profile address would go here
+                {profileAddress || 'No address found in profile'}
               </Typography>
             </Box>
           ) : (

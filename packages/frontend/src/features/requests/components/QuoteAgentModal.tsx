@@ -728,6 +728,8 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedServ
                      <ServiceLocationManager
                        mode="create"
                        isAdmin={false}
+                       initialAddress={profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : ''}
+                       profileAddress={profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : ''}
                        onDataChange={(addressData) => {
                          console.log('QuoteAgentModal: Received address data change:', addressData);
                          // Update the parent component's state with address data
@@ -791,29 +793,30 @@ const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedServ
                        </Paper>
                      )}
 
-                     {/* Attachments Section - Only show if there are attachments */}
-                     {newAttachments.length > 0 && (
-                       <Paper sx={{
-                         p: 3,
-                         borderRadius: 2,
-                         border: '1px solid',
-                         borderColor: 'divider',
-                         bgcolor: 'grey.50'
-                       }}>
-                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                           Attachments
-                         </Typography>
-                         <AttachmentSection
-                           requestId="new-request"
-                           attachments={[]}
-                           pendingFiles={newAttachments}
-                           editable={true}
-                           onUpdate={() => {}}
-                           onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
-                           onRemovePendingFile={handleRemovePendingFile}
-                         />
-                       </Paper>
-                     )}
+                     {/* Attachments Section - Always show to allow adding attachments */}
+                     <Paper sx={{
+                       p: 3,
+                       borderRadius: 2,
+                       border: '1px solid',
+                       borderColor: 'divider',
+                       bgcolor: 'grey.50'
+                     }}>
+                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                         Attachments
+                       </Typography>
+                       <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                         Add photos or documents related to your plumbing issue (optional)
+                       </Typography>
+                       <AttachmentSection
+                         requestId="new-request"
+                         attachments={[]}
+                         pendingFiles={newAttachments}
+                         editable={true}
+                         onUpdate={() => {}}
+                         onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
+                         onRemovePendingFile={handleRemovePendingFile}
+                       />
+                     </Paper>
                    </Box>
                </Box>
                {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}

@@ -12,7 +12,7 @@ I've built a complete "Command Center" platform that I believe can give you back
 
 Instead of a long explanation, here’s a 7-minute video tour showing exactly how it works, including the new interactive Map View for route optimization:
 
-**[Click Here to Watch the 7-Minute Demo]([INSERT_NEW_LOOM_LINK_HERE])**
+**[Click Here to Watch the 7-Minute Demo]([https://www.loom.com/share/1ead7162412140bea1f46988af675adf])**
 
 *Video highlights: AI-powered quote intake, interactive Map View with job locations, one-click AI Triage, and the complete Command Center workflow.*
 

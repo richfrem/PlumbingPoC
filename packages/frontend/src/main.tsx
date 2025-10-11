@@ -110,8 +110,10 @@ const AppContent: React.FC = () => {
 
   // *** THE FIX: This callback now has access to the central refresh function. ***
   const handleNewRequestSuccess = () => {
-    console.log("New request submitted. Triggering a manual refresh.");
+    console.log("New request submitted. Triggering a manual refresh and redirecting to dashboard.");
     refetch();
+    // Redirect to dashboard after successful quote submission
+    setRoute('#/dashboard');
   };
   const renderContent = () => {
     // Check for a service page route, e.g., #/services/leak_repair
