@@ -1,0 +1,175 @@
+agent: QuoteAgent
+description: >
+  Collect quote information for plumbing services using generic and 
+  service-specific questions. If responses are incomplete, ask clarifiers 
+  with AI. Summarize results and allow final review before submission.
+
+nodes:
+  # 1. Emergency check
+  - id: emergency_check
+    type: choice
+    prompt: "Is this an emergency request?"
+    options:
+      - Yes
+      - No
+    capture: is_emergency
+    next: type_of_property
+
+  # 2. Property type
+  - id: type_of_property
+    type: choice
+    prompt: "What type of property is this service for?"
+    options:
+      - Residential
+      - Apartment
+      - Commercial
+      - Other
+    capture: property_type
+    next: do_you_own
+
+  # 3. Do you own the property?
+  - id: do_you_own
+    type: choice
+    prompt: "Do you own this property?"
+    options:
+      - Yes
+      - No
+    capture: owns_property
+    next: when_schedule
+
+  # 4. When to schedule service
+  - id: when_schedule
+    type: static
+    prompt: "When would you like this service to be scheduled?"
+    capture: schedule_timing
+    next: select_service
+
+  # 5. Service selection
+  - id: select_service
+    type: choice
+    prompt: "What type of plumbing service do you need?"
+    options:
+      - Leak Detection & Repair
+      - Pipe Installation & Repiping
+      - Drain Cleaning
+      - Water Heater Services
+      - Fixture Repair & Installation
+      - Gas Line Services
+      - Perimeter Drains
+      - Bathroom Renovation
+      - Main Line (Sewer/Water) Repair
+      - Emergency Service
+      - Other
+    capture: selected_service
+    next: service_questions
+
+  # 6. Service-specific questions
+  - id: service_questions
+    type: switch
+    variable: selected_service
+    cases:
+      Leak Detection & Repair:
+        type: static
+        prompt: |
+          Please answer these leak repair questions:
+          - Where is the leak located (e.g., under a sink, in a wall/ceiling, outside)?
+          - Is water actively leaking right now, and have you shut off the main valve?
+          - How severe is the leak (slow drip, steady stream)?
+          - When did you first notice the leak?
+      Pipe Installation & Repiping:
+        type: static
+        prompt: |
+          Pipe installation questions:
+          - Is this for new construction, renovation, or repair?
+          - What type of piping material (PEX, copper, PVC)?
+          - Approximate length of pipe needed?
+      Drain Cleaning:
+        type: static
+        prompt: |
+          Drain cleaning questions:
+          - Which fixture is clogged (sink, toilet, shower)?
+          - Completely blocked or draining slowly?
+          - Have you tried chemical drain cleaners?
+      Water Heater Services:
+        type: static
+        prompt: |
+          Water heater questions:
+          - Is your current water heater gas or electric?
+          - Repair existing unit or install new one?
+          - If new, traditional tank or tankless?
+      Fixture Repair & Installation:
+        type: static
+        prompt: |
+          Fixture service questions:
+          - What type of fixture (faucet, toilet, shower head)?
+          - Do you already have the fixture or should we supply it?
+          - Simple replacement or plumbing line movement?
+      Gas Line Services:
+        type: static
+        prompt: |
+          Gas line questions:
+          - New installation, extension, or repair?
+          - What appliance (BBQ, stove, fireplace)?
+          - Do you currently have natural gas service?
+      Perimeter Drains:
+        type: static
+        prompt: |
+          Perimeter drain questions:
+          - Experienced flooding or pooling water near foundation?
+          - Ground surface (grass, concrete)?
+          - Do you have a sump pump or city storm connection?
+      Bathroom Renovation:
+        type: static
+        prompt: |
+          Bathroom renovation questions:
+          - Are you changing the plumbing layout?
+          - Are you replacing the main shower/tub valve inside the wall?
+      Main Line (Sewer/Water) Repair:
+        type: static
+        prompt: |
+          Main line questions:
+          - What issues (slow drains everywhere, water in yard, backup)?
+          - Do you know the approximate age of your home?
+      Emergency Service:
+        type: static
+        prompt: |
+          Emergency questions:
+          - Please describe the plumbing emergency in detail.
+          - Is water currently shut off to the area or whole house?
+      Other:
+        type: static
+        prompt: "Please describe your plumbing request or issue in detail."
+    next: check_completion
+
+  # 7. Check completion
+  - id: check_completion
+    type: decision
+    condition: "{{ all_required_questions_answered }}"
+    true: review_summary
+    false: ai_followup
+
+  # 8. AI clarifiers
+  - id: ai_followup
+    type: model
+    model: gpt-4o-mini
+    prompt: >
+      Review the answers provided so far. Ask only the clarifying questions 
+      needed to complete the quote request. Be concise.
+    next: review_summary
+
+  # 9. Summary / review
+  - id: review_summary
+    type: model
+    model: gpt-4o-mini
+    prompt: |
+      You are preparing the final review for a plumbing quote request.
+      Compile all collected answers, including:
+      - The selected service category (provide both a user-facing label and a slugified key based on the choice text; example slug: "leak_detection_and_repair")
+      - Whether the request was marked as an emergency from the generic questions
+      - Every asked question (generic, service-specific, clarifiers) with the final answer given by the customer
+
+      Respond ONLY with JSON that matches this schema:
+      {
+        "stage": "review_summary",
+        "summary": {
+          "service": {

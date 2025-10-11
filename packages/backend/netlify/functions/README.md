@@ -4,11 +4,12 @@ This directory contains the serverless functions that power the PlumbingPOC appl
 
 ## Overview
 
-The application uses Netlify Functions to run the Express.js backend serverlessly. The main function is `api.mjs` which wraps the Express app using `serverless-http`.
+The application uses Netlify Functions to run the Express.js backend serverlessly. The main function is `api.mjs` which wraps the Express app using `serverless-http`. Additional specialized functions handle specific features like AI-powered quote assistance (`quote-agent.mjs`) and SMS notifications (`send-sms.mjs`).
 
 ## File Structure
 
 - `api.mjs` - Main API function that handles all HTTP requests
+- `quote-agent.mjs` - OpenAI Agent Toolkit function for intelligent quote assistance
 - `send-sms.mjs` - SMS notification function for Twilio integration
 
 ## Module System
@@ -21,9 +22,11 @@ All functions use ES Modules (`.mjs` extension) to maintain consistency with the
 
 2. **External Modules Configuration**: Netlify's bundler is configured via `netlify.toml` to treat complex Node.js packages (express, cors, serverless-http, etc.) as external dependencies rather than bundling them. This prevents bundling conflicts while maintaining runtime availability.
 
-3. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
+3. **AI Agent Functions**: Specialized functions like `quote-agent.mjs` use the OpenAI Agents SDK to execute YAML-defined agent workflows. These functions load agent configurations from the `agents/` directory and provide secure, server-side AI execution without exposing API keys to the frontend.
 
-4. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
+4. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
+
+5. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
 
 ## Deployment
 
@@ -45,16 +48,24 @@ The functions use Netlify's esbuild bundler with special configuration in `netli
       "@supabase/supabase-js"
     ]
   }
+
+  "quote-agent-mjs" = {
+    external_node_modules = [
+      "@openai/agents",
+      "yaml"
+    ]
+  }
 ```
 
-This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality.
+This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality. The `quote-agent` function requires the OpenAI Agents SDK and YAML parser as external dependencies.
 
 ## Environment Variables
 
 Functions access environment variables set in the Netlify dashboard:
 - `VITE_FRONTEND_BASE_URL` - CORS origin
 - Database credentials (Supabase)
-- API keys (OpenAI, Twilio, etc.)
+- `OPENAI_API_KEY` - Required for AI agent functions
+- API keys (Twilio, etc.)
 
 ## Troubleshooting
 
@@ -64,9 +75,11 @@ Functions access environment variables set in the Netlify dashboard:
 
 2. **Bundling Errors**: If you see errors about external modules, verify the `external_node_modules` configuration in `netlify.toml` includes all required packages.
 
-3. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
+3. **Agent Function Errors**: For `quote-agent.mjs`, ensure the `agents/quote-agent.yaml` file exists and is valid YAML. Check that `OPENAI_API_KEY` is properly set.
 
-4. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard. Functions access variables injected by Netlify at runtime.
+4. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
+
+5. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard. Functions access variables injected by Netlify at runtime.
 
 ### Function Logs
 

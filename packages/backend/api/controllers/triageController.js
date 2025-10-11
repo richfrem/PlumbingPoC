@@ -80,4 +80,26 @@ const triageRequest = async (req, res) => {
   }
 };
 
-export { triageRequest };
+const updateRequestTriage = async (requestId, triageData) => {
+  try {
+    const {error: updateError} = await supabase
+      .from('requests')
+      .update({
+        triage_summary: triageData.triage_summary,
+        priority_score: triageData.priority_score,
+        priority_explanation: triageData.priority_explanation,
+        profitability_score: triageData.profitability_score,
+        profitability_explanation: triageData.profitability_explanation
+      })
+      .eq('id', requestId);
+
+    if (updateError) throw updateError;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating triage:', error);
+    throw error;
+  }
+};
+
+export { triageRequest, updateRequestTriage };
