@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-11T16:29:49.244Z
+Generated On: 2025-10-11T23:02:43.059Z
 
-# Mnemonic Weight (Token Count): ~299,591 tokens
+# Mnemonic Weight (Token Count): ~321,530 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -61,6 +61,8 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md
   ./adrs/023-choice-of-backend-config-architecture.md
   ./adrs/024-choice-of-service-organization-strategy.md
+  ./adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md
+  ./adrs/026-agent-runner-local-first-strategy.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -84,6 +86,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./agents/project-manager-mcp-agent.js
   ./agents/project-manager-mcp.md
   ./agents/projectFileManifest.js
+  ./agents/quote-agent.yaml
   ./agents/screenshots/
   ./agents/screenshots/after-user-menu-click.png
   ./agents/screenshots/before-user-menu-full.png
@@ -93,6 +96,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./agents/screenshots/login-success-debug.png
   ./agents/screenshots/logout-failure-debug.png
   ./agents/screenshots/quote-agent-modal-analysis.png
+  ./agents/triage-agent.yaml
   ./agents/ui-designer-mcp-agent.js
   ./agents/ui-designer-mcp.md
   ./all_markdown_and_code_snapshot_llm_distilled.txt
@@ -110,6 +114,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./docs/FutureRoadmap.md
   ./docs/NETLIFY_DEPLOYMENT.md
   ./docs/NETLIFY_TROUBLESHOOTING.md
+  ./docs/OPENAI_AGENT_SETUP_AND_TESTING_GUIDE.md
   ./docs/QuoteStateChangesWorkflow.md
   ./docs/REALTIME_SYSTEM.md
   ./docs/RESEND_FREE_PLAN_LIMITATIONS.md
@@ -124,6 +129,8 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./packages/backend/
   ./packages/backend/api/
   ./packages/backend/api/README.md
+  ./packages/backend/api/agents/
+  ./packages/backend/api/agents/quoteAgentRunner.js
   ./packages/backend/api/config/
   ./packages/backend/api/config/azure/
   ./packages/backend/api/config/supabase/
@@ -138,6 +145,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./packages/backend/api/middleware/authMiddleware.js
   ./packages/backend/api/middleware/validationMiddleware.js
   ./packages/backend/api/routes/
+  ./packages/backend/api/routes/agentRoutes.js
   ./packages/backend/api/routes/followUpRoutes.js
   ./packages/backend/api/routes/requestRoutes.js
   ./packages/backend/api/routes/triageRoutes.js
@@ -158,6 +166,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./packages/backend/netlify/functions/
   ./packages/backend/netlify/functions/README.md
   ./packages/backend/netlify/functions/api.mjs
+  ./packages/backend/netlify/functions/quote-agent.mjs
   ./packages/backend/netlify/functions/send-sms.mjs
   ./packages/backend/package.json
   ./packages/backend/start.js
@@ -204,6 +213,7 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./packages/frontend/src/features/requests/components/ModalFooter.tsx
   ./packages/frontend/src/features/requests/components/ModalHeader.tsx
   ./packages/frontend/src/features/requests/components/MyRequests.tsx
+  ./packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
   ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteFormModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteList.tsx
@@ -262,6 +272,8 @@ Generated On: 2025-10-11T16:29:49.244Z
   ./supabase/supabase/.temp/storage-version
   ./supabase/supabase/functions/
   ./supabase/supabase/functions/index.ts
+  ./test-agent-sdk.mjs
+  ./test-agent.mjs
   ./test-e2e.sh
   ./tests/
   ./tests/README.md
@@ -374,11 +386,17 @@ Generated On: 2025-10-11T16:29:49.244Z
 
 --- START OF FILE ./.github/copilot-instructions.md ---
 
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+## PlumbingPOC - AI-Powered Client Management Platform
 
-## CRITICAL COMMUNICATION RULE
+**Project Type:** Fullstack SaaS Application
+**Tech Stack:** React/TypeScript + Node.js/Express + Supabase + OpenAI
+**Architecture:** Monorepo with separate frontend/backend packages
+
+## CRITICAL COMMUNICATION RULES
 
 **ALWAYS confirm user intent before making code changes.** Never implement solutions without explicit approval. Ask clarifying questions and wait for confirmation before proceeding with any code modifications.
+
+**ALWAYS follow documented architectural decisions in the `adrs/` folder.** If no ADR exists for a decision, ask the user for guidance before proceeding. Create a new ADR if a new architectural decision is made.
 
 **WHY:** Prevents frustration and ensures collaborative development. Users need time to review, ask questions, and provide feedback on proposed changes.
 
@@ -390,117 +408,45 @@ Generated On: 2025-10-11T16:29:49.244Z
 5. Wait for explicit approval before implementing
 6. If unsure, ask: "Should I proceed with this approach?"
 
-**WHY THIS REDUCES REWORK:**
-- Uncovers hidden requirements early
-- Prevents incorrect assumptions
-- Avoids implementing the wrong solution
-- Saves time by getting it right the first time
+## DEVELOPMENT WORKFLOW
 
-- [ ] Verify that the copilot-instructions.md file in the .github directory is created.
+### Before Starting Work:
+- Check existing ADRs in `adrs/` folder for relevant decisions
+- Review `TASKS.md` for current project status
+- Understand the monorepo structure (`packages/frontend/`, `packages/backend/`)
 
-- [ ] Clarify Project Requirements
-	<!-- Ask for project type, language, and frameworks if not specified. Skip if already provided. -->
+### Code Quality Standards:
+- Follow TypeScript strict mode
+- Use ESLint and Prettier configurations
+- Write comprehensive tests for new features
+- Update documentation for architectural changes
 
-- [ ] Scaffold the Project
-	<!--
-	Ensure that the previous step has been marked as completed.
-	Call project setup tool with projectType parameter.
-	Run scaffolding command to create project files and folders.
-	Use '.' as the working directory.
-	If no appropriate projectType is available, search documentation using available tools.
-	Otherwise, create the project structure manually using available file creation tools.
-	-->
+### Testing Requirements:
+- E2E tests in `tests/e2e/` using Playwright
+- Unit tests using Vitest
+- All tests must pass before merging
 
-- [ ] Customize the Project
-	<!--
-	Verify that all previous steps have been completed successfully and you have marked the step as completed.
-	Develop a plan to modify codebase according to user requirements.
-	Apply modifications using appropriate tools and user-provided references.
-	Skip this step for "Hello World" projects.
-	-->
+### Deployment Process:
+- Follow `docs/NETLIFY_DEPLOYMENT.md` for frontend deployment
+- Backend deploys via Netlify Functions
+- Database changes require Supabase migrations
 
-- [ ] Install Required Extensions
-	<!-- ONLY install extensions provided mentioned in the get_project_setup_info. Skip this step otherwise and mark as completed. -->
+## ARCHITECTURAL CONSTRAINTS
 
-- [ ] Compile the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Install any missing dependencies.
-	Run diagnostics and resolve any issues.
-	Check for markdown files in project folder for relevant instructions on how to do this.
-	-->
+- **Frontend:** React with TypeScript, Vite build system
+- **Backend:** Node.js/Express with ESM modules (ADR-014)
+- **Database:** Supabase (PostgreSQL)
+- **Styling:** Tailwind CSS + MUI components
+- **State Management:** TanStack Query for server state
+- **Authentication:** Supabase Auth with custom contexts
 
-- [ ] Create and Run Task
-	<!--
-	Verify that all previous steps have been completed.
-	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
-	Skip this step otherwise.
-	 -->
+## COMMUNICATION PREFERENCES
 
-- [ ] Launch the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Prompt user for debug mode, launch only if confirmed.
-	 -->
-
-- [ ] Ensure Documentation is Complete
-	<!--
-	Verify that all previous steps have been completed.
-	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
-	Clean up the copilot-instructions.md file in the .github directory by removing all HTML comments.
-	 -->
-
-<!--
-## Execution Guidelines
-PROGRESS TRACKING:
-- If any tools are available to manage the above todo list, use it to track progress through this checklist.
-- After completing each step, mark it complete and add a summary.
-- Read current todo list status before starting each new step.
-
-COMMUNICATION RULES:
-- Avoid verbose explanations or printing full command outputs.
-- If a step is skipped, state that briefly (e.g. "No extensions needed").
-- Do not explain project structure unless asked.
-- Keep explanations concise and focused.
-
-DEVELOPMENT RULES:
-- Use '.' as the working directory unless user specifies otherwise.
-- Avoid adding media or external links unless explicitly requested.
-- Use placeholders only with a note that they should be replaced.
-- Use VS Code API tool only for VS Code extension projects.
-- Once the project is created, it is already opened in Visual Studio Code—do not suggest commands to open this project in Visual Studio again.
-- If the project setup information has additional rules, follow them strictly.
-
-FOLDER CREATION RULES:
-- Always use the current directory as the project root.
-- If you are running any terminal commands, use the '.' argument to ensure that the current working directory is used ALWAYS.
-- Do not create a new folder unless the user explicitly requests it besides a .vscode folder for a tasks.json file.
-- If any of the scaffolding commands mention that the folder name is not correct, let the user know to create a new folder with the correct name and then reopen it again in vscode.
-
-EXTENSION INSTALLATION RULES:
-- Only install extension specified by the get_project_setup_info tool. DO NOT INSTALL any other extensions.
-
-PROJECT CONTENT RULES:
-- If the user has not specified project details, assume they want a "Hello World" project as a starting point.
-- Avoid adding links of any type (URLs, files, folders, etc.) or integrations that are not explicitly required.
-- Avoid generating images, videos, or any other media files unless explicitly requested.
-- If you need to use any media assets as placeholders, let the user know that these are placeholders and should be replaced with the actual assets later.
-- Ensure all generated components serve a clear purpose within the user's requested workflow.
-- If a feature is assumed but not confirmed, prompt the user for clarification before including it.
-- If you are working on a VS Code extension, use the VS Code API tool with a query to find relevant VS Code API references and samples related to that query.
-
-TASK COMPLETION RULES:
-- Your task is complete when:
-  - Project is successfully scaffolded and compiled without errors
-  - copilot-instructions.md file in the .github directory exists in the project
-  - README.md file exists and is up to date
-  - User is provided with clear instructions to debug/launch the project
-
-Before starting a new task in the above plan, update progress in the plan.
--->
-- Work through each checklist item systematically.
-- Keep communication concise and focused.
-- Follow development best practices.
+- Keep responses concise and technical
+- Use markdown formatting for code and file references
+- Reference specific files with clickable links: [`filename.ext`](relative/path.ext:line)
+- Ask for clarification when requirements are ambiguous
+- Confirm understanding before implementing complex changes
 
 --- END OF FILE ---
 
@@ -4983,6 +4929,110 @@ services/
 - [x] Future-ready for multi-provider scenarios
 --- END OF FILE ---
 
+--- START OF FILE ./adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md ---
+
+### **ADR-025: Choice of OpenAI Agent Toolkit Implementation Pattern**
+
+**Date:** 2025-10-11
+
+**Status:** Decided
+
+**Supersedes:** [ADR-002: Choice of AI Provider](./002-choice-of-ai-provider.md)
+
+### **Context**
+
+The PlumbingPOC application requires intelligent handling of customer quote requests and business triage analysis. Initial implementations used basic form submissions and manual review processes, but to improve user experience and operational efficiency, we need AI-powered assistance.
+
+Key requirements:
+- Streamlined quote collection with minimal user friction
+- Automated triage and prioritization of service requests
+- Cost-effective AI usage to maintain profitability
+- Deterministic workflows where possible to reduce reliance on expensive models
+
+The OpenAI Agent Toolkit provides a framework for building structured AI agents with tools, handoffs, and guardrails. This ADR establishes the implementation pattern to ensure cost efficiency and reliability.
+
+### **Decision**
+
+We will adopt the OpenAI Agent Toolkit for quote and triage agents, following these key principles:
+
+1. **Static Questions First**: Use predefined, deterministic question flows from `serviceDefinitions.ts` before invoking AI
+2. **AI Fallback Only**: Call AI models only when static questions are insufficient for completion
+3. **Cheap Model Selection**: Use `gpt-4o-mini` for follow-up questions and `gpt-4o` for complex analysis requiring higher reasoning
+4. **Tool-Based Determinism**: Implement domain-specific tools for leak assessment, emergency detection, complexity calculation, etc.
+5. **Structured Outputs**: Define explicit output schemas for reliable, machine-readable results
+6. **Guardrails**: Implement content filters to keep conversations focused on legitimate plumbing services
+
+Implementation includes:
+- QuoteAgent: Handles customer quote collection with static questions → decision node → AI clarification → submission
+- TriageAgent: Analyzes requests for priority scoring and profitability assessment
+
+### **Consequences**
+
+*   **Pros:**
+    *   **Cost Optimization:** Static logic and cheap models significantly reduce AI API costs
+    *   **Reliability:** Deterministic tools provide consistent results for common scenarios
+    *   **User Experience:** Smooth quote flows with AI assistance only when needed
+    *   **Maintainability:** Modular agent design with clear separation of concerns
+    *   **Scalability:** Agent Toolkit framework supports future expansion and specialization
+
+*   **Cons:**
+    *   **Implementation Complexity:** Requires careful design of static flows and tool integrations
+    *   **Testing Overhead:** Need to validate both static and AI paths thoroughly
+    *   **Model Limitations:** Cheap models may have lower accuracy for edge cases
+    *   **Dependency on OpenAI:** Tied to OpenAI's Agent Toolkit ecosystem
+
+### **Alternatives Considered**
+
+1. **Pure AI Implementation**: Use GPT models for entire quote/triage process. Rejected due to high costs and potential inconsistency.
+2. **No AI Enhancement**: Maintain manual processes. Rejected as it doesn't meet user experience and efficiency goals.
+3. **Alternative AI Frameworks**: Consider other agent platforms. Rejected due to existing OpenAI integration (ADR-002) and ecosystem maturity.
+4. **Expensive Models Only**: Use GPT-4 or GPT-5 for all interactions. Rejected due to cost concerns for a small business application.
+
+This pattern balances cost efficiency with intelligent automation, ensuring the application remains profitable while providing modern AI capabilities.
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/026-agent-runner-local-first-strategy.md ---
+
+# ADR 026: Local Agent Runner First, Netlify Function Second
+
+## Status
+
+Accepted – 2025-10-11
+
+## Context
+
+- We are migrating the quote intake flow to OpenAI AgentKit / ChatKit.
+- The current backend implementation attempts to import `createAgentRunner` from `@openai/agents`, but that helper is not exposed in the public SDK we can ship to Netlify. This breaks local dev and would fail continuous deployment.
+- The YAML definition (`agents/quote-agent.yaml`) should remain the single source of the agent workflow so Product and Prompt teams can iterate there.
+- We must unblock local development before wiring the serverless Netlify function, so that we can test the UI end-to-end and avoid broken production deploys.
+
+## Decision
+
+1. **Implement the agent runner locally first**
+   - Build a dedicated module that:
+     - Reads `agents/quote-agent.yaml`.
+     - Constructs an `Agent` / `Runner` using the public `@openai/agents` API instead of the unavailable `createAgentRunner`.
+     - Exposes the same staged responses (`stage`, `summary`, etc.) the frontend expects.
+   - Wire Express (`/api/agents/quote/run`) to that module for local development.
+   - Keep this implementation vanilla Node (no Netlify-specific constraints) so it runs under `npm run dev`.
+
+2. **Once the local runner is stable, adapt it for Netlify**
+   - Reuse the same module inside `packages/backend/netlify/functions/quote-agent.mjs`.
+   - Ensure any filesystem reads (YAML) and environment variables are compatible with Netlify’s function runtime (read during cold start, cached between invocations).
+   - Feature-flag the frontend endpoint to hit the serverless function only when deployed.
+
+3. **Maintain the YAML as the single source of truth**
+   - Do not hardcode the workflow steps in JS/TS; continue to parse the YAML to keep parity with Agent Builder.
+   - Add unit tests around the parser/runner to guard against regressions.
+
+## Consequences
+
+- Local development gets unblocked before any deployment changes, letting us validate the ChatKit UI and Supabase integrations safely.
+- The Netlify function implementation becomes a thin wrapper around the same runner, reducing drift between dev and prod.
+- We incur a one-time cost to write the runner assembly code, but we avoid depending on unpublished SDK internals.
+
+--- END OF FILE ---
+
 --- START OF FILE ./agents/AGENT_REPOS.md ---
 
 # Plumbing Quote Agent MCP Persona Repos
@@ -6207,6 +6257,341 @@ const editableFileManifest = [
 module.exports = {
   editableFileManifest
 };
+--- END OF FILE ---
+
+--- START OF FILE ./agents/quote-agent.yaml ---
+
+agent: QuoteAgent
+description: >
+  Collect quote information for plumbing services using generic and 
+  service-specific questions. If responses are incomplete, ask clarifiers 
+  with AI. Summarize results and allow final review before submission.
+
+nodes:
+  # 1. Emergency check
+  - id: emergency_check
+    type: choice
+    prompt: "Is this an emergency request?"
+    options:
+      - Yes
+      - No
+    capture: is_emergency
+    next: type_of_property
+
+  # 2. Property type
+  - id: type_of_property
+    type: choice
+    prompt: "What type of property is this service for?"
+    options:
+      - Residential
+      - Apartment
+      - Commercial
+      - Other
+    capture: property_type
+    next: do_you_own
+
+  # 3. Do you own the property?
+  - id: do_you_own
+    type: choice
+    prompt: "Do you own this property?"
+    options:
+      - Yes
+      - No
+    capture: owns_property
+    next: when_schedule
+
+  # 4. When to schedule service
+  - id: when_schedule
+    type: static
+    prompt: "When would you like this service to be scheduled?"
+    capture: schedule_timing
+    next: select_service
+
+  # 5. Service selection
+  - id: select_service
+    type: choice
+    prompt: "What type of plumbing service do you need?"
+    options:
+      - Leak Detection & Repair
+      - Pipe Installation & Repiping
+      - Drain Cleaning
+      - Water Heater Services
+      - Fixture Repair & Installation
+      - Gas Line Services
+      - Perimeter Drains
+      - Bathroom Renovation
+      - Main Line (Sewer/Water) Repair
+      - Emergency Service
+      - Other
+    capture: selected_service
+    next: service_questions
+
+  # 6. Service-specific questions
+  - id: service_questions
+    type: switch
+    variable: selected_service
+    cases:
+      Leak Detection & Repair:
+        type: static
+        prompt: |
+          Please answer these leak repair questions:
+          - Where is the leak located (e.g., under a sink, in a wall/ceiling, outside)?
+          - Is water actively leaking right now, and have you shut off the main valve?
+          - How severe is the leak (slow drip, steady stream)?
+          - When did you first notice the leak?
+      Pipe Installation & Repiping:
+        type: static
+        prompt: |
+          Pipe installation questions:
+          - Is this for new construction, renovation, or repair?
+          - What type of piping material (PEX, copper, PVC)?
+          - Approximate length of pipe needed?
+      Drain Cleaning:
+        type: static
+        prompt: |
+          Drain cleaning questions:
+          - Which fixture is clogged (sink, toilet, shower)?
+          - Completely blocked or draining slowly?
+          - Have you tried chemical drain cleaners?
+      Water Heater Services:
+        type: static
+        prompt: |
+          Water heater questions:
+          - Is your current water heater gas or electric?
+          - Repair existing unit or install new one?
+          - If new, traditional tank or tankless?
+      Fixture Repair & Installation:
+        type: static
+        prompt: |
+          Fixture service questions:
+          - What type of fixture (faucet, toilet, shower head)?
+          - Do you already have the fixture or should we supply it?
+          - Simple replacement or plumbing line movement?
+      Gas Line Services:
+        type: static
+        prompt: |
+          Gas line questions:
+          - New installation, extension, or repair?
+          - What appliance (BBQ, stove, fireplace)?
+          - Do you currently have natural gas service?
+      Perimeter Drains:
+        type: static
+        prompt: |
+          Perimeter drain questions:
+          - Experienced flooding or pooling water near foundation?
+          - Ground surface (grass, concrete)?
+          - Do you have a sump pump or city storm connection?
+      Bathroom Renovation:
+        type: static
+        prompt: |
+          Bathroom renovation questions:
+          - Are you changing the plumbing layout?
+          - Are you replacing the main shower/tub valve inside the wall?
+      Main Line (Sewer/Water) Repair:
+        type: static
+        prompt: |
+          Main line questions:
+          - What issues (slow drains everywhere, water in yard, backup)?
+          - Do you know the approximate age of your home?
+      Emergency Service:
+        type: static
+        prompt: |
+          Emergency questions:
+          - Please describe the plumbing emergency in detail.
+          - Is water currently shut off to the area or whole house?
+      Other:
+        type: static
+        prompt: "Please describe your plumbing request or issue in detail."
+    next: check_completion
+
+  # 7. Check completion
+  - id: check_completion
+    type: decision
+    condition: "{{ all_required_questions_answered }}"
+    true: review_summary
+    false: ai_followup
+
+  # 8. AI clarifiers
+  - id: ai_followup
+    type: model
+    model: gpt-4o-mini
+    prompt: >
+      Review the answers provided so far. Ask only the clarifying questions 
+      needed to complete the quote request. Be concise.
+    next: review_summary
+
+  # 9. Summary / review
+  - id: review_summary
+    type: model
+    model: gpt-4o-mini
+    prompt: |
+      You are preparing the final review for a plumbing quote request.
+      Compile all collected answers, including:
+      - The selected service category (provide both a user-facing label and a slugified key based on the choice text; example slug: "leak_detection_and_repair")
+      - Whether the request was marked as an emergency from the generic questions
+      - Every asked question (generic, service-specific, clarifiers) with the final answer given by the customer
+
+      Respond ONLY with JSON that matches this schema:
+      {
+        "stage": "review_summary",
+        "summary": {
+          "service": {
+
+--- END OF FILE ---
+
+--- START OF FILE ./agents/triage-agent.yaml ---
+
+agent: TriageAgent
+description: >
+  Analyze plumbing requests and provide AI-powered triage summaries,
+  priority scores, and profitability analysis for business owners.
+
+nodes:
+  - id: fetch_request_data
+    type: action
+    handler: fetchRequestDetails
+    data:
+      endpoint: "/api/requests/{{ requestId }}"
+    next: analyze_request
+
+  - id: analyze_request
+    type: model
+    model: gpt-4o  # Use more capable model for analysis
+    prompt: >
+      You are an expert plumbing business analyst. Analyze this customer request and provide:
+
+      1. A concise triage summary (2-3 sentences)
+      2. Priority score (1-10, where 10 is highest priority)
+      3. Priority explanation
+      4. Profitability score (1-10, where 10 is most profitable)
+      5. Profitability explanation
+
+      Consider:
+      - Urgency of the problem
+      - Complexity of the job
+      - Potential for additional services
+      - Customer's timeline
+      - Emergency status
+
+      Request details: {{ request_data }}
+      Service category: {{ request_data.problem_category }}
+      Customer answers: {{ request_data.answers }}
+    output:
+      type: object
+      properties:
+        triage_summary:
+          type: string
+          description: Concise summary of the request
+        priority_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        priority_explanation:
+          type: string
+        profitability_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        profitability_explanation:
+          type: string
+    next: update_database
+
+  - id: update_database
+    type: action
+    handler: updateRequestTriage
+    data:
+      endpoint: "/api/triage/{{ requestId }}"
+      method: "POST"
+      body: "{{ analysis_result }}"
+
+tools:
+  - name: calculate_job_complexity
+    description: Assess the technical complexity of a plumbing job
+    parameters:
+      type: object
+      properties:
+        service_category:
+          type: string
+          description: The type of plumbing service requested
+        problem_description:
+          type: string
+          description: Description of the problem
+        location_details:
+          type: string
+          description: Where the work needs to be done
+      required: ["service_category"]
+    execute: |
+      const complexityMap = {
+        'leak_repair': 6,
+        'water_heater': 7,
+        'pipe_installation': 8,
+        'drain_cleaning': 4,
+        'fixture_install': 3,
+        'gas_line_services': 9,
+        'perimeter_drains': 7,
+        'main_line_repair': 9,
+        'emergency_service': 8,
+        'bathroom_reno': 8,
+        'other': 5
+      };
+
+      const baseComplexity = complexityMap[service_category] || 5;
+
+      // Adjust based on location difficulty
+      let locationMultiplier = 1;
+      if (location_details?.includes('basement') || location_details?.includes('crawlspace')) {
+        locationMultiplier = 1.2;
+      } else if (location_details?.includes('attic') || location_details?.includes('under house')) {
+        locationMultiplier = 1.3;
+      }
+
+      return Math.min(10, Math.round(baseComplexity * locationMultiplier));
+
+  - name: assess_customer_urgency
+    description: Evaluate how urgent the customer's situation is
+    parameters:
+      type: object
+      properties:
+        is_emergency:
+          type: boolean
+          description: Whether this is marked as an emergency
+        timeline_requested:
+          type: string
+          description: When the customer wants the work done
+        problem_severity:
+          type: string
+          description: How severe the problem appears to be
+      required: ["is_emergency"]
+    execute: |
+      if (is_emergency) return 10;
+
+      const urgencyMap = {
+        'today': 9,
+        'tomorrow': 8,
+        'this week': 7,
+        'next week': 5,
+        'asap': 8,
+        'soon': 6,
+        'flexible': 3
+      };
+
+      const timelineUrgency = urgencyMap[timeline_requested?.toLowerCase()] || 4;
+
+      // Boost urgency for severe problems
+      let severityBoost = 0;
+      if (problem_severity?.includes('flooding') || problem_severity?.includes('no water')) {
+        severityBoost = 2;
+      }
+
+      return Math.min(10, timelineUrgency + severityBoost);
+
+guardrails:
+  - type: content_filter
+    name: business_focus
+    description: Ensure analysis stays focused on legitimate business decisions
+    rules:
+      - block: ["personal opinions", "unethical advice"]
+      - allow: ["business analysis", "priority assessment", "profitability evaluation"]
 --- END OF FILE ---
 
 --- START OF FILE ./agents/ui-designer-mcp-agent.js ---
@@ -9915,6 +10300,343 @@ If you need to relink your repository (e.g., after repository restructuring, web
 - [Vitest](https://vitest.dev/) - Testing framework configuration and usage
 --- END OF FILE ---
 
+--- START OF FILE ./docs/OPENAI_AGENT_SETUP_AND_TESTING_GUIDE.md ---
+
+# OpenAI Agent Testing Guide
+
+This guide explains how to test the PlumbingPOC OpenAI agents locally and in the Agent Builder GUI.
+
+## Overview
+
+The PlumbingPOC application includes two OpenAI Agent Toolkit agents:
+- **QuoteAgent**: Handles customer quote requests with static questions first, AI fallback
+- **TriageAgent**: Analyzes requests for priority scoring and profitability assessment
+
+## Local Testing
+
+### Prerequisites
+- Node.js and npm installed
+- Supabase project configured
+- OpenAI API key set in environment variables
+- Local development environment running
+
+### Testing QuoteAgent
+
+1. **Start the Application**:
+   ```bash
+   npm run dev
+   ```
+   This starts both frontend (port 5173) and backend (port 3000).
+
+2. **Access the Quote Modal**:
+   - Navigate to the frontend application
+   - Click "Request a Quote" or similar button to open the QuoteAgentModal
+
+3. **Test the Flow**:
+   - Answer the emergency question
+   - Select a service category (e.g., "Leak Repair")
+   - Answer static questions from `serviceDefinitions.ts`
+   - Observe AI fallback for clarifying questions (if needed)
+   - Review the summary and submit
+
+4. **Monitor Backend Logs**:
+   - Check terminal output for agent execution
+   - Verify API calls to `/api/requests/gpt-follow-up`
+   - Confirm database updates with triage information
+
+### Testing TriageAgent
+
+1. **Submit a Quote Request**:
+   - Follow the QuoteAgent testing steps above
+   - Submit a complete quote request
+
+2. **Check Admin Dashboard**:
+   - Access the admin interface
+   - View the new request in the requests list
+   - Look for the `AITriageSummary` component displaying:
+     - Triage summary text
+     - Priority score (1-10)
+     - Profitability score (1-10)
+     - Explanations
+
+3. **Verify Database**:
+   - Check Supabase for the request record
+   - Confirm `triage_summary`, `priority_score`, `profitability_score` fields are populated
+
+### Debugging
+
+- **Enable Debug Panel**: Set `VITE_DEBUG_PANEL=true` in environment variables
+- **Check Function Logs**: Monitor backend console for agent execution details
+- **API Testing**: Use tools like Postman to test `/api/requests/gpt-follow-up` endpoint
+- **Agent Configuration**: Modify `agents/quote-agent.yaml` or `agents/triage-agent.yaml` and restart the server
+
+## Agent Builder GUI Testing
+
+### Prerequisites
+- OpenAI account with Agent Toolkit access
+- Agent Builder GUI access (https://platform.openai.com/agent-builder)
+
+### Step 1: Import into Agent Builder (GUI)
+
+1. **Access Agent Builder**:
+   - Go to https://platform.openai.com/agent-builder
+   - Sign in with your OpenAI account
+
+2. **Import QuoteAgent**:
+   - Click "New Agent" → "Import from YAML"
+   - Paste the full contents of `agents/quote-agent.yaml`
+   - The canvas should render boxes for:
+     - Static Questions
+     - Decision (check completion)
+     - AI Follow-up
+     - Submit action
+
+3. **Import TriageAgent**:
+   - Repeat the import process with `agents/triage-agent.yaml`
+   - You should see a flow: Fetch → Analyze → Update DB
+
+4. **Save Agents**:
+   - Save each agent in your Builder workspace
+
+### Step 2: Connect to Your App
+
+In your frontend (`packages/frontend/...`), add ChatKit:
+
+```typescript
+import { ChatKitConversation } from "@openai/agentkit-react";
+```
+
+Then render them:
+
+```tsx
+// For QuoteAgent
+<ChatKitConversation agent="QuoteAgent" initialContext={{ requestId }} />
+
+// For TriageAgent
+<ChatKitConversation agent="TriageAgent" initialContext={{ requestId }} />
+```
+
+### Step 3: Round-trip Workflow
+
+1. **Edit Locally**: Modify YAML files in VS Code
+2. **Push Updates**: Commit and push changes
+3. **Import to Builder**: Import updated YAML into Agent Builder
+4. **Tweak Visually**: Make adjustments in the GUI
+5. **Export**: Export updated YAML and replace in your repo
+
+### Testing in GUI
+
+1. **Test QuoteAgent Flow**:
+   - Use the GUI chat interface
+   - Simulate a customer quote request
+   - Verify static questions are asked first
+   - Test AI fallback for complex scenarios
+   - Check tool execution for leak assessment
+
+2. **Test TriageAgent Flow**:
+   - Provide a sample request description
+   - Verify priority and profitability scoring
+   - Check structured output format
+   - Test tool calculations
+
+3. **Performance Testing**:
+   - Monitor token usage and costs
+   - Test response times
+   - Verify guardrail filtering
+
+### GUI vs Local Differences
+
+- **GUI**: Pure agent testing without frontend integration
+- **Local**: Full application flow with database persistence
+- **GUI**: Easier for rapid agent iteration and debugging
+- **Local**: Tests complete user experience and data flow
+
+## Local CLI Testing
+
+### Method 2: Local Testing with OpenAI CLI
+
+**Note:** The OpenAI CLI currently only supports migration commands. Local agent development may require the Agent Toolkit beta access or different tooling. The following represents the intended workflow once available:
+
+#### Prerequisites
+
+1. **Node.js and npm**
+   - AgentKit CLI runs in Node.js
+   - Check versions: `node -v` and `npm -v`
+   - Minimum: Node.js ≥ 18
+   - Install latest LTS: https://nodejs.org/en/download
+   - macOS recommendation: `brew install node`
+
+2. **OpenAI npm package**
+   ```bash
+   npm install -g openai
+   ```
+   This installs the CLI tool with `agents dev` command.
+
+3. **API Key Environment Variable**
+   - Set your OpenAI API key for CLI authentication
+   - For zsh (macOS default):
+     ```bash
+     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.zshrc
+     source ~/.zshrc
+     ```
+   - For bash:
+     ```bash
+     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc
+     source ~/.bashrc
+     ```
+   - Test: `openai models list` (should show available models like gpt-4o-mini, gpt-4o)
+
+4. **YAML Files**
+   - Ensure `agents/quote-agent.yaml` and `agents/triage-agent.yaml` are in your project
+   - Checked into your feature branch
+
+5. **Optional: Tools Folder**
+   - If agents use custom tools (e.g., `submitQuoteToSupabase`, `assess_leak_severity`)
+   - Create `tools/` folder alongside YAML files
+   - Add matching JS/TS modules exporting tool functions
+   - AgentKit dev auto-loads from this folder
+
+#### Step 1: Run Agent Locally in Dev Mode
+
+From your repo root (on the `OpenAIAgentToolKitMigration` branch):
+
+```bash
+# For QuoteAgent (when available)
+npx openai agents dev agents/quote-agent.yaml
+
+# For TriageAgent (when available)
+npx openai agents dev agents/triage-agent.yaml
+```
+
+**What this does:**
+- Starts a local AgentKit dev server
+- Reads your YAML definition
+- Lets you interact with the agent in your terminal
+- Shows logs of node transitions (static → decision → AI fallback, etc.)
+
+#### Step 2: Try a Test Conversation
+
+Once the dev server is running, type directly into the terminal:
+
+**For QuoteAgent:**
+```
+> I need a quote for fixing a leaking pipe
+```
+
+**For TriageAgent:**
+```
+> Triage request for service #123
+```
+
+You should see:
+- Static question flow first
+- Either finish without AI if complete, OR
+- Hand off to AI node (gpt-4o-mini) for clarifiers
+
+#### Step 3: Enable Tools in Local Dev
+
+If you've defined tools in your YAML (like `assess_leak_severity`), create a local `tools/` folder:
+
+```javascript
+// tools/assess_leak_severity.js
+export async function assess_leak_severity(context) {
+  return { severity: "moderate" };
+}
+```
+
+AgentKit will auto-load tools from this folder when running `npx openai agents dev`.
+
+#### Step 4: Hot Reload
+
+- Edit your YAML or tool files in VS Code
+- The agent reloads automatically — no restart needed
+
+#### Step 5: When Ready
+
+- Import the same YAML into the Agent Builder canvas
+- Or connect it directly in your frontend with `<ChatKitConversation />`
+
+**Note:** Local testing via `npx openai agents dev` isn't in your CLI yet; the real way today is via the Agents SDK (`@openai/agents`).
+
+#### Alternative: OpenAI Agents SDK for Local Testing
+
+If CLI commands are unavailable, use the OpenAI Agents SDK for programmatic testing:
+
+1. **Install the SDK**:
+   ```bash
+   npm install @openai/agents zod@3
+   ```
+
+2. **Create a Test Script**:
+   ```typescript
+   import { Agent, run } from "@openai/agents";
+
+   async function main() {
+     const agent = new Agent({
+       name: "TestAgent",
+       instructions: "You are a helpful assistant",
+     });
+
+     const result = await run(agent, "Write me a haiku about code");
+     console.log(result.finalOutput);
+   }
+
+   main().catch(console.error);
+   ```
+
+3. **Use the Test Script**:
+   A local test script `test-agent-sdk.mjs` has been created that simulates the QuoteAgent workflow using the SDK. It includes:
+   - Static question simulation
+   - Tool execution (assess_leak_severity, check_emergency_status)
+   - Conversational flow testing
+
+   Run it with: `node test-agent-sdk.mjs`
+
+   **Note**: Requires `OPENAI_API_KEY` environment variable to be set for API calls.
+
+4. **Build Custom Wrapper**:
+   For YAML-based testing, create a script that parses your `agents/quote-agent.yaml` and `serviceDefinitions.ts` to simulate the agent flow locally.
+
+The SDK provides full control over agent logic, tools, guardrails, and handoffs programmatically.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Agent Not Loading**:
+   - Check YAML syntax
+   - Verify OpenAI API key permissions
+   - Confirm Agent Toolkit access
+
+2. **Tools Not Executing**:
+   - Review tool parameter definitions
+   - Check JavaScript execution syntax
+   - Verify tool permissions
+
+3. **High Costs**:
+   - Monitor token usage
+   - Adjust model selection (gpt-4o-mini vs gpt-4o)
+   - Optimize prompt length
+
+4. **Guardrails Blocking**:
+   - Review guardrail rules
+   - Test with various inputs
+   - Adjust filter sensitivity
+
+### Performance Optimization
+
+- Use `gpt-4o-mini` for routine interactions
+- Implement caching for repeated calculations
+- Limit AI calls with static logic where possible
+- Monitor and optimize token usage
+
+## Related Documentation
+
+- [ADR-025: OpenAI Agent Toolkit Implementation Pattern](adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md)
+- [Netlify Deployment Guide](NETLIFY_DEPLOYMENT.md)
+- [OpenAI Agent Toolkit Documentation](https://platform.openai.com/docs/agent-toolkit)
+--- END OF FILE ---
+
 --- START OF FILE ./docs/QuoteStateChangesWorkflow.md ---
 
 # State changes for workflow of quote requests
@@ -10957,6 +11679,8 @@ Your work is now done. Provide this guide and the following technical specificat
     "@mui/material": "^5.16.1",
     "@mui/system": "^5.16.1",
     "@mui/x-data-grid": "^7.17.0",
+    "@openai/agents": "^0.1.9",
+    "@openai/chatkit-react": "^1.1.1",
     "@supabase/supabase-js": "^2.44.4",
     "@tanstack/react-query": "^5.51.11",
     "@vis.gl/react-google-maps": "^1.1.0",
@@ -10974,7 +11698,8 @@ Your work is now done. Provide this guide and the following technical specificat
     "resend": "^3.5.0",
     "serverless-http": "^3.2.0",
     "twilio": "^5.2.2",
-    "zod": "^3.23.8"
+    "yaml": "^2.8.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.2",
@@ -11268,6 +11993,558 @@ sequenceDiagram
     server.js-->>Client: 200 OK (with questions array)
     deactivate server.js
 ```
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/api/agents/quoteAgentRunner.js ---
+
+// packages/backend/api/agents/quoteAgentRunner.js
+// Local runner for QuoteAgent workflow using YAML definition as source of truth.
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import YAML from 'yaml';
+import OpenAI from 'openai';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+const yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+
+const openAiClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+const REVIEW_STAGE = 'review_summary';
+
+function normalizeServiceKey(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function extractGenericQuestions() {
+  // Map YAML node IDs to question configurations
+  const nodeMappings = {
+    emergency_check: {
+      key: 'is_emergency',
+      question: 'Is this an emergency request?',
+      options: ['Yes', 'No'],
+    },
+    type_of_property: {
+      key: 'property_type',
+      question: 'What type of property is this service for?',
+      options: ['Residential', 'Apartment', 'Commercial', 'Other'],
+    },
+    do_you_own: {
+      key: 'is_homeowner',
+      question: 'Do you own this property?',
+      options: ['Yes', 'No'],
+    },
+    when_schedule: {
+      key: 'preferred_timing',
+      question: 'When would you like this service to be scheduled?',
+      options: null,
+    },
+  };
+
+  const questions = [];
+
+  // Extract questions from YAML nodes in the correct order
+  Object.keys(nodeMappings).forEach(nodeId => {
+    const node = yamlConfig.nodes.find((item) => item.id === nodeId);
+    if (node) {
+      const mapping = nodeMappings[nodeId];
+      questions.push({
+        key: mapping.key,
+        question: node.prompt || mapping.question,
+        options: node.options || mapping.options,
+      });
+    }
+  });
+
+  return questions;
+}
+
+function extractServicePrompts() {
+  const node = yamlConfig.nodes.find((item) => item.id === 'service_questions');
+  if (!node) return new Map();
+
+  const cases = node.cases ?? {};
+  const result = new Map();
+
+  Object.entries(cases).forEach(([label, caseDefinition]) => {
+    if (!caseDefinition?.prompt) return;
+    const lines = caseDefinition.prompt
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => line.startsWith('- '))
+      .map((line) => line.replace(/^-\s*/, '').trim())
+      .filter((line) => line.length > 0);
+
+    result.set(label, lines);
+  });
+
+  return result;
+}
+
+const GENERIC_QUESTIONS = extractGenericQuestions();
+const SERVICE_PROMPTS = extractServicePrompts();
+const SERVICE_OPTIONS = Array.from(SERVICE_PROMPTS.keys());
+
+function getServiceQuestions(serviceLabel) {
+  return SERVICE_PROMPTS.get(serviceLabel) ?? [];
+}
+
+const sessions = new Map();
+
+function createSession(sessionId, context = {}) {
+  const session = {
+    id: sessionId,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    stage: 'emergency_check', // Start with first YAML node
+    genericIndex: 0,
+    serviceIndex: 0,
+    followUpIndex: 0,
+    followUpQuestions: [],
+    followUpsGenerated: false,
+    answers: [],
+    followUpAnswers: [],
+    selectedServiceLabel: null,
+    selectedServiceKey: null,
+    isEmergency: null,
+    history: [],
+    processedUserMessages: 0,
+    preselectedService: context.preselectedService ?? null,
+    summary: null,
+  };
+
+  sessions.set(sessionId, session);
+
+  addAssistantMessage(
+    session,
+    "Hi there! I'm the AquaFlow quote assistant. I’ll ask a few quick questions so we can prepare your plumbing quote."
+  );
+
+  // Start with the first question from YAML
+  askCurrentGenericQuestion(session);
+
+  return session;
+}
+
+function getSession(sessionId, context = {}) {
+  if (!sessionId) {
+    throw new Error('Session ID is required to run the quote agent.');
+  }
+
+  const existing = sessions.get(sessionId);
+  if (existing) {
+    existing.updatedAt = Date.now();
+    if (context.preselectedService && !existing.selectedServiceLabel) {
+      existing.preselectedService = context.preselectedService;
+    }
+    return existing;
+  }
+  return createSession(sessionId, context);
+}
+
+function addAssistantMessage(session, text, extra = {}) {
+  session.history.push({ role: 'assistant', text, ...extra });
+}
+
+function addUserMessage(session, text) {
+  session.history.push({ role: 'user', text });
+}
+
+
+function askCurrentGenericQuestion(session) {
+  const item = GENERIC_QUESTIONS[session.genericIndex];
+  if (item) {
+    // Use the options from the extracted questions (which come from YAML)
+    if (Array.isArray(item.options) && item.options.length > 0) {
+      addAssistantMessage(session, item.question, {
+        type: 'choice',
+        options: item.options.map((option) => ({
+          label: option,
+          value: option,
+        })),
+      });
+    } else {
+      addAssistantMessage(session, item.question, {
+        type: 'input',
+        inputType: 'text',
+      });
+    }
+  } else {
+    session.stage = 'select_service';
+    sendServiceOptions(session);
+  }
+}
+
+function sendServiceOptions(session) {
+  addAssistantMessage(
+    session,
+    'What type of plumbing service do you need?',
+    {
+      type: 'choice',
+      options: SERVICE_OPTIONS.map((option) => ({
+        label: option,
+        value: option,
+      })),
+    }
+  );
+}
+
+function askNextServiceQuestion(session) {
+  const questions = getServiceQuestions(session.selectedServiceLabel);
+  const question = questions[session.serviceIndex];
+  if (question) {
+    console.log('[QuoteAgentRunner] Asking service question', {
+      service: session.selectedServiceLabel,
+      index: session.serviceIndex,
+      question,
+    });
+    addAssistantMessage(session, question, {
+      type: 'input',
+      inputType: 'text',
+    });
+  }
+}
+
+function askNextFollowUpQuestion(session) {
+  const question = session.followUpQuestions[session.followUpIndex];
+  if (question) {
+    addAssistantMessage(session, question, {
+      type: 'input',
+      inputType: 'text',
+    });
+  }
+}
+
+function recordAnswer(session, question, answer) {
+  session.answers.push({ question, answer });
+}
+
+function slugServiceLabel(label) {
+  return normalizeServiceKey(label);
+}
+
+async function generateFollowUpQuestions(session) {
+  if (!openAiClient) return [];
+
+  try {
+    const lines = session.answers
+      .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
+      .join('\n\n');
+
+    const service = session.selectedServiceLabel ?? 'General plumbing service';
+    const prompt = `You are an expert plumbing quote agent.
+You must determine if more information is required from the customer before submitting their request.
+
+Service category: ${service}
+Answers collected so far:
+${lines}
+
+If more details are needed to prepare an accurate quote, ask up to 3 follow-up questions.
+If everything is clear, return an empty list.
+
+Respond in JSON:
+{ "requiresFollowUp": boolean, "questions": ["question 1", ...] }`;
+
+    const completion = await openAiClient.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You craft follow-up questions for plumbing quotes.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 250,
+      temperature: 0.2,
+    });
+
+    const content = completion.choices?.[0]?.message?.content;
+    if (!content) return [];
+
+    const parsed = JSON.parse(content);
+    if (parsed?.requiresFollowUp && Array.isArray(parsed.questions)) {
+      return parsed.questions.filter((question) => typeof question === 'string' && question.trim().length > 0);
+    }
+    return [];
+  } catch (error) {
+    console.error('QuoteAgentRunner: Failed to generate follow-up questions', error);
+    return [];
+  }
+}
+
+function buildSummary(session) {
+  const summary = {
+    service: {
+      label: session.selectedServiceLabel,
+      key: session.selectedServiceKey,
+    },
+    emergency: session.isEmergency ?? false,
+    answers: [...session.answers, ...session.followUpAnswers],
+  };
+
+  session.summary = summary;
+  session.stage = REVIEW_STAGE;
+
+  const answerLines = summary.answers
+    .map((item) => `• ${item.question}\n  ${item.answer || 'Not provided'}`)
+    .join('\n');
+
+  addAssistantMessage(
+    session,
+    `Here’s a summary of what I collected:
+- Service: ${summary.service.label ?? 'Not selected'}
+- Emergency: ${summary.emergency ? 'Yes' : 'No'}
+
+Your answers:
+${answerLines}
+
+Let’s review your contact details, service location, and any attachments before we submit the quote.`
+  ,
+    { type: 'summary' }
+  );
+}
+
+async function handleGenericAnswer(session, answer) {
+  const questionItem = GENERIC_QUESTIONS[session.genericIndex];
+  if (questionItem) {
+    recordAnswer(session, questionItem.question, answer);
+
+    // Special handling for emergency question (first question)
+    if (questionItem.key === 'is_emergency') {
+      const normalized = (answer || '').trim().toLowerCase();
+      session.isEmergency = normalized.startsWith('y') || normalized === 'yes';
+    }
+  }
+
+  session.genericIndex += 1;
+
+  if (session.genericIndex < GENERIC_QUESTIONS.length) {
+    askCurrentGenericQuestion(session);
+    return;
+  }
+
+  session.stage = 'select_service';
+
+  if (session.preselectedService) {
+    const matched = SERVICE_OPTIONS.find(
+      (option) => slugServiceLabel(option) === normalizeServiceKey(session.preselectedService)
+    );
+    if (matched) {
+      session.selectedServiceLabel = matched;
+      session.selectedServiceKey = slugServiceLabel(matched);
+      recordAnswer(session, 'Selected service category', matched);
+      session.stage = 'service_questions';
+      askNextServiceQuestion(session);
+      return;
+    }
+  }
+
+  sendServiceOptions(session);
+}
+
+async function handleServiceSelection(session, answer) {
+  if (!answer) {
+    sendServiceOptions(session);
+    return;
+  }
+
+  const normalizedAnswer = answer.toLowerCase();
+  let matched = SERVICE_OPTIONS.find((option) => option.toLowerCase() === normalizedAnswer);
+
+  if (!matched) {
+    matched = SERVICE_OPTIONS.find((option) =>
+      slugServiceLabel(option) === normalizeServiceKey(answer)
+    );
+  }
+
+  if (!matched) {
+    addAssistantMessage(
+      session,
+      "I didn’t quite catch that service type. Please choose one of the listed options (for example, \"Leak Detection & Repair\")."
+    );
+    return;
+  }
+
+  session.selectedServiceLabel = matched;
+  session.selectedServiceKey = slugServiceLabel(matched);
+  recordAnswer(session, 'Selected service category', matched);
+  session.stage = 'service_questions';
+  askNextServiceQuestion(session);
+}
+
+async function handleServiceAnswer(session, answer) {
+  const question = getServiceQuestions(session.selectedServiceLabel)[session.serviceIndex];
+  if (question) {
+    recordAnswer(session, question, answer || 'Not provided');
+  }
+
+  session.serviceIndex += 1;
+
+  const questions = getServiceQuestions(session.selectedServiceLabel);
+  if (session.serviceIndex < questions.length) {
+    askNextServiceQuestion(session);
+    return;
+  }
+
+  if (!session.followUpsGenerated) {
+    session.followUpsGenerated = true;
+    const followUps = await generateFollowUpQuestions(session);
+    if (followUps.length > 0) {
+      session.followUpQuestions = followUps;
+      session.stage = 'ai_followup';
+      session.followUpIndex = 0;
+      askNextFollowUpQuestion(session);
+      return;
+    }
+  }
+
+  buildSummary(session);
+}
+
+async function handleFollowUpAnswer(session, answer) {
+  const question = session.followUpQuestions[session.followUpIndex];
+  if (question) {
+    session.followUpAnswers.push({ question, answer: answer || 'Not provided' });
+  }
+
+  session.followUpIndex += 1;
+
+  if (session.followUpIndex < session.followUpQuestions.length) {
+    askNextFollowUpQuestion(session);
+    return;
+  }
+
+  buildSummary(session);
+}
+
+async function handleUserInput(session, userText) {
+  switch (session.stage) {
+    case 'emergency_check':
+    case 'generic_questions':
+      console.log('[QuoteAgentRunner] Generic answer:', {
+        stage: session.stage,
+        index: session.genericIndex,
+        question: GENERIC_QUESTIONS[session.genericIndex]?.question,
+        answer: userText,
+      });
+      await handleGenericAnswer(session, userText);
+      break;
+    case 'select_service':
+      console.log('[QuoteAgentRunner] Service selection:', userText);
+      await handleServiceSelection(session, userText);
+      break;
+    case 'service_questions':
+      await handleServiceAnswer(session, userText);
+      break;
+    case 'ai_followup':
+      await handleFollowUpAnswer(session, userText);
+      break;
+    case REVIEW_STAGE:
+      addAssistantMessage(session, 'I already have all the details I need. Please review the summary and submit the request when ready.');
+      break;
+    default:
+      addAssistantMessage(session, 'Thanks! I’ll keep your answer noted.');
+      break;
+  }
+}
+
+
+function extractUserMessages(messages = []) {
+  return messages.filter((message) => message?.role === 'user');
+}
+
+export async function runQuoteAgent({ sessionId, messages = [], context = {} }) {
+  console.log('[runQuoteAgent] Called with:', { sessionId, messagesCount: messages.length, context });
+
+  const session = getSession(sessionId, context);
+  console.log('[runQuoteAgent] Session state:', {
+    stage: session.stage,
+    genericIndex: session.genericIndex,
+    processedUserMessages: session.processedUserMessages,
+    historyLength: session.history.length
+  });
+
+  const userMessages = extractUserMessages(messages);
+  console.log('[runQuoteAgent] User messages to process:', userMessages.length);
+
+  while (session.processedUserMessages < userMessages.length) {
+    const message = userMessages[session.processedUserMessages];
+    const content = typeof message.text === 'string'
+      ? message.text
+      : typeof message.content === 'string'
+      ? message.content
+      : Array.isArray(message.content)
+      ? message.content.map((chunk) => chunk?.text || chunk).join(' ')
+      : '';
+
+    console.log('[runQuoteAgent] Processing user message:', {
+      index: session.processedUserMessages,
+      content: content.trim(),
+      hasContent: !!(content && content.trim().length > 0)
+    });
+
+    if (content && content.trim().length > 0) {
+      addUserMessage(session, content.trim());
+      console.log('[runQuoteAgent] Added user message, calling handleUserInput');
+      await handleUserInput(session, content.trim());
+      console.log('[runQuoteAgent] handleUserInput completed');
+    }
+
+    session.processedUserMessages += 1;
+  }
+
+  console.log('[runQuoteAgent] Final session state:', {
+    stage: session.stage,
+    genericIndex: session.genericIndex,
+    processedUserMessages: session.processedUserMessages,
+    historyLength: session.history.length
+  });
+
+  const responseStage = session.stage === REVIEW_STAGE ? REVIEW_STAGE : 'chat';
+
+  console.log('[QuoteAgentRunner] Response stage:', {
+    sessionStage: session.stage,
+    responseStage,
+    lastMessage: session.history[session.history.length - 1],
+  });
+
+  return {
+    messages: session.history.map((item) => ({
+      role: item.role,
+      text: item.text,
+      type: item.type,
+      inputType: item.inputType,
+      options: item.options,
+    })),
+    stage: responseStage,
+    summary: session.stage === REVIEW_STAGE ? session.summary : null,
+    currentNode: session.stage,
+    completedNodes: [],
+  };
+}
+
+export function resetQuoteAgentSession(sessionId) {
+  if (sessionId) {
+    sessions.delete(sessionId);
+  }
+}
+
+export function clearStaleSessions(maxAgeMs = 60 * 60 * 1000) {
+  const cutoff = Date.now() - maxAgeMs;
+  for (const [sessionId, session] of sessions.entries()) {
+    if (session.updatedAt < cutoff) {
+      sessions.delete(sessionId);
+    }
+  }
+}
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/config/supabase/database.js ---
@@ -12319,7 +13596,29 @@ const triageRequest = async (req, res) => {
   }
 };
 
-export { triageRequest };
+const updateRequestTriage = async (requestId, triageData) => {
+  try {
+    const {error: updateError} = await supabase
+      .from('requests')
+      .update({
+        triage_summary: triageData.triage_summary,
+        priority_score: triageData.priority_score,
+        priority_explanation: triageData.priority_explanation,
+        profitability_score: triageData.profitability_score,
+        profitability_explanation: triageData.profitability_explanation
+      })
+      .eq('id', requestId);
+
+    if (updateError) throw updateError;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating triage:', error);
+    throw error;
+  }
+};
+
+export { triageRequest, updateRequestTriage };
 
 --- END OF FILE ---
 
@@ -12542,6 +13841,201 @@ const validate = (schema) => (req, res, next) => {
 export { validate };
 --- END OF FILE ---
 
+--- START OF FILE ./packages/backend/api/routes/agentRoutes.js ---
+
+// packages/backend/api/routes/agentRoutes.js
+// Routes for OpenAI Agent Toolkit integration
+
+import express from 'express';
+import { submitQuoteRequest } from '../controllers/requestController.js';
+import { updateRequestTriage } from '../controllers/triageController.js';
+import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
+
+const router = express.Router();
+
+// Agent runner endpoint (development/local API usage)
+router.post('/quote/run', async (req, res) => {
+  try {
+    const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+    const context = req.body?.context ?? {};
+    const sessionId = context.sessionId || context.userId || context.conversationId;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'sessionId is required to run the quote agent.',
+      });
+    }
+
+    const result = await runQuoteAgent({
+      sessionId,
+      messages,
+      context,
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('Agent quote run error:', error);
+    return res.status(500).json({
+      error: 'Agent execution failed',
+      details: error.message,
+    });
+  }
+});
+
+// Agent action: Submit quote request
+router.post('/submit-quote', async (req, res) => {
+  try {
+    console.log('Agent submitting quote request:', req.body);
+
+    // Transform agent data to match our API format
+    const requestData = {
+      clarifyingAnswers: req.body.clarifyingAnswers || [],
+      contactInfo: req.body.contactInfo || {},
+      category: req.body.category || '',
+      isEmergency: req.body.isEmergency || false,
+      problem_description: req.body.problem_description || '',
+      preferred_timing: req.body.preferred_timing || '',
+      property_type: req.body.property_type || '',
+      is_homeowner: req.body.is_homeowner || false,
+      service_address: req.body.service_address || '',
+      latitude: req.body.latitude || null,
+      longitude: req.body.longitude || null,
+      geocoded_address: req.body.geocoded_address || null
+    };
+
+    // Use existing controller logic
+    const result = await submitQuoteRequest(req.body.userId, requestData);
+
+    res.json({
+      success: true,
+      requestId: result.request?.id,
+      message: 'Quote request submitted successfully'
+    });
+  } catch (error) {
+    console.error('Agent quote submission error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to submit quote request'
+    });
+  }
+});
+
+// Agent action: Update request triage
+router.post('/update-triage/:requestId', async (req, res) => {
+  try {
+    console.log('Agent updating triage for request:', req.params.requestId, req.body);
+
+    const triageData = {
+      triage_summary: req.body.triage_summary,
+      priority_score: req.body.priority_score,
+      priority_explanation: req.body.priority_explanation,
+      profitability_score: req.body.profitability_score,
+      profitability_explanation: req.body.profitability_explanation
+    };
+
+    await updateRequestTriage(req.params.requestId, triageData);
+
+    res.json({
+      success: true,
+      message: 'Triage updated successfully'
+    });
+  } catch (error) {
+    console.error('Agent triage update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update triage'
+    });
+  }
+});
+
+// Agent action: Fetch request details
+router.get('/request/:requestId', async (req, res) => {
+  try {
+    // This would use existing request fetching logic
+    // For now, return mock data for agent testing
+    res.json({
+      id: req.params.requestId,
+      problem_category: 'leak_repair',
+      answers: [
+        { question: 'Where is the leak?', answer: 'Under the kitchen sink' },
+        { question: 'Is water actively leaking?', answer: 'Yes' }
+      ],
+      is_emergency: false,
+      created_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Agent request fetch error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch request'
+    });
+  }
+});
+
+// Agent tool: Assess leak severity
+router.post('/tools/assess-leak-severity', async (req, res) => {
+  try {
+    const { leak_description, drip_rate } = req.body;
+
+    const severity = drip_rate?.includes('steady stream') ? 'high' :
+                   drip_rate?.includes('drip') ? 'medium' : 'low';
+
+    res.json({
+      severity,
+      urgency: severity === 'high' ? 'immediate' : severity === 'medium' ? 'within 24 hours' : 'schedule soon',
+      estimated_cost_range: severity === 'high' ? '$200-500' : severity === 'medium' ? '$100-300' : '$50-150'
+    });
+  } catch (error) {
+    console.error('Leak assessment tool error:', error);
+    res.status(500).json({ error: 'Tool execution failed' });
+  }
+});
+
+// Agent tool: Check emergency status
+router.post('/tools/check-emergency-status', async (req, res) => {
+  try {
+    const { leak_location, water_flow, property_type } = req.body;
+
+    const isEmergency = water_flow.includes('actively') ||
+                      leak_location.includes('ceiling') ||
+                      leak_location.includes('wall');
+
+    res.json({
+      is_emergency: isEmergency,
+      recommended_response_time: isEmergency ? 'within 2 hours' : 'schedule appointment',
+      reason: isEmergency ? 'Risk of significant water damage' : 'Can be scheduled normally'
+    });
+  } catch (error) {
+    console.error('Emergency check tool error:', error);
+    res.status(500).json({ error: 'Tool execution failed' });
+  }
+});
+
+// Agent tool: Analyze water heater issues
+router.post('/tools/analyze-water-heater-issue', async (req, res) => {
+  try {
+    const { symptoms, system_age, system_type } = req.body;
+
+    const age = system_age || 0;
+    const shouldReplace = age > 10 || symptoms.includes('no hot water') || symptoms.includes('leaking');
+
+    res.json({
+      recommended_action: shouldReplace ? 'replacement' : 'repair',
+      estimated_cost: shouldReplace ? '$800-2500' : '$200-800',
+      reasoning: shouldReplace ?
+        'Age and symptoms suggest replacement is more cost-effective' :
+        'Issue appears repairable for now'
+    });
+  } catch (error) {
+    console.error('Water heater analysis tool error:', error);
+    res.status(500).json({ error: 'Tool execution failed' });
+  }
+});
+
+export default router;
+
+--- END OF FILE ---
+
 --- START OF FILE ./packages/backend/api/routes/followUpRoutes.js ---
 
 // packages/backend/api/routes/followUpRoutes.js
@@ -12644,6 +14138,7 @@ import {
   markRequestAsViewed,
   cleanupTestData,
 } from '../controllers/requestController.js';
+import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validationMiddleware.js';
 import {
@@ -12663,6 +14158,18 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
+
+// --- Agent Routes ---
+router.post('/agents/quote/run', authenticate, async (req, res) => {
+  try {
+    const { sessionId, messages = [], context = {} } = req.body;
+    const result = await runQuoteAgent({ sessionId, messages, context });
+    res.json(result);
+  } catch (error) {
+    console.error('Quote agent error:', error);
+    res.status(500).json({ error: 'Failed to run quote agent' });
+  }
+});
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
@@ -12812,6 +14319,7 @@ import requestRoutes from './routes/requestRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import followUpRoutes from './routes/followUpRoutes.js';
 import triageRoutes from './routes/triageRoutes.js';
+import agentRoutes from './routes/agentRoutes.js';
 
 const app = express();
 
@@ -12824,6 +14332,7 @@ app.use(express.json());
 app.use('/api/requests', requestRoutes);
 app.use('/api/follow-up', followUpRoutes);
 app.use('/api/triage', triageRoutes);
+app.use('/api/agents', agentRoutes);
 app.use('/api', userRoutes);
 
 app.get('/api/health', (req, res) => {
@@ -13275,11 +14784,12 @@ This directory contains the serverless functions that power the PlumbingPOC appl
 
 ## Overview
 
-The application uses Netlify Functions to run the Express.js backend serverlessly. The main function is `api.mjs` which wraps the Express app using `serverless-http`.
+The application uses Netlify Functions to run the Express.js backend serverlessly. The main function is `api.mjs` which wraps the Express app using `serverless-http`. Additional specialized functions handle specific features like AI-powered quote assistance (`quote-agent.mjs`) and SMS notifications (`send-sms.mjs`).
 
 ## File Structure
 
 - `api.mjs` - Main API function that handles all HTTP requests
+- `quote-agent.mjs` - OpenAI Agent Toolkit function for intelligent quote assistance
 - `send-sms.mjs` - SMS notification function for Twilio integration
 
 ## Module System
@@ -13292,9 +14802,11 @@ All functions use ES Modules (`.mjs` extension) to maintain consistency with the
 
 2. **External Modules Configuration**: Netlify's bundler is configured via `netlify.toml` to treat complex Node.js packages (express, cors, serverless-http, etc.) as external dependencies rather than bundling them. This prevents bundling conflicts while maintaining runtime availability.
 
-3. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
+3. **AI Agent Functions**: Specialized functions like `quote-agent.mjs` use the OpenAI Agents SDK to execute YAML-defined agent workflows. These functions load agent configurations from the `agents/` directory and provide secure, server-side AI execution without exposing API keys to the frontend.
 
-4. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
+4. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
+
+5. **Error Handling**: Functions include comprehensive error handling with proper HTTP status codes and JSON responses.
 
 ## Deployment
 
@@ -13316,16 +14828,24 @@ The functions use Netlify's esbuild bundler with special configuration in `netli
       "@supabase/supabase-js"
     ]
   }
+
+  "quote-agent-mjs" = {
+    external_node_modules = [
+      "@openai/agents",
+      "yaml"
+    ]
+  }
 ```
 
-This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality.
+This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality. The `quote-agent` function requires the OpenAI Agents SDK and YAML parser as external dependencies.
 
 ## Environment Variables
 
 Functions access environment variables set in the Netlify dashboard:
 - `VITE_FRONTEND_BASE_URL` - CORS origin
 - Database credentials (Supabase)
-- API keys (OpenAI, Twilio, etc.)
+- `OPENAI_API_KEY` - Required for AI agent functions
+- API keys (Twilio, etc.)
 
 ## Troubleshooting
 
@@ -13335,9 +14855,11 @@ Functions access environment variables set in the Netlify dashboard:
 
 2. **Bundling Errors**: If you see errors about external modules, verify the `external_node_modules` configuration in `netlify.toml` includes all required packages.
 
-3. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
+3. **Agent Function Errors**: For `quote-agent.mjs`, ensure the `agents/quote-agent.yaml` file exists and is valid YAML. Check that `OPENAI_API_KEY` is properly set.
 
-4. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard. Functions access variables injected by Netlify at runtime.
+4. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
+
+5. **Environment Variables**: Verify all required environment variables are set in Netlify dashboard. Functions access variables injected by Netlify at runtime.
 
 ### Function Logs
 
@@ -13398,6 +14920,82 @@ export async function handler(event, context) {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Internal server error', details: error.message }),
+    };
+  }
+}
+
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/netlify/functions/quote-agent.mjs ---
+
+// packages/backend/netlify/functions/quote-agent.mjs
+// Netlify function to run QuoteAgent using OpenAI Agents SDK
+
+import { runQuoteAgent } from "../../api/agents/quoteAgentRunner.js";
+
+export async function handler(event, context) {
+  try {
+    // Handle CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        },
+        body: ''
+      };
+    }
+
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    const { messages, context: agentContext } = body;
+    const sessionId = agentContext?.sessionId || agentContext?.userId || agentContext?.conversationId;
+
+    if (!sessionId) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'sessionId is required to run the quote agent.' }),
+      };
+    }
+
+    const result = await runQuoteAgent({
+      sessionId,
+      messages: messages || [],
+      context: agentContext || {},
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
+      body: JSON.stringify({
+        ...result
+      })
+    };
+
+  } catch (error) {
+    console.error('QuoteAgent function error:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Agent execution failed',
+        details: error.message
+      })
     };
   }
 }
@@ -16711,6 +18309,1171 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
 };
 
 export default MyRequests;
+--- END OF FILE ---
+
+--- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx ---
+
+// packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
+// Agent-driven quote intake modal with ChatKit-style conversation and review summary
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Send, X as CloseIcon } from "lucide-react";
+import { useAuth } from "../../auth/AuthContext";
+import ServiceLocationManager from "./ServiceLocationManager";
+import AttachmentSection from "./AttachmentSection";
+import { uploadAttachments } from "../../../lib/apiClient";
+import { useSubmitQuoteRequest } from "../../../hooks";
+import { services as SERVICE_DEFINITIONS } from "../../../lib/serviceDefinitions";
+
+interface QuoteAgentModalChatKitProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmissionSuccess: (newRequest: any) => void;
+  preselectedService?: string | null;
+}
+
+type AgentMessage = {
+  role: string;
+  content?: unknown;
+  text?: string;
+  type?: string;
+  inputType?: string;
+  options?: Array<{ label?: string; value?: string } | string>;
+};
+
+type SummaryAnswer = {
+  question: string;
+  answer: string;
+};
+
+type SummaryPayload = {
+  service?: {
+    label?: string;
+    key?: string;
+  };
+  emergency?: boolean | string;
+  answers: SummaryAnswer[];
+};
+
+type AddressPayload = {
+  service_address: string;
+  latitude: number | null;
+  longitude: number | null;
+  geocoded_address: string | null;
+};
+
+const safeParseJson = (input: string): any => {
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+};
+
+const isLocalHost =
+  typeof window !== "undefined" &&
+  window.location.hostname &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "::1");
+
+const AGENT_ENDPOINT = isLocalHost
+  ? "/api/agents/quote/run"
+  : "/.netlify/functions/quote-agent";
+const REVIEW_STAGE = "review_summary";
+
+const sanitizeText = (value: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => sanitizeText(item))
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof value === "object" && "text" in (value as any)) {
+    return sanitizeText((value as any).text);
+  }
+  return JSON.stringify(value);
+};
+
+const resolveServiceKey = (summaryService?: SummaryPayload["service"]) => {
+  if (!summaryService) return undefined;
+  const providedKey =
+    summaryService.key?.toLowerCase().replace(/[^a-z0-9_]+/g, "_")?.replace(/_+/g, "_")?.replace(/^_|_$/g, "") ||
+    undefined;
+  if (providedKey) {
+    const directMatch = SERVICE_DEFINITIONS.find(
+      (service) => service.key.toLowerCase() === providedKey
+    );
+    if (directMatch) return directMatch.key;
+  }
+
+  const label = summaryService.label?.toLowerCase().trim();
+  if (label) {
+    const labelMatch = SERVICE_DEFINITIONS.find(
+      (service) => service.title.toLowerCase() === label
+    );
+    if (labelMatch) return labelMatch.key;
+  }
+
+  if (providedKey) return providedKey;
+  if (label) {
+    return label.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  }
+
+  return undefined;
+};
+
+const buildServiceAddressPayload = (
+  useProfileAddress: boolean,
+  profile: any,
+  manualAddress: Partial<AddressPayload>
+): AddressPayload => {
+  if (useProfileAddress) {
+    if (
+      !profile?.address ||
+      !profile?.city ||
+      !profile?.province ||
+      !profile?.postal_code
+    ) {
+      throw new Error(
+        "Your profile address is incomplete. Please update it or choose a different service address."
+      );
+    }
+    return {
+      service_address: `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}`,
+      latitude: profile.latitude ?? null,
+      longitude: profile.longitude ?? null,
+      geocoded_address: profile.geocoded_address ?? null,
+    };
+  }
+
+  if (!manualAddress?.service_address) {
+    throw new Error(
+      "Please enter the service address and click Verify Address before submitting."
+    );
+  }
+
+  if (
+    manualAddress.latitude === null ||
+    manualAddress.latitude === undefined ||
+    manualAddress.longitude === null ||
+    manualAddress.longitude === undefined
+  ) {
+    throw new Error(
+      "Service address verification is required. Please verify the address and try again."
+    );
+  }
+
+  return {
+    service_address: manualAddress.service_address,
+    latitude: manualAddress.latitude,
+    longitude: manualAddress.longitude,
+    geocoded_address:
+      manualAddress.geocoded_address ?? manualAddress.service_address,
+  };
+};
+
+export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
+  isOpen,
+  onClose,
+  onSubmissionSuccess,
+  preselectedService,
+}) => {
+  const { profile, user } = useAuth();
+  const submitQuoteMutation = useSubmitQuoteRequest();
+
+  const [conversation, setConversation] = useState<AgentMessage[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [stage, setStage] = useState<"chat" | "summary">("chat");
+  const [summary, setSummary] = useState<SummaryPayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [useProfileAddress, setUseProfileAddress] = useState(true);
+  const [addressData, setAddressData] = useState<Partial<AddressPayload>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
+  const sessionIdRef = useRef<string>('');
+
+  const resetState = useCallback(() => {
+    setConversation([]);
+    setInputValue("");
+    setIsLoading(false);
+    setIsInitializing(false);
+    setStage("chat");
+    setSummary(null);
+    setError(null);
+    setAttachments([]);
+    setUseProfileAddress(true);
+    setAddressData({});
+    setIsSubmitting(false);
+    sessionIdRef.current = '';
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!isOpen) {
+      resetState();
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    // Prevent re-initialization if we already have a conversation
+    if (conversation.length > 0) {
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    sessionIdRef.current =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const initializeConversation = async () => {
+      setIsInitializing(true);
+      setError(null);
+      try {
+        if (!sessionIdRef.current) {
+          throw new Error("Unable to initialize agent session.");
+        }
+
+        const response = await fetch(AGENT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [],
+            context: {
+              sessionId: sessionIdRef.current,
+              preselectedService,
+              userId: user?.id,
+              profile: profile
+                ? {
+                    name: profile.name,
+                    email: profile.email,
+                    phone: profile.phone,
+                    address: profile.address,
+                    city: profile.city,
+                    province: profile.province,
+                    postal_code: profile.postal_code,
+                  }
+                : null,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to start agent conversation.");
+        }
+
+        const data = await response.json();
+        if (!isCancelled) {
+          handleAgentResponse(data);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error("QuoteAgentModal-ChatKit: init error", err);
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to start the quote assistant. Please try again."
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    initializeConversation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, preselectedService, profile, resetState, user, conversation.length]);
+
+  useEffect(() => {
+    if (scrollAnchorRef.current) {
+      scrollAnchorRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversation, stage]);
+
+  const handleAgentResponse = (data: any) => {
+    console.log('[QuoteAgentModal] handleAgentResponse called', { data });
+    const returnedMessages = Array.isArray(data?.messages)
+      ? (data.messages as AgentMessage[])
+      : [];
+    console.log('[QuoteAgentModal] Setting conversation to:', returnedMessages.length, 'messages');
+    setConversation(returnedMessages);
+
+    if (data?.stage === REVIEW_STAGE && data?.summary) {
+      console.log('[QuoteAgentModal] Setting stage to summary');
+      setSummary(data.summary as SummaryPayload);
+      setStage("summary");
+    } else {
+      console.log('[QuoteAgentModal] Setting stage to chat');
+      setStage("chat");
+      setSummary(null);
+    }
+  };
+
+  const callAgent = useCallback(
+    async (messagesPayload: AgentMessage[]) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        if (!sessionIdRef.current) {
+          throw new Error("Agent session is not initialized.");
+        }
+
+        const response = await fetch(AGENT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: messagesPayload,
+            context: {
+              sessionId: sessionIdRef.current,
+              preselectedService,
+              userId: user?.id,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to continue agent conversation.");
+        }
+
+        const data = await response.json();
+        handleAgentResponse(data);
+      } catch (err) {
+        console.error("QuoteAgentModal-ChatKit: callAgent error", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "The assistant is unavailable. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [preselectedService, user?.id]
+  );
+
+  const submitReply = useCallback(
+    async (reply?: string | AgentMessage) => {
+      console.log('[QuoteAgentModal] submitReply called', { reply, isLoading, stage });
+      if (isLoading || stage !== "chat") {
+        console.log('[QuoteAgentModal] submitReply blocked', { isLoading, stage });
+        return;
+      }
+
+      let userMessage: AgentMessage;
+      if (typeof reply === "object" && reply !== null) {
+        // reply is already an AgentMessage
+        userMessage = reply;
+        console.log('[QuoteAgentModal] Using provided AgentMessage');
+      } else {
+        // reply is a string, create AgentMessage
+        const candidate = typeof reply === "string" ? reply : inputValue;
+        const trimmed = candidate?.trim();
+        if (!trimmed) {
+          console.log('[QuoteAgentModal] submitReply blocked - empty trimmed');
+          return;
+        }
+
+        console.log('[QuoteAgentModal] submitReply proceeding', { reply: trimmed });
+        userMessage = {
+          role: "user",
+          content: trimmed,
+          text: trimmed,
+        };
+      }
+
+      // Calculate next messages BEFORE updating state
+      const nextMessages = [...conversation, userMessage];
+      console.log('[QuoteAgentModal] Calculated nextMessages, length:', nextMessages.length);
+      
+      // Update conversation state
+      setConversation(nextMessages);
+      console.log('[QuoteAgentModal] setConversation called, new length:', nextMessages.length);
+
+      console.log('[QuoteAgentModal] About to call callAgent with messages:', nextMessages.length);
+      await callAgent(nextMessages);
+      console.log('[QuoteAgentModal] callAgent completed');
+
+      // Clear input after successful send
+      setInputValue('');
+    },
+    [callAgent, inputValue, isLoading, stage, conversation]
+  );
+
+  const handleSendMessage = async (value?: string | AgentMessage) => {
+    console.log('[QuoteAgentModal] handleSendMessage called with:', value);
+    await submitReply(value);
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!summary) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const clarifyingAnswers = summary.answers.map((item) => ({
+        question: item.question,
+        answer: item.answer,
+      }));
+
+      const answerLookup = (needle: string) => {
+        const lowered = needle.toLowerCase();
+        const match = summary.answers.find((answer) =>
+          answer.question.toLowerCase().includes(lowered)
+        );
+        return match?.answer;
+      };
+
+      const serviceKey = resolveServiceKey(summary.service) ?? "other";
+      const isEmergencyValue =
+        typeof summary.emergency === "boolean"
+          ? summary.emergency
+          : typeof summary.emergency === "string"
+          ? summary.emergency.toLowerCase().startsWith("y")
+          : false;
+
+      const serviceAddressPayload = buildServiceAddressPayload(
+        useProfileAddress,
+        profile,
+        addressData
+      );
+
+      const payload: Record<string, any> = {
+        clarifyingAnswers,
+        contactInfo: profile,
+        category: serviceKey,
+        isEmergency: isEmergencyValue,
+        property_type: answerLookup("property") ?? undefined,
+        is_homeowner: answerLookup("own this property") ?? answerLookup("homeowner") ?? undefined,
+        preferred_timing: answerLookup("when would you like") ?? undefined,
+        additional_notes:
+          answerLookup("additional details") ??
+          answerLookup("anything else") ??
+          undefined,
+        ...serviceAddressPayload,
+      };
+
+      const result = await submitQuoteMutation.mutateAsync(payload);
+      const newRequest = result?.request;
+
+      if (attachments.length > 0 && newRequest?.id) {
+        await uploadAttachments(newRequest.id, attachments);
+      }
+
+      onSubmissionSuccess(newRequest);
+      onClose();
+    } catch (err) {
+      console.error("QuoteAgentModal-ChatKit: submission error", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to submit your request. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const visibleMessages = useMemo(() => {
+    const messages = conversation
+      .map((message) => {
+        const text =
+          typeof message.text === "string"
+            ? message.text
+            : sanitizeText(message.content);
+        return { ...message, text };
+      })
+      .filter(
+        (message) =>
+          !(message.role === "assistant" && message.type === "summary")
+      );
+
+    console.log('[QuoteAgentModal] visibleMessages:', messages.length, 'messages');
+    messages.forEach((msg, i) => {
+      console.log(`  Message ${i}: role=${msg.role}, type=${msg.type}, hasOptions=${!!(msg as any).options}`);
+    });
+
+    return messages;
+  }, [conversation]);
+
+  const serviceDefinition = useMemo(() => {
+    if (!summary?.service) return null;
+    const normalizedLabel = summary.service.label?.toLowerCase();
+    const resolvedKey = resolveServiceKey(summary.service);
+    return (
+      SERVICE_DEFINITIONS.find(
+        (service) =>
+          service.title.toLowerCase() === normalizedLabel ||
+          service.key === resolvedKey
+      ) ?? null
+    );
+  }, [summary]);
+
+  const emergencyFlag =
+    typeof summary?.emergency === "boolean"
+      ? summary.emergency
+      : typeof summary?.emergency === "string"
+      ? summary.emergency.toLowerCase().startsWith("y")
+      : false;
+
+  const profileAddressString = profile
+    ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}`
+    : "";
+
+  const handleAttachmentRemove = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDialogClose = () => {
+    if (isSubmitting || isLoading) return;
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          maxWidth: '500px',
+          width: '95%',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 20px',
+            borderBottom: '1px solid #e0e0e0'
+          }}
+        >
+          <h2 style={{ fontWeight: 'bold', color: '#1976d2', margin: 0 }}>
+            Request a Quote
+          </h2>
+          <button
+            onClick={handleDialogClose}
+            disabled={isSubmitting || isLoading}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#666',
+              padding: '4px'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {error && (
+            <div style={{ padding: '16px', background: '#ffebee', borderBottom: '1px solid #e0e0e0' }}>
+              <div style={{ color: '#c62828', fontSize: '14px' }}>{error}</div>
+            </div>
+          )}
+
+          {stage === "chat" && (
+            <ChatPanel
+              messages={visibleMessages}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading || isInitializing}
+              scrollAnchorRef={scrollAnchorRef}
+            />
+          )}
+
+          {stage === "summary" && summary && (
+            <SummaryPanel
+              summary={summary}
+              emergency={emergencyFlag}
+              serviceDefinition={serviceDefinition}
+              attachments={attachments}
+              onAddAttachments={(files) =>
+                setAttachments((prev) => [...prev, ...files])
+              }
+              onRemoveAttachment={handleAttachmentRemove}
+              profile={profile}
+              profileAddress={profileAddressString}
+              useProfileAddress={useProfileAddress}
+              onUseProfileAddressChange={setUseProfileAddress}
+              onAddressDataChange={(data) =>
+                setAddressData((prev) => ({ ...prev, ...data }))
+              }
+              isSubmitting={isSubmitting || submitQuoteMutation.isPending}
+              onSubmit={handleFinalSubmit}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+interface ChatPanelProps {
+  messages: AgentMessage[];
+  inputValue: string;
+  onInputChange: (value: string) => void;
+  onSendMessage: (text?: string | AgentMessage) => void;
+  isLoading: boolean;
+  scrollAnchorRef: React.RefObject<HTMLDivElement>;
+}
+
+const ChatPanel: React.FC<ChatPanelProps> = ({
+  messages,
+  inputValue,
+  onInputChange,
+  onSendMessage,
+  isLoading,
+  scrollAnchorRef,
+}) => {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Auto-focus whenever new messages arrive or loading finishes
+  useEffect(() => {
+    if (!isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [messages, isLoading]);
+
+  const handleOptionClick = (option: string) => {
+    onSendMessage(option);
+  };
+
+  const handleOptionKeyDown = (event: React.KeyboardEvent, option: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleOptionClick(option);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Conversation bubbles */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+        }}
+      >
+        {messages.map((message, index) => {
+          console.log(`[ChatPanel] Processing message ${index}:`, {
+            role: message.role,
+            type: message.type,
+            hasOptions: !!(message as any).options,
+            text: message.text?.substring(0, 50)
+          });
+
+          const isUser = message.role === "user";
+          const parsed =
+            !isUser && typeof message.text === "string"
+              ? safeParseJson(message.text)
+              : null;
+
+          const rawOptions =
+            (message as any).options ??
+            (message.content && (message.content as any).options) ??
+            (parsed?.options && Array.isArray(parsed.options)
+              ? parsed.options
+              : null);
+
+          const normalizedOptions = Array.isArray(rawOptions)
+            ? rawOptions
+                .map((option: any) => {
+                  if (typeof option === "string") {
+                    return {
+                      label: option,
+                      value: option,
+                    };
+                  }
+                  if (option && typeof option === "object") {
+                    const label =
+                      option.label ??
+                      option.value ??
+                      sanitizeText(option);
+                    const value =
+                      option.value ??
+                      option.label ??
+                      sanitizeText(option);
+                    return { label, value };
+                  }
+                  return null;
+                })
+                .filter((option): option is { label: string; value: string } =>
+                  Boolean(option?.value)
+                )
+            : [];
+
+          console.log('[ChatPanel] Message options:', {
+            messageRole: message.role,
+            hasOptions: normalizedOptions.length > 0,
+            optionCount: normalizedOptions.length,
+            rawOptions,
+            normalizedOptions
+          });
+
+          const promptText =
+            (parsed?.prompt as string | undefined) ??
+            (typeof message.text === "string"
+              ? message.text
+              : sanitizeText(message.content));
+
+          // Dynamic rendering based on message type
+          const shouldShowChoiceButtons = message.type === 'choice' && normalizedOptions.length > 0;
+          const shouldShowTextInput = message.type === 'input' || (!shouldShowChoiceButtons && !isUser);
+
+          console.log('[ChatPanel] Message rendering decision:', {
+            messageRole: message.role,
+            messageType: message.type,
+            hasOptions: normalizedOptions.length > 0,
+            shouldShowChoiceButtons,
+            shouldShowTextInput,
+            optionCount: normalizedOptions.length
+          });
+
+          return (
+            <div key={`${message.role}-${index}`}>
+              {/* Message bubble */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: isUser ? 'flex-end' : 'flex-start',
+                  marginBottom: '8px',
+                }}
+              >
+                {!isUser && (
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: '8px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>🔧</span>
+                  </div>
+                )}
+                <div
+                  style={{
+                    maxWidth: '75%',
+                    background: isUser ? '#1976d2' : '#f9f9f9',
+                    color: isUser ? 'white' : '#333',
+                    padding: '12px 16px',
+                    borderRadius: '18px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                    {promptText}
+                  </div>
+                </div>
+                {isUser && (
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#e3f2fd',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginLeft: '8px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>👤</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic UI based on message type */}
+              {shouldShowChoiceButtons && (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: normalizedOptions.length > 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: '8px',
+                    marginLeft: '40px',
+                    marginRight: 'auto',
+                    maxWidth: '300px',
+                  }}
+                >
+                  {(() => {
+                    console.log('[ChatPanel] Rendering choice buttons container, option count:', normalizedOptions.length);
+                    return null;
+                  })()}
+                  {normalizedOptions.map((option, idx) => {
+                    console.log(`[ChatPanel] Rendering button ${idx}:`, option.label, option.value);
+                    return (
+                      <button
+                        key={`${option.value}-${option.label}-${idx}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const value = option.value || option.label;
+                          console.log('[ChatPanel] Button clicked, sending option:', value);
+
+                          const userMessage: AgentMessage = {
+                            role: "user",
+                            text: value,
+                            content: value,
+                          };
+
+                          console.log('[ChatPanel] Created userMessage:', userMessage);
+                          onSendMessage(userMessage);
+                          console.log('[ChatPanel] Called onSendMessage');
+                        }}
+                        onKeyDown={(event) => handleOptionKeyDown(event, option.value)}
+                        style={{
+                          border: '1px solid #1976d2',
+                          background: 'white',
+                          color: '#1976d2',
+                          borderRadius: '20px',
+                          padding: '6px 14px',
+                          fontSize: '0.9rem',
+                          cursor: 'pointer',
+                          pointerEvents: 'auto',
+                          position: 'relative',
+                          zIndex: 10,
+                        }}
+                        tabIndex={0}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {isLoading && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#666',
+              padding: '8px 0',
+            }}
+          >
+            <CircularProgress size={16} />
+            <span style={{ fontSize: '14px' }}>Assistant is typing…</span>
+          </div>
+        )}
+        <div ref={scrollAnchorRef} />
+      </div>
+
+      {/* Input area */}
+      <div
+        style={{
+          borderTop: '1px solid #e0e0e0',
+          padding: '16px',
+          background: '#fafafa',
+        }}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (inputValue.trim()) {
+              onSendMessage(inputValue.trim());
+            }
+          }}
+          style={{ display: 'flex', gap: '8px' }}
+        >
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(event) => onInputChange(event.target.value)}
+            placeholder="Type your reply…"
+            style={{
+              flex: 1,
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              fontSize: '14px',
+              outline: 'none',
+            }}
+            disabled={isLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (inputValue.trim()) {
+                  onSendMessage(inputValue.trim());
+                }
+              }
+            }}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !inputValue.trim()}
+            style={{
+              background: '#1976d2',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 20px',
+              fontSize: '14px',
+              cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
+              opacity: inputValue.trim() && !isLoading ? 1 : 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <Send size={16} />
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+interface SummaryPanelProps {
+  summary: SummaryPayload;
+  emergency: boolean;
+  serviceDefinition: typeof SERVICE_DEFINITIONS[number] | null;
+  attachments: File[];
+  onAddAttachments: (files: File[]) => void;
+  onRemoveAttachment: (index: number) => void;
+  profile: any;
+  profileAddress?: string;
+  useProfileAddress: boolean;
+  onUseProfileAddressChange: (value: boolean) => void;
+  onAddressDataChange: (data: Partial<AddressPayload>) => void;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+}
+
+const SummaryPanel: React.FC<SummaryPanelProps> = ({
+  summary,
+  emergency,
+  serviceDefinition,
+  attachments,
+  onAddAttachments,
+  onRemoveAttachment,
+  profile,
+  profileAddress,
+  useProfileAddress,
+  onUseProfileAddressChange,
+  onAddressDataChange,
+  isSubmitting,
+  onSubmit,
+}) => {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        overflowY: "auto",
+        pr: 1,
+      }}
+    >
+      <Box sx={{ textAlign: "center", mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Please review your request
+        </Typography>
+        {emergency && (
+          <Box
+            sx={{
+              mt: 1,
+              display: "inline-flex",
+              bgcolor: "error.main",
+              color: "error.contrastText",
+              px: 2,
+              py: 0.75,
+              borderRadius: 2,
+              fontWeight: 600,
+            }}
+          >
+            🚨 Emergency Request
+          </Box>
+        )}
+      </Box>
+
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          Service Details
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+          {serviceDefinition?.title ?? summary.service?.label ?? "Plumbing Service"}
+        </Typography>
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          Your Answers
+        </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {summary.answers.map((item, index) => (
+            <Box
+              key={`${item.question}-${index}`}
+              sx={{
+                bgcolor: "grey.50",
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "grey.200",
+                p: 1.5,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, color: "text.primary", mb: 0.5 }}
+              >
+                {item.question}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                {item.answer || "Not provided"}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Paper>
+
+      <ServiceLocationManager
+        mode="create"
+        isAdmin={false}
+        initialAddress={profileAddress}
+        profileAddress={profileAddress}
+        onModeChange={onUseProfileAddressChange}
+        onDataChange={onAddressDataChange}
+      />
+
+      {profile && (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            Contact Information
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography variant="body2">
+              <strong>Name:</strong> {profile.name || "—"}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Email:</strong> {profile.email || "—"}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Phone:</strong> {profile.phone || "—"}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Address:</strong>{" "}
+              {profileAddress || "Add your address in your profile"}
+            </Typography>
+          </Box>
+        </Paper>
+      )}
+
+      <Paper
+        variant="outlined"
+        sx={{ p: 2, bgcolor: "grey.50", borderStyle: "dashed" }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          Attachments (optional)
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+          Add photos or documents related to your plumbing issue.
+        </Typography>
+        <AttachmentSection
+          requestId="new-request"
+          attachments={[]}
+          pendingFiles={attachments}
+          editable
+          onUpdate={() => {}}
+          onNewFiles={onAddAttachments}
+          onRemovePendingFile={onRemoveAttachment}
+        />
+      </Paper>
+
+      <Button
+        variant="contained"
+        color="primary"
+        size="large"
+        disabled={isSubmitting}
+        onClick={onSubmit}
+        sx={{ mt: 1 }}
+      >
+        {isSubmitting ? "Submitting…" : "Confirm & Submit Request"}
+      </Button>
+    </Box>
+  );
+};
+
+export default QuoteAgentModalChatKit;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx ---
@@ -20746,7 +23509,45 @@ export interface ServiceDefinition {
   features: string[];
   questions: string[];
   exampleAnswers?: string[];
+  // New agent-based configuration
+  agentConfig?: {
+    instructions: string;
+    tools?: AgentTool[];
+    handoffs?: AgentHandoff[];
+    outputType?: any;
+  };
 }
+
+export interface AgentTool {
+  name: string;
+  description: string;
+  parameters: any;
+  execute: (input: any) => Promise<any>;
+}
+
+export interface AgentHandoff {
+  name: string;
+  description: string;
+  agent: any; // Will be Agent instance
+}
+
+// General Plumbing Agent that can hand off to specialists
+export const createGeneralPlumbingAgent = () => {
+  // This will be implemented when we integrate with the OpenAI Agents SDK
+  return {
+    name: 'General Plumbing Assistant',
+    instructions: `You are a general plumbing assistant who helps customers identify their plumbing needs and connects them with the right specialist.
+
+Start by understanding their general issue, then hand off to the appropriate specialist agent based on their specific problem:
+- Leak issues → Leak Specialist
+- Water heater problems → Water Heater Specialist
+- Drain clogs → Drain Cleaning Specialist
+- Pipe installation/repair → Pipe Specialist
+
+Be conversational and helpful. Ask clarifying questions when needed, but don't overwhelm with too many questions at once.`,
+    handoffs: [] // Will be populated with specialist agents
+  };
+};
 
 export interface GenericQuestion {
   key: string;
@@ -20794,7 +23595,68 @@ export const services: ServiceDefinition[] = [
       "Yes, water is dripping steadily, and I've shut off the valve under the sink",
       "Slow but steady drip, about 1 drop per second",
       "I noticed it yesterday morning when I was doing dishes"
-    ]
+    ],
+    agentConfig: {
+      instructions: `You are an expert plumbing assistant specializing in leak detection and repair. Your goal is to gather all necessary information to provide an accurate quote for leak repair services.
+
+You have access to tools to help gather information. Ask questions naturally and use the information gathering tools when appropriate.
+
+Key information you need:
+- Location of the leak (under sink, wall, ceiling, outside, etc.)
+- Current leak status (active dripping, water flow stopped, etc.)
+- Severity assessment (drip rate, water damage extent)
+- Timeline (when noticed, how long it's been leaking)
+- Property details (type, age if relevant)
+- Emergency status
+
+Be conversational but thorough. Use the available tools to validate information when possible.`,
+      tools: [
+        {
+          name: 'assess_leak_severity',
+          description: 'Assess the severity of a leak based on description',
+          parameters: {
+            type: 'object',
+            properties: {
+              leak_description: { type: 'string', description: 'Description of the leak' },
+              drip_rate: { type: 'string', description: 'How fast is water dripping/leaking' }
+            },
+            required: ['leak_description']
+          },
+          execute: async (input: { leak_description: string; drip_rate?: string }) => {
+            const severity = input.drip_rate?.includes('steady stream') ? 'high' :
+                           input.drip_rate?.includes('drip') ? 'medium' : 'low';
+            return {
+              severity,
+              urgency: severity === 'high' ? 'immediate' : severity === 'medium' ? 'within 24 hours' : 'schedule soon',
+              estimated_cost_range: severity === 'high' ? '$200-500' : severity === 'medium' ? '$100-300' : '$50-150'
+            };
+          }
+        },
+        {
+          name: 'check_emergency_status',
+          description: 'Determine if a leak situation qualifies as an emergency',
+          parameters: {
+            type: 'object',
+            properties: {
+              leak_location: { type: 'string', description: 'Where the leak is located' },
+              water_flow: { type: 'string', description: 'Is water actively flowing' },
+              property_type: { type: 'string', description: 'Type of property' }
+            },
+            required: ['leak_location', 'water_flow']
+          },
+          execute: async (input: { leak_location: string; water_flow: string; property_type?: string }) => {
+            const isEmergency = input.water_flow.includes('actively') ||
+                              input.leak_location.includes('ceiling') ||
+                              input.leak_location.includes('wall');
+            return {
+              is_emergency: isEmergency,
+              recommended_response_time: isEmergency ? 'within 2 hours' : 'schedule appointment',
+              reason: isEmergency ? 'Risk of significant water damage' : 'Can be scheduled normally'
+            };
+          }
+        }
+      ]
+    }
   },
   {
     key: "pipe_installation",
@@ -20831,6 +23693,70 @@ export const services: ServiceDefinition[] = [
       "Are you looking to repair your existing unit or install a new one?",
       "If installing a new one, are you considering a traditional tank or a tankless system?",
     ],
+    agentConfig: {
+      instructions: `You are a water heater specialist. Help customers determine their water heater needs and gather information for accurate quotes.
+
+Focus on:
+- Current system assessment (gas/electric, tank/tankless, age)
+- Problem diagnosis (no hot water, leaking, strange noises, etc.)
+- Replacement vs repair decision
+- Energy efficiency considerations
+- Safety concerns (gas leaks, electrical issues)
+
+Be knowledgeable about different water heater types and their pros/cons. Guide customers toward the best solution for their situation.`,
+      tools: [
+        {
+          name: 'analyze_water_heater_issue',
+          description: 'Analyze water heater problems and recommend solutions',
+          parameters: {
+            type: 'object',
+            properties: {
+              symptoms: { type: 'string', description: 'What problems are you experiencing' },
+              system_age: { type: 'number', description: 'How old is the water heater in years' },
+              system_type: { type: 'string', description: 'Gas, electric, tankless, etc.' }
+            },
+            required: ['symptoms']
+          },
+          execute: async (input: { symptoms: string; system_age?: number; system_type?: string }) => {
+            const age = input.system_age || 0;
+            const shouldReplace = age > 10 || input.symptoms.includes('no hot water') || input.symptoms.includes('leaking');
+
+            return {
+              recommended_action: shouldReplace ? 'replacement' : 'repair',
+              estimated_cost: shouldReplace ? '$800-2500' : '$200-800',
+              reasoning: shouldReplace ?
+                'Age and symptoms suggest replacement is more cost-effective' :
+                'Issue appears repairable for now'
+            };
+          }
+        },
+        {
+          name: 'compare_heater_types',
+          description: 'Compare different water heater types and recommend best option',
+          parameters: {
+            type: 'object',
+            properties: {
+              household_size: { type: 'number', description: 'Number of people in household' },
+              hot_water_usage: { type: 'string', description: 'High, medium, or low usage' },
+              energy_preference: { type: 'string', description: 'Gas or electric preference' }
+            },
+            required: ['household_size']
+          },
+          execute: async (input: { household_size: number; hot_water_usage?: string; energy_preference?: string }) => {
+            const size = input.household_size;
+            const usage = input.hot_water_usage || 'medium';
+
+            if (size <= 2 && usage === 'low') {
+              return { recommended: 'tankless', reason: 'Energy efficient for small households' };
+            } else if (size <= 4) {
+              return { recommended: 'hybrid_heat_pump', reason: 'Good balance of efficiency and capacity' };
+            } else {
+              return { recommended: 'traditional_tank', reason: 'Best capacity for larger households' };
+            }
+          }
+        }
+      ]
+    }
   },
   {
     key: "fixture_install",
@@ -21008,7 +23934,7 @@ import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import AuthModal from './features/auth/components/AuthModal';
-import QuoteAgentModal from './features/requests/components/QuoteAgentModal';
+import QuoteAgentModal from './features/requests/components/QuoteAgentModal-ChatKit';
 import ServicesSection from './features/landing/components/ServicesSection';
 import ReviewsSection from './features/landing/components/ReviewsSection';
 import AboutSection from './features/landing/components/AboutSection';
@@ -24118,6 +27044,175 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 });
+--- END OF FILE ---
+
+--- START OF FILE ./test-agent-sdk.mjs ---
+
+#!/usr/bin/env node
+
+/**
+ * Local Agent Testing Script using OpenAI Agents SDK
+ * Tests the QuoteAgent logic by simulating the YAML workflow
+ */
+
+import { Agent, run } from "@openai/agents";
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Load environment variables from .env
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load service definitions (simplified version)
+const serviceDefinitions = {
+  services: [
+    {
+      key: 'leak_repair',
+      title: 'Leak Repair',
+      questions: [
+        'What type of leak is it?',
+        'Where is the leak located?',
+        'How severe is the water flow?'
+      ]
+    }
+  ],
+  genericQuestions: [
+    { key: 'problem_description', question: 'Describe the problem' },
+    { key: 'is_emergency', question: 'Is this an emergency?' }
+  ]
+};
+
+// Simulate static questions flow
+function getStaticQuestions(category) {
+  const service = serviceDefinitions.services.find(s => s.key === category);
+  if (!service) return [];
+
+  return [
+    ...serviceDefinitions.genericQuestions.map(q => q.question),
+    ...service.questions
+  ];
+}
+
+// Create agent with instructions based on YAML
+const agent = new Agent({
+  name: "QuoteAgent",
+  instructions: `
+You are a plumbing quote assistant. Follow this workflow:
+
+1. Ask static questions first from the service definitions
+2. If answers are incomplete, ask clarifying questions
+3. Use tools for specialized assessments
+4. Keep responses focused on plumbing services
+
+Available tools:
+- assess_leak_severity: Assess leak severity based on description
+- check_emergency_status: Determine if situation qualifies as emergency
+- analyze_water_heater_issue: Analyze water heater problems
+
+Always be conversational and helpful.
+  `,
+  // Tools temporarily removed for testing basic conversation
+  // tools: [...]
+});
+
+async function testAgent() {
+  console.log("🤖 Starting QuoteAgent Local Test");
+  console.log("==================================");
+
+  try {
+    // Test conversation
+    const testMessages = [
+      "I need a quote for fixing a leaking pipe",
+      "It's under my kitchen sink, dripping steadily",
+      "Yes, it's an emergency"
+    ];
+
+    for (const message of testMessages) {
+      console.log(`\n👤 User: ${message}`);
+
+      const result = await run(agent, message);
+      console.log(`🤖 Agent: ${result.finalOutput}`);
+
+      // Show tool calls if any
+      if (result.toolCalls && result.toolCalls.length > 0) {
+        console.log("🔧 Tools used:");
+        result.toolCalls.forEach(call => {
+          console.log(`  - ${call.name}: ${JSON.stringify(call.result, null, 2)}`);
+        });
+      }
+    }
+
+    console.log("\n✅ Test completed successfully!");
+
+  } catch (error) {
+    console.error("❌ Test failed:", error.message);
+  }
+}
+
+// Run the test
+testAgent();
+--- END OF FILE ---
+
+--- START OF FILE ./test-agent.mjs ---
+
+// test-agent.mjs - Simple test script for OpenAI Agents SDK
+import { Agent, run } from '@openai/agents';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Create a simple test agent
+const testAgent = new Agent({
+  name: 'Plumbing Assistant',
+  instructions: 'You are a helpful plumbing assistant. Ask questions to gather information about plumbing issues.',
+  model: 'gpt-4o-mini',
+  tools: [
+    {
+      name: 'assess_leak_severity',
+      description: 'Assess the severity of a leak based on description',
+      parameters: {
+        type: 'object',
+        properties: {
+          leak_description: { type: 'string' },
+          drip_rate: { type: 'string' }
+        },
+        required: ['leak_description']
+      },
+      execute: async (input) => {
+        const severity = input.drip_rate?.includes('steady stream') ? 'high' :
+                       input.drip_rate?.includes('drip') ? 'medium' : 'low';
+        return {
+          severity,
+          urgency: severity === 'high' ? 'immediate' : severity === 'medium' ? 'within 24 hours' : 'schedule soon',
+          estimated_cost_range: severity === 'high' ? '$200-500' : severity === 'medium' ? '$100-300' : '$50-150'
+        };
+      }
+    }
+  ]
+});
+
+// Test the agent
+async function runTest() {
+  try {
+    console.log('Testing OpenAI Agent...');
+
+    const result = await run(testAgent, 'I have a leak under my kitchen sink. Water is dripping steadily.');
+
+    console.log('Agent Response:', result.finalOutput);
+    console.log('Tool Calls:', result.toolCalls);
+  } catch (error) {
+    console.error('Agent test failed:', error);
+  }
+}
+
+runTest();
 --- END OF FILE ---
 
 --- START OF FILE ./test-e2e.sh ---

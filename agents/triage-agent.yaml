@@ -1,0 +1,151 @@
+agent: TriageAgent
+description: >
+  Analyze plumbing requests and provide AI-powered triage summaries,
+  priority scores, and profitability analysis for business owners.
+
+nodes:
+  - id: fetch_request_data
+    type: action
+    handler: fetchRequestDetails
+    data:
+      endpoint: "/api/requests/{{ requestId }}"
+    next: analyze_request
+
+  - id: analyze_request
+    type: model
+    model: gpt-4o  # Use more capable model for analysis
+    prompt: >
+      You are an expert plumbing business analyst. Analyze this customer request and provide:
+
+      1. A concise triage summary (2-3 sentences)
+      2. Priority score (1-10, where 10 is highest priority)
+      3. Priority explanation
+      4. Profitability score (1-10, where 10 is most profitable)
+      5. Profitability explanation
+
+      Consider:
+      - Urgency of the problem
+      - Complexity of the job
+      - Potential for additional services
+      - Customer's timeline
+      - Emergency status
+
+      Request details: {{ request_data }}
+      Service category: {{ request_data.problem_category }}
+      Customer answers: {{ request_data.answers }}
+    output:
+      type: object
+      properties:
+        triage_summary:
+          type: string
+          description: Concise summary of the request
+        priority_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        priority_explanation:
+          type: string
+        profitability_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        profitability_explanation:
+          type: string
+    next: update_database
+
+  - id: update_database
+    type: action
+    handler: updateRequestTriage
+    data:
+      endpoint: "/api/triage/{{ requestId }}"
+      method: "POST"
+      body: "{{ analysis_result }}"
+
+tools:
+  - name: calculate_job_complexity
+    description: Assess the technical complexity of a plumbing job
+    parameters:
+      type: object
+      properties:
+        service_category:
+          type: string
+          description: The type of plumbing service requested
+        problem_description:
+          type: string
+          description: Description of the problem
+        location_details:
+          type: string
+          description: Where the work needs to be done
+      required: ["service_category"]
+    execute: |
+      const complexityMap = {
+        'leak_repair': 6,
+        'water_heater': 7,
+        'pipe_installation': 8,
+        'drain_cleaning': 4,
+        'fixture_install': 3,
+        'gas_line_services': 9,
+        'perimeter_drains': 7,
+        'main_line_repair': 9,
+        'emergency_service': 8,
+        'bathroom_reno': 8,
+        'other': 5
+      };
+
+      const baseComplexity = complexityMap[service_category] || 5;
+
+      // Adjust based on location difficulty
+      let locationMultiplier = 1;
+      if (location_details?.includes('basement') || location_details?.includes('crawlspace')) {
+        locationMultiplier = 1.2;
+      } else if (location_details?.includes('attic') || location_details?.includes('under house')) {
+        locationMultiplier = 1.3;
+      }
+
+      return Math.min(10, Math.round(baseComplexity * locationMultiplier));
+
+  - name: assess_customer_urgency
+    description: Evaluate how urgent the customer's situation is
+    parameters:
+      type: object
+      properties:
+        is_emergency:
+          type: boolean
+          description: Whether this is marked as an emergency
+        timeline_requested:
+          type: string
+          description: When the customer wants the work done
+        problem_severity:
+          type: string
+          description: How severe the problem appears to be
+      required: ["is_emergency"]
+    execute: |
+      if (is_emergency) return 10;
+
+      const urgencyMap = {
+        'today': 9,
+        'tomorrow': 8,
+        'this week': 7,
+        'next week': 5,
+        'asap': 8,
+        'soon': 6,
+        'flexible': 3
+      };
+
+      const timelineUrgency = urgencyMap[timeline_requested?.toLowerCase()] || 4;
+
+      // Boost urgency for severe problems
+      let severityBoost = 0;
+      if (problem_severity?.includes('flooding') || problem_severity?.includes('no water')) {
+        severityBoost = 2;
+      }
+
+      return Math.min(10, timelineUrgency + severityBoost);
+
+guardrails:
+  - type: content_filter
+    name: business_focus
+    description: Ensure analysis stays focused on legitimate business decisions
+    rules:
+      - block: ["personal opinions", "unethical advice"]
+      - allow: ["business analysis", "priority assessment", "profitability evaluation"]
