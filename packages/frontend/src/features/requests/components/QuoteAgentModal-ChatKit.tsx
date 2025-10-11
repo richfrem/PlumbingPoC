@@ -844,25 +844,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
               {/* Dynamic UI based on message type */}
               {shouldShowChoiceButtons && (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: normalizedOptions.length > 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(120px, 1fr))',
-                    gap: '8px',
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
                     marginLeft: '40px',
                     marginRight: 'auto',
-                    maxWidth: '300px',
+                    maxWidth: '400px',
+                    mt: 1
                   }}
                 >
-                  {(() => {
-                    console.log('[ChatPanel] Rendering choice buttons container, option count:', normalizedOptions.length);
-                    return null;
-                  })()}
                   {normalizedOptions.map((option, idx) => {
                     console.log(`[ChatPanel] Rendering button ${idx}:`, option.label, option.value);
                     return (
-                      <button
+                      <Button
                         key={`${option.value}-${option.label}-${idx}`}
+                        variant="outlined"
+                        size="small"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -879,26 +878,33 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           onSendMessage(userMessage);
                           console.log('[ChatPanel] Called onSendMessage');
                         }}
-                        onKeyDown={(event) => handleOptionKeyDown(event, option.value)}
-                        style={{
-                          border: '1px solid #1976d2',
-                          background: 'white',
-                          color: '#1976d2',
+                        sx={{
                           borderRadius: '20px',
-                          padding: '6px 14px',
+                          textTransform: 'none',
+                          px: 2,
+                          py: 0.75,
                           fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          pointerEvents: 'auto',
-                          position: 'relative',
-                          zIndex: 10,
+                          fontWeight: 500,
+                          border: '2px solid',
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                          bgcolor: 'white',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            borderColor: 'primary.main',
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)'
+                          }
                         }}
                         tabIndex={0}
                       >
                         {option.label}
-                      </button>
+                      </Button>
                     );
                   })}
-                </div>
+                </Box>
               )}
             </div>
           );

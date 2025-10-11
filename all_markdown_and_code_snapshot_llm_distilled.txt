@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-11T23:35:25.300Z
+Generated On: 2025-10-11T23:52:55.918Z
 
-# Mnemonic Weight (Token Count): ~321,914 tokens
+# Mnemonic Weight (Token Count): ~323,449 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -10140,9 +10140,14 @@ Before deploying to Netlify:
 4. ✅ **Backend Functions**: All use `.mjs` extension with ESM syntax
 5. ✅ **Environment Variables**: Configured in Netlify UI dashboard
 6. ✅ **Vite Config**: Includes `optimizeDeps` for problematic packages like MUI
-7. ✅ **Function Code**: No `import.meta.url` usage in serverless functions
+7. ✅ **Function Code**: No `import.meta.url` usage in serverless functions (use try-catch with process.cwd() fallback)
 8. ✅ **Module System**: Consistent ESM usage across backend and functions
 9. ✅ **External Modules**: Properly configured in netlify.toml functions section
+10. ✅ **Function Names**: Match filenames exactly (api.mjs → [functions.api], not [functions."api-mjs"])
+11. ✅ **Type Safety**: Component prop types match state variable types (no ServiceDefinition → string mismatches)
+12. ✅ **Asset Files**: Non-code files (YAML, JSON) declared in `included_files` array
+13. ✅ **Path Resolution**: Multiple fallback strategies for file loading in bundled environments
+14. ✅ **Error Handling**: Comprehensive try-catch blocks for import.meta.url and file system operations
 
 ## Prevention Strategies
 
@@ -10221,6 +10226,166 @@ Before deploying to Netlify:
 **Prevention:** When making significant repository changes (merges, branch restructuring), verify webhook functionality by checking GitHub repository webhooks or testing with a commit.
 
 **Key Learning:** UI showing "connected" doesn't guarantee webhook exists. Repository reconnection is the reliable fix for webhook issues.
+
+### Issue 10: TypeScript Error - Type Mismatch in Component Props
+
+**Problem:** Production build failed with TypeScript error:
+```
+src/main.tsx(454,13): error TS2322: Type 'ServiceDefinition | null' is not assignable to type 'string | null | undefined'.
+  Type 'ServiceDefinition' is not assignable to type 'string'.
+```
+
+**Root Cause:** State variable type mismatch between component and its props. The `preselectedService` state was typed as `ServiceDefinition | null` (an object), but the `QuoteAgentModalChatKit` component expected `string | null` (just the service key).
+
+**Timeline:**
+- ✅ Local development passed (type checking might be less strict)
+- ❌ Production build failed during `tsc --noEmit` check
+- 🔍 Error occurred at line 454 where `preselectedService` was passed to modal component
+
+**Solution:** Changed state type and assignment to match component expectations:
+
+```typescript
+// Before (problematic)
+const [preselectedService, setPreselectedService] = useState<ServiceDefinition | null>(null);
+const handleServiceSelect = (service: ServiceDefinition) => {
+  setPreselectedService(service); // Passing full object
+};
+
+// After (working)
+const [preselectedService, setPreselectedService] = useState<string | null>(null);
+const handleServiceSelect = (service: ServiceDefinition) => {
+  setPreselectedService(service.key); // Passing just the key string
+};
+```
+
+**Key Learning:** Always ensure state types match component prop expectations. Production builds enforce strict TypeScript checking that local dev might miss.
+
+### Issue 11: Netlify Function Configuration Mismatch
+
+**Problem:** All Netlify functions (api, send-sms, quote-agent) returned 502 errors in production despite successful builds.
+
+**Symptoms:**
+```
+GET /api/requests 502 (Bad Gateway)
+GET /.netlify/functions/quote-agent 502 (Bad Gateway)
+```
+
+**Root Cause:** Function names in `netlify.toml` didn't match actual filenames. Netlify derives function names from filenames (without extension), but configuration used incorrect names with `-mjs` suffix:
+
+```toml
+# Before (incorrect)
+[functions."api-mjs"]  # File is api.mjs → function name should be "api"
+[functions."send-sms-mjs"]  # File is send-sms.mjs → function name should be "send-sms"
+```
+
+**Solution:** Corrected function names to match actual filenames:
+
+```toml
+# After (correct)
+[functions.api]
+  external_node_modules = ["express", "cors", "serverless-http", "dotenv", "supabase", "@supabase/supabase-js"]
+
+[functions.send-sms]
+  external_node_modules = ["twilio"]
+
+[functions."quote-agent"]
+  external_node_modules = ["yaml", "openai"]
+  included_files = ["agents/quote-agent.yaml"]
+```
+
+**Naming Rules:**
+- Filename `api.mjs` → Function name: `api`
+- Filename `send-sms.mjs` → Function name: `send-sms`
+- Filename `quote-agent.mjs` → Function name: `quote-agent`
+
+**Key Learning:** Netlify function names are derived from filenames (without extension). Configuration must use exact function names, not file extensions.
+
+### Issue 12: YAML File Not Found in Netlify Function Bundle
+
+**Problem:** Quote agent function crashed with 502 error immediately on invocation.
+
+**Error in Netlify Logs:**
+```
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+    at fileURLToPath (node:internal/url:1606:11)
+    at Object.<anonymous> (/var/task/packages/backend/api/agents/quoteAgentRunner.js:43:47)
+```
+
+**Root Cause:** Multiple issues with file loading in Netlify's bundled environment:
+
+1. **Missing YAML file**: The `quote-agent.yaml` file wasn't included in function bundle
+2. **import.meta.url undefined**: `fileURLToPath(import.meta.url)` fails in Netlify's bundled functions
+3. **Path resolution**: Relative paths don't work the same in bundled vs. unbundled environments
+
+**Solution Part 1 - Include YAML File in Bundle:**
+
+Added `included_files` configuration to ensure YAML is bundled with function:
+
+```toml
+[functions."quote-agent"]
+  external_node_modules = ["yaml", "openai"]
+  included_files = ["agents/quote-agent.yaml"]
+```
+
+**Solution Part 2 - Handle import.meta.url Safely:**
+
+Wrapped `fileURLToPath` in try-catch with fallback for bundled environments:
+
+```javascript
+// Before (problematic)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// After (robust)
+let __dirname;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (error) {
+  // Fallback for bundled/Netlify environment where import.meta.url might not work
+  __dirname = process.cwd();
+  console.log('[QuoteAgentRunner] Using process.cwd() as __dirname:', __dirname);
+}
+```
+
+**Solution Part 3 - Multiple Path Resolution Strategies:**
+
+Added comprehensive path fallbacks to find YAML file in any environment:
+
+```javascript
+let YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(process.cwd(), '../../../../agents/quote-agent.yaml');
+}
+```
+
+**Key Learnings:**
+- ✅ Always use `included_files` for non-code assets needed by functions
+- ✅ Never rely on `import.meta.url` in Netlify functions - use try-catch with fallbacks
+- ✅ Use `process.cwd()` as fallback for `__dirname` in bundled environments
+- ✅ Implement multiple path resolution strategies for file loading
+- ✅ Add comprehensive logging to debug path resolution issues
+
+**External Dependencies for Functions:**
+
+Functions that need non-standard packages must declare them:
+
+```toml
+[functions."quote-agent"]
+  external_node_modules = [
+    "yaml",      # For parsing YAML configuration
+    "openai"     # For OpenAI API calls
+  ]
+  included_files = [
+    "agents/quote-agent.yaml"  # Non-code asset
+  ]
+```
 
 ## How to Relink Repository in Netlify
 
@@ -19205,25 +19370,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
               {/* Dynamic UI based on message type */}
               {shouldShowChoiceButtons && (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: normalizedOptions.length > 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(120px, 1fr))',
-                    gap: '8px',
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
                     marginLeft: '40px',
                     marginRight: 'auto',
-                    maxWidth: '300px',
+                    maxWidth: '400px',
+                    mt: 1
                   }}
                 >
-                  {(() => {
-                    console.log('[ChatPanel] Rendering choice buttons container, option count:', normalizedOptions.length);
-                    return null;
-                  })()}
                   {normalizedOptions.map((option, idx) => {
                     console.log(`[ChatPanel] Rendering button ${idx}:`, option.label, option.value);
                     return (
-                      <button
+                      <Button
                         key={`${option.value}-${option.label}-${idx}`}
+                        variant="outlined"
+                        size="small"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -19240,26 +19404,33 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           onSendMessage(userMessage);
                           console.log('[ChatPanel] Called onSendMessage');
                         }}
-                        onKeyDown={(event) => handleOptionKeyDown(event, option.value)}
-                        style={{
-                          border: '1px solid #1976d2',
-                          background: 'white',
-                          color: '#1976d2',
+                        sx={{
                           borderRadius: '20px',
-                          padding: '6px 14px',
+                          textTransform: 'none',
+                          px: 2,
+                          py: 0.75,
                           fontSize: '0.9rem',
-                          cursor: 'pointer',
-                          pointerEvents: 'auto',
-                          position: 'relative',
-                          zIndex: 10,
+                          fontWeight: 500,
+                          border: '2px solid',
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                          bgcolor: 'white',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            borderColor: 'primary.main',
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)'
+                          }
                         }}
                         tabIndex={0}
                       >
                         {option.label}
-                      </button>
+                      </Button>
                     );
                   })}
-                </div>
+                </Box>
               )}
             </div>
           );
