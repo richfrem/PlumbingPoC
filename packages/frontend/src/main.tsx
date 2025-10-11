@@ -79,7 +79,7 @@ const AppContent: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [preselectedService, setPreselectedService] = useState<ServiceDefinition | null>(null);
+  const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [route, setRoute] = useState(window.location.hash);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ const AppContent: React.FC = () => {
 
   const handleServiceSelect = (service: ServiceDefinition) => {
     console.log(`Service selected: ${service.title}`);
-    setPreselectedService(service);
+    setPreselectedService(service.key);
     handleOpenQuoteModal(); // Reuse the existing function to open the modal
   };
 
