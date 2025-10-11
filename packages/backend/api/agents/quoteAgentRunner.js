@@ -7,8 +7,16 @@ import { fileURLToPath } from 'url';
 import YAML from 'yaml';
 import OpenAI from 'openai';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Safely get __dirname for both ESM and bundled environments
+let __dirname;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (error) {
+  // Fallback for bundled/Netlify environment where import.meta.url might not work
+  __dirname = process.cwd();
+  console.log('[QuoteAgentRunner] Using process.cwd() as __dirname:', __dirname);
+}
 
 // Try multiple paths to find the YAML file (works in both local and Netlify environments)
 let YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
@@ -20,6 +28,10 @@ if (!fs.existsSync(YAML_PATH)) {
   // Try relative to repository root
   YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
 }
+if (!fs.existsSync(YAML_PATH)) {
+  // Try from current working directory
+  YAML_PATH = path.resolve(process.cwd(), '../../../../agents/quote-agent.yaml');
+}
 
 let yamlConfig;
 try {
@@ -30,6 +42,7 @@ try {
     path1: path.resolve(__dirname, '../../../../agents/quote-agent.yaml'),
     path2: path.resolve(process.cwd(), 'agents/quote-agent.yaml'),
     path3: path.resolve(__dirname, '../../../../../agents/quote-agent.yaml'),
+    path4: path.resolve(process.cwd(), '../../../../agents/quote-agent.yaml'),
     cwd: process.cwd(),
     __dirname
   });
