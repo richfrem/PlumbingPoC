@@ -49,17 +49,17 @@ const openAiClient = process.env.OPENAI_API_KEY
  */
 function calculateJobComplexity(serviceCategory, problemDescription, locationDetails) {
   const complexityMap = {
-    'leak_repair': 6,
-    'water_heater': 7,
-    'pipe_installation': 8,
-    'drain_cleaning': 4,
-    'fixture_install': 3,
-    'gas_line_services': 9,
-    'perimeter_drains': 7,
-    'main_line_repair': 9,
-    'emergency_service': 8,
-    'bathroom_reno': 8,
-    'other': 5
+    'leak_repair': 5,          // Often straightforward diagnostics
+    'water_heater': 7,         // Electrical/gas connections, permits
+    'pipe_installation': 7,    // Depends heavily on access
+    'drain_cleaning': 3,       // Usually routine with proper tools
+    'fixture_install': 3,      // Basic plumbing work
+    'gas_line_services': 10,   // HIGHEST: permits, certifications, safety-critical
+    'perimeter_drains': 8,     // Excavation, grading, drainage expertise
+    'main_line_repair': 10,    // Major disruption, permits, property restoration
+    'emergency_service': 8,    // Unknown factors, time pressure
+    'bathroom_reno': 9,        // Multi-trade coordination, permits, layout changes
+    'other': 5                 // Safe middle ground for uncategorized work
   };
 
   const baseComplexity = complexityMap[serviceCategory] || 5;
@@ -216,7 +216,8 @@ Return your analysis as a JSON object matching the specified output schema.`;
 
     console.log('[TriageAgent] Analysis completed:', {
       priority: analysis.priority_score,
-      profitability: analysis.profitability_score
+      profitability: analysis.profitability_score,
+      expertise: analysis.required_expertise?.skill_level
     });
 
     return {
@@ -225,6 +226,7 @@ Return your analysis as a JSON object matching the specified output schema.`;
       priority_explanation: analysis.priority_explanation,
       profitability_score: analysis.profitability_score,
       profitability_explanation: analysis.profitability_explanation,
+      required_expertise: analysis.required_expertise,
       complexity_score: complexityScore,
       urgency_score: urgencyScore
     };

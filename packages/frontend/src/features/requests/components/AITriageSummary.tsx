@@ -42,6 +42,23 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
             Explanation: {request.profitability_explanation}
           </Typography>
         )}
+        {request.required_expertise && (
+          <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              Required Expertise: {request.required_expertise.skill_level?.charAt(0).toUpperCase() + request.required_expertise.skill_level?.slice(1)}
+            </Typography>
+            {request.required_expertise.specialized_skills && request.required_expertise.specialized_skills.length > 0 && (
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                Specialized Skills: {request.required_expertise.specialized_skills.join(', ')}
+              </Typography>
+            )}
+            {request.required_expertise.reasoning && (
+              <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                Reasoning: {request.required_expertise.reasoning}
+              </Typography>
+            )}
+          </Box>
+        )}
       </Box>
     </Paper>
   );

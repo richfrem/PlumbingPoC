@@ -23,8 +23,15 @@ interface RequestProblemDetailsProps {
 
 const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }) => {
   // Logic to separate the main description from other Q&A
-  const problemDescriptionAnswer = request.answers.find((a: { question: string; answer: string }) => a.question.toLowerCase().includes('describe the general problem'));
-  const otherAnswers = request.answers.filter((a: { question: string; answer: string }) => !a.question.toLowerCase().includes('describe the general problem'));
+  // Look for various description questions (most workflows have one)
+  const problemDescriptionAnswer = request.answers.find((a: { question: string; answer: string }) => {
+    const q = a.question.toLowerCase();
+    return q.includes('describe') || q.includes('detail') || q.includes('issue') || q.includes('problem');
+  });
+  
+  const otherAnswers = request.answers.filter((a: { question: string; answer: string }) => 
+    a !== problemDescriptionAnswer
+  );
 
   return (
     <Paper variant="outlined">

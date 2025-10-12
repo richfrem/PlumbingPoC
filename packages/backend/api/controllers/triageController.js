@@ -49,7 +49,8 @@ const triageRequest = async (req, res) => {
         priority_score: analysis.priority_score,
         priority_explanation: analysis.priority_explanation,
         profitability_score: analysis.profitability_score,
-        profitability_explanation: analysis.profitability_explanation
+        profitability_explanation: analysis.profitability_explanation,
+        required_expertise: analysis.required_expertise
       })
       .eq('id', requestId);
 
@@ -83,7 +84,8 @@ const updateRequestTriage = async (requestId, triageData) => {
         priority_score: triageData.priority_score,
         priority_explanation: triageData.priority_explanation,
         profitability_score: triageData.profitability_score,
-        profitability_explanation: triageData.profitability_explanation
+        profitability_explanation: triageData.profitability_explanation,
+        required_expertise: triageData.required_expertise
       })
       .eq('id', requestId);
 

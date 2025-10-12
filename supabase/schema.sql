@@ -315,6 +315,7 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "geocoded_address" "text",
     "actual_cost" numeric(10,2),
     "completion_notes" "text",
+    "required_expertise" "jsonb",
     CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
     CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
 );
@@ -328,6 +329,10 @@ COMMENT ON COLUMN "public"."requests"."actual_cost" IS 'The final, invoiced cost
 
 
 COMMENT ON COLUMN "public"."requests"."completion_notes" IS 'Internal notes logged by the admin when the job was marked as complete.';
+
+
+
+COMMENT ON COLUMN "public"."requests"."required_expertise" IS 'AI-generated expertise requirements: skill_level (apprentice/journeyman/master), specialized_skills array, and reasoning';
 
 
 
@@ -497,7 +502,7 @@ CREATE POLICY "Enable all actions for admins" ON "public"."invoices" USING ("pub
 
 
 
-CREATE POLICY "Enable all actions for admins" ON "public"."quotes" USING ("public"."is_admin"());
+CREATE POLICY "Enable all actions for admins" ON "public"."quotes" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
 
@@ -551,9 +556,9 @@ CREATE POLICY "Enable read for request owners" ON "public"."quote_attachments" F
 
 
 
-CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT USING ((("auth"."uid"() = ( SELECT "requests"."user_id"
+CREATE POLICY "Enable read for request owners" ON "public"."quotes" FOR SELECT USING (("auth"."uid"() = ( SELECT "requests"."user_id"
    FROM "public"."requests"
-  WHERE ("requests"."id" = "quotes"."request_id"))) OR "public"."is_admin"()));
+  WHERE ("requests"."id" = "quotes"."request_id"))));
 
 
 
