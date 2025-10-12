@@ -43,7 +43,8 @@
     ]
     # Include the YAML config file since quoteAgentRunner is imported by requestRoutes
     included_files = [
-      "agents/quote-agent.yaml"
+      "agents/quote-agent.yaml",
+      "agents/triage-agent.yaml"
     ]
 
   # Configuration for the SMS function
@@ -58,6 +59,16 @@
     ]
     included_files = [
       "agents/quote-agent.yaml"
+    ]
+
+  # Configuration for the triage agent function
+  [functions."triage-agent"]
+    external_node_modules = [
+      "yaml",
+      "openai"
+    ]
+    included_files = [
+      "agents/triage-agent.yaml"
     ]
 
 # Removed [secrets] section and all secrets scanning related settings
