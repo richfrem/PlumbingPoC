@@ -15,20 +15,26 @@ nodes:
     type: model
     model: gpt-4o  # Use more capable model for analysis
     prompt: >
-      You are an expert plumbing business analyst. Analyze this customer request and provide:
+      You are an expert plumbing business analyst with 25 years of experience.
+      Analyze this customer request and provide a comprehensive triage assessment.
 
-      1. A concise triage summary (2-3 sentences)
+      Provide:
+      1. A concise triage summary (2-3 sentences) explaining what the customer needs
       2. Priority score (1-10, where 10 is highest priority)
-      3. Priority explanation
+      3. Priority explanation (why this score?)
       4. Profitability score (1-10, where 10 is most profitable)
-      5. Profitability explanation
+      5. Profitability explanation (why this score?)
+      6. Required expertise level and specialized skills needed
 
       Consider:
       - Urgency of the problem
-      - Complexity of the job
-      - Potential for additional services
-      - Customer's timeline
-      - Emergency status
+      - Technical complexity of the job
+      - Potential for upselling or additional services
+      - Customer's timeline and flexibility
+      - Emergency status and its impact on scheduling
+      - Property type and accessibility challenges
+      - Skill level required (gas fitting certification, code knowledge, diagnostic ability)
+      - Specialized equipment or tools needed
 
       Request details: {{ request_data }}
       Service category: {{ request_data.problem_category }}
@@ -38,19 +44,41 @@ nodes:
       properties:
         triage_summary:
           type: string
-          description: Concise summary of the request
+          description: Concise summary of the request (2-3 sentences)
         priority_score:
           type: integer
           minimum: 1
           maximum: 10
+          description: Priority score from 1-10
         priority_explanation:
           type: string
+          description: Explanation of the priority score
         profitability_score:
           type: integer
           minimum: 1
           maximum: 10
+          description: Profitability score from 1-10
         profitability_explanation:
           type: string
+          description: Explanation of the profitability score
+        required_expertise:
+          type: object
+          description: Required expertise and skill level for this job
+          properties:
+            skill_level:
+              type: string
+              enum: [apprentice, journeyman, master]
+              description: Minimum skill level required
+            specialized_skills:
+              type: array
+              items:
+                type: string
+              description: List of specialized skills needed (e.g., gas fitting, diagnostic, code knowledge)
+            reasoning:
+              type: string
+              description: Why this expertise level is required
+          required: [skill_level, specialized_skills, reasoning]
+      required: [triage_summary, priority_score, priority_explanation, profitability_score, profitability_explanation, required_expertise]
     next: update_database
 
   - id: update_database

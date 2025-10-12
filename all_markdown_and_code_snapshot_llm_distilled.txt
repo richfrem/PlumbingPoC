@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T17:16:49.410Z
+Generated On: 2025-10-12T18:22:37.710Z
 
-# Mnemonic Weight (Token Count): ~324,253 tokens
+# Mnemonic Weight (Token Count): ~324,745 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -6766,6 +6766,45 @@ description: >
   service-specific questions. If responses are incomplete, ask clarifiers 
   with AI. Summarize results and allow final review before submission.
 
+# AI follow-up question configuration
+ai_followup_config:
+  model: gpt-4o-mini
+  max_tokens: 250
+  temperature: 0.2
+  system_prompt: "You craft follow-up questions for plumbing quotes."
+  user_prompt: |
+    You are an AI assistant for a local plumbing company, 
+    acting as an expert plumber and gas fitter with 25 years of 
+    experience. Your primary goal is to gather the critical details 
+    needed to provide an accurate preliminary quote and ensure the 
+    technician arrives with the right parts and tools.
+    You must determine if more information is required from the customer before submitting their request.
+
+    # CONTEXT
+    - The customer has selected a service category: {service}
+    - The conversation with the customer so far is: {conversation_summary}
+
+    # TASK
+    - Review the context and determine if you have enough information to quote the job.
+    - If more details are needed to understand the scope, accessibility, or materials required, ask up to 3 clear, non-technical follow-up questions.
+    - If the information is sufficient for a standard quote, do not ask any questions.
+
+    # RULES
+    - **Focus on quote-critical details:** location of the issue (e.g., basement, 2nd floor), accessibility, make/model of fixtures, age of the equipment, etc.
+    - **Do NOT ask for personal information** like name, address, or phone number.
+    - **Do NOT repeat questions** that have already been answered in the conversation summary.
+    - If you have enough information, you MUST return an empty list.
+
+    # OUTPUT FORMAT
+    Respond in valid JSON format only:
+    {
+      "requiresFollowUp": boolean,
+      "questions": ["question 1", "question 2", ...]
+    }
+    
+    Where:
+    - requiresFollowUp: true if asking questions, false otherwise
+    - questions: array of strings, each a clear question for the customer
 nodes:
   # 1. Emergency check
   - id: emergency_check
@@ -6901,40 +6940,10 @@ nodes:
       Other:
         type: static
         prompt: "Please describe your plumbing request or issue in detail."
-    next: check_completion
-
-  # 7. Check completion
-  - id: check_completion
-    type: decision
-    condition: "{{ all_required_questions_answered }}"
-    true: review_summary
-    false: ai_followup
-
-  # 8. AI clarifiers
-  - id: ai_followup
-    type: model
-    model: gpt-4o-mini
-    prompt: >
-      Review the answers provided so far. Ask only the clarifying questions 
-      needed to complete the quote request. Be concise.
-    next: review_summary
-
-  # 9. Summary / review
-  - id: review_summary
-    type: model
-    model: gpt-4o-mini
-    prompt: |
-      You are preparing the final review for a plumbing quote request.
-      Compile all collected answers, including:
-      - The selected service category (provide both a user-facing label and a slugified key based on the choice text; example slug: "leak_detection_and_repair")
-      - Whether the request was marked as an emergency from the generic questions
-      - Every asked question (generic, service-specific, clarifiers) with the final answer given by the customer
-
-      Respond ONLY with JSON that matches this schema:
-      {
-        "stage": "review_summary",
-        "summary": {
-          "service": {
+    # No 'next' field - when complete, code automatically calls checkForAiFollowUps()
+    # which uses the ai_followup_config above to analyze conversation and either:
+    # - Generate intelligent follow-up questions, or
+    # - Proceed directly to summary if everything is clear
 
 --- END OF FILE ---
 
@@ -15870,7 +15879,7 @@ function askCurrentNode(session) {
   }
 }
 
-function handleSwitchNode(session, node) {
+async function handleSwitchNode(session, node) {
   const variableValue = session.nodeData[node.variable];
 
   if (!variableValue) {
@@ -15896,7 +15905,7 @@ function handleSwitchNode(session, node) {
     .filter((line) => line.length > 0);
 
   if (questions.length === 0) {
-    moveToNextNode(session, node);
+    await moveToNextNode(session, node);
     return;
   }
 
@@ -15911,41 +15920,64 @@ function handleSwitchNode(session, node) {
   const currentIndex = session.nodeData[indexKey];
   const currentQuestion = questions[currentIndex];
 
+  console.log('[QuoteAgent] Switch node state:', {
+    nodeId: node.id,
+    totalQuestions: questions.length,
+    currentIndex,
+    hasQuestion: !!currentQuestion
+  });
+
   if (currentQuestion) {
     addAssistantMessage(session, currentQuestion, {
       type: 'input',
       inputType: 'text',
     });
   } else {
+    console.log('[QuoteAgent] All switch questions answered, moving to next node');
     delete session.nodeData[questionsKey];
     delete session.nodeData[indexKey];
-    moveToNextNode(session, node);
+    await moveToNextNode(session, node);
   }
 }
 
-function moveToNextNode(session, currentNode) {
+async function moveToNextNode(session, currentNode) {
+  console.log('[QuoteAgent] moveToNextNode called:', {
+    currentNodeId: currentNode.id,
+    hasNext: !!currentNode.next,
+    nextNodeId: currentNode.next
+  });
+
   if (currentNode.next) {
     session.currentNodeId = currentNode.next;
     askCurrentNode(session);
   } else {
-    checkForAiFollowUps(session);
+    console.log('[QuoteAgent] No next node, calling checkForAiFollowUps');
+    await checkForAiFollowUps(session);
   }
 }
 
 async function checkForAiFollowUps(session) {
+  console.log('[QuoteAgent] checkForAiFollowUps called');
+  
   if (session.nodeData.followUpsGenerated) {
+    console.log('[QuoteAgent] Follow-ups already generated, building summary');
     buildSummary(session);
     return;
   }
 
+  console.log('[QuoteAgent] Generating follow-up questions via OpenAI...');
   session.nodeData.followUpsGenerated = true;
   const followUps = await generateFollowUpQuestions(session);
+  console.log('[QuoteAgent] Generated follow-ups:', followUps.length, 'questions');
 
   if (followUps.length > 0) {
+    console.log('[QuoteAgent] Follow-up questions:', followUps);
     session.nodeData.followUpQuestions = followUps;
     session.nodeData.followUpIndex = 0;
+    session.currentNodeId = null; // Clear current node so follow-ups are handled correctly
     askNextFollowUpQuestion(session);
   } else {
+    console.log('[QuoteAgent] No follow-ups needed, building summary');
     buildSummary(session);
   }
 }
@@ -15955,12 +15987,20 @@ function askNextFollowUpQuestion(session) {
   const index = session.nodeData.followUpIndex || 0;
   const question = questions[index];
 
+  console.log('[QuoteAgent] askNextFollowUpQuestion:', {
+    totalQuestions: questions.length,
+    currentIndex: index,
+    hasQuestion: !!question,
+    question: question
+  });
+
   if (question) {
     addAssistantMessage(session, question, {
       type: 'input',
       inputType: 'text',
     });
   } else {
+    console.log('[QuoteAgent] No more follow-up questions, building summary');
     buildSummary(session);
   }
 }
@@ -15968,34 +16008,34 @@ function askNextFollowUpQuestion(session) {
 async function generateFollowUpQuestions(session) {
   if (!openAiClient) return [];
 
+  const config = yamlConfig.ai_followup_config;
+  if (!config) {
+    console.warn('[QuoteAgent] No ai_followup_config found in YAML');
+    return [];
+  }
+
   try {
+    // Build conversation summary
     const conversationSummary = session.answers
       .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
       .join('\n\n');
 
     const selectedService = session.nodeData.selected_service || 'General plumbing service';
 
-    const prompt = `You are an expert plumbing quote agent.
-You must determine if more information is required from the customer before submitting their request.
+    // Replace placeholders in prompt from YAML config
+    const prompt = config.user_prompt
+      .replace('{service}', selectedService)
+      .replace('{conversation_summary}', conversationSummary);
 
-Service category: ${selectedService}
-Answers collected so far:
-${conversationSummary}
-
-If more details are needed to prepare an accurate quote, ask up to 3 follow-up questions.
-If everything is clear, return an empty list.
-
-Respond in JSON:
-{ "requiresFollowUp": boolean, "questions": ["question 1", ...] }`;
-
+    // Use YAML config for API call
     const completion = await openAiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: config.model || 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You craft follow-up questions for plumbing quotes.' },
+        { role: 'system', content: config.system_prompt || 'You craft follow-up questions for plumbing quotes.' },
         { role: 'user', content: prompt },
       ],
-      max_tokens: 250,
-      temperature: 0.2,
+      max_tokens: config.max_tokens || 250,
+      temperature: config.temperature ?? 0.2,
     });
 
     const content = completion.choices?.[0]?.message?.content;
@@ -16085,7 +16125,7 @@ async function handleUserInput(session, userText) {
         session.nodeData[currentNode.capture] = userText;
       }
 
-      moveToNextNode(session, currentNode);
+      await moveToNextNode(session, currentNode);
       break;
 
     case 'switch':
@@ -16098,7 +16138,7 @@ async function handleUserInput(session, userText) {
       if (currentQuestion) {
         recordAnswer(session, currentNode.id, currentQuestion, userText);
         session.nodeData[indexKey] = currentIndex + 1;
-        handleSwitchNode(session, currentNode);
+        await handleSwitchNode(session, currentNode);
       }
       break;
 

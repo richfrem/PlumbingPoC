@@ -160,8 +160,8 @@ async function runTriageAnalysis(requestData) {
     throw new Error('analyze_request node not found in triage-agent.yaml');
   }
 
-  // Build the prompt with actual data
-  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment in JSON format.
+  // Build the system prompt from YAML with data substitution
+  const systemPrompt = `${analyzeNode.prompt}
 
 **Request Details:**
 - Service Category: ${problem_category}
@@ -183,22 +183,7 @@ ${additional_notes || 'None'}
 - Calculated Complexity: ${complexityScore}/10
 - Calculated Urgency: ${urgencyScore}/10
 
-Based on all this information, provide a JSON response with:
-1. A concise triage summary (2-3 sentences) explaining what the customer needs
-2. Priority score (1-10) considering urgency, complexity, and business impact
-3. Priority explanation (why this score?)
-4. Profitability score (1-10) based on job type, complexity, and potential for additional services
-5. Profitability explanation (why this score?)
-
-Consider:
-- Urgency of the problem
-- Technical complexity of the job
-- Potential for upselling or additional services
-- Customer's timeline and flexibility
-- Emergency status and its impact on scheduling
-- Property type and accessibility challenges
-
-Return your analysis as a JSON object.`;
+Return your analysis as a JSON object matching the specified output schema.`;
 
   try {
     const response = await openAiClient.chat.completions.create({
@@ -217,36 +202,7 @@ Return your analysis as a JSON object.`;
       functions: [{
         name: 'provide_triage_assessment',
         description: 'Provide a structured triage assessment for a plumbing service request',
-        parameters: {
-          type: 'object',
-          properties: {
-            triage_summary: {
-              type: 'string',
-              description: 'Concise summary of the request (2-3 sentences)'
-            },
-            priority_score: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 10,
-              description: 'Priority score from 1-10'
-            },
-            priority_explanation: {
-              type: 'string',
-              description: 'Explanation of the priority score'
-            },
-            profitability_score: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 10,
-              description: 'Profitability score from 1-10'
-            },
-            profitability_explanation: {
-              type: 'string',
-              description: 'Explanation of the profitability score'
-            }
-          },
-          required: ['triage_summary', 'priority_score', 'priority_explanation', 'profitability_score', 'profitability_explanation']
-        }
+        parameters: analyzeNode.output // Use schema from YAML
       }],
       function_call: { name: 'provide_triage_assessment' }
     });

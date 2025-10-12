@@ -153,7 +153,7 @@ function askCurrentNode(session) {
   }
 }
 
-function handleSwitchNode(session, node) {
+async function handleSwitchNode(session, node) {
   const variableValue = session.nodeData[node.variable];
 
   if (!variableValue) {
@@ -179,7 +179,7 @@ function handleSwitchNode(session, node) {
     .filter((line) => line.length > 0);
 
   if (questions.length === 0) {
-    moveToNextNode(session, node);
+    await moveToNextNode(session, node);
     return;
   }
 
@@ -194,41 +194,64 @@ function handleSwitchNode(session, node) {
   const currentIndex = session.nodeData[indexKey];
   const currentQuestion = questions[currentIndex];
 
+  console.log('[QuoteAgent] Switch node state:', {
+    nodeId: node.id,
+    totalQuestions: questions.length,
+    currentIndex,
+    hasQuestion: !!currentQuestion
+  });
+
   if (currentQuestion) {
     addAssistantMessage(session, currentQuestion, {
       type: 'input',
       inputType: 'text',
     });
   } else {
+    console.log('[QuoteAgent] All switch questions answered, moving to next node');
     delete session.nodeData[questionsKey];
     delete session.nodeData[indexKey];
-    moveToNextNode(session, node);
+    await moveToNextNode(session, node);
   }
 }
 
-function moveToNextNode(session, currentNode) {
+async function moveToNextNode(session, currentNode) {
+  console.log('[QuoteAgent] moveToNextNode called:', {
+    currentNodeId: currentNode.id,
+    hasNext: !!currentNode.next,
+    nextNodeId: currentNode.next
+  });
+
   if (currentNode.next) {
     session.currentNodeId = currentNode.next;
     askCurrentNode(session);
   } else {
-    checkForAiFollowUps(session);
+    console.log('[QuoteAgent] No next node, calling checkForAiFollowUps');
+    await checkForAiFollowUps(session);
   }
 }
 
 async function checkForAiFollowUps(session) {
+  console.log('[QuoteAgent] checkForAiFollowUps called');
+  
   if (session.nodeData.followUpsGenerated) {
+    console.log('[QuoteAgent] Follow-ups already generated, building summary');
     buildSummary(session);
     return;
   }
 
+  console.log('[QuoteAgent] Generating follow-up questions via OpenAI...');
   session.nodeData.followUpsGenerated = true;
   const followUps = await generateFollowUpQuestions(session);
+  console.log('[QuoteAgent] Generated follow-ups:', followUps.length, 'questions');
 
   if (followUps.length > 0) {
+    console.log('[QuoteAgent] Follow-up questions:', followUps);
     session.nodeData.followUpQuestions = followUps;
     session.nodeData.followUpIndex = 0;
+    session.currentNodeId = null; // Clear current node so follow-ups are handled correctly
     askNextFollowUpQuestion(session);
   } else {
+    console.log('[QuoteAgent] No follow-ups needed, building summary');
     buildSummary(session);
   }
 }
@@ -238,12 +261,20 @@ function askNextFollowUpQuestion(session) {
   const index = session.nodeData.followUpIndex || 0;
   const question = questions[index];
 
+  console.log('[QuoteAgent] askNextFollowUpQuestion:', {
+    totalQuestions: questions.length,
+    currentIndex: index,
+    hasQuestion: !!question,
+    question: question
+  });
+
   if (question) {
     addAssistantMessage(session, question, {
       type: 'input',
       inputType: 'text',
     });
   } else {
+    console.log('[QuoteAgent] No more follow-up questions, building summary');
     buildSummary(session);
   }
 }
@@ -368,7 +399,7 @@ async function handleUserInput(session, userText) {
         session.nodeData[currentNode.capture] = userText;
       }
 
-      moveToNextNode(session, currentNode);
+      await moveToNextNode(session, currentNode);
       break;
 
     case 'switch':
@@ -381,7 +412,7 @@ async function handleUserInput(session, userText) {
       if (currentQuestion) {
         recordAnswer(session, currentNode.id, currentQuestion, userText);
         session.nodeData[indexKey] = currentIndex + 1;
-        handleSwitchNode(session, currentNode);
+        await handleSwitchNode(session, currentNode);
       }
       break;
 
