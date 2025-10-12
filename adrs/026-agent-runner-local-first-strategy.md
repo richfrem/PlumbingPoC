@@ -4,7 +4,9 @@
 
 **Superseded** – 2025-10-11
 
-**Replaced by**: ADR-027 (Self-Contained Agent Functions with Environment Detection)
+**Replaced by**: [ADR-027](027-self-contained-agent-functions.md) (Self-Contained Agent Functions) and [ADR-028](028-choice-of-custom-yaml-over-openai-agents-sdk.md) (Custom YAML Over OpenAI Agents SDK)
+
+**Note**: This ADR described an approach using `@openai/agents` SDK, which we later evaluated and rejected. See ADR-028 for why we chose a custom YAML workflow engine instead.
 
 ## Context
 

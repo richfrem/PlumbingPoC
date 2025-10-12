@@ -9,7 +9,8 @@ The application uses Netlify Functions to run the Express.js backend serverlessl
 ## File Structure
 
 - `api.mjs` - Main API function that handles all HTTP requests
-- `quote-agent.mjs` - OpenAI Agent Toolkit function for intelligent quote assistance
+- `quote-agent.mjs` - YAML-driven quote intake agent with optional AI follow-up questions
+- `triage-agent.mjs` - AI-powered request triage and scoring agent
 - `send-sms.mjs` - SMS notification function for Twilio integration
 
 ## Module System
@@ -22,7 +23,11 @@ All functions use ES Modules (`.mjs` extension) to maintain consistency with the
 
 2. **External Modules Configuration**: Netlify's bundler is configured via `netlify.toml` to treat complex Node.js packages (express, cors, serverless-http, etc.) as external dependencies rather than bundling them. This prevents bundling conflicts while maintaining runtime availability.
 
-3. **AI Agent Functions**: Specialized functions like `quote-agent.mjs` use the OpenAI Agents SDK to execute YAML-defined agent workflows. These functions load agent configurations from the `agents/` directory and provide secure, server-side AI execution without exposing API keys to the frontend.
+3. **AI Agent Functions**: Specialized functions use custom YAML-driven workflow engines with minimal OpenAI SDK usage:
+   - `quote-agent.mjs`: Uses OpenAI only for optional follow-up question generation (`generateFollowUpQuestions()`)
+   - `triage-agent.mjs`: Uses OpenAI for job complexity and urgency analysis
+   - Both load YAML configurations from `agents/` directory and execute deterministic workflows
+   - See [ADR-028](../../../../adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md) for why we use custom YAML instead of OpenAI Agents SDK
 
 4. **Clean Function Wrappers**: Functions use standard ESM imports and exports, with the bundler configuration handling the complexity of external dependencies.
 
@@ -51,13 +56,20 @@ The functions use Netlify's esbuild bundler with special configuration in `netli
 
   "quote-agent-mjs" = {
     external_node_modules = [
-      "@openai/agents",
+      "openai",
+      "yaml"
+    ]
+  }
+  
+  "triage-agent-mjs" = {
+    external_node_modules = [
+      "openai",
       "yaml"
     ]
   }
 ```
 
-This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime, preventing bundling conflicts while maintaining functionality. The `quote-agent` function requires the OpenAI Agents SDK and YAML parser as external dependencies.
+This configuration tells the bundler to not bundle these packages but instead make them available as external dependencies at runtime. The agent functions only require the standard OpenAI SDK (`openai`) and YAML parser (`yaml`), not the OpenAI Agents SDK.
 
 ## Environment Variables
 
@@ -75,7 +87,7 @@ Functions access environment variables set in the Netlify dashboard:
 
 2. **Bundling Errors**: If you see errors about external modules, verify the `external_node_modules` configuration in `netlify.toml` includes all required packages.
 
-3. **Agent Function Errors**: For `quote-agent.mjs`, ensure the `agents/quote-agent.yaml` file exists and is valid YAML. Check that `OPENAI_API_KEY` is properly set.
+3. **Agent Function Errors**: For agent functions, ensure the YAML files exist in `agents/` directory (`quote-agent.yaml`, `triage-agent.yaml`) and are valid YAML. Check that `OPENAI_API_KEY` is properly set.
 
 4. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
 
