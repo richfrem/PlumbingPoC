@@ -167,7 +167,7 @@ export async function runTriageAnalysis(requestData) {
   }
 
   // Build the prompt with actual data
-  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment.
+  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment in JSON format.
 
 **Request Details:**
 - Service Category: ${problem_category}
@@ -189,7 +189,7 @@ ${additional_notes || 'None'}
 - Calculated Complexity: ${complexityScore}/10
 - Calculated Urgency: ${urgencyScore}/10
 
-Based on all this information, provide:
+Based on all this information, provide a JSON response with:
 1. A concise triage summary (2-3 sentences) explaining what the customer needs
 2. Priority score (1-10) considering urgency, complexity, and business impact
 3. Priority explanation (why this score?)
@@ -202,7 +202,9 @@ Consider:
 - Potential for upselling or additional services
 - Customer's timeline and flexibility
 - Emergency status and its impact on scheduling
-- Property type and accessibility challenges`;
+- Property type and accessibility challenges
+
+Return your analysis as a JSON object.`;
 
   try {
     const response = await openAiClient.chat.completions.create({

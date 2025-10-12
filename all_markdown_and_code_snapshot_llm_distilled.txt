@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T00:13:23.086Z
+Generated On: 2025-10-12T00:26:36.451Z
 
-# Mnemonic Weight (Token Count): ~323,979 tokens
+# Mnemonic Weight (Token Count): ~327,975 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -131,6 +131,7 @@ Generated On: 2025-10-12T00:13:23.086Z
   ./packages/backend/api/README.md
   ./packages/backend/api/agents/
   ./packages/backend/api/agents/quoteAgentRunner.js
+  ./packages/backend/api/agents/triageAgentRunner.js
   ./packages/backend/api/config/
   ./packages/backend/api/config/azure/
   ./packages/backend/api/config/supabase/
@@ -168,6 +169,7 @@ Generated On: 2025-10-12T00:13:23.086Z
   ./packages/backend/netlify/functions/api.mjs
   ./packages/backend/netlify/functions/quote-agent.mjs
   ./packages/backend/netlify/functions/send-sms.mjs
+  ./packages/backend/netlify/functions/triage-agent.mjs
   ./packages/backend/package.json
   ./packages/backend/start.js
   ./packages/frontend/
@@ -1359,20 +1361,23 @@ These resources provide a structured approach to evolve this plumbing-specific P
 
 # PlumbingPOC: AI-Powered Client Management & Quoting Platform
 
-**PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation, and extends into a full client portal for managing the entire job lifecycle.
+**PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation powered by **OpenAI's Agent Toolkit**, and extends into a full client portal for managing the entire job lifecycle.
 
-Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients in real-time. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI and Supabase for its core functionality.
+Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients in real-time. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI's Agents API and Supabase for its core functionality.
 
 ## Features
 
--   **Modern Frontend:** A fully responsive web app built with Vite, React (TypeScript/TSX), and Tailwind CSS, architected with a professional, feature-based structure.
--   **Intelligent Quoting Agent:** A guided, conversational modal that uses expert logic and dynamic, AI-generated questions to ensure every lead is perfectly qualified.
+-   **Modern Frontend:** A fully responsive web app built with Vite, React (TypeScript/TSX), Material-UI, and custom styled components, architected with a professional, feature-based structure.
+-   **YAML-Driven AI Agents:** Configurable, intelligent agents defined in YAML files for quote intake and request triage, powered by OpenAI's function calling and structured outputs.
+-   **Intelligent Quote Agent:** A guided, conversational modal that dynamically generates contextual questions based on customer responses, ensuring perfect lead qualification with minimal friction.
+-   **AI-Powered Triage Agent:** Analyzes all customer Q&A data, problem descriptions, and service details to provide priority scores, profitability assessments, and business intelligence for incoming requests.
 -   **Scalable MVC Backend:** A robust Express/Node API architected for maintainability, featuring separate layers for routing, controllers, middleware, and validation.
+-   **Serverless Agent Functions:** Netlify Functions for quote-agent and triage-agent provide scalable, stateless execution of AI workflows.
 -   **Secure Database & Auth:** Full integration with Supabase for user profiles, requests, quotes, notes, file storage, and secure authentication (Email/Password, Google, and Azure/Microsoft).
 -   **Comprehensive Admin Dashboard:** A "Command Center" for business owners to view, manage, and act on all incoming quote requests in a professional, interactive UI.
 -   **Interactive Job Management:** Update the status of any job (`new`, `quoted`, `scheduled`, `completed`) directly from the dashboard.
 -   **Real-time Communication Log:** A live chat interface allowing admins and customers to communicate directly within a job's context, with messages appearing instantly for both parties.
--   **AI-Powered Triage:** With one click, admins can generate an AI summary, priority score, and profitability analysis for any new request, enabling them to focus on the most valuable jobs first.
+-   **Contextual UX Design:** Chat interfaces with contextual icons (emergency alerts, property, calendar, etc.) and smooth interactive button states for enhanced user experience.
 
 ## Project Structure
 
@@ -1380,6 +1385,9 @@ The repository follows a modern monorepo architecture with separate packages for
 
 ```
 .
+├── agents/               # YAML-driven AI agent definitions
+│   ├── quote-agent.yaml  # Conversational quote intake workflow
+│   └── triage-agent.yaml # Intelligent request analysis workflow
 ├── packages/
 │   ├── frontend/         # React/Vite application
 │   │   ├── src/          # React components and logic (TSX)
@@ -1387,6 +1395,10 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   │   │   ├── auth/
 │   │   │   │   ├── profile/
 │   │   │   │   └── requests/ # Components, hooks, and types co-located
+│   │   │   │       ├── components/
+│   │   │   │       │   ├── QuoteAgentModal-ChatKit.tsx # Agent-driven UI
+│   │   │   │       │   ├── RequestDetailModal.tsx      # Admin job management
+│   │   │   │       │   └── AITriageSummary.tsx         # Triage display
 │   │   │   └── lib/      # Shared libraries (Supabase client, API client)
 │   │   ├── public/       # Static assets (images, etc.)
 │   │   ├── index.html    # Main HTML template
@@ -1394,17 +1406,28 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   └── package.json  # Frontend dependencies
 │   └── backend/          # Node.js/Express API
 │       ├── api/          # Express server and routes
+│       │   ├── agents/   # AI agent runners
+│       │   │   ├── quoteAgentRunner.js  # Quote agent logic
+│       │   │   └── triageAgentRunner.js # Triage agent logic
 │       │   ├── controllers/
 │       │   ├── middleware/
 │       │   ├── routes/
 │       │   ├── services/
 │       │   └── server.js
 │       ├── netlify/
-│       │   └── functions/ # Serverless functions
+│       │   └── functions/ # Serverless agent functions
+│       │       ├── api.mjs           # Main API wrapper
+│       │       ├── quote-agent.mjs   # Quote agent endpoint
+│       │       ├── triage-agent.mjs  # Triage agent endpoint
+│       │       └── send-sms.mjs      # SMS notifications
 │       └── package.json  # Backend dependencies
-├── PROMPTS/              # Prompt engineering & agent logic
+├── PROMPTS/              # Prompt engineering & agent logic documentation
 ├── supabase/
 │   └── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide
+├── docs/
+│   └── NETLIFY_DEPLOYMENT.md         # Deployment guide
+│   └── NETLIFY_TROUBLESHOOTING.md    # Common deployment issues
+├── netlify.toml          # Netlify configuration with function settings
 ├── package.json          # Root workspace configuration
 └── ...
 ```
@@ -1471,56 +1494,138 @@ This script will start both services in the background and provide you with the 
 
 ---
 
+## AI Agent Architecture
+
+PlumbingPOC leverages **YAML-driven AI agents** powered by OpenAI's function calling and structured outputs to create intelligent, conversational workflows.
+
+### Agent Design Pattern
+
+Each agent follows a consistent pattern:
+
+1. **YAML Configuration** (`agents/*.yaml`) - Defines the workflow nodes, prompts, tools, and guardrails
+2. **Agent Runner** (`packages/backend/api/agents/*Runner.js`) - Implements the business logic and OpenAI integration
+3. **Netlify Function** (`packages/backend/netlify/functions/*.mjs`) - Provides serverless execution endpoint
+4. **Frontend Integration** - React components consume the agent via API calls
+
+### Quote Agent (`quote-agent.yaml`)
+
+**Purpose:** Conversational quote intake with dynamic question generation
+
+**Key Features:**
+- Multi-node workflow (emergency_check → service_selection → dynamic_questions → review_summary)
+- Context-aware question generation based on service type and previous answers
+- Structured output validation ensuring complete data collection
+- Session management for stateful conversations
+- Automatic summary generation for customer review
+
+**Technologies:**
+- OpenAI GPT-4o with function calling
+- YAML-based workflow definition
+- Serverless execution via Netlify Functions
+- Real-time UI updates with contextual icons (🚨 emergency, 🏠 property, 📅 calendar)
+
+### Triage Agent (`triage-agent.yaml`)
+
+**Purpose:** Intelligent analysis of quote requests for business prioritization
+
+**Key Features:**
+- Analyzes complete Q&A summaries from customer intake
+- Calculates job complexity based on service type and location
+- Assesses urgency using emergency status, timeline, and problem severity
+- Provides priority scores (1-10) with detailed explanations
+- Evaluates profitability potential considering job complexity and upsell opportunities
+
+**Business Intelligence Tools:**
+- `calculateJobComplexity()` - Service category and location-based scoring
+- `assessCustomerUrgency()` - Timeline and severity analysis
+- Structured JSON output with explanations for each score
+
+**Output:**
+```json
+{
+  "triage_summary": "2-3 sentence summary",
+  "priority_score": 8,
+  "priority_explanation": "Why this priority",
+  "profitability_score": 7,
+  "profitability_explanation": "Why this profitability",
+  "complexity_score": 6,
+  "urgency_score": 9
+}
+```
+
+### Benefits of YAML-Driven Agents
+
+✅ **Maintainability** - Workflow changes don't require code modifications  
+✅ **Testability** - Agents can be tested independently with mock data  
+✅ **Scalability** - New agents can be added following the same pattern  
+✅ **Transparency** - Business logic is visible in human-readable YAML  
+✅ **Version Control** - Workflow changes are tracked in git  
+
+---
+
 ## Application Flows
 
-### 1. The AI-Powered Intake Flow
-This diagram illustrates the initial, intelligent lead qualification process.
+### 1. The AI-Powered Intake Flow (YAML-Driven Agent)
+This diagram illustrates the intelligent, agent-driven lead qualification process using the OpenAI Agent Toolkit.
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Frontend
-    participant Backend API
-    participant OpenAI API
+    participant Frontend (ChatKit UI)
+    participant Quote Agent Runner
+    participant OpenAI API (GPT-4o)
     participant Supabase
 
-    User->>Frontend: Signs in or registers
-    Frontend->>Supabase: Authenticates user, gets session
-    Supabase-->>Frontend: Returns user session & profile
+    User->>Frontend (ChatKit UI): Signs in or registers
+    Frontend (ChatKit UI)->>Supabase: Authenticates user, gets session
+    Supabase-->>Frontend (ChatKit UI): Returns user session & profile
 
-    User->>Frontend: Clicks "Request a Quote"
-    Frontend->>User: Asks initial, pre-defined questions
-    User-->>Frontend: Provides answers
-
-    Frontend->>Backend API: POST /api/requests/gpt-follow-up (with answers)
-    activate Backend API
-    Backend API->>OpenAI API: Packages info and asks GPT-4 for follow-up questions
-    activate OpenAI API
-    OpenAI API-->>Backend API: Returns context-aware questions (or confirms none needed)
-    deactivate OpenAI API
-    Backend API-->>Frontend: Relays follow-up questions
-    deactivate Backend API
+    User->>Frontend (ChatKit UI): Clicks "Request a Quote"
     
-    loop Until GPT has no more questions
-        Frontend->>User: Asks AI-generated follow-up question
-        User-->>Frontend: Provides answer
+    Note over Frontend (ChatKit UI),Quote Agent Runner: Agent initialization with YAML config
+    Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (initialize session)
+    activate Quote Agent Runner
+    Quote Agent Runner->>Quote Agent Runner: Load quote-agent.yaml workflow definition
+    Quote Agent Runner->>OpenAI API (GPT-4o): Request initial question based on service type
+    OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns structured question with options
+    Quote Agent Runner-->>Frontend (ChatKit UI): First question (emergency check)
+    deactivate Quote Agent Runner
+    
+    Frontend (ChatKit UI)->>User: Displays question with interactive pill buttons
+    User-->>Frontend (ChatKit UI): Clicks response button
+    
+    loop Dynamic Conversation Flow (controlled by YAML nodes)
+        Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (with conversation history)
+        activate Quote Agent Runner
+        Quote Agent Runner->>Quote Agent Runner: Navigate YAML workflow nodes
+        Quote Agent Runner->>OpenAI API (GPT-4o): Analyze responses & determine next question
+        activate OpenAI API (GPT-4o)
+        OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns next question or completion signal
+        deactivate OpenAI API (GPT-4o)
+        Quote Agent Runner-->>Frontend (ChatKit UI): Next question with contextual icon
+        deactivate Quote Agent Runner
+        
+        Frontend (ChatKit UI)->>User: Displays question with contextual UI (🚨/🏠/📅)
+        User-->>Frontend (ChatKit UI): Provides answer
     end
     
-    Frontend->>User: Displays a final summary for confirmation
+    Note over Quote Agent Runner: Agent reaches review_summary stage
+    Quote Agent Runner->>Frontend (ChatKit UI): Returns summary payload with all answers
+    Frontend (ChatKit UI)->>User: Displays comprehensive review summary
 
-    User->>Frontend: Confirms and submits the final request
-    Frontend->>Backend API: POST /api/requests/submit (with all data)
-    activate Backend API
-    Backend API->>Supabase: Inserts the new row into 'requests' table
+    User->>Frontend (ChatKit UI): Confirms and submits the final request
+    Frontend (ChatKit UI)->>Supabase: POST /api/requests/submit (with structured data)
+    activate Supabase
+    Supabase->>Supabase: Inserts request with answers array, service address, geocoding
     
-    opt User uploaded a file
-        Frontend->>Backend API: POST /api/requests/attachments (with file)
-        Backend API->>Supabase: Uploads file to Storage & inserts record into 'quote_attachments'
+    opt User uploaded attachments
+        Frontend (ChatKit UI)->>Supabase: Upload files to Storage bucket
+        Supabase->>Supabase: Insert records into 'quote_attachments'
     end
 
-    Backend API-->>Frontend: Returns success confirmation
-    deactivate Backend API
-    Frontend->>User: Displays "Thank you" message
+    Supabase-->>Frontend (ChatKit UI): Returns success with request ID
+    deactivate Supabase
+    Frontend (ChatKit UI)->>User: Displays "Thank you" confirmation
 ```
 
 ### 2. The Client & Admin Management Flow
@@ -1560,33 +1665,51 @@ sequenceDiagram
     Frontend->>Customer: Displays the conversation log (with new note)
 ```
 
-### 3. The AI-Powered Triage Process
+### 3. The AI-Powered Triage Process (YAML-Driven Agent)
 
-This shows the backend process for automatically analyzing a new request.
+This shows the intelligent backend process for automatically analyzing a new request using the Triage Agent.
 
 ```mermaid
 sequenceDiagram
     participant Admin
-    participant Backend API
+    participant Frontend
+    participant Triage Agent Runner
     participant Supabase
-    participant OpenAI API
+    participant OpenAI API (GPT-4o)
 
-    Admin->>Backend API: POST /api/triage/:requestId (triggers triage)
-    activate Backend API
+    Admin->>Frontend: Clicks "AI Triage" button in Job Docket
+    Frontend->>Triage Agent Runner: POST /triage/:requestId (triggers analysis)
+    activate Triage Agent Runner
     
-    Backend API->>Supabase: Fetch request details (problem_category, answers)
-    Supabase-->>Backend API: Returns request data
+    Triage Agent Runner->>Triage Agent Runner: Load triage-agent.yaml workflow
+    Triage Agent Runner->>Supabase: Fetch complete request details
+    activate Supabase
+    Supabase-->>Triage Agent Runner: Returns request data with all Q&A answers
+    deactivate Supabase
     
-    Backend API->>OpenAI API: Send prompt with request details to GPT-4
-    activate OpenAI API
-    OpenAI API-->>Backend API: Returns JSON: { triage_summary, priority_score }
-    deactivate OpenAI API
+    Note over Triage Agent Runner: Calculate preliminary scores
+    Triage Agent Runner->>Triage Agent Runner: calculateJobComplexity(service, location)
+    Triage Agent Runner->>Triage Agent Runner: assessCustomerUrgency(emergency, timeline)
+    Triage Agent Runner->>Triage Agent Runner: formatAnswersForAnalysis(Q&A array)
     
-    Backend API->>Supabase: Update 'requests' table with triage_summary and priority_score
-    Supabase-->>Backend API: Confirms update
+    Triage Agent Runner->>OpenAI API (GPT-4o): Send comprehensive prompt with:<br/>- Service category<br/>- Emergency status<br/>- Formatted Q&A summaries<br/>- Problem description<br/>- Preliminary scores
+    activate OpenAI API (GPT-4o)
     
-    Backend API-->>Admin: Returns success message with triage results
-    deactivate Backend API
+    Note over OpenAI API (GPT-4o): Structured function calling
+    OpenAI API (GPT-4o)->>OpenAI API (GPT-4o): Analyze all data points<br/>Call: provide_triage_assessment()
+    
+    OpenAI API (GPT-4o)-->>Triage Agent Runner: Returns structured JSON:<br/>{<br/>  triage_summary,<br/>  priority_score (1-10),<br/>  priority_explanation,<br/>  profitability_score (1-10),<br/>  profitability_explanation<br/>}
+    deactivate OpenAI API (GPT-4o)
+    
+    Triage Agent Runner->>Supabase: UPDATE requests SET triage fields
+    activate Supabase
+    Supabase-->>Triage Agent Runner: Confirms update
+    deactivate Supabase
+    
+    Triage Agent Runner-->>Frontend: Returns complete analysis results
+    deactivate Triage Agent Runner
+    
+    Frontend->>Admin: Displays AI Triage Summary card with:<br/>- Priority badge (1-10)<br/>- Profitability indicator<br/>- Summary text<br/>- Explanations
 ```
 
 ### 4. Real-time Publish/Subscribe Synchronization
@@ -11813,7 +11936,8 @@ Your work is now done. Provide this guide and the following technical specificat
     ]
     # Include the YAML config file since quoteAgentRunner is imported by requestRoutes
     included_files = [
-      "agents/quote-agent.yaml"
+      "agents/quote-agent.yaml",
+      "agents/triage-agent.yaml"
     ]
 
   # Configuration for the SMS function
@@ -11828,6 +11952,16 @@ Your work is now done. Provide this guide and the following technical specificat
     ]
     included_files = [
       "agents/quote-agent.yaml"
+    ]
+
+  # Configuration for the triage agent function
+  [functions."triage-agent"]
+    external_node_modules = [
+      "yaml",
+      "openai"
+    ]
+    included_files = [
+      "agents/triage-agent.yaml"
     ]
 
 # Removed [secrets] section and all secrets scanning related settings
@@ -12761,6 +12895,301 @@ export function clearStaleSessions(maxAgeMs = 60 * 60 * 1000) {
     }
   }
 }
+
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/api/agents/triageAgentRunner.js ---
+
+// packages/backend/api/agents/triageAgentRunner.js
+// Runner for TriageAgent workflow using YAML definition for intelligent request analysis
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import YAML from 'yaml';
+import OpenAI from 'openai';
+
+// Safely get __dirname for both ESM and bundled environments
+let __dirname;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (error) {
+  // Fallback for bundled/Netlify environment
+  __dirname = process.cwd();
+  console.log('[TriageAgentRunner] Using process.cwd() as __dirname:', __dirname);
+}
+
+// Try multiple paths to find the YAML file
+let YAML_PATH = path.resolve(__dirname, '../../../../agents/triage-agent.yaml');
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(process.cwd(), 'agents/triage-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/triage-agent.yaml');
+}
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(process.cwd(), '../../../../agents/triage-agent.yaml');
+}
+
+let yamlConfig;
+try {
+  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+  console.log('[TriageAgentRunner] Successfully loaded YAML config from:', YAML_PATH);
+} catch (error) {
+  console.error('[TriageAgentRunner] Failed to load YAML config. Tried paths:', {
+    path1: path.resolve(__dirname, '../../../../agents/triage-agent.yaml'),
+    path2: path.resolve(process.cwd(), 'agents/triage-agent.yaml'),
+    path3: path.resolve(__dirname, '../../../../../agents/triage-agent.yaml'),
+    path4: path.resolve(process.cwd(), '../../../../agents/triage-agent.yaml'),
+    cwd: process.cwd(),
+    __dirname
+  });
+  throw new Error(`Failed to load triage-agent.yaml: ${error.message}`);
+}
+
+const openAiClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+/**
+ * Calculate job complexity based on service category and details
+ */
+function calculateJobComplexity(serviceCategory, problemDescription, locationDetails) {
+  const complexityMap = {
+    'leak_repair': 6,
+    'water_heater': 7,
+    'pipe_installation': 8,
+    'drain_cleaning': 4,
+    'fixture_install': 3,
+    'gas_line_services': 9,
+    'perimeter_drains': 7,
+    'main_line_repair': 9,
+    'emergency_service': 8,
+    'bathroom_reno': 8,
+    'other': 5
+  };
+
+  const baseComplexity = complexityMap[serviceCategory] || 5;
+
+  // Adjust based on location difficulty
+  let locationMultiplier = 1;
+  const location = (locationDetails || '').toLowerCase();
+  if (location.includes('basement') || location.includes('crawlspace')) {
+    locationMultiplier = 1.2;
+  } else if (location.includes('attic') || location.includes('under house')) {
+    locationMultiplier = 1.3;
+  }
+
+  return Math.min(10, Math.round(baseComplexity * locationMultiplier));
+}
+
+/**
+ * Assess customer urgency based on emergency flag and timeline
+ */
+function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) {
+  if (isEmergency) return 10;
+
+  const urgencyMap = {
+    'today': 9,
+    'tomorrow': 8,
+    'this week': 7,
+    'next week': 5,
+    'asap': 8,
+    'soon': 6,
+    'flexible': 3
+  };
+
+  const timeline = (timelineRequested || '').toLowerCase();
+  const timelineUrgency = urgencyMap[timeline] || 4;
+
+  // Boost urgency for severe problems
+  let severityBoost = 0;
+  const severity = (problemSeverity || '').toLowerCase();
+  if (severity.includes('flooding') || severity.includes('no water') || severity.includes('burst')) {
+    severityBoost = 2;
+  }
+
+  return Math.min(10, timelineUrgency + severityBoost);
+}
+
+/**
+ * Format Q&A data for AI analysis
+ */
+function formatAnswersForAnalysis(answers) {
+  if (!Array.isArray(answers)) return 'No answers provided';
+  
+  return answers
+    .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
+    .join('\n\n');
+}
+
+/**
+ * Run triage analysis on a request
+ */
+export async function runTriageAnalysis(requestData) {
+  if (!openAiClient) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  console.log('[TriageAgentRunner] Starting triage analysis for request:', requestData.id);
+
+  // Extract key information from request
+  const {
+    problem_category,
+    is_emergency,
+    answers,
+    problem_description,
+    service_address,
+    preferred_timing,
+    property_type,
+    additional_notes
+  } = requestData;
+
+  // Calculate preliminary scores using tools
+  const complexityScore = calculateJobComplexity(
+    problem_category,
+    problem_description,
+    additional_notes
+  );
+
+  const urgencyScore = assessCustomerUrgency(
+    is_emergency,
+    preferred_timing,
+    problem_description
+  );
+
+  // Format answers for AI analysis
+  const formattedAnswers = formatAnswersForAnalysis(answers);
+
+  // Find the analyze_request node from YAML config
+  const analyzeNode = yamlConfig.nodes.find(node => node.id === 'analyze_request');
+  if (!analyzeNode) {
+    throw new Error('analyze_request node not found in triage-agent.yaml');
+  }
+
+  // Build the prompt with actual data
+  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment in JSON format.
+
+**Request Details:**
+- Service Category: ${problem_category}
+- Emergency Status: ${is_emergency ? 'YES - EMERGENCY' : 'No'}
+- Property Type: ${property_type || 'Not specified'}
+- Preferred Timing: ${preferred_timing || 'Not specified'}
+- Service Address: ${service_address || 'Not specified'}
+
+**Problem Description:**
+${problem_description || 'Not provided'}
+
+**Customer Answers to Questions:**
+${formattedAnswers}
+
+**Additional Notes:**
+${additional_notes || 'None'}
+
+**Preliminary Scores:**
+- Calculated Complexity: ${complexityScore}/10
+- Calculated Urgency: ${urgencyScore}/10
+
+Based on all this information, provide a JSON response with:
+1. A concise triage summary (2-3 sentences) explaining what the customer needs
+2. Priority score (1-10) considering urgency, complexity, and business impact
+3. Priority explanation (why this score?)
+4. Profitability score (1-10) based on job type, complexity, and potential for additional services
+5. Profitability explanation (why this score?)
+
+Consider:
+- Urgency of the problem
+- Technical complexity of the job
+- Potential for upselling or additional services
+- Customer's timeline and flexibility
+- Emergency status and its impact on scheduling
+- Property type and accessibility challenges
+
+Return your analysis as a JSON object.`;
+
+  try {
+    const response = await openAiClient.chat.completions.create({
+      model: analyzeNode.model || 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: 'Please analyze this plumbing service request and provide the triage assessment.'
+        }
+      ],
+      response_format: { type: 'json_object' },
+      functions: [{
+        name: 'provide_triage_assessment',
+        description: 'Provide a structured triage assessment for a plumbing service request',
+        parameters: {
+          type: 'object',
+          properties: {
+            triage_summary: {
+              type: 'string',
+              description: 'Concise summary of the request (2-3 sentences)'
+            },
+            priority_score: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 10,
+              description: 'Priority score from 1-10'
+            },
+            priority_explanation: {
+              type: 'string',
+              description: 'Explanation of the priority score'
+            },
+            profitability_score: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 10,
+              description: 'Profitability score from 1-10'
+            },
+            profitability_explanation: {
+              type: 'string',
+              description: 'Explanation of the profitability score'
+            }
+          },
+          required: ['triage_summary', 'priority_score', 'priority_explanation', 'profitability_score', 'profitability_explanation']
+        }
+      }],
+      function_call: { name: 'provide_triage_assessment' }
+    });
+
+    const functionCall = response.choices[0]?.message?.function_call;
+    if (!functionCall || !functionCall.arguments) {
+      throw new Error('No function call response from OpenAI');
+    }
+
+    const analysis = JSON.parse(functionCall.arguments);
+
+    console.log('[TriageAgentRunner] Analysis completed:', {
+      priority: analysis.priority_score,
+      profitability: analysis.profitability_score
+    });
+
+    return {
+      triage_summary: analysis.triage_summary,
+      priority_score: analysis.priority_score,
+      priority_explanation: analysis.priority_explanation,
+      profitability_score: analysis.profitability_score,
+      profitability_explanation: analysis.profitability_explanation,
+      complexity_score: complexityScore,
+      urgency_score: urgencyScore
+    };
+
+  } catch (error) {
+    console.error('[TriageAgentRunner] Error during analysis:', error);
+    throw error;
+  }
+}
+
+export default {
+  runTriageAnalysis
+};
 
 --- END OF FILE ---
 
@@ -13734,11 +14163,7 @@ export {
 // packages/backend/api/controllers/triageController.js
 
 import { database as supabase } from '../config/supabase/index.js';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { runTriageAnalysis } from '../agents/triageAgentRunner.js';
 
 const triageRequest = async (req, res) => {
   const {requestId} = req.params;
@@ -13753,62 +14178,40 @@ const triageRequest = async (req, res) => {
 
     if (requestError) throw requestError;
 
-    // 2. Prepare the prompt for GPT-4
-    const prompt = `
-      A new plumbing service request has been submitted. Please analyze the following details and provide a triage summary, a priority score (1-10), and a profitability score (1-10).
+    console.log('[TriageController] Running AI triage analysis for request:', requestId);
 
-      Problem Category: ${request.problem_category}
-      Answers:
-      ${request.answers.map(a => `- ${a.question}: ${a.answer}`).join('\n')}
+    // 2. Use the intelligent triage agent runner
+    const analysis = await runTriageAnalysis(request);
 
-      Based on the information provided, please return a JSON object with five keys:
-      - "triage_summary": A one-sentence summary of the request, highlighting urgency and potential job value.
-      - "priority_score": An integer from 1 to 10, where 10 is the highest priority.
-      - "priority_explanation": A one-sentence explanation for the priority score.
-      - "profitability_score": An integer from 1 to 10, where 10 is the highest profitability. Consider factors like potential job size, complexity, and likelihood of customer conversion.
-      - "profitability_explanation": A one-sentence explanation for the profitability score.
-    `;
-
-    // 3. Call the OpenAI API
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
-      messages: [{
-        role: 'user',
-        content: prompt
-      }],
-      response_format: {
-        type: 'json_object'
-      },
-    });
-
-    const {triage_summary, priority_score, priority_explanation, profitability_score, profitability_explanation} = JSON.parse(response.choices[0].message.content);
-
-    // 4. Update the request in the database
+    // 3. Update the request in the database
     const {error: updateError} = await supabase
       .from('requests')
       .update({
-        triage_summary,
-        priority_score,
-        priority_explanation,
-        profitability_score,
-        profitability_explanation
+        triage_summary: analysis.triage_summary,
+        priority_score: analysis.priority_score,
+        priority_explanation: analysis.priority_explanation,
+        profitability_score: analysis.profitability_score,
+        profitability_explanation: analysis.profitability_explanation
       })
       .eq('id', requestId);
 
     if (updateError) throw updateError;
 
+    console.log('[TriageController] Triage analysis completed:', {
+      requestId,
+      priority: analysis.priority_score,
+      profitability: analysis.profitability_score
+    });
+
     res.status(200).json({
       message: 'Triage complete.',
-      triage_summary,
-      priority_score,
-      priority_explanation,
-      profitability_score,
-      profitability_explanation
+      ...analysis
     });
   } catch (error) {
-    console.error('Error during triage:', error);
+    console.error('[TriageController] Error during triage:', error);
     res.status(500).json({
-      message: 'Internal Server Error'
+      message: 'Internal Server Error',
+      error: error.message
     });
   }
 };
@@ -15270,6 +15673,72 @@ export async function handler(event) {
     return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
   }
 };
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/netlify/functions/triage-agent.mjs ---
+
+// packages/backend/netlify/functions/triage-agent.mjs
+// Serverless function for AI-powered triage analysis
+
+import { runTriageAnalysis } from '../../api/agents/triageAgentRunner.js';
+
+export async function handler(event, context) {
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const requestData = JSON.parse(event.body);
+    
+    console.log('[TriageFunction] Received triage request for:', requestData.id);
+
+    // Run the AI analysis
+    const analysis = await runTriageAnalysis(requestData);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify(analysis)
+    };
+
+  } catch (error) {
+    console.error('[TriageFunction] Error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: 'Triage analysis failed',
+        message: error.message
+      })
+    };
+  }
+}
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/package.json ---
