@@ -639,7 +639,7 @@ options: ["Phone Call", "Email", "Text"]
 
 - **YAML Syntax Validator:** [yamllint.com](http://www.yamllint.com/)
 - **Quote Agent Code:** `packages/backend/netlify/functions/quote-agent.mjs` (self-contained, works locally and on Netlify)
-- **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx`
+- **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal.tsx`
 - **YAML Configuration:** `agents/quote-agent.yaml`
 
 **Questions?** Check the team documentation or reach out to the development team.

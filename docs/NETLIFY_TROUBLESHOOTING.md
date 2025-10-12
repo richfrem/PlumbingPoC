@@ -433,7 +433,7 @@ src/main.tsx(454,13): error TS2322: Type 'ServiceDefinition | null' is not assig
   Type 'ServiceDefinition' is not assignable to type 'string'.
 ```
 
-**Root Cause:** State variable type mismatch between component and its props. The `preselectedService` state was typed as `ServiceDefinition | null` (an object), but the `QuoteAgentModalChatKit` component expected `string | null` (just the service key).
+**Root Cause:** State variable type mismatch between component and its props. The `preselectedService` state was typed as `ServiceDefinition | null` (an object), but the `QuoteAgentModal` component expected `string | null` (just the service key).
 
 **Timeline:**
 - ✅ Local development passed (type checking might be less strict)

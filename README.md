@@ -35,7 +35,7 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   │   │   ├── profile/
 │   │   │   │   └── requests/ # Components, hooks, and types co-located
 │   │   │   │       ├── components/
-│   │   │   │       │   ├── QuoteAgentModal-ChatKit.tsx # Agent-driven UI
+│   │   │   │       │   ├── QuoteAgentModal.tsx       # YAML-driven quote intake UI
 │   │   │   │       │   ├── RequestDetailModal.tsx      # Admin job management
 │   │   │   │       │   └── AITriageSummary.tsx         # Triage display
 │   │   │   └── lib/      # Shared libraries (Supabase client, API client)

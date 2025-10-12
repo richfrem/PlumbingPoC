@@ -1,5 +1,5 @@
-// packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
-// Agent-driven quote intake modal with ChatKit-style conversation and review summary
+// packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
+// YAML-driven quote intake modal with conversational interface
 
 import React, {
   useCallback,
@@ -40,7 +40,7 @@ import { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
 import { services as SERVICE_DEFINITIONS } from "../../../lib/serviceDefinitions";
 
-interface QuoteAgentModalChatKitProps {
+interface QuoteAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmissionSuccess: (newRequest: any) => void;
@@ -212,7 +212,7 @@ const buildServiceAddressPayload = (
   };
 };
 
-export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
+export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
   isOpen,
   onClose,
   onSubmissionSuccess,
@@ -315,7 +315,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error("QuoteAgentModal-ChatKit: init error", err);
+          console.error("QuoteAgentModal: init error", err);
           setError(
             err instanceof Error
               ? err.message
@@ -391,7 +391,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
         const data = await response.json();
         handleAgentResponse(data);
       } catch (err) {
-        console.error("QuoteAgentModal-ChatKit: callAgent error", err);
+        console.error("QuoteAgentModal: callAgent error", err);
         setError(
           err instanceof Error
             ? err.message
@@ -516,7 +516,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
       onSubmissionSuccess(newRequest);
       onClose();
     } catch (err) {
-      console.error("QuoteAgentModal-ChatKit: submission error", err);
+      console.error("QuoteAgentModal: submission error", err);
       setError(
         err instanceof Error
           ? err.message
@@ -1220,4 +1220,4 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
   );
 };
 
-export default QuoteAgentModalChatKit;
+export default QuoteAgentModal;

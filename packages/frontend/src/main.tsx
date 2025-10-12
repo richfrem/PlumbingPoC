@@ -6,7 +6,7 @@ import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import AuthModal from './features/auth/components/AuthModal';
-import QuoteAgentModal from './features/requests/components/QuoteAgentModal-ChatKit';
+import QuoteAgentModal from './features/requests/components/QuoteAgentModal';
 import ServicesSection from './features/landing/components/ServicesSection';
 import ReviewsSection from './features/landing/components/ReviewsSection';
 import AboutSection from './features/landing/components/AboutSection';

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T17:09:33.767Z
+Generated On: 2025-10-12T17:16:49.410Z
 
-# Mnemonic Weight (Token Count): ~324,287 tokens
+# Mnemonic Weight (Token Count): ~324,253 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -214,7 +214,7 @@ Generated On: 2025-10-12T17:09:33.767Z
   ./packages/frontend/src/features/requests/components/ModalFooter.tsx
   ./packages/frontend/src/features/requests/components/ModalHeader.tsx
   ./packages/frontend/src/features/requests/components/MyRequests.tsx
-  ./packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
+  ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteFormModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteList.tsx
   ./packages/frontend/src/features/requests/components/RequestActions.tsx
@@ -1357,7 +1357,7 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   │   │   ├── profile/
 │   │   │   │   └── requests/ # Components, hooks, and types co-located
 │   │   │   │       ├── components/
-│   │   │   │       │   ├── QuoteAgentModal-ChatKit.tsx # Agent-driven UI
+│   │   │   │       │   ├── QuoteAgentModal.tsx       # YAML-driven quote intake UI
 │   │   │   │       │   ├── RequestDetailModal.tsx      # Admin job management
 │   │   │   │       │   └── AITriageSummary.tsx         # Triage display
 │   │   │   └── lib/      # Shared libraries (Supabase client, API client)
@@ -5239,7 +5239,7 @@ router.post('/quote/run', async (req, res) => {
 - ✅ `packages/backend/api/routes/agentRoutes.js` - Simple proxy
 - ✅ `packages/backend/api/controllers/triageController.js` - Calls function handler
 - ✅ `packages/backend/api/routes/requestRoutes.js` - Removed runner import
-- ✅ `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx` - Environment-based endpoint
+- ✅ `packages/frontend/src/features/requests/components/QuoteAgentModal.tsx` - Environment-based endpoint
 
 ### Net Impact
 - **Code reduction**: ~700 LOC total removed
@@ -10734,7 +10734,7 @@ src/main.tsx(454,13): error TS2322: Type 'ServiceDefinition | null' is not assig
   Type 'ServiceDefinition' is not assignable to type 'string'.
 ```
 
-**Root Cause:** State variable type mismatch between component and its props. The `preselectedService` state was typed as `ServiceDefinition | null` (an object), but the `QuoteAgentModalChatKit` component expected `string | null` (just the service key).
+**Root Cause:** State variable type mismatch between component and its props. The `preselectedService` state was typed as `ServiceDefinition | null` (an object), but the `QuoteAgentModal` component expected `string | null` (just the service key).
 
 **Timeline:**
 - ✅ Local development passed (type checking might be less strict)
@@ -11944,7 +11944,7 @@ options: ["Phone Call", "Email", "Text"]
 
 - **YAML Syntax Validator:** [yamllint.com](http://www.yamllint.com/)
 - **Quote Agent Code:** `packages/backend/netlify/functions/quote-agent.mjs` (self-contained, works locally and on Netlify)
-- **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx`
+- **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal.tsx`
 - **YAML Configuration:** `agents/quote-agent.yaml`
 
 **Questions?** Check the team documentation or reach out to the development team.
@@ -15642,7 +15642,7 @@ Functions access environment variables set in the Netlify dashboard:
 
 2. **Bundling Errors**: If you see errors about external modules, verify the `external_node_modules` configuration in `netlify.toml` includes all required packages.
 
-3. **Agent Function Errors**: For `quote-agent.mjs`, ensure the `agents/quote-agent.yaml` file exists and is valid YAML. Check that `OPENAI_API_KEY` is properly set.
+3. **Agent Function Errors**: For agent functions, ensure the YAML files exist in `agents/` directory (`quote-agent.yaml`, `triage-agent.yaml`) and are valid YAML. Check that `OPENAI_API_KEY` is properly set.
 
 4. **ESM Import Errors**: Ensure all backend files use consistent ES Modules syntax. The functions expect the backend to be ESM-compatible.
 
@@ -19873,10 +19873,10 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
 export default MyRequests;
 --- END OF FILE ---
 
---- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx ---
+--- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx ---
 
-// packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
-// Agent-driven quote intake modal with ChatKit-style conversation and review summary
+// packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
+// YAML-driven quote intake modal with conversational interface
 
 import React, {
   useCallback,
@@ -19917,7 +19917,7 @@ import { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
 import { services as SERVICE_DEFINITIONS } from "../../../lib/serviceDefinitions";
 
-interface QuoteAgentModalChatKitProps {
+interface QuoteAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmissionSuccess: (newRequest: any) => void;
@@ -20089,7 +20089,7 @@ const buildServiceAddressPayload = (
   };
 };
 
-export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
+export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
   isOpen,
   onClose,
   onSubmissionSuccess,
@@ -20192,7 +20192,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error("QuoteAgentModal-ChatKit: init error", err);
+          console.error("QuoteAgentModal: init error", err);
           setError(
             err instanceof Error
               ? err.message
@@ -20268,7 +20268,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
         const data = await response.json();
         handleAgentResponse(data);
       } catch (err) {
-        console.error("QuoteAgentModal-ChatKit: callAgent error", err);
+        console.error("QuoteAgentModal: callAgent error", err);
         setError(
           err instanceof Error
             ? err.message
@@ -20393,7 +20393,7 @@ export const QuoteAgentModalChatKit: React.FC<QuoteAgentModalChatKitProps> = ({
       onSubmissionSuccess(newRequest);
       onClose();
     } catch (err) {
-      console.error("QuoteAgentModal-ChatKit: submission error", err);
+      console.error("QuoteAgentModal: submission error", err);
       setError(
         err instanceof Error
           ? err.message
@@ -21097,7 +21097,7 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
   );
 };
 
-export default QuoteAgentModalChatKit;
+export default QuoteAgentModal;
 
 --- END OF FILE ---
 
@@ -24672,7 +24672,7 @@ import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import AuthModal from './features/auth/components/AuthModal';
-import QuoteAgentModal from './features/requests/components/QuoteAgentModal-ChatKit';
+import QuoteAgentModal from './features/requests/components/QuoteAgentModal';
 import ServicesSection from './features/landing/components/ServicesSection';
 import ReviewsSection from './features/landing/components/ReviewsSection';
 import AboutSection from './features/landing/components/AboutSection';

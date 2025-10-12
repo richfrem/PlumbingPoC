@@ -115,7 +115,7 @@ router.post('/quote/run', async (req, res) => {
 - ✅ `packages/backend/api/routes/agentRoutes.js` - Simple proxy
 - ✅ `packages/backend/api/controllers/triageController.js` - Calls function handler
 - ✅ `packages/backend/api/routes/requestRoutes.js` - Removed runner import
-- ✅ `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx` - Environment-based endpoint
+- ✅ `packages/frontend/src/features/requests/components/QuoteAgentModal.tsx` - Environment-based endpoint
 
 ### Net Impact
 - **Code reduction**: ~700 LOC total removed
