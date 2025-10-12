@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
+import PipelineView from './PipelineView';
 import { AlertTriangle, Map, Table, Siren, CalendarDays } from 'lucide-react';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
@@ -24,6 +25,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
+  const [activePipelineStage, setActivePipelineStage] = useState<string | null>(null);
+  const [pipelineFilterStatuses, setPipelineFilterStatuses] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -56,8 +59,14 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const filteredRequests = useMemo(() => {
     let requests = allRequests;
 
-    // Apply status filter first
-    if (activeFilterStatus !== 'all') {
+    // Apply pipeline stage filter if active (takes precedence)
+    if (pipelineFilterStatuses.length > 0) {
+      requests = requests.filter(request => 
+        pipelineFilterStatuses.includes(request.status)
+      );
+    }
+    // Otherwise apply single status filter from chips
+    else if (activeFilterStatus !== 'all') {
       requests = requests.filter(request => request.status === activeFilterStatus);
     }
 
@@ -94,7 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     }
 
     return requests;
-  }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
+  }, [allRequests, activeFilterStatus, pipelineFilterStatuses, dateFilter, isEmergencyFilter]);
 
   // Add data-request-id attributes to DataGrid rows for integration testing
   useEffect(() => {
@@ -135,7 +144,35 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     setSelectedRequest(null);
   };
 
-  const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
+  const handleStageClick = useCallback((stageId: string, statuses: string[]) => {
+    // If clicking the same stage, clear filter to show all
+    if (activePipelineStage === stageId) {
+      setActivePipelineStage(null);
+      setPipelineFilterStatuses([]);
+      setActiveFilterStatus('all');
+    } else {
+      // Set active stage and filter to ALL statuses in the stage's array
+      setActivePipelineStage(stageId);
+      setPipelineFilterStatuses(statuses);
+      setActiveFilterStatus('all'); // Clear chip filter when using pipeline
+    }
+  }, [activePipelineStage]);
+
+  const allStatuses = [
+    'all', 
+    'new', 
+    'viewed', 
+    'quoted', 
+    'accepted', 
+    'scheduled', 
+    'in_progress', 
+    'completed', 
+    'invoiced', 
+    'paid', 
+    'overdue', 
+    'disputed', 
+    'cancelled'
+  ];
 
   const columns: GridColDef[] = [
     // 1. STATUS: Most important workflow state.
@@ -260,85 +297,93 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               Plumber's Command Center
             </Typography>
-            <ButtonGroup variant="outlined" size="small">
-              <Button
-                startIcon={<Table size={16} />}
-                variant={viewMode === 'table' ? 'contained' : 'outlined'}
-                onClick={() => setViewMode('table')}
-              >
-                Table
-              </Button>
-              <Button
-                startIcon={<Map size={16} />}
-                variant={viewMode === 'map' ? 'contained' : 'outlined'}
-                onClick={() => setViewMode('map')}
-              >
-                Map
-              </Button>
-            </ButtonGroup>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Date Filter */}
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="date-filter-label">Schedule</InputLabel>
+                <Select
+                  labelId="date-filter-label"
+                  value={dateFilter}
+                  label="Schedule"
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <CalendarDays size={16} />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="all">All Time</MenuItem>
+                  <MenuItem value="today">Scheduled Today</MenuItem>
+                  <MenuItem value="week">Scheduled This Week</MenuItem>
+                  <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
+                  <MenuItem value="overdue">Overdue</MenuItem>
+                </Select>
+              </FormControl>
+
+              {/* Emergency Toggle */}
+              <FormControlLabel
+                control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Siren size={16} />
+                    Emergencies Only
+                  </Box>
+                }
+              />
+              
+              <ButtonGroup variant="outlined" size="small">
+                <Button
+                  startIcon={<Table size={16} />}
+                  variant={viewMode === 'table' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('table')}
+                >
+                  Table
+                </Button>
+                <Button
+                  startIcon={<Map size={16} />}
+                  variant={viewMode === 'map' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('map')}
+                >
+                  Map
+                </Button>
+              </ButtonGroup>
+            </Box>
           </Box>
 
-          {/* New Control Panel for Filters */}
-          <Paper sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, bgcolor: 'background.default' }}>
-            <Typography variant="subtitle2" sx={{ mr: 2, color: 'text.secondary' }}>Filter by status:</Typography>
-            {allStatuses.map(status => (
-              <Chip
-                key={status}
-                label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                onClick={() => setActiveFilterStatus(status)}
-                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
-                sx={{
-                  textTransform: 'capitalize',
-                  fontWeight: 'bold',
-                  borderColor: status === 'all' ? 'grey.400' : statusColors[status as keyof typeof statusColors],
-                  // Apply background and text color ONLY if it's the active filter
-                  ...(activeFilterStatus === status && status !== 'all' && {
-                    bgcolor: statusColors[status as keyof typeof statusColors],
-                    color: ['#FBC02D', '#F57C00'].includes(statusColors[status as keyof typeof statusColors]) ? '#000' : '#fff',
-                  }),
-                  // Ensure text color is correct for outlined (non-active) state
-                  ...(activeFilterStatus !== status && {
-                    color: status === 'all' ? 'text.primary' : statusColors[status as keyof typeof statusColors],
-                  }),
-                }}
-              />
-            ))}
-
-            {/* Date Filter */}
-            <FormControl size="small" sx={{ minWidth: 180, ml: 2 }}>
-              <InputLabel id="date-filter-label">Schedule</InputLabel>
-              <Select
-                labelId="date-filter-label"
-                value={dateFilter}
-                label="Schedule"
-                onChange={(e) => setDateFilter(e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <CalendarDays size={16} />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="all">All Time</MenuItem>
-                <MenuItem value="today">Scheduled Today</MenuItem>
-                <MenuItem value="week">Scheduled This Week</MenuItem>
-                <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
-                <MenuItem value="overdue">Overdue</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Emergency Toggle */}
-            <Box sx={{ flexGrow: 1 }} /> {/* This pushes the switch to the right */}
-            <FormControlLabel
-              control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AlertTriangle size={16} />
-                  Emergencies Only
-                </Box>
-              }
-              sx={{ mr: 1, color: 'text.secondary' }}
+          {/* Pipeline Workflow Visualization */}
+          <Box sx={{ mb: 3 }}>
+            <PipelineView
+              requests={filteredRequests}
+              activeStage={activePipelineStage}
+              onStageClick={handleStageClick}
+              activeFilterStatus={activeFilterStatus}
+              onStatusClick={(status) => {
+                setActiveFilterStatus(status);
+                setPipelineFilterStatuses([status]);
+              }}
             />
-          </Paper>
+            
+            {/* Clear Filters Button - Only show when filters are active */}
+            {(activePipelineStage || activeFilterStatus !== 'all' || dateFilter !== 'all' || isEmergencyFilter) && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setActivePipelineStage(null);
+                    setPipelineFilterStatuses([]);
+                    setActiveFilterStatus('all');
+                    setDateFilter('all');
+                    setIsEmergencyFilter(false);
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Clear All Filters
+                </Button>
+              </Box>
+            )}
+          </Box>
+
           {viewMode === 'table' ? (
             <Paper ref={dataGridRef} sx={{ height: 600, width: '100%' }}>
               <DataGrid

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T19:32:11.238Z
+Generated On: 2025-10-12T21:03:45.433Z
 
-# Mnemonic Weight (Token Count): ~330,262 tokens
+# Mnemonic Weight (Token Count): ~338,802 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -215,6 +215,7 @@ Generated On: 2025-10-12T19:32:11.238Z
   ./packages/frontend/src/features/requests/components/ModalFooter.tsx
   ./packages/frontend/src/features/requests/components/ModalHeader.tsx
   ./packages/frontend/src/features/requests/components/MyRequests.tsx
+  ./packages/frontend/src/features/requests/components/PipelineView.tsx
   ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteFormModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteList.tsx
@@ -261,6 +262,8 @@ Generated On: 2025-10-12T19:32:11.238Z
   ./supabase/functions/
   ./supabase/functions/geocode/
   ./supabase/functions/geocode/index.ts
+  ./supabase/migrations/
+  ./supabase/migrations/add_invoice_enhancements.sql
   ./supabase/schema.sql
   ./supabase/supabase/
   ./supabase/supabase/.temp/
@@ -10755,23 +10758,411 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 
 ---
 
-## 3. Online Invoice Payments (Stripe Integration)
+## 3. Invoice Management & Payment System
 
-**Objective:** Streamline the payment process, get paid faster, and provide a professional, modern payment experience for customers.
+**Objective:** Bridge the gap between quotes (estimates) and final payment by creating a comprehensive invoicing system that handles real-world job variations, integrates AI-assisted billing, and provides seamless online payment processing.
+
+### Understanding Quote vs Invoice
+
+**Quote (Pre-Work Estimate):**
+- Initial estimate based on customer description
+- Subject to change upon physical inspection
+- Customer acceptance required to proceed
+- Example: "Bathroom renovation: $3,500-4,200"
+
+**Invoice (Final Billing):**
+- Actual work performed and materials used
+- Reflects on-site discoveries and customer-approved changes
+- Legally binding payment request
+- Example: "Bathroom renovation: $3,800 + Additional valve replacement: $180 = **$3,980 total**"
+
+**Why Both Are Needed:**
+- 📊 **Transparency:** Clear audit trail from estimate to final cost
+- 💼 **Professionalism:** Industry-standard practice
+- 🔍 **Accountability:** Documents scope changes and upsells
+- 📈 **Analytics:** Track quote accuracy and margin per job
+
+---
+
+### Phase 1: Manual Invoice Creation (Foundation)
+
+**Status:** 🔨 Planned
 
 **Implementation Strategy:**
-*   **Technology:** Stripe API for payment processing.
-*   **Trigger:** An "Pay Invoice" button would appear in the customer's client portal when a job is marked as 'Completed'.
-*   **Logic:**
-    1.  A new Netlify Function (`/netlify/functions/create-payment-intent.js`) would be created.
-    2.  When the customer clicks "Pay Invoice," the frontend calls this function.
-    3.  The function communicates with the Stripe API to create a secure payment session.
-    4.  The frontend uses the information from Stripe to render a secure credit card input field (using `Stripe.js`).
-    5.  Upon successful payment, a Stripe webhook would hit another Netlify Function (`/netlify/functions/handle-payment-success.js`) to update the invoice status in the Supabase database.
 
-**Value Proposition:**
-*   **For the Owner:** Improves cash flow by reducing the time between invoicing and payment.
-*   **For the Customer:** A convenient and secure way to pay online.
+1. **"Create Invoice" Button** in Admin Dashboard
+   - Appears when job status = 'completed'
+   - Pre-populates from original quote
+   - Located in Request Detail Modal
+
+2. **Invoice Builder UI**
+   - Itemized line items (labor, materials, permits, fees)
+   - Auto-populate from quote, allow modifications
+   - Add/remove line items dynamically
+   - Tax calculation (configurable rate)
+   - Subtotal + Tax = Total Due
+
+3. **Database Schema (Already Exists)**
+   ```sql
+   invoices table:
+   - id, user_id, quote_id (links to original estimate)
+   - amount_due, due_date
+   - status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'disputed'
+   - created_at
+   ```
+
+4. **Invoice PDF Generation**
+   - Use library like `pdfkit` or `react-pdf`
+   - Professional template with business logo
+   - Itemized breakdown
+   - Payment instructions
+   - Due date prominently displayed
+
+5. **Email Delivery**
+   - Send via Resend API (already integrated)
+   - Attach PDF invoice
+   - Include "View Invoice" link to customer portal
+   - "Pay Online" button (Phase 3)
+
+**Status Synchronization:**
+- When invoice created: `request.status` → `'invoiced'`
+- When invoice sent: Email customer, update `invoice.status` → `'sent'`
+- Admin can track invoice status in Request Detail Modal
+
+---
+
+### Phase 2: AI-Assisted Invoice Generation
+
+**Status:** 🤖 Planned - High Value Add
+
+**Objective:** Use AI to automate invoice creation, suggest line items, and explain quote-to-invoice variances to prevent customer disputes.
+
+**AI Capabilities:**
+
+1. **Smart Invoice Generation from Job Notes**
+   - AI reads technician completion notes
+   - Example input: "Replaced 3 shut-off valves, 2 hours labor, discovered corroded main line (customer approved repair)"
+   - AI generates:
+     ```
+     Line Items:
+     - Labor (2 hours @ $125/hr): $250
+     - Shut-off valves (3 @ $45 ea): $135
+     - Main line repair (customer-approved): $380
+     - Materials & fittings: $75
+     Total: $840
+     ```
+
+2. **Variance Detection & Explanation**
+   - AI compares quote amount vs actual invoice
+   - Flags discrepancies > 10%
+   - Auto-generates customer-friendly explanations:
+     > "During the bathroom renovation, we discovered the main shower valve was also corroded and posed a leak risk. You approved this additional repair on-site for $180. Your original quote was $3,500, and the final invoice is $3,680."
+
+3. **Upsell Itemization**
+   - AI identifies work beyond original scope
+   - Suggests proper billing codes
+   - Recommends explanatory notes
+   - Example: "Gas line work" → AI flags: "Requires gas fitter certification, premium rate applies"
+
+4. **Dispute Prevention**
+   - AI reviews invoice before sending
+   - Flags potential issues:
+     - Invoice > 20% over quote without explanation
+     - Missing line item descriptions
+     - Ambiguous charges
+   - Suggests adding clarification notes
+
+5. **Price Optimization**
+   - AI analyzes completed jobs database
+   - Suggests pricing adjustments based on:
+     - Material costs
+     - Labor time vs estimate
+     - Job complexity vs quote
+   - Learns to improve future quote accuracy
+
+**Implementation:**
+- New AI agent: `invoice-generator-agent.yaml`
+- Uses GPT-4 for itemization and explanation generation
+- Reads: job completion notes, original quote, service category
+- Outputs: Line items JSON, variance explanation, dispute risk score
+
+**AI Invoice Agent Architecture:**
+```yaml
+agent: InvoiceGeneratorAgent
+nodes:
+  - id: analyze_completion
+    prompt: "Review technician notes and generate invoice line items"
+    output:
+      line_items: array
+      variance_explanation: string
+      dispute_risk_score: integer (1-10)
+      recommended_notes: array
+```
+
+---
+
+### Phase 3: Stripe Payment Integration
+
+**Status:** 💳 Planned
+
+**Objective:** Streamline payment collection, improve cash flow, and provide modern payment experience.
+
+**Implementation Strategy:**
+
+1. **Stripe Setup**
+   - Create Stripe account
+   - Add `STRIPE_SECRET_KEY` to Netlify environment variables
+   - Install `stripe` npm package
+
+2. **Payment Button in Customer Portal**
+   - "Pay Invoice" button appears when `invoice.status = 'sent'`
+   - Clicking opens Stripe Checkout modal
+   - Supports credit/debit cards, Apple Pay, Google Pay
+
+3. **Backend: Create Payment Intent**
+   - New Netlify Function: `/netlify/functions/create-payment-intent.mjs`
+   - Receives invoice ID from frontend
+   - Calls Stripe API to create payment session
+   - Returns client secret to frontend
+
+4. **Frontend: Stripe Checkout**
+   - Uses `@stripe/stripe-js` and `@stripe/react-stripe-js`
+   - Renders secure credit card input
+   - Handles 3D Secure authentication
+   - Shows loading states and error handling
+
+5. **Webhook: Payment Success**
+   - New Netlify Function: `/netlify/functions/stripe-webhook.mjs`
+   - Listens for `payment_intent.succeeded` event
+   - Updates database:
+     - `invoice.status` → `'paid'`
+     - `invoice.paid_at` → timestamp
+     - `request.status` → `'paid'` ✅ **Status sync**
+   - Sends receipt email via Resend
+   - Triggers SMS notification to business owner
+
+6. **Payment Tracking**
+   - Admin dashboard shows payment status
+   - Overdue invoice alerts (due_date passed)
+   - Payment history log
+
+**Security:**
+- Stripe webhook signature verification
+- Never store credit card numbers (PCI compliance)
+- All payments processed through Stripe's secure infrastructure
+
+**Cost:**
+- Stripe fee: 2.9% + $0.30 per transaction
+- Example: $500 invoice = $14.80 fee
+- Owner receives: $485.20
+
+---
+
+### Phase 4: Request Status Lifecycle & Synchronization
+
+**Problem:** Current `request.status` doesn't reflect invoicing/payment states.
+
+**Proposed Enhanced Status Workflow:**
+
+```
+new → quoted → accepted → scheduled → in_progress → 
+completed → invoiced → paid (OR overdue OR disputed)
+```
+
+**New Statuses to Add:**
+
+1. **`invoiced`** - Invoice created and sent to customer
+2. **`paid`** - Customer paid invoice (job fully closed)
+3. **`overdue`** - Invoice past due date without payment
+4. **`disputed`** - Customer contested charges (needs resolution)
+5. **`partially_paid`** - Partial payment received (optional)
+
+**Status Synchronization Rules:**
+
+| Invoice Status | Request Status | Action Triggered |
+|---------------|---------------|------------------|
+| `draft` | `completed` | Invoice being prepared |
+| `sent` | `invoiced` | Email sent to customer |
+| `paid` | `paid` | ✅ Job complete, send receipt, SMS owner |
+| `overdue` | `overdue` | 🔔 Send payment reminder, alert owner |
+| `disputed` | `disputed` | 🚨 Flag for owner review, pause collections |
+| `cancelled` | `completed` | Return to completed state |
+
+**Implementation:**
+- Add database trigger or application logic in `invoiceController.js`
+- When `invoice.status` changes → automatically update `request.status`
+- Ensures dashboard always shows current state
+- Prevents manual status mismatches
+
+**Dashboard Impact:**
+- Filter by status: "Show me all overdue invoices"
+- Visual indicators: Overdue invoices display in red
+- Automated reminders: Cron job sends payment reminders for overdue
+
+---
+
+### Phase 5: AI-Powered Collections & Follow-up
+
+**Status:** 🤖 Future Enhancement
+
+**Smart Payment Reminders:**
+- AI analyzes customer payment history
+- Personalizes reminder tone (friendly vs firm)
+- Suggests optimal reminder timing
+- Example: "Customer typically pays within 5 days, send gentle reminder on day 6"
+
+**Dispute Resolution Assistant:**
+- AI reads dispute reason
+- Suggests resolution strategies
+- Drafts response emails
+- Recommends partial refunds or adjustments
+
+**Cash Flow Forecasting:**
+- AI predicts payment timelines based on historical data
+- Alerts owner to potential cash flow gaps
+- Recommends follow-up priority (chase high-value overdue invoices first)
+
+---
+
+### Implementation Roadmap
+
+**Month 1-2: Foundation (Phase 1)**
+- [ ] Design Invoice Builder UI
+- [ ] Implement itemized line item entry
+- [ ] PDF generation and email delivery
+- [ ] Basic status sync (invoiced)
+- [ ] Admin can create/send invoices manually
+
+**Month 3-4: AI Assistance (Phase 2)**
+- [ ] Build invoice-generator-agent.yaml
+- [ ] AI reads completion notes → suggests line items
+- [ ] Variance detection and explanation generation
+- [ ] Dispute risk scoring
+- [ ] Test with historical job data
+
+**Month 5-6: Payments (Phase 3)**
+- [ ] Stripe account setup and integration
+- [ ] Payment button in customer portal
+- [ ] Webhook for payment success
+- [ ] Status sync (paid, overdue)
+- [ ] Receipt generation and email
+
+**Month 7+: Advanced Features (Phase 4-5)**
+- [ ] Enhanced status workflow implementation
+- [ ] Automated overdue reminders
+- [ ] Dispute tracking and resolution
+- [ ] AI collections assistant
+- [ ] Cash flow forecasting dashboard
+
+---
+
+### Value Proposition
+
+**For the Business Owner:**
+- ⏱️ **Time Savings:** AI generates invoices in seconds vs 5-10 minutes manually
+- 💰 **Faster Payment:** Online payments reduce collection time by 50%
+- 📊 **Better Accuracy:** AI flags pricing errors before customer sees them
+- 🛡️ **Dispute Prevention:** Clear explanations reduce customer pushback
+- 📈 **Improved Cash Flow:** Automated reminders and easy payment increase on-time payments
+
+**For the Customer:**
+- 💳 **Convenience:** Pay online 24/7 with credit card
+- 📱 **Mobile-Friendly:** Pay from phone, no checks or bank visits
+- 🔍 **Transparency:** Itemized invoices show exactly what they're paying for
+- ✅ **Trust:** Professional invoicing builds confidence
+
+**Estimated ROI:**
+- Average payment cycle reduction: 7-10 days → 2-3 days
+- Dispute rate reduction: 15% → 5%
+- Admin time savings: 30 minutes/day (5 hours/month)
+- Cost to implement: ~40 hours development + Stripe fees (2.9%)
+- Break-even: ~20 paid invoices
+
+---
+
+### Technical Architecture
+
+**Database Schema Enhancements Needed:**
+
+```sql
+-- Add new request statuses
+ALTER TABLE requests 
+  ADD CONSTRAINT valid_status 
+  CHECK (status IN ('new', 'quoted', 'accepted', 'scheduled', 
+                    'in_progress', 'completed', 'invoiced', 
+                    'paid', 'overdue', 'disputed', 'cancelled'));
+
+-- Enhance invoices table
+ALTER TABLE invoices
+  ADD COLUMN line_items JSONB,           -- Array of {description, quantity, unit_price, total}
+  ADD COLUMN subtotal NUMERIC(10,2),
+  ADD COLUMN tax_rate NUMERIC(5,2),      -- e.g., 0.13 for 13% tax
+  ADD COLUMN tax_amount NUMERIC(10,2),
+  ADD COLUMN total NUMERIC(10,2),
+  ADD COLUMN paid_at TIMESTAMP,
+  ADD COLUMN payment_method TEXT,         -- 'stripe', 'check', 'cash', 'etransfer'
+  ADD COLUMN stripe_payment_intent_id TEXT,
+  ADD COLUMN notes TEXT,                  -- Admin notes or variance explanations
+  ADD COLUMN ai_generated BOOLEAN DEFAULT FALSE,
+  ADD COLUMN ai_variance_explanation TEXT;
+
+-- Add invoice_id to requests table for easy lookup
+ALTER TABLE requests
+  ADD COLUMN invoice_id UUID REFERENCES invoices(id);
+
+-- Indexes for performance
+CREATE INDEX idx_invoices_status ON invoices(status);
+CREATE INDEX idx_invoices_due_date ON invoices(due_date);
+CREATE INDEX idx_requests_invoice_id ON requests(invoice_id);
+```
+
+**API Endpoints to Create:**
+
+```javascript
+// Invoice Management
+POST   /api/invoices/:requestId/create     // Create invoice from completed job
+GET    /api/invoices/:invoiceId            // Get invoice details
+PUT    /api/invoices/:invoiceId            // Update invoice (edit line items)
+POST   /api/invoices/:invoiceId/send       // Send invoice email to customer
+DELETE /api/invoices/:invoiceId            // Cancel/delete draft invoice
+
+// AI-Assisted Invoicing
+POST   /api/invoices/:requestId/ai-generate // AI generates invoice from job notes
+POST   /api/invoices/:invoiceId/ai-explain  // AI explains quote-to-invoice variance
+
+// Payment Processing
+POST   /api/invoices/:invoiceId/create-payment-intent  // Stripe payment setup
+POST   /api/webhooks/stripe                // Handle payment success webhook
+
+// Collections & Reminders
+POST   /api/invoices/:invoiceId/send-reminder  // Manual payment reminder
+GET    /api/invoices/overdue                   // List all overdue invoices
+POST   /api/invoices/:invoiceId/mark-disputed  // Flag invoice as disputed
+```
+
+**Netlify Functions:**
+
+```
+netlify/functions/
+  invoice-generator-agent.mjs     // AI invoice generation
+  create-payment-intent.mjs       // Stripe payment setup
+  stripe-webhook.mjs              // Payment success handler
+  send-payment-reminder.mjs       // Automated reminder emails
+  invoice-overdue-check.mjs       // Scheduled function (daily cron)
+```
+
+---
+
+### Success Metrics
+
+**Track & Measure:**
+- Average days from job completion → invoice sent (target: < 1 day)
+- Average days from invoice sent → payment received (target: < 5 days)
+- % of invoices paid within 7 days (target: > 80%)
+- % of invoices disputed (target: < 5%)
+- % of invoices AI-generated vs manual (target: > 70% AI)
+- Invoice-to-quote accuracy (target: < 10% variance)
+- Online payment adoption rate (target: > 60%)
 
 ---
 
@@ -20057,6 +20448,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { Box, Typography, CircularProgress, Paper, Chip, Button, ButtonGroup, FormControlLabel, Switch, FormControl, InputLabel, Select, MenuItem, InputAdornment } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import RequestDetailModal from './RequestDetailModal';
+import PipelineView from './PipelineView';
 import { AlertTriangle, Map, Table, Siren, CalendarDays } from 'lucide-react';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
@@ -20076,6 +20468,8 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeFilterStatus, setActiveFilterStatus] = useState<string>('all');
+  const [activePipelineStage, setActivePipelineStage] = useState<string | null>(null);
+  const [pipelineFilterStatuses, setPipelineFilterStatuses] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'map'>('table');
   const [isEmergencyFilter, setIsEmergencyFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -20108,8 +20502,14 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   const filteredRequests = useMemo(() => {
     let requests = allRequests;
 
-    // Apply status filter first
-    if (activeFilterStatus !== 'all') {
+    // Apply pipeline stage filter if active (takes precedence)
+    if (pipelineFilterStatuses.length > 0) {
+      requests = requests.filter(request => 
+        pipelineFilterStatuses.includes(request.status)
+      );
+    }
+    // Otherwise apply single status filter from chips
+    else if (activeFilterStatus !== 'all') {
       requests = requests.filter(request => request.status === activeFilterStatus);
     }
 
@@ -20146,7 +20546,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     }
 
     return requests;
-  }, [allRequests, activeFilterStatus, dateFilter, isEmergencyFilter]);
+  }, [allRequests, activeFilterStatus, pipelineFilterStatuses, dateFilter, isEmergencyFilter]);
 
   // Add data-request-id attributes to DataGrid rows for integration testing
   useEffect(() => {
@@ -20187,7 +20587,35 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     setSelectedRequest(null);
   };
 
-  const allStatuses = ['all', 'new', 'viewed', 'quoted', 'accepted', 'scheduled', 'completed'];
+  const handleStageClick = useCallback((stageId: string, statuses: string[]) => {
+    // If clicking the same stage, clear filter to show all
+    if (activePipelineStage === stageId) {
+      setActivePipelineStage(null);
+      setPipelineFilterStatuses([]);
+      setActiveFilterStatus('all');
+    } else {
+      // Set active stage and filter to ALL statuses in the stage's array
+      setActivePipelineStage(stageId);
+      setPipelineFilterStatuses(statuses);
+      setActiveFilterStatus('all'); // Clear chip filter when using pipeline
+    }
+  }, [activePipelineStage]);
+
+  const allStatuses = [
+    'all', 
+    'new', 
+    'viewed', 
+    'quoted', 
+    'accepted', 
+    'scheduled', 
+    'in_progress', 
+    'completed', 
+    'invoiced', 
+    'paid', 
+    'overdue', 
+    'disputed', 
+    'cancelled'
+  ];
 
   const columns: GridColDef[] = [
     // 1. STATUS: Most important workflow state.
@@ -20312,85 +20740,93 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               Plumber's Command Center
             </Typography>
-            <ButtonGroup variant="outlined" size="small">
-              <Button
-                startIcon={<Table size={16} />}
-                variant={viewMode === 'table' ? 'contained' : 'outlined'}
-                onClick={() => setViewMode('table')}
-              >
-                Table
-              </Button>
-              <Button
-                startIcon={<Map size={16} />}
-                variant={viewMode === 'map' ? 'contained' : 'outlined'}
-                onClick={() => setViewMode('map')}
-              >
-                Map
-              </Button>
-            </ButtonGroup>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Date Filter */}
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="date-filter-label">Schedule</InputLabel>
+                <Select
+                  labelId="date-filter-label"
+                  value={dateFilter}
+                  label="Schedule"
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <CalendarDays size={16} />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="all">All Time</MenuItem>
+                  <MenuItem value="today">Scheduled Today</MenuItem>
+                  <MenuItem value="week">Scheduled This Week</MenuItem>
+                  <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
+                  <MenuItem value="overdue">Overdue</MenuItem>
+                </Select>
+              </FormControl>
+
+              {/* Emergency Toggle */}
+              <FormControlLabel
+                control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Siren size={16} />
+                    Emergencies Only
+                  </Box>
+                }
+              />
+              
+              <ButtonGroup variant="outlined" size="small">
+                <Button
+                  startIcon={<Table size={16} />}
+                  variant={viewMode === 'table' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('table')}
+                >
+                  Table
+                </Button>
+                <Button
+                  startIcon={<Map size={16} />}
+                  variant={viewMode === 'map' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('map')}
+                >
+                  Map
+                </Button>
+              </ButtonGroup>
+            </Box>
           </Box>
 
-          {/* New Control Panel for Filters */}
-          <Paper sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, bgcolor: 'background.default' }}>
-            <Typography variant="subtitle2" sx={{ mr: 2, color: 'text.secondary' }}>Filter by status:</Typography>
-            {allStatuses.map(status => (
-              <Chip
-                key={status}
-                label={status === 'all' ? 'All Requests' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                onClick={() => setActiveFilterStatus(status)}
-                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
-                sx={{
-                  textTransform: 'capitalize',
-                  fontWeight: 'bold',
-                  borderColor: status === 'all' ? 'grey.400' : statusColors[status as keyof typeof statusColors],
-                  // Apply background and text color ONLY if it's the active filter
-                  ...(activeFilterStatus === status && status !== 'all' && {
-                    bgcolor: statusColors[status as keyof typeof statusColors],
-                    color: ['#FBC02D', '#F57C00'].includes(statusColors[status as keyof typeof statusColors]) ? '#000' : '#fff',
-                  }),
-                  // Ensure text color is correct for outlined (non-active) state
-                  ...(activeFilterStatus !== status && {
-                    color: status === 'all' ? 'text.primary' : statusColors[status as keyof typeof statusColors],
-                  }),
-                }}
-              />
-            ))}
-
-            {/* Date Filter */}
-            <FormControl size="small" sx={{ minWidth: 180, ml: 2 }}>
-              <InputLabel id="date-filter-label">Schedule</InputLabel>
-              <Select
-                labelId="date-filter-label"
-                value={dateFilter}
-                label="Schedule"
-                onChange={(e) => setDateFilter(e.target.value)}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <CalendarDays size={16} />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="all">All Time</MenuItem>
-                <MenuItem value="today">Scheduled Today</MenuItem>
-                <MenuItem value="week">Scheduled This Week</MenuItem>
-                <MenuItem value="unscheduled">Unscheduled (Accepted)</MenuItem>
-                <MenuItem value="overdue">Overdue</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Emergency Toggle */}
-            <Box sx={{ flexGrow: 1 }} /> {/* This pushes the switch to the right */}
-            <FormControlLabel
-              control={<Switch checked={isEmergencyFilter} onChange={(e) => setIsEmergencyFilter(e.target.checked)} />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AlertTriangle size={16} />
-                  Emergencies Only
-                </Box>
-              }
-              sx={{ mr: 1, color: 'text.secondary' }}
+          {/* Pipeline Workflow Visualization */}
+          <Box sx={{ mb: 3 }}>
+            <PipelineView
+              requests={filteredRequests}
+              activeStage={activePipelineStage}
+              onStageClick={handleStageClick}
+              activeFilterStatus={activeFilterStatus}
+              onStatusClick={(status) => {
+                setActiveFilterStatus(status);
+                setPipelineFilterStatuses([status]);
+              }}
             />
-          </Paper>
+            
+            {/* Clear Filters Button - Only show when filters are active */}
+            {(activePipelineStage || activeFilterStatus !== 'all' || dateFilter !== 'all' || isEmergencyFilter) && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setActivePipelineStage(null);
+                    setPipelineFilterStatuses([]);
+                    setActiveFilterStatus('all');
+                    setDateFilter('all');
+                    setIsEmergencyFilter(false);
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Clear All Filters
+                </Button>
+              </Box>
+            )}
+          </Box>
+
           {viewMode === 'table' ? (
             <Paper ref={dataGridRef} sx={{ height: 600, width: '100%' }}>
               <DataGrid
@@ -20658,6 +21094,238 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
 };
 
 export default MyRequests;
+--- END OF FILE ---
+
+--- START OF FILE ./packages/frontend/src/features/requests/components/PipelineView.tsx ---
+
+// packages/frontend/src/features/requests/components/PipelineView.tsx
+
+import React from 'react';
+import { Box, Typography, Paper, Badge, Chip, Collapse } from '@mui/material';
+import { Inbox, DollarSign, Calendar, Wrench, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { QuoteRequest } from '../types';
+import statusColors from '../../../lib/statusColors.json';
+
+interface PipelineStage {
+  id: string;
+  label: string;
+  statuses: string[];
+  icon: React.ReactNode;
+  color: string;
+  textColor: string;
+}
+
+interface PipelineViewProps {
+  requests: QuoteRequest[];
+  activeStage: string | null;
+  onStageClick: (stageId: string, statuses: string[]) => void;
+  activeFilterStatus?: string;
+  onStatusClick?: (status: string) => void;
+}
+
+const PipelineView: React.FC<PipelineViewProps> = ({ 
+  requests, 
+  activeStage, 
+  onStageClick,
+  activeFilterStatus = 'all',
+  onStatusClick
+}) => {
+  const stages: PipelineStage[] = [
+    {
+      id: 'intake',
+      label: 'Intake',
+      statuses: ['new'],
+      icon: <Inbox size={18} />,
+      color: '#3B82F6', // Blue
+      textColor: '#fff'
+    },
+    {
+      id: 'quoting',
+      label: 'Quoting',
+      statuses: ['viewed', 'quoted'],
+      icon: <DollarSign size={18} />,
+      color: '#8B5CF6', // Purple
+      textColor: '#fff'
+    },
+    {
+      id: 'scheduled',
+      label: 'Scheduled',
+      statuses: ['accepted', 'scheduled'],
+      icon: <Calendar size={18} />,
+      color: '#10B981', // Green
+      textColor: '#fff'
+    },
+    {
+      id: 'active',
+      label: 'Active',
+      statuses: ['in_progress'],
+      icon: <Wrench size={18} />,
+      color: '#F59E0B', // Orange
+      textColor: '#fff'
+    },
+    {
+      id: 'billing',
+      label: 'Billing',
+      statuses: ['completed', 'invoiced'],
+      icon: <FileText size={18} />,
+      color: '#14B8A6', // Teal
+      textColor: '#fff'
+    },
+    {
+      id: 'paid',
+      label: 'Paid',
+      statuses: ['paid'],
+      icon: <CheckCircle size={18} />,
+      color: '#22C55E', // Success Green
+      textColor: '#fff'
+    },
+    {
+      id: 'issues',
+      label: 'Issues',
+      statuses: ['overdue', 'disputed'],
+      icon: <AlertTriangle size={18} />,
+      color: '#EF4444', // Red
+      textColor: '#fff'
+    }
+  ];
+
+  // Calculate count for each stage
+  const getStageCount = (statuses: string[]) => {
+    return requests.filter(req => statuses.includes(req.status)).length;
+  };
+
+  // Helper to create light tint of a color (15% opacity)
+  const getLightTint = (hexColor: string) => {
+    // Convert hex to rgba with 15% opacity
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, 0.15)`;
+  };
+
+  return (
+    <Paper sx={{ mb: 3, overflow: 'hidden' }}>
+      <Box sx={{ p: 2, bgcolor: 'background.default' }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+          Pipeline Overview
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', position: 'relative' }}>
+        {stages.map((stage, idx) => {
+          const count = getStageCount(stage.statuses);
+          const isActive = activeStage === stage.id;
+          const isInactive = count === 0 && !isActive;
+
+          return (
+            <Box
+              key={stage.id}
+              onClick={() => onStageClick(stage.id, stage.statuses)}
+              sx={{
+                flex: 1,
+                py: 2,
+                px: 2,
+                bgcolor: isActive ? stage.color : isInactive ? 'grey.100' : getLightTint(stage.color),
+                color: isActive ? stage.textColor : stage.color,
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderRight: idx < stages.length - 1 ? '1px solid' : 'none',
+                borderColor: 'divider',
+                // Chevron shape using pseudo-elements
+                '&::after': idx < stages.length - 1 ? {
+                  content: '""',
+                  position: 'absolute',
+                  right: '-12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 0,
+                  height: 0,
+                  borderTop: '24px solid transparent',
+                  borderBottom: '24px solid transparent',
+                  borderLeft: `12px solid ${isActive ? stage.color : isInactive ? '#f5f5f5' : getLightTint(stage.color)}`,
+                  zIndex: 1,
+                  filter: 'drop-shadow(1px 0 1px rgba(0, 0, 0, 0.15))',
+                } : {},
+                // Add subtle shadow to the entire box for depth
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                '&:hover': {
+                  bgcolor: stage.color,
+                  color: stage.textColor,
+                  opacity: 0.9,
+                  '&::after': {
+                    borderLeftColor: stage.color,
+                  }
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                {stage.icon}
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  {stage.label}
+                </Typography>
+              </Box>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  textAlign: 'center', 
+                  fontWeight: 'bold', 
+                  mt: 0.5,
+                  opacity: isInactive ? 0.5 : 1
+                }}
+              >
+                {count}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* Expandable Status Chips for Active Stage */}
+      {activeStage && onStatusClick && (
+        <Collapse in={!!activeStage}>
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'grey.50', 
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap'
+          }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold', mr: 1 }}>
+              Filter {stages.find(s => s.id === activeStage)?.label}:
+            </Typography>
+            {stages.find(s => s.id === activeStage)?.statuses.map(status => (
+              <Chip
+                key={status}
+                label={status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                size="small"
+                onClick={() => onStatusClick(status)}
+                variant={activeFilterStatus === status ? 'filled' : 'outlined'}
+                sx={{
+                  textTransform: 'capitalize',
+                  fontWeight: activeFilterStatus === status ? 'bold' : 'normal',
+                  borderColor: statusColors[status as keyof typeof statusColors] || 'grey.400',
+                  ...(activeFilterStatus === status && {
+                    bgcolor: statusColors[status as keyof typeof statusColors],
+                    color: ['#FBC02D', '#F57C00'].includes(statusColors[status as keyof typeof statusColors]) ? '#000' : '#fff',
+                  }),
+                  ...( activeFilterStatus !== status && {
+                    color: statusColors[status as keyof typeof statusColors],
+                  }),
+                }}
+              />
+            ))}
+          </Box>
+        </Collapse>
+      )}
+    </Paper>
+  );
+};
+
+export default PipelineView;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx ---
@@ -24046,6 +24714,10 @@ export function useMarkRequestAsViewed() {
       return { previousAll, previousUser, previousDetail };
     },
     onError: (_err, requestId, context) => {
+      console.error('❌ Mark as viewed error:', _err);
+      console.error('Request ID:', requestId);
+      console.error('Error details:', JSON.stringify(_err, null, 2));
+      
       if (context?.previousAll) queryClient.setQueryData(['requests'], context.previousAll);
       if (context?.previousUser && user) queryClient.setQueryData(['requests', user.id], context.previousUser);
       if (context?.previousDetail) queryClient.setQueryData(['request', requestId], context.previousDetail);
@@ -25379,12 +26051,18 @@ Be knowledgeable about different water heater types and their pros/cons. Guide c
 --- START OF FILE ./packages/frontend/src/lib/statusColors.json ---
 
 {
-  "new": "#0288D1",
-  "viewed": "#FBC02D",
-  "quoted": "#F57C00",
-  "accepted": "#388E3C",
-  "scheduled": "#00796B",
-  "completed": "#546E7A",
+  "new": "#3B82F6",
+  "viewed": "#8B5CF6",
+  "quoted": "#8B5CF6",
+  "accepted": "#10B981",
+  "scheduled": "#10B981",
+  "in_progress": "#F59E0B",
+  "completed": "#14B8A6",
+  "invoiced": "#14B8A6",
+  "paid": "#22C55E",
+  "overdue": "#EF4444",
+  "disputed": "#EF4444",
+  "cancelled": "#9E9E9E",
   "default": "#757575"
 }
 --- END OF FILE ---
@@ -27332,6 +28010,243 @@ Deno.serve(async (req: Request) => {
 });
 --- END OF FILE ---
 
+--- START OF FILE ./supabase/migrations/add_invoice_enhancements.sql ---
+
+-- Migration: Enhance invoices table and add invoice-related request statuses
+-- Date: 2025-10-12
+-- Description: Adds comprehensive invoicing fields, status synchronization, and AI features
+--
+-- ⚠️ IMPORTANT NOTES:
+-- - This migration DOES NOT modify RLS (Row Level Security) policies
+-- - This migration DOES NOT modify Realtime publication settings
+-- - Existing RLS policies on invoices and requests will remain intact
+-- - Existing Realtime subscriptions on requests will continue to work
+-- - If you need to enable Realtime on invoices table, run separately:
+--   ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.invoices;
+
+-- ============================================================================
+-- PART 1: Enhance invoices table with detailed billing fields
+-- ============================================================================
+
+-- Add line items as JSONB array (flexible structure for itemized billing)
+ALTER TABLE public.invoices
+  ADD COLUMN line_items JSONB;
+
+COMMENT ON COLUMN public.invoices.line_items IS 
+  'Array of line items: [{description, quantity, unit_price, total}, ...]';
+
+-- Add financial calculation fields
+ALTER TABLE public.invoices
+  ADD COLUMN subtotal NUMERIC(10,2),
+  ADD COLUMN tax_rate NUMERIC(5,2) DEFAULT 0.13,  -- Default to 13% (adjust for your region)
+  ADD COLUMN tax_amount NUMERIC(10,2),
+  ADD COLUMN total NUMERIC(10,2);
+
+COMMENT ON COLUMN public.invoices.tax_rate IS 'Tax rate as decimal (e.g., 0.13 for 13% tax)';
+COMMENT ON COLUMN public.invoices.subtotal IS 'Sum of all line items before tax';
+COMMENT ON COLUMN public.invoices.tax_amount IS 'Calculated tax amount (subtotal * tax_rate)';
+COMMENT ON COLUMN public.invoices.total IS 'Final amount (subtotal + tax_amount)';
+
+-- Add payment tracking fields
+ALTER TABLE public.invoices
+  ADD COLUMN paid_at TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN payment_method TEXT CHECK (payment_method IN ('stripe', 'check', 'cash', 'etransfer', 'other')),
+  ADD COLUMN stripe_payment_intent_id TEXT;
+
+COMMENT ON COLUMN public.invoices.paid_at IS 'Timestamp when payment was received';
+COMMENT ON COLUMN public.invoices.payment_method IS 'How customer paid: stripe, check, cash, etransfer, other';
+COMMENT ON COLUMN public.invoices.stripe_payment_intent_id IS 'Stripe Payment Intent ID for online payments';
+
+-- Add notes and AI fields
+ALTER TABLE public.invoices
+  ADD COLUMN notes TEXT,
+  ADD COLUMN ai_generated BOOLEAN DEFAULT FALSE,
+  ADD COLUMN ai_variance_explanation TEXT;
+
+COMMENT ON COLUMN public.invoices.notes IS 'Admin notes or additional information for customer';
+COMMENT ON COLUMN public.invoices.ai_generated IS 'True if invoice was generated by AI agent';
+COMMENT ON COLUMN public.invoices.ai_variance_explanation IS 'AI-generated explanation for quote-to-invoice differences';
+
+-- Update status to use proper constraint
+ALTER TABLE public.invoices
+  DROP CONSTRAINT IF EXISTS invoices_status_check;
+
+ALTER TABLE public.invoices
+  ADD CONSTRAINT invoices_status_check 
+  CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled', 'disputed', 'partially_paid'));
+
+COMMENT ON COLUMN public.invoices.status IS 
+  'Invoice status: draft, sent, paid, overdue, cancelled, disputed, partially_paid';
+
+-- ============================================================================
+-- PART 2: Add invoice_id reference to requests table
+-- ============================================================================
+
+ALTER TABLE public.requests
+  ADD COLUMN invoice_id UUID;
+
+-- Add foreign key relationship
+ALTER TABLE public.requests
+  ADD CONSTRAINT fk_requests_invoice
+  FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
+  ON DELETE SET NULL;
+
+COMMENT ON COLUMN public.requests.invoice_id IS 'Reference to associated invoice (if created)';
+
+-- ============================================================================
+-- PART 3: Add new invoice-related statuses to requests table
+-- ============================================================================
+
+-- Note: We can't directly modify an existing CHECK constraint, so we'll drop and recreate it
+-- First, check if a constraint exists (it might not if status is just TEXT without constraint)
+
+-- Add the new statuses to the allowed values
+-- This assumes 'status' column exists as TEXT. If there's an existing constraint, drop it first.
+DO $$
+BEGIN
+  -- Try to drop existing constraint if it exists
+  ALTER TABLE public.requests DROP CONSTRAINT IF EXISTS requests_status_check;
+  EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Add new constraint with expanded status options
+ALTER TABLE public.requests
+  ADD CONSTRAINT requests_status_check
+  CHECK (status IN (
+    'new',          -- Initial submission
+    'viewed',       -- Admin or customer viewed the request ✨ EXISTING
+    'quoted',       -- Quote sent to customer
+    'accepted',     -- Customer accepted quote
+    'scheduled',    -- Job scheduled with technician
+    'in_progress',  -- Work in progress
+    'completed',    -- Work finished
+    'invoiced',     -- Invoice created and sent ✨ NEW
+    'paid',         -- Customer paid invoice ✨ NEW
+    'overdue',      -- Invoice past due date ✨ NEW
+    'disputed',     -- Customer disputed charges ✨ NEW
+    'cancelled'     -- Request cancelled
+  ));
+
+COMMENT ON COLUMN public.requests.status IS 
+  'Request lifecycle status: new → viewed → quoted → accepted → scheduled → in_progress → completed → invoiced → paid/overdue/disputed';
+
+-- ============================================================================
+-- PART 4: Create indexes for performance
+-- ============================================================================
+
+-- Index for filtering invoices by status (frequently queried)
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+
+-- Index for finding overdue invoices
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date) WHERE status = 'sent';
+
+-- Index for finding invoices by payment status
+CREATE INDEX IF NOT EXISTS idx_invoices_paid_at ON public.invoices(paid_at);
+
+-- Index for request-invoice lookups
+CREATE INDEX IF NOT EXISTS idx_requests_invoice_id ON public.requests(invoice_id);
+
+-- Index for Stripe payment intent lookups
+CREATE INDEX IF NOT EXISTS idx_invoices_stripe_payment_intent ON public.invoices(stripe_payment_intent_id);
+
+-- ============================================================================
+-- PART 5: Create helper function to sync invoice status to request status
+-- ============================================================================
+
+-- This function automatically updates request.status when invoice.status changes
+CREATE OR REPLACE FUNCTION sync_invoice_status_to_request()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only update request status if invoice status changed
+  IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
+    
+    -- Update the associated request's status based on invoice status
+    UPDATE public.requests
+    SET status = CASE NEW.status
+      WHEN 'sent' THEN 'invoiced'
+      WHEN 'paid' THEN 'paid'
+      WHEN 'overdue' THEN 'overdue'
+      WHEN 'disputed' THEN 'disputed'
+      WHEN 'cancelled' THEN 'completed'  -- Return to completed if invoice cancelled
+      ELSE status  -- Keep current status for 'draft' and other states
+    END
+    WHERE id = (
+      SELECT id FROM public.requests WHERE invoice_id = NEW.id
+    );
+    
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sync_invoice_status_to_request IS 
+  'Automatically updates request.status when invoice.status changes';
+
+-- ============================================================================
+-- PART 6: Create trigger to activate the sync function
+-- ============================================================================
+
+-- Drop trigger if it exists (for re-running migration)
+DROP TRIGGER IF EXISTS trigger_sync_invoice_status ON public.invoices;
+
+-- Create trigger that fires after invoice status changes
+CREATE TRIGGER trigger_sync_invoice_status
+  AFTER INSERT OR UPDATE OF status ON public.invoices
+  FOR EACH ROW
+  EXECUTE FUNCTION sync_invoice_status_to_request();
+
+COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS 
+  'Syncs invoice status changes to associated request status';
+
+-- ============================================================================
+-- PART 7: Update amount_due to match total (for consistency)
+-- ============================================================================
+
+-- Rename amount_due to be clearer (optional - keeps backward compatibility)
+COMMENT ON COLUMN public.invoices.amount_due IS 
+  'DEPRECATED: Use total instead. Kept for backward compatibility.';
+
+-- ============================================================================
+-- Migration complete!
+-- ============================================================================
+
+-- Verify the migration
+SELECT 
+  'Invoices table columns' as check_type,
+  COUNT(*) as column_count
+FROM information_schema.columns 
+WHERE table_name = 'invoices' 
+  AND table_schema = 'public';
+
+SELECT 
+  'Requests invoice_id column' as check_type,
+  COUNT(*) as exists
+FROM information_schema.columns 
+WHERE table_name = 'requests' 
+  AND table_schema = 'public'
+  AND column_name = 'invoice_id';
+
+SELECT 
+  'Invoice status trigger' as check_type,
+  COUNT(*) as exists
+FROM information_schema.triggers
+WHERE trigger_name = 'trigger_sync_invoice_status';
+
+-- ============================================================================
+-- OPTIONAL: Enable Realtime on invoices table (run if needed)
+-- ============================================================================
+-- 
+-- If you want real-time updates for invoices (recommended for live invoice status):
+-- 
+-- ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.invoices;
+--
+-- Note: This is commented out by default. Uncomment and run separately if needed.
+-- Current Realtime-enabled tables: requests, quotes, quote_attachments, request_notes
+
+
+--- END OF FILE ---
+
 --- START OF FILE ./supabase/schema.sql ---
 
 
@@ -27525,6 +28440,41 @@ $$;
 ALTER FUNCTION "public"."set_quote_number"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."sync_invoice_status_to_request"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  -- Only update request status if invoice status changed
+  IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
+    
+    -- Update the associated request's status based on invoice status
+    UPDATE public.requests
+    SET status = CASE NEW.status
+      WHEN 'sent' THEN 'invoiced'
+      WHEN 'paid' THEN 'paid'
+      WHEN 'overdue' THEN 'overdue'
+      WHEN 'disputed' THEN 'disputed'
+      WHEN 'cancelled' THEN 'completed'  -- Return to completed if invoice cancelled
+      ELSE status  -- Keep current status for 'draft' and other states
+    END
+    WHERE id = (
+      SELECT id FROM public.requests WHERE invoice_id = NEW.id
+    );
+    
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."sync_invoice_status_to_request"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."sync_invoice_status_to_request"() IS 'Automatically updates request.status when invoice.status changes';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."update_requests_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -27567,11 +28517,76 @@ CREATE TABLE IF NOT EXISTS "public"."invoices" (
     "amount_due" numeric,
     "due_date" timestamp with time zone,
     "status" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "line_items" "jsonb",
+    "subtotal" numeric(10,2),
+    "tax_rate" numeric(5,2) DEFAULT 0.13,
+    "tax_amount" numeric(10,2),
+    "total" numeric(10,2),
+    "paid_at" timestamp with time zone,
+    "payment_method" "text",
+    "stripe_payment_intent_id" "text",
+    "notes" "text",
+    "ai_generated" boolean DEFAULT false,
+    "ai_variance_explanation" "text",
+    CONSTRAINT "invoices_payment_method_check" CHECK (("payment_method" = ANY (ARRAY['stripe'::"text", 'check'::"text", 'cash'::"text", 'etransfer'::"text", 'other'::"text"]))),
+    CONSTRAINT "invoices_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'paid'::"text", 'overdue'::"text", 'cancelled'::"text", 'disputed'::"text", 'partially_paid'::"text"])))
 );
 
 
 ALTER TABLE "public"."invoices" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."invoices"."amount_due" IS 'DEPRECATED: Use total instead. Kept for backward compatibility.';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."status" IS 'Invoice status: draft, sent, paid, overdue, cancelled, disputed, partially_paid';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."line_items" IS 'Array of line items: [{description, quantity, unit_price, total}, ...]';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."subtotal" IS 'Sum of all line items before tax';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."tax_rate" IS 'Tax rate as decimal (e.g., 0.13 for 13% tax)';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."tax_amount" IS 'Calculated tax amount (subtotal * tax_rate)';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."total" IS 'Final amount (subtotal + tax_amount)';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."paid_at" IS 'Timestamp when payment was received';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."payment_method" IS 'How customer paid: stripe, check, cash, etransfer, other';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."stripe_payment_intent_id" IS 'Stripe Payment Intent ID for online payments';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."notes" IS 'Admin notes or additional information for customer';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."ai_generated" IS 'True if invoice was generated by AI agent';
+
+
+
+COMMENT ON COLUMN "public"."invoices"."ai_variance_explanation" IS 'AI-generated explanation for quote-to-invoice differences';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."quote_attachments" (
@@ -27652,12 +28667,18 @@ CREATE TABLE IF NOT EXISTS "public"."requests" (
     "actual_cost" numeric(10,2),
     "completion_notes" "text",
     "required_expertise" "jsonb",
+    "invoice_id" "uuid",
     CONSTRAINT "chk_latitude_range" CHECK ((("latitude" >= ('-90'::integer)::double precision) AND ("latitude" <= (90)::double precision))),
-    CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision)))
+    CONSTRAINT "chk_longitude_range" CHECK ((("longitude" >= ('-180'::integer)::double precision) AND ("longitude" <= (180)::double precision))),
+    CONSTRAINT "requests_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'viewed'::"text", 'quoted'::"text", 'accepted'::"text", 'scheduled'::"text", 'in_progress'::"text", 'completed'::"text", 'invoiced'::"text", 'paid'::"text", 'overdue'::"text", 'disputed'::"text", 'cancelled'::"text"])))
 );
 
 
 ALTER TABLE "public"."requests" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."requests"."status" IS 'Request lifecycle status: new → quoted → accepted → scheduled → in_progress → completed → invoiced → paid/overdue/disputed';
+
 
 
 COMMENT ON COLUMN "public"."requests"."actual_cost" IS 'The final, invoiced cost of the completed job.';
@@ -27669,6 +28690,10 @@ COMMENT ON COLUMN "public"."requests"."completion_notes" IS 'Internal notes logg
 
 
 COMMENT ON COLUMN "public"."requests"."required_expertise" IS 'AI-generated expertise requirements: skill_level (apprentice/journeyman/master), specialized_skills array, and reasoning';
+
+
+
+COMMENT ON COLUMN "public"."requests"."invoice_id" IS 'Reference to associated invoice (if created)';
 
 
 
@@ -27740,11 +28765,31 @@ ALTER TABLE ONLY "public"."user_profiles"
 
 
 
+CREATE INDEX "idx_invoices_due_date" ON "public"."invoices" USING "btree" ("due_date") WHERE ("status" = 'sent'::"text");
+
+
+
+CREATE INDEX "idx_invoices_paid_at" ON "public"."invoices" USING "btree" ("paid_at");
+
+
+
+CREATE INDEX "idx_invoices_status" ON "public"."invoices" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_invoices_stripe_payment_intent" ON "public"."invoices" USING "btree" ("stripe_payment_intent_id");
+
+
+
 CREATE INDEX "idx_quote_attachments_quote_id" ON "public"."quote_attachments" USING "btree" ("quote_id");
 
 
 
 CREATE INDEX "idx_quote_attachments_request_id" ON "public"."quote_attachments" USING "btree" ("request_id");
+
+
+
+CREATE INDEX "idx_requests_invoice_id" ON "public"."requests" USING "btree" ("invoice_id");
 
 
 
@@ -27780,7 +28825,20 @@ CREATE OR REPLACE TRIGGER "trg_set_quote_number" BEFORE INSERT ON "public"."quot
 
 
 
+CREATE OR REPLACE TRIGGER "trigger_sync_invoice_status" AFTER INSERT OR UPDATE OF "status" ON "public"."invoices" FOR EACH ROW EXECUTE FUNCTION "public"."sync_invoice_status_to_request"();
+
+
+
+COMMENT ON TRIGGER "trigger_sync_invoice_status" ON "public"."invoices" IS 'Syncs invoice status changes to associated request status';
+
+
+
 CREATE OR REPLACE TRIGGER "update_requests_updated_at" BEFORE UPDATE ON "public"."requests" FOR EACH ROW EXECUTE FUNCTION "public"."update_requests_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."requests"
+    ADD CONSTRAINT "fk_requests_invoice" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
 
 
 
@@ -28248,6 +29306,12 @@ GRANT ALL ON FUNCTION "public"."is_admin"("user_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."set_quote_number"() TO "anon";
 GRANT ALL ON FUNCTION "public"."set_quote_number"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."set_quote_number"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."sync_invoice_status_to_request"() TO "anon";
+GRANT ALL ON FUNCTION "public"."sync_invoice_status_to_request"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."sync_invoice_status_to_request"() TO "service_role";
 
 
 

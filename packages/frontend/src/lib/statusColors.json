@@ -1,9 +1,15 @@
 {
-  "new": "#0288D1",
-  "viewed": "#FBC02D",
-  "quoted": "#F57C00",
-  "accepted": "#388E3C",
-  "scheduled": "#00796B",
-  "completed": "#546E7A",
+  "new": "#3B82F6",
+  "viewed": "#8B5CF6",
+  "quoted": "#8B5CF6",
+  "accepted": "#10B981",
+  "scheduled": "#10B981",
+  "in_progress": "#F59E0B",
+  "completed": "#14B8A6",
+  "invoiced": "#14B8A6",
+  "paid": "#22C55E",
+  "overdue": "#EF4444",
+  "disputed": "#EF4444",
+  "cancelled": "#9E9E9E",
   "default": "#757575"
 }
