@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T01:39:17.207Z
+Generated On: 2025-10-12T16:55:56.722Z
 
-# Mnemonic Weight (Token Count): ~331,931 tokens
+# Mnemonic Weight (Token Count): ~322,109 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -18,8 +18,6 @@ Generated On: 2025-10-12T01:39:17.207Z
   ./.netlify/state.json
   ./.netlify/v1/
   ./.netlify/v1/functions/
-  ./ACTIONPLAN/
-  ./ACTIONPLAN/PriorityActionPlan.md
   ./PROMPTS/
   ./PROMPTS/00_framework-overview.md
   ./PROMPTS/01_playbook-genesis-cycle.md
@@ -216,7 +214,6 @@ Generated On: 2025-10-12T01:39:17.207Z
   ./packages/frontend/src/features/requests/components/ModalHeader.tsx
   ./packages/frontend/src/features/requests/components/MyRequests.tsx
   ./packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx
-  ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteFormModal.tsx
   ./packages/frontend/src/features/requests/components/QuoteList.tsx
   ./packages/frontend/src/features/requests/components/RequestActions.tsx
@@ -274,9 +271,6 @@ Generated On: 2025-10-12T01:39:17.207Z
   ./supabase/supabase/.temp/storage-version
   ./supabase/supabase/functions/
   ./supabase/supabase/functions/index.ts
-  ./test-agent-sdk.mjs
-  ./test-agent.mjs
-  ./test-e2e.sh
   ./tests/
   ./tests/README.md
   ./tests/e2e/
@@ -333,6 +327,7 @@ Generated On: 2025-10-12T01:39:17.207Z
   ./tests/e2e/page-objects/pages/QuotePage.ts
   ./tests/e2e/page-objects/pages/QuoteRequestPage.ts
   ./tests/e2e/page-objects/pages/README.md
+  ./tests/e2e/run-tests.sh
   ./tests/e2e/screenshots/
   ./tests/e2e/screenshots/signin-failure-1758476651303.png
   ./tests/e2e/screenshots/signin-failure-1758476652687.png
@@ -372,6 +367,8 @@ Generated On: 2025-10-12T01:39:17.207Z
   ./tests/integration/api/health.test.ts
   ./tests/integration/api/requests.test.ts
   ./tests/integration/realtime-hooks.spec.ts
+  ./tests/manual/
+  ./tests/manual/README.md
   ./tests/manual-tests.md
   ./tests/setup.ts
   ./tests/unit/
@@ -474,43 +471,6 @@ Generated On: 2025-10-12T01:39:17.207Z
 		"timestamp": 1757797437797
 	}
 }
---- END OF FILE ---
-
---- START OF FILE ./ACTIONPLAN/PriorityActionPlan.md ---
-
-# Priority Action Plan: PlumbingPOC Refactoring
-
-This plan outlines the highest-impact tasks to transition the PlumbingPOC application from a mature prototype to a robust, production-ready system.
-
-1.  **Establish a Testing Foundation:**
-    *   **Action:** Introduce `vitest` to the project for unit and integration testing.
-    *   **Task:** Write initial unit tests for critical utility functions (e.g., `getRequestStatusChipColor`).
-    *   **Task:** Write initial integration tests for the most critical, unauthenticated API endpoints to establish the testing pattern.
-    *   **Justification:** This is the highest priority. No further refactoring should proceed without a safety net to prevent regressions.
-
-2.  **Harden the AI Follow-Up Question Agent:**
-    *   **Action:** Refactor the `getGptFollowUp` controller in `packages/backend/api/controllers/requestController.js`.
-    *   **Task:** Update the OpenAI prompt to request a structured JSON output (`{ "requiresFollowUp": boolean, "questions": [...] }`).
-    *   **Task:** Use `response_format: { type: 'json_object' }` in the API call and replace the brittle string-splitting logic with `JSON.parse`.
-    *   **Justification:** This fixes the most fragile component in the system and eliminates a likely source of production errors.
-
-3.  **Implement Observability for AI Components:**
-    *   **Action:** Add structured logging to the backend controllers that interact with OpenAI.
-    *   **Task:** In `triageController.js` and `requestController.js`, log the "Golden Signals": latency (call duration) and cost (token usage from the API response).
-    *   **Task:** Wrap `JSON.parse()` in a `try...catch` block and log any parsing failures as critical errors.
-    *   **Justification:** Provides essential visibility into the cost and performance of the most expensive parts of the application.
-
-4.  **Integrate Testing into the CI/CD Pipeline:**
-    *   **Action:** Update the `netlify.toml` configuration file.
-    *   **Task:** Modify the `build` command to `npm run test:ci && tsc --noEmit && npm run build`.
-    *   **Task:** Add the `test:ci` script to `package.json` (e.g., `"test:ci": "vitest run"`).
-    *   **Justification:** Automates quality control and ensures that no code that fails tests or type-checks can be deployed.
-
-5.  **Formalize All Documentation:**
-    *   **Action:** Populate the `adrs/` and `docs/` directories with the generated artifacts from the architectural review.
-    *   **Task:** Create the new ADR files (`006`, `007`, `008`).
-    *   **Task:** Overwrite `docs/DataContracts.md` with the new, comprehensive version.
-    *   **Justification:** Ensures all team members (current and future) have a shared understanding of the system's architecture and data flows, reducing onboarding time and preventing architectural drift.
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/00_framework-overview.md ---
@@ -11057,12 +11017,12 @@ If CLI commands are unavailable, use the OpenAI Agents SDK for programmatic test
    ```
 
 3. **Use the Test Script**:
-   A local test script `test-agent-sdk.mjs` has been created that simulates the QuoteAgent workflow using the SDK. It includes:
+   A local test script `tests/manual/test-agent-sdk.mjs` has been created that simulates the QuoteAgent workflow using the SDK. It includes:
    - Static question simulation
    - Tool execution (assess_leak_severity, check_emergency_status)
    - Conversational flow testing
 
-   Run it with: `node test-agent-sdk.mjs`
+   Run it with: `node tests/manual/test-agent-sdk.mjs`
 
    **Note**: Requires `OPENAI_API_KEY` environment variable to be set for API calls.
 
@@ -12840,8 +12800,6 @@ Your work is now done. Provide this guide and the following technical specificat
     "@mui/material": "^5.16.1",
     "@mui/system": "^5.16.1",
     "@mui/x-data-grid": "^7.17.0",
-    "@openai/agents": "^0.1.9",
-    "@openai/chatkit-react": "^1.1.1",
     "@supabase/supabase-js": "^2.44.4",
     "@tanstack/react-query": "^5.51.11",
     "@vis.gl/react-google-maps": "^1.1.0",
@@ -20899,893 +20857,6 @@ export default QuoteAgentModalChatKit;
 
 --- END OF FILE ---
 
---- START OF FILE ./packages/frontend/src/features/requests/components/QuoteAgentModal.tsx ---
-
-// path: packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
-
-import React, { useState, useRef, useEffect } from "react";
-import { useAuth } from "../../auth/AuthContext";
-// Use aliases to map the new data structure to the existing variable names
-import { services as SERVICE_QUOTE_CATEGORIES, ServiceDefinition as ServiceQuoteCategory, GENERIC_QUESTIONS } from "../../../lib/serviceDefinitions";
-import apiClient, { uploadAttachments } from "../../../lib/apiClient";
-import { TextField, Select, MenuItem, Button, Box, FormControl, InputLabel, Typography, IconButton, Paper, Alert, Avatar, Fade } from '@mui/material';
-import AttachmentSection from "./AttachmentSection";
-import ServiceLocationManager from "./ServiceLocationManager";
-import { X as XIcon, Wrench, User } from 'lucide-react';
-import { useSubmitQuoteRequest } from '../../../hooks';
-
-
-// Typing indicator component
-const TypingIndicator = () => (
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
-    <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.100' }}>
-      <Wrench size={16} />
-    </Avatar>
-    <Box sx={{
-      bgcolor: 'grey.100',
-      borderRadius: '18px',
-      px: 2,
-      py: 1,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 0.5
-    }}>
-      <Box sx={{
-        width: 4,
-        height: 4,
-        bgcolor: 'grey.500',
-        borderRadius: '50%',
-        animation: 'typing 1.4s infinite ease-in-out'
-      }} />
-      <Box sx={{
-        width: 4,
-        height: 4,
-        bgcolor: 'grey.500',
-        borderRadius: '50%',
-        animation: 'typing 1.4s infinite ease-in-out 0.2s'
-      }} />
-      <Box sx={{
-        width: 4,
-        height: 4,
-        bgcolor: 'grey.500',
-        borderRadius: '50%',
-        animation: 'typing 1.4s infinite ease-in-out 0.4s'
-      }} />
-    </Box>
-    <style>{`
-      @keyframes typing {
-        0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-8px); }
-      }
-    `}</style>
-  </Box>
-);
-
-// Chat message bubble component
-const ChatBubble = ({ message, sender, isNew = false }: { message: string; sender: 'agent' | 'user'; isNew?: boolean }) => (
-  <Fade in={true} timeout={300}>
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 1,
-      mb: 2,
-      justifyContent: sender === 'user' ? 'flex-end' : 'flex-start'
-    }}>
-      {sender === 'agent' && (
-        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-          <Wrench size={16} />
-        </Avatar>
-      )}
-      <Box sx={{
-        maxWidth: '70%',
-        bgcolor: sender === 'user' ? 'primary.main' : 'grey.100',
-        color: sender === 'user' ? 'white' : 'text.primary',
-        borderRadius: '18px',
-        px: 2,
-        py: 1,
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          width: 0,
-          height: 0,
-          border: '8px solid transparent',
-          top: '12px',
-          ...(sender === 'user'
-            ? { right: '-8px', borderTopColor: 'primary.main' }
-            : { left: '-8px', borderTopColor: 'grey.100' }
-          )
-        }
-      }}>
-        <Typography variant="body2">{message}</Typography>
-      </Box>
-      {sender === 'user' && (
-        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-          <User size={16} />
-        </Avatar>
-      )}
-    </Box>
-  </Fade>
-);
-
-// Diagnostic component (kept for development)
-const DebugInfo = ({ status, isEmergency, initialCount, followUpCount, answerCount, currentIndex }: { status: string; isEmergency: boolean | null; initialCount: number; followUpCount: number; answerCount: number; currentIndex: number }) => (
-  <div style={{ background: '#333', color: '#fff', padding: '8px', marginTop: '16px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>
-    <div>Status: {status} | Emergency: {String(isEmergency)}</div>
-    <div>Initial Qs: {initialCount} | Follow-up Qs: {followUpCount}</div>
-    <div>Answers: {answerCount} | Current Index: {currentIndex}</div>
-  </div>
-);
-
-type ModalStatus = 'ASKING_EMERGENCY' | 'SELECTING_CATEGORY' | 'INITIAL_QUESTIONS' | 'AWAITING_GPT' | 'FOLLOW_UP_QUESTIONS' | 'SUMMARY' | 'SUBMITTED';
-
-interface QuoteAgentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmissionSuccess: (newRequest: any) => void;
-  preselectedService?: ServiceQuoteCategory | null;
-}
-
-const QuoteAgentModal = ({ isOpen, onClose, onSubmissionSuccess, preselectedService }: QuoteAgentModalProps) => {
-  const { profile, user } = useAuth();
-
-  const [status, setStatus] = useState<ModalStatus>('ASKING_EMERGENCY');
-  const [chatHistory, setChatHistory] = useState<Array<{ sender: string; message: string }>>([]);
-  const [userInput, setUserInput] = useState("");
-  const pendingChoiceRef = useRef<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isEmergency, setIsEmergency] = useState<boolean | null>(null);
-  const [newAttachments, setNewAttachments] = useState<File[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-
-
-  const [initialQuestions, setInitialQuestions] = useState<string[]>([]);
-  const [genericAnswers, setGenericAnswers] = useState<{ [key: string]: string }>({});
-  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
-  const [allAnswers, setAllAnswers] = useState<string[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<ServiceQuoteCategory | null>(null);
-  const [useProfileAddress, setUseProfileAddress] = useState(true);
-  const [serviceAddress, setServiceAddress] = useState('');
-  const [serviceCity, setServiceCity] = useState('');
-  const [serviceProvince, setServiceProvince] = useState('BC');
-  const [servicePostalCode, setServicePostalCode] = useState('');
-  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
-  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const userInputRef = useRef<HTMLInputElement>(null);
-  const showDebugPanel = import.meta.env.VITE_DEBUG_PANEL === 'true';
-
-  // Mutation hook for submitting quote requests
-  const submitQuoteMutation = useSubmitQuoteRequest();
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory]);
-
-  useEffect(() => {
-    if (
-      (status === 'INITIAL_QUESTIONS' || status === 'FOLLOW_UP_QUESTIONS') &&
-      userInputRef.current
-    ) {
-      setTimeout(() => {
-        userInputRef.current?.focus();
-      }, 100);
-    }
-  }, [chatHistory, status]);
-
-  // Handle pending choice selection
-  useEffect(() => {
-    if (pendingChoiceRef.current && userInput === pendingChoiceRef.current) {
-      pendingChoiceRef.current = null;
-      handleSend();
-    }
-  }, [userInput]);
-
-  const resetState = () => {
-    setChatHistory([]);
-    // If a service is pre-selected, we skip the first steps. Otherwise, start from the beginning.
-    if (preselectedService) {
-      // We will let the new useEffect handle the status update
-    } else {
-      setStatus('ASKING_EMERGENCY');
-    }
-    setIsEmergency(null);
-    setNewAttachments([]);
-    setUserInput("");
-    setLoading(false);
-    setInitialQuestions([]);
-    setGenericAnswers({});
-    setFollowUpQuestions([]);
-    setAllAnswers([]);
-    setCurrentQuestionIndex(0);
-    setSelectedCategory(null);
-    setErrorMessage("");
-    setUseProfileAddress(true);
-    setServiceAddress("");
-    setServiceCity("");
-    setServiceProvince("BC");
-    setServicePostalCode("");
-    setServiceCoordinates(null);
-    setGeocodingStatus('idle');
-  };
-
-  const geocodeServiceAddress = async () => {
-    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
-      return;
-    }
-
-    setGeocodingStatus('loading');
-
-    try {
-      const fullAddress = `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`;
-      console.log('Attempting to geocode:', fullAddress);
-
-      // Load Google Maps API if not already loaded
-      if (!window.google || !window.google.maps) {
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
-
-        if (!apiKey) {
-          throw new Error('Google Maps API key not found');
-        }
-
-        console.log('Loading Google Maps API with key:', apiKey.substring(0, 10) + '...');
-
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
-        script.async = true;
-        script.defer = true;
-
-        await new Promise((resolve, reject) => {
-          script.onload = () => {
-            console.log('Google Maps API loaded successfully');
-            resolve(void 0);
-          };
-          script.onerror = (error) => {
-            console.error('Failed to load Google Maps API:', error);
-            reject(error);
-          };
-          document.head.appendChild(script);
-        });
-      }
-
-      // Use Google Maps Geocoding service
-      const geocoder = new (window as any).google.maps.Geocoder();
-
-      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
-        console.log('Geocoding response:', {
-          status,
-          resultsCount: results?.length,
-          firstResult: results?.[0]?.formatted_address
-        });
-
-        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
-          const location = results[0].geometry.location;
-          const lat = location.lat();
-          const lng = location.lng();
-
-          console.log('Geocoding successful:', { lat, lng, formattedAddress: results[0].formatted_address });
-
-          setServiceCoordinates({ lat, lng });
-          setGeocodingStatus('success');
-        } else {
-          console.error('Geocoding failed with status:', status);
-
-          // Provide more specific error messages
-          let errorMessage = 'Could not verify address';
-          switch (status) {
-            case (window as any).google.maps.GeocoderStatus.ZERO_RESULTS:
-              errorMessage = 'Address not found - please check spelling and try again';
-              break;
-            case (window as any).google.maps.GeocoderStatus.OVER_QUERY_LIMIT:
-              errorMessage = 'Too many requests - please try again later';
-              break;
-            case (window as any).google.maps.GeocoderStatus.REQUEST_DENIED:
-              errorMessage = 'Geocoding service unavailable - please check API key permissions';
-              break;
-            case (window as any).google.maps.GeocoderStatus.INVALID_REQUEST:
-              errorMessage = 'Invalid address format - please check and try again';
-              break;
-            default:
-              errorMessage = `Geocoding failed (${status}) - please check spelling`;
-          }
-
-          setGeocodingStatus('error');
-        }
-      });
-
-    } catch (error) {
-      console.error('Geocoding setup error:', error);
-      setGeocodingStatus('error');
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      resetState();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && preselectedService) {
-      console.log('Modal opened with pre-selected service:', preselectedService.title);
-
-      // Find the full category object from the imported data
-      const category = SERVICE_QUOTE_CATEGORIES.find(c => c.key === preselectedService.key);
-
-      if (category) {
-        // Set a default for the emergency question since we're skipping it
-        setIsEmergency(false);
-
-        // Directly call the category selection handler to start the question flow
-        handleSelectCategory(category);
-      }
-    }
-  }, [isOpen, preselectedService]);
-
-  const handleEmergencyChoice = (choice: boolean) => {
-    setIsEmergency(choice);
-    setChatHistory([
-      { sender: "agent", message: "Is this an emergency?" },
-      { sender: "user", message: choice ? "Yes" : "No" },
-      { sender: "agent", message: "Thank you. What would you like a quote for?" }
-    ]);
-    setStatus('SELECTING_CATEGORY');
-  };
-
-  const handleSelectCategory = (category: ServiceQuoteCategory) => {
-    setSelectedCategory(category);
-    const combinedQuestions = [...GENERIC_QUESTIONS.map(q => q.question), ...category.questions];
-    setInitialQuestions(combinedQuestions);
-    setChatHistory((prev) => [...prev, { sender: "user", message: category.title }, { sender: "agent", message: combinedQuestions[0] ?? "" }]);
-    setCurrentQuestionIndex(0);
-    setStatus('INITIAL_QUESTIONS');
-  };
-
-  const handleSend = async () => {
-    if (loading || userInput.trim() === "") return;
-    const currentAnswer = userInput;
-    
-    const allQuestions = [...initialQuestions, ...followUpQuestions];
-    const structuredAnswers = [...allAnswers, currentAnswer].map((ans, index) => ({
-      question: allQuestions[index] || 'Follow-up',
-      answer: ans,
-    }));
-    
-    setAllAnswers(prev => [...prev, currentAnswer]);
-
-    if (status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length) {
-      const genericQuestionKey = GENERIC_QUESTIONS[currentQuestionIndex]?.key ?? '';
-      if (genericQuestionKey) {
-        setGenericAnswers(prev => ({ ...prev, [genericQuestionKey]: currentAnswer }));
-      }
-    }
-    
-    setChatHistory((prev) => [...prev, { sender: "user", message: currentAnswer }]);
-    setUserInput("");
-    setLoading(true);
-
-    if (status === 'INITIAL_QUESTIONS') {
-      const isLastInitialQuestion = currentQuestionIndex === initialQuestions.length - 1;
-      if (isLastInitialQuestion) {
-        setStatus('AWAITING_GPT');
-        setChatHistory((prev) => [...prev, { sender: "agent", message: "Thank you. I'm just reviewing your answers..." }]);
-        try {
-          const payload = { clarifyingAnswers: structuredAnswers, category: selectedCategory?.key, problem_description: genericAnswers['problem_description'] || '' };
-          const { data } = await apiClient.post('/requests/gpt-follow-up', payload);
-          if (data.additionalQuestions && data.additionalQuestions.length > 0) {
-            // Limit AI follow-up questions to maximum 3 to prevent infinite loops in tests
-            const limitedQuestions = data.additionalQuestions.slice(0, 3);
-            setFollowUpQuestions(limitedQuestions);
-            setCurrentQuestionIndex(0);
-            setStatus('FOLLOW_UP_QUESTIONS');
-            setChatHistory((prev) => [...prev, { sender: "agent", message: limitedQuestions[0] ?? "" }]);
-          } else {
-            setStatus('SUMMARY'); 
-            setChatHistory(prev => [...prev, { sender: "agent", message: "Everything looks clear. Please review your request below." }]);
-          }
-        } catch (err) { 
-            console.error("GPT request failed, proceeding to summary.", err); 
-            setStatus('SUMMARY'); 
-            setChatHistory(prev => [...prev, { sender: "agent", message: "Couldn't reach my assistant, but please review your request below." }]);
-        } finally { setLoading(false); }
-      } else {
-        const nextIdx = currentQuestionIndex + 1;
-        setCurrentQuestionIndex(nextIdx);
-        setChatHistory((prev) => [...prev, { sender: "agent", message: initialQuestions[nextIdx] ?? "" }]);
-        setLoading(false);
-      }
-    } else if (status === 'FOLLOW_UP_QUESTIONS') {
-      const isLastFollowUpQuestion = currentQuestionIndex === followUpQuestions.length - 1;
-      if (isLastFollowUpQuestion) { 
-        setStatus('SUMMARY'); 
-        setChatHistory(prev => [...prev, { sender: "agent", message: "Thank you. Please review your request below." }]);
-      } else {
-        const nextIdx = currentQuestionIndex + 1;
-        setCurrentQuestionIndex(nextIdx);
-        setChatHistory((prev) => [...prev, { sender: "agent", message: followUpQuestions[nextIdx] ?? "" }]);
-      }
-      setLoading(false);
-    }
-  };
-  
-  const handleSubmitQuote = async () => {
-    if (!profile || !selectedCategory || !user) return;
-
-    setErrorMessage("");
-
-    try {
-        const allQuestions = [...initialQuestions, ...followUpQuestions];
-        const structuredAnswers = allQuestions.map((question, index) => ({ question: question, answer: allAnswers[index] || '(No answer provided)' }));
-
-        // --- START: Replace the existing serviceAddressData block with this ---
-
-        let serviceAddressData: {
-          service_address: string;
-          latitude: number | null;
-          longitude: number | null;
-          geocoded_address: string | null;
-        } | null = null;
-
-        // SCENARIO A: Use Profile Address
-        if (useProfileAddress) {
-            if (!profile?.address) {
-                setErrorMessage("Your profile address is incomplete. Please update it or provide a different service address.");
-                return;
-            }
-            console.log("DEBUG: Using profile address for submission.");
-            serviceAddressData = {
-                service_address: `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}`,
-                latitude: (profile as any).latitude || null,
-                longitude: (profile as any).longitude || null,
-                geocoded_address: (profile as any).geocoded_address || null
-            };
-        }
-        // SCENARIO B: Use Different Service Address
-        else {
-            if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
-                setErrorMessage("Please fill out all fields for the different service address.");
-                return;
-            }
-            if (!serviceCoordinates) {
-                setErrorMessage("Please click 'Verify Address' for the new service location before submitting.");
-                return;
-            }
-            console.log("DEBUG: Using DIFFERENT service address for submission.");
-            serviceAddressData = {
-                service_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}`,
-                latitude: serviceCoordinates.lat,
-                longitude: serviceCoordinates.lng,
-                geocoded_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`
-            };
-        }
-
-        if (!serviceAddressData) {
-            setErrorMessage("A valid service address is required.");
-            return;
-        }
-
-        // --- END: Replacement block ---
-
-        const payload = {
-          clarifyingAnswers: structuredAnswers,
-          contactInfo: profile,
-          category: selectedCategory.key,
-          isEmergency: isEmergency,
-          ...genericAnswers,
-          ...serviceAddressData
-        };
-
-        // --- DEBUGGING: Log the payload being sent to backend ---
-        console.log("Submitting payload to backend:", JSON.stringify(payload, null, 2));
-
-        // Use the mutation hook instead of direct API call
-        const result = await submitQuoteMutation.mutateAsync(payload);
-        const newRequest = result.request;
-        const newRequestId = newRequest?.id;
-
-        if (newAttachments.length > 0 && newRequestId) {
-          await uploadAttachments(newRequestId, newAttachments);
-        }
-
-        setStatus('SUBMITTED');
-
-        // Close modal immediately for better test compatibility
-        onSubmissionSuccess(newRequest);
-        onClose();
-
-    } catch (err: any) {
-        console.error("Submission Error:", err);
-        const errorDetails = err.response?.data?.details ? JSON.stringify(err.response.data.details) : err.message;
-        setErrorMessage(`Submission failed: ${errorDetails}. Please try again or call us.`);
-    }
-  };
-
-  const handleRemovePendingFile = (indexToRemove: number) => {
-    setNewAttachments(prev => prev.filter((_, index) => index !== indexToRemove));
-  };
-
-  if (!isOpen) return null;
-
-  const renderContent = () => {
-    switch (status) {
-        case 'ASKING_EMERGENCY':
-          const emergencyQuestion = GENERIC_QUESTIONS.find(q => q.key === 'is_emergency');
-          return (
-            <Box sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>{emergencyQuestion?.question || 'Is this an emergency?'}</Typography>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                {(emergencyQuestion?.choices || ['Yes, it\'s an emergency', 'No']).map((choice, index) => (
-                  <Button
-                    key={choice}
-                    variant="contained"
-                    color={index === 0 ? "error" : "primary"}
-                    size="large"
-                    onClick={() => handleEmergencyChoice(index === 0)}
-                  >
-                    {choice}
-                  </Button>
-                ))}
-              </Box>
-            </Box>
-          );
-        case 'SELECTING_CATEGORY':
-        case 'INITIAL_QUESTIONS':
-        case 'FOLLOW_UP_QUESTIONS':
-        case 'AWAITING_GPT':
-          return (
-            <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 3, pt: 1 }}>
-              <Box sx={{ flex: '1 1 auto', overflowY: 'auto', background: '#f8f8f8', padding: '16px', borderRadius: '12px', marginBottom: '12px', minHeight: '200px' }}>
-                {chatHistory.map((msg, idx) => (
-                  <ChatBubble key={idx} message={msg.message} sender={msg.sender as 'agent' | 'user'} />
-                ))}
-                {status === 'AWAITING_GPT' && <TypingIndicator />}
-                <div ref={chatEndRef} />
-              </Box>
-              <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50', p: 2 }}>
-                {status === 'SELECTING_CATEGORY' && (
-                  <Box>
-                    <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>Select a service type:</Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {SERVICE_QUOTE_CATEGORIES.map((cat) => (
-                        <Button
-                          key={cat.key}
-                          variant="outlined"
-                          size="small"
-                          onClick={() => handleSelectCategory(cat)}
-                          sx={{
-                            borderRadius: '20px',
-                            textTransform: 'none',
-                            '&:hover': { bgcolor: 'primary.main', color: 'white' }
-                          }}
-                        >
-                          {cat.title}
-                        </Button>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-                {['INITIAL_QUESTIONS', 'FOLLOW_UP_QUESTIONS'].includes(status) && (
-                  <form onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
-                    {(() => {
-                        let inputControl = null;
-                        const isGenericPhase = status === 'INITIAL_QUESTIONS' && currentQuestionIndex < GENERIC_QUESTIONS.length;
-                        const currentGenericQuestion = isGenericPhase ? GENERIC_QUESTIONS[currentQuestionIndex] : null;
-
-                        if (currentGenericQuestion && currentGenericQuestion.choices) {
-                            return (
-                              <Box>
-                                <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>
-                                  {currentGenericQuestion.question}
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                  {currentGenericQuestion.choices.map(choice => (
-                                    <Button
-                                      key={choice}
-                                      variant="outlined"
-                                      size="small"
-                                      onClick={() => {
-                                        pendingChoiceRef.current = choice;
-                                        setUserInput(choice);
-                                      }}
-                                      sx={{
-                                        borderRadius: '20px',
-                                        textTransform: 'none',
-                                        '&:hover': { bgcolor: 'primary.main', color: 'white' }
-                                      }}
-                                    >
-                                      {choice}
-                                    </Button>
-                                  ))}
-                                </Box>
-                              </Box>
-                            );
-                        } else {
-                            const isTextarea = currentGenericQuestion?.textarea === true;
-                            inputControl = (
-                              <TextField
-                                inputRef={userInputRef}
-                                value={userInput}
-                                onChange={e => setUserInput(e.target.value)}
-                                placeholder="Type your answer..."
-                                fullWidth
-                                multiline={isTextarea}
-                                rows={isTextarea ? 3 : 1}
-                                variant="outlined"
-                                sx={{ bgcolor: 'white', borderRadius: 1 }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSend();
-                                  }
-                                }}
-                              />
-                            );
-                            const questionText = status === 'INITIAL_QUESTIONS'
-                              ? initialQuestions[currentQuestionIndex]
-                              : followUpQuestions[currentQuestionIndex - initialQuestions.length];
-
-                            return (
-                              <Box>
-                                <Typography sx={{ fontWeight: 500, mb: 2, color: 'text.secondary' }}>
-                                  {questionText || 'Your answer:'}
-                                </Typography>
-                                {inputControl}
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                                  <Button
-                                    type="submit"
-                                    variant="contained"
-                                    color="primary"
-                                    disabled={loading || userInput.trim() === ''}
-                                    sx={{ borderRadius: '20px', px: 3 }}
-                                  >
-                                    {loading ? 'Sending...' : 'Send'}
-                                  </Button>
-                                </Box>
-                              </Box>
-                            );
-                        }
-                    })()}
-                  </form>
-                )}
-              </Box>
-            </Box>
-          );
-        case 'SUMMARY':
-           const allQuestions = [...initialQuestions, ...followUpQuestions];
-           const summaryAnswers = allQuestions.map((question, index) => ({ question, answer: allAnswers[index] || '(No answer provided)' }));
-           return (
-             <Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-               <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
-                   <Box sx={{ textAlign: 'center', mb: 3 }}>
-                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-                       Please review your request
-                     </Typography>
-                     {isEmergency && (
-                       <Box sx={{
-                         bgcolor: 'error.main',
-                         color: 'white',
-                         px: 2,
-                         py: 1,
-                         borderRadius: 2,
-                         display: 'inline-block',
-                         fontWeight: 'bold',
-                         fontSize: '0.9rem'
-                       }}>
-                         🚨 EMERGENCY REQUEST
-                       </Box>
-                     )}
-                   </Box>
-
-                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                     {/* Service Details Card */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider',
-                       bgcolor: 'grey.50'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Service Details
-                       </Typography>
-                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                         <Wrench size={20} />
-                         <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                           {selectedCategory?.title}
-                         </Typography>
-                       </Box>
-                     </Paper>
-
-                     {/* Your Answers Card */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Your Answers
-                       </Typography>
-                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                         {summaryAnswers.map((item, i) => (
-                           <Box key={i} sx={{
-                             p: 2,
-                             bgcolor: 'grey.50',
-                             borderRadius: 1,
-                             border: '1px solid',
-                             borderColor: 'grey.200'
-                           }}>
-                             <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
-                               {item.question}
-                             </Typography>
-                             <Typography variant="body2" sx={{ color: 'text.secondary', pl: 1 }}>
-                               {item.answer}
-                             </Typography>
-                           </Box>
-                         ))}
-                       </Box>
-                     </Paper>
-
-                     <ServiceLocationManager
-                       mode="create"
-                       isAdmin={false}
-                       initialAddress={profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : ''}
-                       profileAddress={profile ? `${profile.address}, ${profile.city}, ${profile.province} ${profile.postal_code}` : ''}
-                       onDataChange={(addressData) => {
-                         console.log('QuoteAgentModal: Received address data change:', addressData);
-                         // Update the parent component's state with address data
-                         if (addressData.service_address) {
-                           console.log('QuoteAgentModal: Parsing service address:', addressData.service_address);
-                           // Parse the address back into components for form submission
-                           // Format: "street, city, province postalCode"
-                           const parts = addressData.service_address.split(', ');
-                           if (parts.length >= 3) {
-                             setServiceAddress(parts[0]);
-                             setServiceCity(parts[1]);
-                             const provinceAndPostal = parts[2].split(' ');
-                             if (provinceAndPostal.length >= 2) {
-                               setServiceProvince(provinceAndPostal[0]);
-                               setServicePostalCode(provinceAndPostal.slice(1).join(' '));
-                             }
-                           }
-                           setServiceCoordinates(addressData.latitude && addressData.longitude ?
-                             { lat: addressData.latitude, lng: addressData.longitude } : null);
-                           console.log('QuoteAgentModal: Address data updated');
-                         } else {
-                           // If no service_address provided, this might be initial state or clearing
-                           console.log('QuoteAgentModal: No service_address in data change');
-                         }
-                       }}
-                       onModeChange={(useProfile) => {
-                         console.log('QuoteAgentModal: Address mode changed to:', useProfile ? 'profile' : 'custom');
-                         setUseProfileAddress(useProfile);
-                       }}
-                     />
-
-                     {/* Contact Information Card */}
-                     {profile && (
-                       <Paper sx={{
-                         p: 3,
-                         borderRadius: 2,
-                         border: '1px solid',
-                         borderColor: 'divider'
-                       }}>
-                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                           Contact Information
-                         </Typography>
-                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                           <Box sx={{ display: 'flex', gap: 1 }}>
-                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Name:</Typography>
-                             <Typography variant="body2">{profile.name}</Typography>
-                           </Box>
-                           <Box sx={{ display: 'flex', gap: 1 }}>
-                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Email:</Typography>
-                             <Typography variant="body2">{profile.email}</Typography>
-                           </Box>
-                           <Box sx={{ display: 'flex', gap: 1 }}>
-                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Phone:</Typography>
-                             <Typography variant="body2">{profile.phone}</Typography>
-                           </Box>
-                           <Box sx={{ display: 'flex', gap: 1 }}>
-                             <Typography variant="body2" sx={{ fontWeight: 500, minWidth: 60 }}>Address:</Typography>
-                             <Typography variant="body2">{profile.address}, {profile.city}, {profile.province} {profile.postal_code}</Typography>
-                           </Box>
-                         </Box>
-                       </Paper>
-                     )}
-
-                     {/* Attachments Section - Always show to allow adding attachments */}
-                     <Paper sx={{
-                       p: 3,
-                       borderRadius: 2,
-                       border: '1px solid',
-                       borderColor: 'divider',
-                       bgcolor: 'grey.50'
-                     }}>
-                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                         Attachments
-                       </Typography>
-                       <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                         Add photos or documents related to your plumbing issue (optional)
-                       </Typography>
-                       <AttachmentSection
-                         requestId="new-request"
-                         attachments={[]}
-                         pendingFiles={newAttachments}
-                         editable={true}
-                         onUpdate={() => {}}
-                         onNewFiles={(files) => setNewAttachments(prev => [...prev, ...files])}
-                         onRemovePendingFile={handleRemovePendingFile}
-                       />
-                     </Paper>
-                   </Box>
-               </Box>
-               {errorMessage && ( <Box sx={{ p: 2, flexShrink: 0 }}> <Alert severity="error">{errorMessage}</Alert> </Box> )}
-               <Box sx={{ flexShrink: 0, p: 3, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                 <Button
-                   data-testid="submit-quote-request"
-                   variant="contained"
-                   color="primary"
-                   fullWidth
-                   onClick={handleSubmitQuote}
-                   disabled={submitQuoteMutation.isPending}
-                   sx={{
-                     py: 1.5,
-                     fontSize: '1.1rem',
-                     fontWeight: 600,
-                     borderRadius: '12px',
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                     '&:hover': {
-                       boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-                       transform: 'translateY(-1px)'
-                     },
-                     transition: 'all 0.2s ease-in-out'
-                   }}
-                 >
-                   {submitQuoteMutation.isPending ? 'Submitting...' : 'Confirm & Submit Request'}
-                 </Button>
-               </Box>
-             </Box>
-           );
-        case 'SUBMITTED':
-          return (
-            <Box sx={{ textAlign: 'center', p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography variant="h6">Thank you!</Typography>
-              <Typography>Your quote request has been submitted. We will get back to you soon.</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>This window will close automatically.</Typography>
-            </Box>
-          );
-        default: return null;
-      }
-  }
-
-  return (
-    <div data-testid="quote-modal" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={24} sx={{ background: '#fff', borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxWidth: 500, width: '95%', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1, color: 'grey.500' }}>
-          <XIcon size={24} />
-        </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 700, p: 3, pb: 2, color: 'primary.main', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
-          Request a Quote
-        </Typography>
-        <Box sx={{ flex: '1 1 auto', overflowY: 'auto' }}>
-          {renderContent()}
-        </Box>
-        {showDebugPanel && (
-          <div style={{ flexShrink: 0, padding: '0 24px 24px 24px', borderTop: '1px solid #eee' }}>
-            <DebugInfo status={status} isEmergency={isEmergency} initialCount={initialQuestions.length} followUpCount={followUpQuestions.length} answerCount={allAnswers.length} currentIndex={currentQuestionIndex} />
-          </div>
-        )}
-      </Paper>
-    </div>
-  );
-};
-
-export default QuoteAgentModal;
---- END OF FILE ---
-
 --- START OF FILE ./packages/frontend/src/features/requests/components/QuoteFormModal.tsx ---
 
 // packages/frontend/src/features/requests/components/QuoteFormModal.tsx
@@ -28469,437 +27540,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 });
 --- END OF FILE ---
 
---- START OF FILE ./test-agent-sdk.mjs ---
-
-#!/usr/bin/env node
-
-/**
- * Local Agent Testing Script using OpenAI Agents SDK
- * Tests the QuoteAgent logic by simulating the YAML workflow
- */
-
-import { Agent, run } from "@openai/agents";
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load environment variables from .env
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load service definitions (simplified version)
-const serviceDefinitions = {
-  services: [
-    {
-      key: 'leak_repair',
-      title: 'Leak Repair',
-      questions: [
-        'What type of leak is it?',
-        'Where is the leak located?',
-        'How severe is the water flow?'
-      ]
-    }
-  ],
-  genericQuestions: [
-    { key: 'problem_description', question: 'Describe the problem' },
-    { key: 'is_emergency', question: 'Is this an emergency?' }
-  ]
-};
-
-// Simulate static questions flow
-function getStaticQuestions(category) {
-  const service = serviceDefinitions.services.find(s => s.key === category);
-  if (!service) return [];
-
-  return [
-    ...serviceDefinitions.genericQuestions.map(q => q.question),
-    ...service.questions
-  ];
-}
-
-// Create agent with instructions based on YAML
-const agent = new Agent({
-  name: "QuoteAgent",
-  instructions: `
-You are a plumbing quote assistant. Follow this workflow:
-
-1. Ask static questions first from the service definitions
-2. If answers are incomplete, ask clarifying questions
-3. Use tools for specialized assessments
-4. Keep responses focused on plumbing services
-
-Available tools:
-- assess_leak_severity: Assess leak severity based on description
-- check_emergency_status: Determine if situation qualifies as emergency
-- analyze_water_heater_issue: Analyze water heater problems
-
-Always be conversational and helpful.
-  `,
-  // Tools temporarily removed for testing basic conversation
-  // tools: [...]
-});
-
-async function testAgent() {
-  console.log("🤖 Starting QuoteAgent Local Test");
-  console.log("==================================");
-
-  try {
-    // Test conversation
-    const testMessages = [
-      "I need a quote for fixing a leaking pipe",
-      "It's under my kitchen sink, dripping steadily",
-      "Yes, it's an emergency"
-    ];
-
-    for (const message of testMessages) {
-      console.log(`\n👤 User: ${message}`);
-
-      const result = await run(agent, message);
-      console.log(`🤖 Agent: ${result.finalOutput}`);
-
-      // Show tool calls if any
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        console.log("🔧 Tools used:");
-        result.toolCalls.forEach(call => {
-          console.log(`  - ${call.name}: ${JSON.stringify(call.result, null, 2)}`);
-        });
-      }
-    }
-
-    console.log("\n✅ Test completed successfully!");
-
-  } catch (error) {
-    console.error("❌ Test failed:", error.message);
-  }
-}
-
-// Run the test
-testAgent();
---- END OF FILE ---
-
---- START OF FILE ./test-agent.mjs ---
-
-// test-agent.mjs - Simple test script for OpenAI Agents SDK
-import { Agent, run } from '@openai/agents';
-import OpenAI from 'openai';
-
-// Initialize OpenAI client
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Create a simple test agent
-const testAgent = new Agent({
-  name: 'Plumbing Assistant',
-  instructions: 'You are a helpful plumbing assistant. Ask questions to gather information about plumbing issues.',
-  model: 'gpt-4o-mini',
-  tools: [
-    {
-      name: 'assess_leak_severity',
-      description: 'Assess the severity of a leak based on description',
-      parameters: {
-        type: 'object',
-        properties: {
-          leak_description: { type: 'string' },
-          drip_rate: { type: 'string' }
-        },
-        required: ['leak_description']
-      },
-      execute: async (input) => {
-        const severity = input.drip_rate?.includes('steady stream') ? 'high' :
-                       input.drip_rate?.includes('drip') ? 'medium' : 'low';
-        return {
-          severity,
-          urgency: severity === 'high' ? 'immediate' : severity === 'medium' ? 'within 24 hours' : 'schedule soon',
-          estimated_cost_range: severity === 'high' ? '$200-500' : severity === 'medium' ? '$100-300' : '$50-150'
-        };
-      }
-    }
-  ]
-});
-
-// Test the agent
-async function runTest() {
-  try {
-    console.log('Testing OpenAI Agent...');
-
-    const result = await run(testAgent, 'I have a leak under my kitchen sink. Water is dripping steadily.');
-
-    console.log('Agent Response:', result.finalOutput);
-    console.log('Tool Calls:', result.toolCalls);
-  } catch (error) {
-    console.error('Agent test failed:', error);
-  }
-}
-
-runTest();
---- END OF FILE ---
-
---- START OF FILE ./test-e2e.sh ---
-
-u#!/bin/bash
-# E2E Test Runner Script
-# Starts the application and runs E2E tests automatically
-# Usage: ./test-e2e.sh [--headed] [--test-pattern "pattern"] [--help]
-
-set -e  # Exit on any error
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Default values
-HEADED=false
-TEST_PATTERN=""
-HELP=false
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --headed)
-      HEADED=true
-      shift
-      ;;
-    --test-pattern)
-        TEST_PATTERN="$2"
-        shift 2
-        ;;
-      --help|-h)
-        HELP=true
-        shift
-        ;;
-      *)
-        echo -e "${RED}Unknown option: $1${NC}"
-        HELP=true
-        shift
-        ;;
-    esac
-  done
-  
-  # Show help
-  if [[ "$HELP" == true ]]; then
-    echo "E2E Test Runner Script"
-    echo ""
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "This script starts the PlumbingPOC application and runs E2E tests automatically."
-    echo ""
-    echo "Options:"
-    echo "  --headed          Run tests in headed mode (visible browser)"
-    echo "  --test-pattern    Run specific test suite (see patterns below)"
-    echo "  --help, -h        Show this help message"
-    echo ""
-    echo "Test Patterns:"
-    echo "  auth              Run authentication tests (specs/auth/)"
-    echo "  single-auth       Run your specific sign-in test only"
-    echo "  user-journeys     Run user journey tests (specs/user-journeys/)"
-    echo "  admin-journeys    Run admin journey tests (specs/admin-journeys/)"
-    echo "  integration       Run integration tests (specs/integration/)"
-    echo "  core              Run core functionality test"
-    echo "  all-auth          Run all authentication tests"
-    echo "  all-user          Run all user journey tests"
-    echo "  all-admin         Run all admin journey tests"
-    echo "  all-integration   Run all integration tests"
-    echo "  [custom pattern]  Use grep to match test names"
-    echo ""
-    echo "Examples:"
-    echo "  $0                           # Run all E2E tests headlessly"
-    echo "  $0 --headed                 # Run all E2E tests with visible browser"
-    echo "  $0 --test-pattern auth      # Run authentication tests"
-    echo "  $0 --test-pattern core      # Run core functionality test"
-    echo "  $0 --test-pattern 'should sign in, wait 10 seconds'  # Custom grep pattern"
-    echo ""
-    exit 0
-  fi
-
-echo -e "${BLUE}🚀 Starting PlumbingPOC E2E Test Suite${NC}"
-echo -e "${BLUE}═══════════════════════════════════════${NC}"
-
-# Check if required files exist
-if [ ! -f "startup.sh" ]; then
-  echo -e "${RED}❌ startup.sh not found in current directory${NC}"
-  exit 1
-fi
-
-if [ ! -f "package.json" ]; then
-  echo -e "${RED}❌ package.json not found. Are you in the project root?${NC}"
-  exit 1
-fi
-
-# Check if .env exists
-if [ ! -f ".env" ]; then
-  echo -e "${YELLOW}⚠️  .env file not found. Some tests may fail without proper credentials.${NC}"
-fi
-
-# Function to cleanup background processes
-cleanup() {
-  echo -e "\n${YELLOW}🧹 Cleaning up...${NC}"
-
-  # Only kill application processes if we started them
-  if [[ -n "$STARTUP_PID" ]]; then
-    echo -e "${BLUE}Stopping application (PID: $STARTUP_PID)...${NC}"
-    kill "$STARTUP_PID" 2>/dev/null || true
-
-    # Give it a moment to shut down gracefully
-    sleep 2
-
-    # Kill any remaining processes we started
-    pkill -f "npm run dev" 2>/dev/null || true
-    pkill -f "vite" 2>/dev/null || true
-    pkill -f "node api/server.js" 2>/dev/null || true
-  else
-    echo -e "${BLUE}Application was already running - not stopping it${NC}"
-  fi
-
-  # Always kill Playwright processes (we started these)
-  pkill -f "playwright" 2>/dev/null || true
-
-  echo -e "${GREEN}✅ Cleanup complete${NC}"
-}
-
-# Set trap to cleanup on script exit
-trap cleanup EXIT
-
-# Check if application is already running
-echo -e "${BLUE}🔍 Checking if application is already running...${NC}"
-
-BACKEND_RUNNING=false
-FRONTEND_RUNNING=false
-
-# Check backend
-if curl -s http://localhost:3000 > /dev/null 2>&1; then
-  echo -e "${GREEN}✓${NC} Backend already running on port 3000"
-  BACKEND_RUNNING=true
-else
-  echo -e "${YELLOW}⋯${NC} Backend not running on port 3000"
-fi
-
-# Check frontend
-if curl -s http://localhost:5173 > /dev/null 2>&1; then
-  echo -e "${GREEN}✓${NC} Frontend already running on port 5173"
-  FRONTEND_RUNNING=true
-else
-  echo -e "${YELLOW}⋯${NC} Frontend not running on port 5173"
-fi
-
-# Start application only if needed
-if [[ "$BACKEND_RUNNING" == true && "$FRONTEND_RUNNING" == true ]]; then
-  echo -e "${GREEN}🎉 Application already running - skipping startup${NC}"
-  STARTUP_PID=""
-else
-  echo -e "${BLUE}📦 Starting application with startup.sh...${NC}"
-  ./startup.sh &
-  STARTUP_PID=$!
-fi
-
-# Wait for application to be ready (only if we started it)
-if [[ -n "$STARTUP_PID" ]]; then
-  echo -e "${BLUE}⏳ Waiting for application to be ready...${NC}"
-
-  # Wait for backend
-  echo -e "${BLUE}⋯${NC} Waiting for backend (port 3000)..."
-  for i in {1..30}; do
-    if curl -s http://localhost:3000 > /dev/null 2>&1; then
-      echo -e "${GREEN}✓${NC} Backend ready on port 3000"
-      break
-    fi
-    echo -e "${BLUE}⋯${NC} Attempt $i/30 - Backend not ready yet..."
-    sleep 2
-  done
-
-  # Wait for frontend
-  echo -e "${BLUE}⋯${NC} Waiting for frontend (port 5173)..."
-  for i in {1..30}; do
-    if curl -s http://localhost:5173 > /dev/null 2>&1; then
-      echo -e "${GREEN}✓${NC} Frontend ready on port 5173"
-      break
-    fi
-    echo -e "${BLUE}⋯${NC} Attempt $i/30 - Frontend not ready yet..."
-    sleep 2
-  done
-
-  # Give a moment for everything to stabilize
-  sleep 3
-else
-  echo -e "${GREEN}🎉 Using already running application${NC}"
-fi
-
-# Run E2E tests
-echo -e "${BLUE}🧪 Running E2E tests...${NC}"
-
-# Build playwright command
-CMD="npx playwright test"
-
-if [[ "$HEADED" == true ]]; then
-  CMD="$CMD --headed"
-fi
-
-# Handle test pattern selection based on folder structure
-if [[ -n "$TEST_PATTERN" ]]; then
-  case "$TEST_PATTERN" in
-    "auth"|"authentication")
-      CMD="$CMD specs/auth/"
-      ;;
-    "user-journeys"|"user"|"journeys")
-      CMD="$CMD specs/user-journeys/"
-      ;;
-    "admin-journeys"|"admin")
-      CMD="$CMD specs/admin-journeys/"
-      ;;
-    "integration"|"realtime")
-      CMD="$CMD specs/integration/"
-      ;;
-    "core"|"basic")
-      CMD="$CMD specs/user-journeys/core-functionality.spec.ts"
-      ;;
-    "single-auth")
-      CMD="$CMD specs/auth/authentication.spec.ts --grep \"should sign in, wait 10 seconds\""
-      ;;
-    "all-auth")
-      CMD="$CMD specs/auth/"
-      ;;
-    "all-user")
-      CMD="$CMD specs/user-journeys/"
-      ;;
-    "all-admin")
-      CMD="$CMD specs/admin-journeys/"
-      ;;
-    "all-integration")
-      CMD="$CMD specs/integration/"
-      ;;
-    *)
-      # Default to grep pattern matching for custom patterns
-      CMD="$CMD --grep \"$TEST_PATTERN\""
-      ;;
-  esac
-fi
-
-echo -e "${BLUE}Running: $CMD${NC}"
-
-# Execute the tests
-if eval "$CMD"; then
-  echo -e "${GREEN}✅ All E2E tests passed!${NC}"
-  EXIT_CODE=0
-else
-  echo -e "${RED}❌ Some E2E tests failed${NC}"
-  EXIT_CODE=1
-fi
-
-# Generate test report
-echo -e "${BLUE}📊 Generating test report...${NC}"
-npx playwright show-report
-
-echo -e "${BLUE}🎉 E2E test run complete!${NC}"
-
-exit $EXIT_CODE
---- END OF FILE ---
-
 --- START OF FILE ./tests/README.md ---
 
 # 🏗️ **Testing Strategy: Google Testing Pyramid**
@@ -29927,14 +28567,14 @@ tests/e2e/
 ### **Quick Start: Run Your First Test**
 ```bash
 # Run your specific sign-in/sign-out test
-./test-e2e.sh --test-pattern single-auth
+./tests/e2e/run-tests.sh --test-pattern single-auth
 
 # Run with visible browser to see what's happening
-./test-e2e.sh --headed --test-pattern single-auth
+./tests/e2e/run-tests.sh --headed --test-pattern single-auth
 ```
 
 ### **1. Automated Test Runner (Recommended)**
-The `test-e2e.sh` script provides intelligent, automated testing:
+The `run-tests.sh` script provides intelligent, automated testing:
 
 #### **Smart Features:**
 - **Auto-detects running servers** - Only starts app if not already running
@@ -29946,31 +28586,31 @@ The `test-e2e.sh` script provides intelligent, automated testing:
 #### **Basic Usage:**
 ```bash
 # Run all tests (intelligent startup)
-./test-e2e.sh
+./tests/e2e/run-tests.sh
 
 # Run with visible browser
-./test-e2e.sh --headed
+./tests/e2e/run-tests.sh --headed
 
 # Run specific test suites
-./test-e2e.sh --test-pattern auth              # Authentication tests
-./test-e2e.sh --test-pattern single-auth       # Your specific sign-in test only
-./test-e2e.sh --test-pattern user-journeys     # User journey tests
-./test-e2e.sh --test-pattern admin-journeys    # Admin journey tests
-./test-e2e.sh --test-pattern integration       # Integration tests
-./test-e2e.sh --test-pattern core              # Core functionality test
-./test-e2e.sh --headed --test-pattern realtime # Realtime tests with browser
+./tests/e2e/run-tests.sh --test-pattern auth              # Authentication tests
+./tests/e2e/run-tests.sh --test-pattern single-auth       # Your specific sign-in test only
+./tests/e2e/run-tests.sh --test-pattern user-journeys     # User journey tests
+./tests/e2e/run-tests.sh --test-pattern admin-journeys    # Admin journey tests
+./tests/e2e/run-tests.sh --test-pattern integration       # Integration tests
+./tests/e2e/run-tests.sh --test-pattern core              # Core functionality test
+./tests/e2e/run-tests.sh --headed --test-pattern realtime # Realtime tests with browser
 ```
 
 #### **Advanced Options:**
 ```bash
 # Serial execution (one test at a time)
-./test-e2e.sh --serial --test-pattern auth
+./tests/e2e/run-tests.sh --serial --test-pattern auth
 
 # Custom worker count
-./test-e2e.sh --workers=2 --test-pattern user-journeys
+./tests/e2e/run-tests.sh --workers=2 --test-pattern user-journeys
 
 # Custom grep patterns
-./test-e2e.sh --test-pattern "should sign in, wait 10 seconds"
+./tests/e2e/run-tests.sh --test-pattern "should sign in, wait 10 seconds"
 ```
 
 #### **Development Workflow:**
@@ -29979,9 +28619,9 @@ The `test-e2e.sh` script provides intelligent, automated testing:
 ./startup.sh
 
 # Now run tests repeatedly (much faster!)
-./test-e2e.sh --test-pattern single-auth    # ~15 seconds
-./test-e2e.sh --test-pattern auth           # ~30 seconds
-./test-e2e.sh --test-pattern user-journeys  # ~60 seconds
+./tests/e2e/run-tests.sh --test-pattern single-auth    # ~15 seconds
+./tests/e2e/run-tests.sh --test-pattern auth           # ~30 seconds
+./tests/e2e/run-tests.sh --test-pattern user-journeys  # ~60 seconds
 ```
 
 ### 2. Manual Test Execution
@@ -30011,8 +28651,9 @@ npx playwright test --debug specs/auth/authentication.spec.ts
 ### 3. Shell Scripts
 The project includes automated shell scripts for testing:
 
-#### `test-e2e.sh` - Smart Automated E2E Test Runner
+#### `run-tests.sh` - Smart Automated E2E Test Runner
 - **Purpose**: Fully automated testing pipeline with intelligent server management
+- **Location**: `tests/e2e/run-tests.sh`
 - **Smart Features**:
   - **Auto-detects running servers**: Checks if backend (port 3000) and frontend (port 5173) are already running
   - **Conditional startup**: Only runs `./startup.sh` if servers aren't already running
@@ -30022,9 +28663,9 @@ The project includes automated shell scripts for testing:
   - **Generates test reports**: HTML reports with `npx playwright show-report`
 - **Usage**:
   ```bash
-  ./test-e2e.sh                    # Run all tests headlessly
-  ./test-e2e.sh --headed          # Run with visible browser
-  ./test-e2e.sh --test-pattern auth  # Run specific test patterns
+  ./tests/e2e/run-tests.sh                    # Run all tests headlessly
+  ./tests/e2e/run-tests.sh --headed          # Run with visible browser
+  ./tests/e2e/run-tests.sh --test-pattern auth  # Run specific test patterns
   ```
 
 #### `startup.sh` - Application Startup
@@ -33285,6 +31926,268 @@ When adding new Page Objects:
 - `../../../README.md` - Main E2E testing overview
 - `../base/BasePage.ts` - Common page functionality
 - `../../../utils/` - Building block utilities
+--- END OF FILE ---
+
+--- START OF FILE ./tests/e2e/run-tests.sh ---
+
+u#!/bin/bash
+# E2E Test Runner Script
+# Starts the application and runs E2E tests automatically
+# Usage: ./tests/e2e/run-tests.sh [--headed] [--test-pattern "pattern"] [--help]
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default values
+HEADED=false
+TEST_PATTERN=""
+HELP=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --headed)
+      HEADED=true
+      shift
+      ;;
+    --test-pattern)
+        TEST_PATTERN="$2"
+        shift 2
+        ;;
+      --help|-h)
+        HELP=true
+        shift
+        ;;
+      *)
+        echo -e "${RED}Unknown option: $1${NC}"
+        HELP=true
+        shift
+        ;;
+    esac
+  done
+  
+  # Show help
+  if [[ "$HELP" == true ]]; then
+    echo "E2E Test Runner Script"
+    echo ""
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "This script starts the PlumbingPOC application and runs E2E tests automatically."
+    echo ""
+    echo "Options:"
+    echo "  --headed          Run tests in headed mode (visible browser)"
+    echo "  --test-pattern    Run specific test suite (see patterns below)"
+    echo "  --help, -h        Show this help message"
+    echo ""
+    echo "Test Patterns:"
+    echo "  auth              Run authentication tests (specs/auth/)"
+    echo "  single-auth       Run your specific sign-in test only"
+    echo "  user-journeys     Run user journey tests (specs/user-journeys/)"
+    echo "  admin-journeys    Run admin journey tests (specs/admin-journeys/)"
+    echo "  integration       Run integration tests (specs/integration/)"
+    echo "  core              Run core functionality test"
+    echo "  all-auth          Run all authentication tests"
+    echo "  all-user          Run all user journey tests"
+    echo "  all-admin         Run all admin journey tests"
+    echo "  all-integration   Run all integration tests"
+    echo "  [custom pattern]  Use grep to match test names"
+    echo ""
+    echo "Examples:"
+    echo "  $0                           # Run all E2E tests headlessly"
+    echo "  $0 --headed                 # Run all E2E tests with visible browser"
+    echo "  $0 --test-pattern auth      # Run authentication tests"
+    echo "  $0 --test-pattern core      # Run core functionality test"
+    echo "  $0 --test-pattern 'should sign in, wait 10 seconds'  # Custom grep pattern"
+    echo ""
+    exit 0
+  fi
+
+echo -e "${BLUE}🚀 Starting PlumbingPOC E2E Test Suite${NC}"
+echo -e "${BLUE}═══════════════════════════════════════${NC}"
+
+# Check if required files exist
+if [ ! -f "startup.sh" ]; then
+  echo -e "${RED}❌ startup.sh not found in current directory${NC}"
+  exit 1
+fi
+
+if [ ! -f "package.json" ]; then
+  echo -e "${RED}❌ package.json not found. Are you in the project root?${NC}"
+  exit 1
+fi
+
+# Check if .env exists
+if [ ! -f ".env" ]; then
+  echo -e "${YELLOW}⚠️  .env file not found. Some tests may fail without proper credentials.${NC}"
+fi
+
+# Function to cleanup background processes
+cleanup() {
+  echo -e "\n${YELLOW}🧹 Cleaning up...${NC}"
+
+  # Only kill application processes if we started them
+  if [[ -n "$STARTUP_PID" ]]; then
+    echo -e "${BLUE}Stopping application (PID: $STARTUP_PID)...${NC}"
+    kill "$STARTUP_PID" 2>/dev/null || true
+
+    # Give it a moment to shut down gracefully
+    sleep 2
+
+    # Kill any remaining processes we started
+    pkill -f "npm run dev" 2>/dev/null || true
+    pkill -f "vite" 2>/dev/null || true
+    pkill -f "node api/server.js" 2>/dev/null || true
+  else
+    echo -e "${BLUE}Application was already running - not stopping it${NC}"
+  fi
+
+  # Always kill Playwright processes (we started these)
+  pkill -f "playwright" 2>/dev/null || true
+
+  echo -e "${GREEN}✅ Cleanup complete${NC}"
+}
+
+# Set trap to cleanup on script exit
+trap cleanup EXIT
+
+# Check if application is already running
+echo -e "${BLUE}🔍 Checking if application is already running...${NC}"
+
+BACKEND_RUNNING=false
+FRONTEND_RUNNING=false
+
+# Check backend
+if curl -s http://localhost:3000 > /dev/null 2>&1; then
+  echo -e "${GREEN}✓${NC} Backend already running on port 3000"
+  BACKEND_RUNNING=true
+else
+  echo -e "${YELLOW}⋯${NC} Backend not running on port 3000"
+fi
+
+# Check frontend
+if curl -s http://localhost:5173 > /dev/null 2>&1; then
+  echo -e "${GREEN}✓${NC} Frontend already running on port 5173"
+  FRONTEND_RUNNING=true
+else
+  echo -e "${YELLOW}⋯${NC} Frontend not running on port 5173"
+fi
+
+# Start application only if needed
+if [[ "$BACKEND_RUNNING" == true && "$FRONTEND_RUNNING" == true ]]; then
+  echo -e "${GREEN}🎉 Application already running - skipping startup${NC}"
+  STARTUP_PID=""
+else
+  echo -e "${BLUE}📦 Starting application with startup.sh...${NC}"
+  ./startup.sh &
+  STARTUP_PID=$!
+fi
+
+# Wait for application to be ready (only if we started it)
+if [[ -n "$STARTUP_PID" ]]; then
+  echo -e "${BLUE}⏳ Waiting for application to be ready...${NC}"
+
+  # Wait for backend
+  echo -e "${BLUE}⋯${NC} Waiting for backend (port 3000)..."
+  for i in {1..30}; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+      echo -e "${GREEN}✓${NC} Backend ready on port 3000"
+      break
+    fi
+    echo -e "${BLUE}⋯${NC} Attempt $i/30 - Backend not ready yet..."
+    sleep 2
+  done
+
+  # Wait for frontend
+  echo -e "${BLUE}⋯${NC} Waiting for frontend (port 5173)..."
+  for i in {1..30}; do
+    if curl -s http://localhost:5173 > /dev/null 2>&1; then
+      echo -e "${GREEN}✓${NC} Frontend ready on port 5173"
+      break
+    fi
+    echo -e "${BLUE}⋯${NC} Attempt $i/30 - Frontend not ready yet..."
+    sleep 2
+  done
+
+  # Give a moment for everything to stabilize
+  sleep 3
+else
+  echo -e "${GREEN}🎉 Using already running application${NC}"
+fi
+
+# Run E2E tests
+echo -e "${BLUE}🧪 Running E2E tests...${NC}"
+
+# Build playwright command
+CMD="npx playwright test"
+
+if [[ "$HEADED" == true ]]; then
+  CMD="$CMD --headed"
+fi
+
+# Handle test pattern selection based on folder structure
+if [[ -n "$TEST_PATTERN" ]]; then
+  case "$TEST_PATTERN" in
+    "auth"|"authentication")
+      CMD="$CMD specs/auth/"
+      ;;
+    "user-journeys"|"user"|"journeys")
+      CMD="$CMD specs/user-journeys/"
+      ;;
+    "admin-journeys"|"admin")
+      CMD="$CMD specs/admin-journeys/"
+      ;;
+    "integration"|"realtime")
+      CMD="$CMD specs/integration/"
+      ;;
+    "core"|"basic")
+      CMD="$CMD specs/user-journeys/core-functionality.spec.ts"
+      ;;
+    "single-auth")
+      CMD="$CMD specs/auth/authentication.spec.ts --grep \"should sign in, wait 10 seconds\""
+      ;;
+    "all-auth")
+      CMD="$CMD specs/auth/"
+      ;;
+    "all-user")
+      CMD="$CMD specs/user-journeys/"
+      ;;
+    "all-admin")
+      CMD="$CMD specs/admin-journeys/"
+      ;;
+    "all-integration")
+      CMD="$CMD specs/integration/"
+      ;;
+    *)
+      # Default to grep pattern matching for custom patterns
+      CMD="$CMD --grep \"$TEST_PATTERN\""
+      ;;
+  esac
+fi
+
+echo -e "${BLUE}Running: $CMD${NC}"
+
+# Execute the tests
+if eval "$CMD"; then
+  echo -e "${GREEN}✅ All E2E tests passed!${NC}"
+  EXIT_CODE=0
+else
+  echo -e "${RED}❌ Some E2E tests failed${NC}"
+  EXIT_CODE=1
+fi
+
+# Generate test report
+echo -e "${BLUE}📊 Generating test report...${NC}"
+npx playwright show-report
+
+echo -e "${BLUE}🎉 E2E test run complete!${NC}"
+
+exit $EXIT_CODE
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-authentication.spec.ts ---
@@ -37081,6 +35984,50 @@ test.describe('Real-time Hooks Integration', () => {
     expect(result.current).toHaveProperty('refetch');
   });
 });
+--- END OF FILE ---
+
+--- START OF FILE ./tests/manual/README.md ---
+
+# Manual Testing Scripts
+
+This directory is reserved for manual testing scripts.
+
+## Note
+
+After testing the OpenAI Agents SDK (see ADR-028), we determined it's not suitable for our structured YAML-driven workflows. The SDK is designed for function calling and AI-driven conversations, not deterministic question flows.
+
+**Our custom YAML approach is the correct architecture for this use case.**
+
+## Testing Our Agents
+
+To test the quote and triage agents:
+
+### Local Testing
+```bash
+# Start the application
+./startup.sh
+
+# Navigate to http://localhost:5173
+# Click "Get Quote" to test the quote agent
+# Submit requests to test the triage agent
+```
+
+### E2E Testing
+```bash
+# Run all E2E tests
+./tests/e2e/run-tests.sh
+
+# Run specific test patterns
+./tests/e2e/run-tests.sh --test-pattern user-journeys
+```
+
+## Related Documentation
+
+- [ChatKit Experiment Results](../../docs/CHATKIT_EXPERIMENT.md) - Why we didn't use the OpenAI Agents SDK
+- [ADR-028](../../adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md) - Architectural decision
+- [Quote Agent Maintenance](../../docs/QUOTE_AGENT_MAINTENANCE.md)
+- [Agent Contracts](../../docs/AIContracts.md)
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/manual-tests.md ---

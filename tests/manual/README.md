@@ -1,55 +1,39 @@
 # Manual Testing Scripts
 
-This directory contains scripts for manually testing OpenAI Agent functionality outside of the full application context.
+This directory is reserved for manual testing scripts.
 
-## Available Scripts
+## Note
 
-### `test-agent-sdk.mjs`
-Tests the QuoteAgent logic using the OpenAI Agents SDK.
+After testing the OpenAI Agents SDK (see ADR-028), we determined it's not suitable for our structured YAML-driven workflows. The SDK is designed for function calling and AI-driven conversations, not deterministic question flows.
 
-**Purpose**: Simulates the YAML workflow and validates agent behavior in isolation
+**Our custom YAML approach is the correct architecture for this use case.**
 
-**Features**:
-- Static question simulation
-- Tool execution testing (assess_leak_severity, check_emergency_status, analyze_water_heater_issue)
-- Conversational flow validation
+## Testing Our Agents
 
-**Usage**:
+To test the quote and triage agents:
+
+### Local Testing
 ```bash
-node tests/manual/test-agent-sdk.mjs
+# Start the application
+./startup.sh
+
+# Navigate to http://localhost:5173
+# Click "Get Quote" to test the quote agent
+# Submit requests to test the triage agent
 ```
 
-**Requirements**:
-- `OPENAI_API_KEY` environment variable must be set
-- OpenAI Agents SDK (`@openai/agents`) must be installed
-
----
-
-### `test-agent.mjs`
-Simple test script for basic OpenAI Agents SDK functionality.
-
-**Purpose**: Minimal agent testing for SDK verification
-
-**Usage**:
+### E2E Testing
 ```bash
-node tests/manual/test-agent.mjs
+# Run all E2E tests
+./tests/e2e/run-tests.sh
+
+# Run specific test patterns
+./tests/e2e/run-tests.sh --test-pattern user-journeys
 ```
-
-**Requirements**:
-- `OPENAI_API_KEY` environment variable must be set
-- OpenAI Agents SDK (`@openai/agents`) must be installed
-
----
-
-## When to Use These Scripts
-
-- **During Development**: Test agent logic changes without running the full app
-- **Debugging**: Isolate agent behavior from backend/frontend concerns
-- **SDK Validation**: Verify OpenAI SDK integration and API connectivity
-- **Workflow Testing**: Validate YAML-based workflows before deployment
 
 ## Related Documentation
 
-- [OpenAI Agent Setup and Testing Guide](../../docs/OPENAI_AGENT_SETUP_AND_TESTING_GUIDE.md)
-- [Agent Contracts](../../docs/AIContracts.md)
+- [ChatKit Experiment Results](../../docs/CHATKIT_EXPERIMENT.md) - Why we didn't use the OpenAI Agents SDK
+- [ADR-028](../../adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md) - Architectural decision
 - [Quote Agent Maintenance](../../docs/QUOTE_AGENT_MAINTENANCE.md)
+- [Agent Contracts](../../docs/AIContracts.md)
