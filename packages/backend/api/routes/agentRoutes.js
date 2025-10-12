@@ -4,36 +4,31 @@
 import express from 'express';
 import { submitQuoteRequest } from '../controllers/requestController.js';
 import { updateRequestTriage } from '../controllers/triageController.js';
-import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
 
 const router = express.Router();
 
-// Agent runner endpoint (development/local API usage)
+// Temporary local development proxy - calls Netlify function directly
+// TODO: Remove this when using Netlify Dev for local development
 router.post('/quote/run', async (req, res) => {
   try {
-    const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
-    const context = req.body?.context ?? {};
-    const sessionId = context.sessionId || context.userId || context.conversationId;
-
-    if (!sessionId) {
-      return res.status(400).json({
-        error: 'sessionId is required to run the quote agent.',
-      });
-    }
-
-    const result = await runQuoteAgent({
-      sessionId,
-      messages,
-      context,
-    });
-
-    return res.json(result);
+    // Dynamically import the Netlify function handler
+    const { handler } = await import('../../netlify/functions/quote-agent.mjs');
+    
+    // Transform Express request to Netlify function event format
+    const event = {
+      httpMethod: 'POST',
+      body: JSON.stringify(req.body),
+      headers: req.headers
+    };
+    
+    // Call the handler
+    const result = await handler(event, {});
+    
+    // Send response
+    res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {
-    console.error('Agent quote run error:', error);
-    return res.status(500).json({
-      error: 'Agent execution failed',
-      details: error.message,
-    });
+    console.error('Quote agent proxy error:', error);
+    res.status(500).json({ error: 'Agent execution failed', details: error.message });
   }
 });
 

@@ -1,7 +1,7 @@
 u#!/bin/bash
 # E2E Test Runner Script
 # Starts the application and runs E2E tests automatically
-# Usage: ./test-e2e.sh [--headed] [--test-pattern "pattern"] [--help]
+# Usage: ./tests/e2e/run-tests.sh [--headed] [--test-pattern "pattern"] [--help]
 
 set -e  # Exit on any error
 

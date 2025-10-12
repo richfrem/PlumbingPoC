@@ -555,14 +555,14 @@ tests/e2e/
 ### **Quick Start: Run Your First Test**
 ```bash
 # Run your specific sign-in/sign-out test
-./test-e2e.sh --test-pattern single-auth
+./tests/e2e/run-tests.sh --test-pattern single-auth
 
 # Run with visible browser to see what's happening
-./test-e2e.sh --headed --test-pattern single-auth
+./tests/e2e/run-tests.sh --headed --test-pattern single-auth
 ```
 
 ### **1. Automated Test Runner (Recommended)**
-The `test-e2e.sh` script provides intelligent, automated testing:
+The `run-tests.sh` script provides intelligent, automated testing:
 
 #### **Smart Features:**
 - **Auto-detects running servers** - Only starts app if not already running
@@ -574,31 +574,31 @@ The `test-e2e.sh` script provides intelligent, automated testing:
 #### **Basic Usage:**
 ```bash
 # Run all tests (intelligent startup)
-./test-e2e.sh
+./tests/e2e/run-tests.sh
 
 # Run with visible browser
-./test-e2e.sh --headed
+./tests/e2e/run-tests.sh --headed
 
 # Run specific test suites
-./test-e2e.sh --test-pattern auth              # Authentication tests
-./test-e2e.sh --test-pattern single-auth       # Your specific sign-in test only
-./test-e2e.sh --test-pattern user-journeys     # User journey tests
-./test-e2e.sh --test-pattern admin-journeys    # Admin journey tests
-./test-e2e.sh --test-pattern integration       # Integration tests
-./test-e2e.sh --test-pattern core              # Core functionality test
-./test-e2e.sh --headed --test-pattern realtime # Realtime tests with browser
+./tests/e2e/run-tests.sh --test-pattern auth              # Authentication tests
+./tests/e2e/run-tests.sh --test-pattern single-auth       # Your specific sign-in test only
+./tests/e2e/run-tests.sh --test-pattern user-journeys     # User journey tests
+./tests/e2e/run-tests.sh --test-pattern admin-journeys    # Admin journey tests
+./tests/e2e/run-tests.sh --test-pattern integration       # Integration tests
+./tests/e2e/run-tests.sh --test-pattern core              # Core functionality test
+./tests/e2e/run-tests.sh --headed --test-pattern realtime # Realtime tests with browser
 ```
 
 #### **Advanced Options:**
 ```bash
 # Serial execution (one test at a time)
-./test-e2e.sh --serial --test-pattern auth
+./tests/e2e/run-tests.sh --serial --test-pattern auth
 
 # Custom worker count
-./test-e2e.sh --workers=2 --test-pattern user-journeys
+./tests/e2e/run-tests.sh --workers=2 --test-pattern user-journeys
 
 # Custom grep patterns
-./test-e2e.sh --test-pattern "should sign in, wait 10 seconds"
+./tests/e2e/run-tests.sh --test-pattern "should sign in, wait 10 seconds"
 ```
 
 #### **Development Workflow:**
@@ -607,9 +607,9 @@ The `test-e2e.sh` script provides intelligent, automated testing:
 ./startup.sh
 
 # Now run tests repeatedly (much faster!)
-./test-e2e.sh --test-pattern single-auth    # ~15 seconds
-./test-e2e.sh --test-pattern auth           # ~30 seconds
-./test-e2e.sh --test-pattern user-journeys  # ~60 seconds
+./tests/e2e/run-tests.sh --test-pattern single-auth    # ~15 seconds
+./tests/e2e/run-tests.sh --test-pattern auth           # ~30 seconds
+./tests/e2e/run-tests.sh --test-pattern user-journeys  # ~60 seconds
 ```
 
 ### 2. Manual Test Execution
@@ -639,8 +639,9 @@ npx playwright test --debug specs/auth/authentication.spec.ts
 ### 3. Shell Scripts
 The project includes automated shell scripts for testing:
 
-#### `test-e2e.sh` - Smart Automated E2E Test Runner
+#### `run-tests.sh` - Smart Automated E2E Test Runner
 - **Purpose**: Fully automated testing pipeline with intelligent server management
+- **Location**: `tests/e2e/run-tests.sh`
 - **Smart Features**:
   - **Auto-detects running servers**: Checks if backend (port 3000) and frontend (port 5173) are already running
   - **Conditional startup**: Only runs `./startup.sh` if servers aren't already running
@@ -650,9 +651,9 @@ The project includes automated shell scripts for testing:
   - **Generates test reports**: HTML reports with `npx playwright show-report`
 - **Usage**:
   ```bash
-  ./test-e2e.sh                    # Run all tests headlessly
-  ./test-e2e.sh --headed          # Run with visible browser
-  ./test-e2e.sh --test-pattern auth  # Run specific test patterns
+  ./tests/e2e/run-tests.sh                    # Run all tests headlessly
+  ./tests/e2e/run-tests.sh --headed          # Run with visible browser
+  ./tests/e2e/run-tests.sh --test-pattern auth  # Run specific test patterns
   ```
 
 #### `startup.sh` - Application Startup

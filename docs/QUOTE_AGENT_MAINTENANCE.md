@@ -533,7 +533,7 @@ options: ["Phone Call", "Email", "Text"]
 
 1. **Check browser console for errors:**
    ```
-   [QuoteAgentRunner] Failed to load YAML config
+   [QuoteAgent] Failed to load YAML config
    ```
 
 2. **Trace the flow manually:**
@@ -638,9 +638,9 @@ options: ["Phone Call", "Email", "Text"]
 ## Support & Resources
 
 - **YAML Syntax Validator:** [yamllint.com](http://www.yamllint.com/)
-- **Agent Runner Code:** `packages/backend/api/agents/quoteAgentRunner.js`
+- **Quote Agent Code:** `packages/backend/netlify/functions/quote-agent.mjs` (self-contained, works locally and on Netlify)
 - **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx`
-- **Netlify Function:** `packages/backend/netlify/functions/quote-agent.mjs`
+- **YAML Configuration:** `agents/quote-agent.yaml`
 
 **Questions?** Check the team documentation or reach out to the development team.
 

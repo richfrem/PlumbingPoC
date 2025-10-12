@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted – 2025-10-11
+**Superseded** – 2025-10-11
+
+**Replaced by**: ADR-027 (Self-Contained Agent Functions with Environment Detection)
 
 ## Context
 

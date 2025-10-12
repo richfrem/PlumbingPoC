@@ -92,6 +92,7 @@ const isLocalHost =
     window.location.hostname === "127.0.0.1" ||
     window.location.hostname === "::1");
 
+// Local dev: Express proxy route, Production: Netlify function
 const AGENT_ENDPOINT = isLocalHost
   ? "/api/agents/quote/run"
   : "/.netlify/functions/quote-agent";

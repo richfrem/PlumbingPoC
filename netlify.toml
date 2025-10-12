@@ -41,7 +41,7 @@
       "yaml",
       "openai"
     ]
-    # Include the YAML config file since quoteAgentRunner is imported by requestRoutes
+    # Include the YAML config files for quote and triage agents
     included_files = [
       "agents/quote-agent.yaml",
       "agents/triage-agent.yaml"

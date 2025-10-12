@@ -45,8 +45,7 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   └── package.json  # Frontend dependencies
 │   └── backend/          # Node.js/Express API
 │       ├── api/          # Express server and routes
-│       │   ├── agents/   # AI agent runners
-│       │   │   ├── quoteAgentRunner.js  # Quote agent logic
+│       │   ├── agents/   # AI agent runners (legacy - being phased out)
 │       │   │   └── triageAgentRunner.js # Triage agent logic
 │       │   ├── controllers/
 │       │   ├── middleware/
@@ -54,9 +53,9 @@ The repository follows a modern monorepo architecture with separate packages for
 │       │   ├── services/
 │       │   └── server.js
 │       ├── netlify/
-│       │   └── functions/ # Serverless agent functions
+│       │   └── functions/ # Serverless agent functions (primary)
 │       │       ├── api.mjs           # Main API wrapper
-│       │       ├── quote-agent.mjs   # Quote agent endpoint
+│       │       ├── quote-agent.mjs   # Quote agent endpoint (self-contained)
 │       │       ├── triage-agent.mjs  # Triage agent endpoint
 │       │       └── send-sms.mjs      # SMS notifications
 │       └── package.json  # Backend dependencies

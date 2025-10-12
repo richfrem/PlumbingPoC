@@ -281,12 +281,12 @@ If CLI commands are unavailable, use the OpenAI Agents SDK for programmatic test
    ```
 
 3. **Use the Test Script**:
-   A local test script `test-agent-sdk.mjs` has been created that simulates the QuoteAgent workflow using the SDK. It includes:
+   A local test script `tests/manual/test-agent-sdk.mjs` has been created that simulates the QuoteAgent workflow using the SDK. It includes:
    - Static question simulation
    - Tool execution (assess_leak_severity, check_emergency_status)
    - Conversational flow testing
 
-   Run it with: `node test-agent-sdk.mjs`
+   Run it with: `node tests/manual/test-agent-sdk.mjs`
 
    **Note**: Requires `OPENAI_API_KEY` environment variable to be set for API calls.
 

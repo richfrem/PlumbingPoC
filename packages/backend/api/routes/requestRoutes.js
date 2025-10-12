@@ -47,7 +47,6 @@ import {
   markRequestAsViewed,
   cleanupTestData,
 } from '../controllers/requestController.js';
-import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validationMiddleware.js';
 import {
@@ -67,18 +66,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
-
-// --- Agent Routes ---
-router.post('/agents/quote/run', authenticate, async (req, res) => {
-  try {
-    const { sessionId, messages = [], context = {} } = req.body;
-    const result = await runQuoteAgent({ sessionId, messages, context });
-    res.json(result);
-  } catch (error) {
-    console.error('Quote agent error:', error);
-    res.status(500).json({ error: 'Failed to run quote agent' });
-  }
-});
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);

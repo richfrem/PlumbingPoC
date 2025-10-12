@@ -506,7 +506,7 @@ GET /.netlify/functions/quote-agent 502 (Bad Gateway)
 ```
 TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
     at fileURLToPath (node:internal/url:1606:11)
-    at Object.<anonymous> (/var/task/packages/backend/api/agents/quoteAgentRunner.js:43:47)
+    at Object.<anonymous> (/var/task/packages/backend/netlify/functions/quote-agent.mjs:43:47)
 ```
 
 **Root Cause:** Multiple issues with file loading in Netlify's bundled environment:
@@ -542,7 +542,7 @@ try {
 } catch (error) {
   // Fallback for bundled/Netlify environment where import.meta.url might not work
   __dirname = process.cwd();
-  console.log('[QuoteAgentRunner] Using process.cwd() as __dirname:', __dirname);
+  console.log('[QuoteAgent] Using process.cwd() as __dirname:', __dirname);
 }
 ```
 

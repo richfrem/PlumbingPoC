@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T01:05:27.539Z
+Generated On: 2025-10-12T01:39:17.207Z
 
-# Mnemonic Weight (Token Count): ~327,975 tokens
+# Mnemonic Weight (Token Count): ~331,931 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -63,6 +63,7 @@ Generated On: 2025-10-12T01:05:27.539Z
   ./adrs/024-choice-of-service-organization-strategy.md
   ./adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md
   ./adrs/026-agent-runner-local-first-strategy.md
+  ./adrs/027-self-contained-agent-functions.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -115,6 +116,7 @@ Generated On: 2025-10-12T01:05:27.539Z
   ./docs/NETLIFY_DEPLOYMENT.md
   ./docs/NETLIFY_TROUBLESHOOTING.md
   ./docs/OPENAI_AGENT_SETUP_AND_TESTING_GUIDE.md
+  ./docs/QUOTE_AGENT_MAINTENANCE.md
   ./docs/QuoteStateChangesWorkflow.md
   ./docs/REALTIME_SYSTEM.md
   ./docs/RESEND_FREE_PLAN_LIMITATIONS.md
@@ -130,8 +132,6 @@ Generated On: 2025-10-12T01:05:27.539Z
   ./packages/backend/api/
   ./packages/backend/api/README.md
   ./packages/backend/api/agents/
-  ./packages/backend/api/agents/quoteAgentRunner.js
-  ./packages/backend/api/agents/triageAgentRunner.js
   ./packages/backend/api/config/
   ./packages/backend/api/config/azure/
   ./packages/backend/api/config/supabase/
@@ -1406,8 +1406,7 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   └── package.json  # Frontend dependencies
 │   └── backend/          # Node.js/Express API
 │       ├── api/          # Express server and routes
-│       │   ├── agents/   # AI agent runners
-│       │   │   ├── quoteAgentRunner.js  # Quote agent logic
+│       │   ├── agents/   # AI agent runners (legacy - being phased out)
 │       │   │   └── triageAgentRunner.js # Triage agent logic
 │       │   ├── controllers/
 │       │   ├── middleware/
@@ -1415,9 +1414,9 @@ The repository follows a modern monorepo architecture with separate packages for
 │       │   ├── services/
 │       │   └── server.js
 │       ├── netlify/
-│       │   └── functions/ # Serverless agent functions
+│       │   └── functions/ # Serverless agent functions (primary)
 │       │       ├── api.mjs           # Main API wrapper
-│       │       ├── quote-agent.mjs   # Quote agent endpoint
+│       │       ├── quote-agent.mjs   # Quote agent endpoint (self-contained)
 │       │       ├── triage-agent.mjs  # Triage agent endpoint
 │       │       └── send-sms.mjs      # SMS notifications
 │       └── package.json  # Backend dependencies
@@ -5120,7 +5119,9 @@ This pattern balances cost efficiency with intelligent automation, ensuring the 
 
 ## Status
 
-Accepted – 2025-10-11
+**Superseded** – 2025-10-11
+
+**Replaced by**: ADR-027 (Self-Contained Agent Functions with Environment Detection)
 
 ## Context
 
@@ -5153,6 +5154,189 @@ Accepted – 2025-10-11
 - Local development gets unblocked before any deployment changes, letting us validate the ChatKit UI and Supabase integrations safely.
 - The Netlify function implementation becomes a thin wrapper around the same runner, reducing drift between dev and prod.
 - We incur a one-time cost to write the runner assembly code, but we avoid depending on unpublished SDK internals.
+
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/027-self-contained-agent-functions.md ---
+
+# ADR 027: Self-Contained Agent Functions with Environment Detection
+
+## Status
+
+Accepted – 2025-10-11
+
+Supersedes: **ADR-026** (Local Agent Runner First, Netlify Function Second)
+
+## Context
+
+The original architecture (ADR-026) proposed separate "runner" modules (`quoteAgentRunner.js`, `triageAgentRunner.js`) that would be wrapped by Netlify functions. This approach created:
+- Code duplication between runners and function wrappers
+- Import complexity and potential circular dependencies
+- Maintenance burden keeping two files synchronized
+- Confusing architecture with multiple entry points
+
+The agents are YAML-driven workflows that need to work in two environments:
+1. **Local development**: Express server with `./startup.sh`
+2. **Production**: Netlify serverless functions
+
+## Decision
+
+**Consolidate all agent logic into self-contained Netlify function files with environment detection.**
+
+### Architecture Pattern
+
+1. **Single Source of Truth Per Agent**
+   - `packages/backend/netlify/functions/quote-agent.mjs` (~500 LOC, self-contained)
+   - `packages/backend/netlify/functions/triage-agent.mjs` (~350 LOC, self-contained)
+   - All helper functions, YAML loading, OpenAI integration, and business logic inline
+
+2. **Environment Detection**
+   ```javascript
+   const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+   
+   // Conditional YAML path resolution
+   let YAML_PATH;
+   if (isNetlify) {
+     YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
+   } else {
+     YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+   }
+   ```
+
+3. **Local Development via Proxy Routes**
+   - Express routes dynamically import Netlify function handlers
+   - `/api/agents/quote/run` → calls `quote-agent.mjs` handler
+   - Controllers import handlers when needed (e.g., `triageController.js`)
+   - No separate runner files needed
+
+4. **Production Direct Access**
+   - Frontend calls `/.netlify/functions/quote-agent` in production
+   - Same code, different invocation path
+
+### Example: Quote Agent Proxy (Local Dev)
+
+```javascript
+// packages/backend/api/routes/agentRoutes.js
+router.post('/quote/run', async (req, res) => {
+  try {
+    // Dynamically import the Netlify function handler
+    const { handler } = await import('../../netlify/functions/quote-agent.mjs');
+    
+    // Transform Express request to Netlify event format
+    const event = {
+      httpMethod: 'POST',
+      body: JSON.stringify(req.body),
+      headers: req.headers
+    };
+    
+    // Call the handler
+    const result = await handler(event, {});
+    
+    // Send response
+    res.status(result.statusCode).json(JSON.parse(result.body));
+  } catch (error) {
+    res.status(500).json({ error: 'Agent execution failed' });
+  }
+});
+```
+
+## Consequences
+
+### Benefits
+- ✅ **Single source of truth** - All logic in one file per agent
+- ✅ **Simpler architecture** - No abstraction layers
+- ✅ **Environment-agnostic** - Same code works locally and on Netlify
+- ✅ **Easier debugging** - All code in one place
+- ✅ **Faster cold starts** - Fewer module loads (important for serverless)
+- ✅ **Less maintenance** - ~700 LOC removed, 2 files eliminated
+- ✅ **Clear ownership** - Each function is independently deployable
+
+### Trade-offs
+- ⚠️ Larger function files (~500 LOC vs ~100 LOC wrapper + ~400 LOC runner)
+  - **Mitigation**: Still manageable size, well-organized with helper functions
+- ⚠️ Local development uses Express proxy routes
+  - **Mitigation**: Minimal boilerplate, same pattern as quote/triage agents
+
+### Maintained Principles
+- ✅ YAML remains single source of truth for workflow definitions
+- ✅ Environment variables control sensitive data (OpenAI API keys)
+- ✅ Netlify `functions` configuration in `netlify.toml` handles dependencies
+
+## Migration Summary
+
+### Deleted Files
+- ❌ `packages/backend/api/agents/quoteAgentRunner.js` (~450 LOC)
+- ❌ `packages/backend/api/agents/triageAgentRunner.js` (~250 LOC)
+
+### Enhanced Files
+- ✅ `packages/backend/netlify/functions/quote-agent.mjs` - Now self-contained (~500 LOC)
+- ✅ `packages/backend/netlify/functions/triage-agent.mjs` - Now self-contained (~350 LOC)
+
+### Updated Files
+- ✅ `packages/backend/api/routes/agentRoutes.js` - Simple proxy
+- ✅ `packages/backend/api/controllers/triageController.js` - Calls function handler
+- ✅ `packages/backend/api/routes/requestRoutes.js` - Removed runner import
+- ✅ `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx` - Environment-based endpoint
+
+### Net Impact
+- **Code reduction**: ~700 LOC total removed
+- **File reduction**: 2 files eliminated
+- **Complexity reduction**: Single entry point per agent
+
+## Implementation Details
+
+### Quote Agent Function Structure
+```javascript
+// packages/backend/netlify/functions/quote-agent.mjs
+
+import fs from 'fs';
+import path from 'path';
+import YAML from 'yaml';
+import OpenAI from 'openai';
+
+// Environment detection
+const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+// YAML loading (environment-aware paths)
+const yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+
+// Session storage
+const sessions = new Map();
+
+// Helper functions
+function getNodeById(nodeId) { /* ... */ }
+function normalizeServiceKey(value) { /* ... */ }
+function createSession(sessionId) { /* ... */ }
+
+// Core agent logic
+async function runQuoteAgent({ sessionId, messages }) { /* ... */ }
+
+// Netlify function handler
+export async function handler(event, context) {
+  // CORS, validation, error handling
+  const result = await runQuoteAgent({ sessionId, messages });
+  return { statusCode: 200, body: JSON.stringify(result) };
+}
+```
+
+## Testing Strategy
+
+1. **Local Development**: Test via Express routes (`/api/agents/quote/run`)
+2. **Netlify Dev**: Test with `netlify dev` (simulates production)
+3. **Production**: Deployed functions at `/.netlify/functions/*`
+
+## Related ADRs
+
+- **ADR-014**: Pure ESM Strategy (enables dynamic imports)
+- **ADR-015**: Monorepo Structure (workspace organization)
+- **ADR-025**: OpenAI Agent Toolkit Implementation Pattern (YAML-driven workflows)
+- **ADR-026**: Local Agent Runner First (superseded by this ADR)
+
+## Future Considerations
+
+- **Consider Netlify Dev as primary local development tool** instead of Express proxy routes
+- **Monitor function file sizes** - if functions exceed ~1000 LOC, consider splitting helpers into shared modules
+- **Evaluate caching strategies** for YAML loading in production (currently loads on cold start)
 
 --- END OF FILE ---
 
@@ -10431,7 +10615,7 @@ GET /.netlify/functions/quote-agent 502 (Bad Gateway)
 ```
 TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
     at fileURLToPath (node:internal/url:1606:11)
-    at Object.<anonymous> (/var/task/packages/backend/api/agents/quoteAgentRunner.js:43:47)
+    at Object.<anonymous> (/var/task/packages/backend/netlify/functions/quote-agent.mjs:43:47)
 ```
 
 **Root Cause:** Multiple issues with file loading in Netlify's bundled environment:
@@ -10467,7 +10651,7 @@ try {
 } catch (error) {
   // Fallback for bundled/Netlify environment where import.meta.url might not work
   __dirname = process.cwd();
-  console.log('[QuoteAgentRunner] Using process.cwd() as __dirname:', __dirname);
+  console.log('[QuoteAgent] Using process.cwd() as __dirname:', __dirname);
 }
 ```
 
@@ -10923,6 +11107,668 @@ The SDK provides full control over agent logic, tools, guardrails, and handoffs 
 - [ADR-025: OpenAI Agent Toolkit Implementation Pattern](adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md)
 - [Netlify Deployment Guide](NETLIFY_DEPLOYMENT.md)
 - [OpenAI Agent Toolkit Documentation](https://platform.openai.com/docs/agent-toolkit)
+--- END OF FILE ---
+
+--- START OF FILE ./docs/QUOTE_AGENT_MAINTENANCE.md ---
+
+# Quote Agent Maintenance Guide
+
+**Audience:** Product Managers, Business Analysts, Developers  
+**Purpose:** Learn how to modify and maintain the quote intake conversation flow using the YAML configuration file.
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Understanding the YAML Structure](#understanding-the-yaml-structure)
+3. [Adding New Questions](#adding-new-questions)
+4. [Modifying Existing Questions](#modifying-existing-questions)
+5. [Service-Specific Question Flows](#service-specific-question-flows)
+6. [Testing Your Changes](#testing-your-changes)
+7. [Common Patterns & Best Practices](#common-patterns--best-practices)
+8. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+The Quote Agent uses a **YAML-driven workflow** defined in `/agents/quote-agent.yaml`. This file controls:
+
+- What questions are asked
+- The order of questions
+- Which options are available
+- How the conversation branches based on service type
+- When AI clarification is triggered
+
+**Key Benefit:** You can modify the entire conversation flow without touching any React or TypeScript code.
+
+---
+
+## Understanding the YAML Structure
+
+### Basic Node Anatomy
+
+Every question or decision point in the conversation is a "node":
+
+```yaml
+- id: emergency_check              # Unique identifier for this step
+  type: choice                     # Type of interaction (choice, static, model, etc.)
+  prompt: "Is this an emergency?"  # Question shown to the user
+  options:                         # Available response options
+    - "Yes, it's an emergency"
+    - "No"
+  capture: is_emergency            # Where to store the answer
+  next: type_of_property           # Which node to go to next
+```
+
+### Node Types
+
+| Type | Purpose | Example Use Case |
+|------|---------|------------------|
+| `choice` | Multiple choice question | "Is this an emergency?" |
+| `static` | Open-ended text input | "Describe your plumbing issue" |
+| `switch` | Branch based on a variable | Route to service-specific questions |
+| `model` | AI-generated questions | Intelligent follow-up questions |
+| `decision` | Conditional logic | Check if more info is needed |
+
+### Workflow Flow
+
+The conversation follows a directed graph:
+
+```
+emergency_check 
+    ↓
+type_of_property
+    ↓
+do_you_own
+    ↓
+when_schedule
+    ↓
+select_service
+    ↓
+service_questions (branches by service type)
+    ↓
+check_completion
+    ↓
+ai_followup (if needed) OR review_summary
+```
+
+---
+
+## Adding New Questions
+
+### Example: Add a "Contact Preference" Question
+
+**Goal:** Ask customers how they prefer to be contacted.
+
+**Step 1:** Decide where to insert the question in the flow.
+
+For this example, let's add it after `do_you_own` and before `when_schedule`.
+
+**Step 2:** Add the new node in the YAML file:
+
+```yaml
+# 3. Do you own the property?
+- id: do_you_own
+  type: choice
+  prompt: "Do you own this property?"
+  options: [Yes, No]
+  capture: is_homeowner
+  next: contact_preference  # ← Changed to point to our new question
+
+# 3.5 Contact Preference (NEW)
+- id: contact_preference
+  type: choice
+  prompt: "How would you prefer we contact you?"
+  options:
+    - "Phone Call"
+    - "Text Message"
+    - "Email"
+  capture: preferred_contact_method
+  next: when_schedule  # ← Points to the next existing question
+
+# 4. When to schedule service
+- id: when_schedule
+  type: static
+  prompt: "When would you like this service to be scheduled?"
+  capture: preferred_timing
+  next: select_service
+```
+
+**Step 3:** Save the file.
+
+**Step 4:** Test locally (see [Testing Your Changes](#testing-your-changes)).
+
+**Step 5:** Commit and deploy:
+
+```bash
+git add agents/quote-agent.yaml
+git commit -m "Add contact preference question to quote flow"
+git push
+```
+
+That's it! The question will automatically appear in the conversation flow.
+
+---
+
+## Modifying Existing Questions
+
+### Change Question Text
+
+**Before:**
+```yaml
+- id: emergency_check
+  type: choice
+  prompt: "Is this an emergency?"
+  options:
+    - "Yes, it's an emergency"
+    - "No"
+```
+
+**After:**
+```yaml
+- id: emergency_check
+  type: choice
+  prompt: "Do you need immediate emergency service?"  # ← Updated
+  options:
+    - "Yes - Emergency (within 24 hours)"              # ← Updated
+    - "No - Regular service is fine"                   # ← Updated
+```
+
+### Add/Remove Options
+
+**Add an option:**
+```yaml
+- id: type_of_property
+  type: choice
+  prompt: "What type of property is this service for?"
+  options:
+    - Residential
+    - Apartment
+    - Commercial
+    - Industrial  # ← New option added
+    - Other
+```
+
+**Remove an option:**
+```yaml
+- id: do_you_own
+  type: choice
+  prompt: "Do you own this property?"
+  options:
+    - Yes
+    # Removed "No" option - simplified to single choice
+```
+
+### Change Question Order
+
+Simply update the `next:` field to route to a different node:
+
+```yaml
+- id: emergency_check
+  next: type_of_property  # Original flow
+
+# Change to:
+- id: emergency_check
+  next: when_schedule  # Skip property questions for emergencies
+```
+
+---
+
+## Service-Specific Question Flows
+
+### How Service Branching Works
+
+The `service_questions` node uses a **switch statement** to ask different questions based on the selected service:
+
+```yaml
+- id: service_questions
+  type: switch
+  variable: selected_service  # Branch based on this value
+  cases:
+    "Leak Detection & Repair":
+      type: static
+      prompt: "Where is the leak located?"
+      capture: leak_location
+    "Drain Cleaning":
+      type: static
+      prompt: "Which fixture is clogged?"
+      capture: clogged_fixture
+```
+
+### Adding Questions to an Existing Service
+
+**Example:** Add follow-up questions to "Water Heater Installation/Repair"
+
+**Before:**
+```yaml
+"Water Heater Installation/Repair":
+  type: static
+  prompt: "What size water heater do you currently have?"
+  capture: heater_size
+```
+
+**After (multiple questions using array):**
+```yaml
+"Water Heater Installation/Repair":
+  - type: choice
+    prompt: "What type of water heater do you have?"
+    options: [Tank, Tankless, Heat Pump]
+    capture: heater_type
+  - type: static
+    prompt: "What size water heater do you currently have?"
+    capture: heater_size
+  - type: static
+    prompt: "What is the age of your current water heater?"
+    capture: heater_age
+```
+
+### Adding a New Service Type
+
+**Step 1:** Add the service to the `select_service` node options:
+
+```yaml
+- id: select_service
+  type: choice
+  prompt: "What type of plumbing service do you need?"
+  options:
+    - "Leak Detection & Repair"
+    - "Drain Cleaning"
+    - "Water Heater Installation/Repair"
+    - "Sump Pump Installation"  # ← New service added
+```
+
+**Step 2:** Add the service-specific questions to the `service_questions` switch:
+
+```yaml
+- id: service_questions
+  type: switch
+  variable: selected_service
+  cases:
+    # ... existing services ...
+    
+    "Sump Pump Installation":  # ← New case
+      - type: choice
+        prompt: "Do you have an existing sump pump?"
+        options: [Yes - Replace, No - New Installation]
+        capture: sump_pump_status
+      - type: static
+        prompt: "Where will the sump pump be installed?"
+        capture: sump_pump_location
+```
+
+---
+
+## Testing Your Changes
+
+### Local Testing
+
+1. **Start the development servers:**
+   ```bash
+   ./startup.sh
+   ```
+
+2. **Open the app:**
+   Navigate to `http://localhost:5173`
+
+3. **Sign in and click "Request a Quote"**
+
+4. **Walk through the conversation:**
+   - Verify new questions appear
+   - Test all option branches
+   - Ensure the flow reaches the summary screen
+   - Check that answers are captured correctly
+
+5. **Check the browser console:**
+   Look for any errors or warnings
+
+### Testing Specific Scenarios
+
+**Test Emergency Flow:**
+```yaml
+# Make sure emergency questions appear first
+emergency_check → [select "Yes"] → verify priority handling
+```
+
+**Test Service-Specific Questions:**
+```yaml
+# For each service type:
+select_service → [choose service] → service_questions → verify correct questions
+```
+
+**Test AI Follow-up:**
+```yaml
+# Provide incomplete answers and verify AI asks clarifying questions
+```
+
+### Validation Checklist
+
+- [ ] All questions display correctly
+- [ ] Options are clear and actionable
+- [ ] Flow reaches the summary screen
+- [ ] Summary shows all captured answers
+- [ ] No console errors
+- [ ] Mobile view renders properly
+- [ ] Buttons are clickable and responsive
+
+---
+
+## Common Patterns & Best Practices
+
+### 1. Use Clear, Action-Oriented Prompts
+
+**❌ Bad:**
+```yaml
+prompt: "Property?"
+```
+
+**✅ Good:**
+```yaml
+prompt: "What type of property is this service for?"
+```
+
+### 2. Keep Options Concise
+
+**❌ Bad:**
+```yaml
+options:
+  - "Yes, I own this property and I am authorized to request services"
+  - "No, I do not own this property but I am a tenant or authorized representative"
+```
+
+**✅ Good:**
+```yaml
+options:
+  - "Yes - I own it"
+  - "No - I'm a tenant/renter"
+```
+
+### 3. Use Descriptive Node IDs
+
+**❌ Bad:**
+```yaml
+- id: q1
+- id: step2
+- id: node_a
+```
+
+**✅ Good:**
+```yaml
+- id: emergency_check
+- id: contact_preference
+- id: service_selection
+```
+
+### 4. Capture Data with Meaningful Keys
+
+**❌ Bad:**
+```yaml
+capture: answer1
+capture: response
+capture: data
+```
+
+**✅ Good:**
+```yaml
+capture: is_emergency
+capture: preferred_contact_method
+capture: leak_location
+```
+
+### 5. Progressive Disclosure
+
+Ask the most important questions first:
+1. Emergency status (affects pricing/scheduling)
+2. Service type (determines follow-up questions)
+3. Specific details (tailored to service)
+4. Preferences (timing, contact method)
+
+### 6. Avoid Deep Nesting
+
+**❌ Difficult to maintain:**
+```yaml
+- id: complex_flow
+  type: switch
+  cases:
+    CaseA:
+      type: switch
+      cases:
+        SubCaseA1:
+          type: choice
+          # ... 5 levels deep
+```
+
+**✅ Flattened and clear:**
+```yaml
+- id: step1
+  next: step2
+
+- id: step2
+  next: step3
+```
+
+### 7. Test Edge Cases
+
+Consider:
+- What if the user selects "Other"?
+- What if they skip optional questions?
+- What if they go back and change answers?
+
+---
+
+## Troubleshooting
+
+### Question Not Appearing
+
+**Symptom:** Added a question, but it doesn't show in the UI.
+
+**Possible Causes:**
+
+1. **Incorrect `next:` pointer**
+   ```yaml
+   - id: do_you_own
+     next: contact_preferense  # ← Typo! Should be "contact_preference"
+   ```
+   **Fix:** Ensure the `next:` value matches an existing node `id` exactly.
+
+2. **YAML syntax error**
+   ```yaml
+   - id: contact_preference
+   type: choice  # ← Missing indentation!
+   ```
+   **Fix:** Validate YAML syntax at [yamllint.com](http://www.yamllint.com/)
+
+3. **Node unreachable in flow**
+   - Check that at least one node points to your new node via `next:`
+
+### Options Not Displaying Correctly
+
+**Symptom:** Options appear as `[object Object]` or are missing.
+
+**Cause:** Incorrect YAML array syntax.
+
+**❌ Wrong:**
+```yaml
+options: "Phone Call", "Email", "Text"
+```
+
+**✅ Correct:**
+```yaml
+options:
+  - "Phone Call"
+  - "Email"
+  - "Text"
+```
+
+Or inline:
+```yaml
+options: ["Phone Call", "Email", "Text"]
+```
+
+### Changes Not Reflecting in Production
+
+**Symptom:** Updated YAML locally, but Netlify still shows old questions.
+
+**Solution:**
+
+1. **Check deployment status:**
+   - Go to Netlify dashboard
+   - Verify latest commit deployed successfully
+
+2. **Clear browser cache:**
+   ```bash
+   # Hard refresh
+   Cmd + Shift + R (Mac)
+   Ctrl + Shift + R (Windows/Linux)
+   ```
+
+3. **Check netlify.toml configuration:**
+   Ensure `included_files` contains the YAML:
+   ```toml
+   [functions."quote-agent"]
+     included_files = [
+       "agents/quote-agent.yaml"
+     ]
+   ```
+
+4. **Verify git commit includes YAML:**
+   ```bash
+   git log --name-only -1
+   # Should show: agents/quote-agent.yaml
+   ```
+
+### Conversation Flow Breaks
+
+**Symptom:** Modal freezes, infinite loop, or conversation jumps unexpectedly.
+
+**Debugging Steps:**
+
+1. **Check browser console for errors:**
+   ```
+   [QuoteAgent] Failed to load YAML config
+   ```
+
+2. **Trace the flow manually:**
+   - Start at `emergency_check`
+   - Follow each `next:` pointer
+   - Ensure no circular references (A → B → A)
+
+3. **Validate required fields:**
+   Every node must have:
+   - `id` (unique)
+   - `type`
+   - `prompt` (for user-facing nodes)
+   - `next` (unless it's a terminal node)
+
+### AI Follow-up Not Triggering
+
+**Symptom:** Expecting AI clarification questions, but conversation jumps to summary.
+
+**Check:**
+
+1. **`check_completion` decision logic:**
+   ```yaml
+   - id: check_completion
+     type: decision
+     condition: has_sufficient_info
+     true: review_summary
+     false: ai_followup  # ← Should trigger AI if false
+   ```
+
+2. **AI model configuration:**
+   ```yaml
+   - id: ai_followup
+     type: model
+     model: gpt-4o  # ← Check model is specified
+   ```
+
+---
+
+## Quick Reference: Node Type Examples
+
+### Choice Node (Multiple Choice)
+```yaml
+- id: example_choice
+  type: choice
+  prompt: "Choose one option:"
+  options:
+    - "Option A"
+    - "Option B"
+    - "Option C"
+  capture: user_choice
+  next: next_node_id
+```
+
+### Static Node (Text Input)
+```yaml
+- id: example_static
+  type: static
+  prompt: "Please describe your issue:"
+  capture: problem_description
+  next: next_node_id
+```
+
+### Switch Node (Conditional Branching)
+```yaml
+- id: example_switch
+  type: switch
+  variable: selected_service
+  cases:
+    "Service A":
+      type: static
+      prompt: "Question for Service A"
+      capture: service_a_answer
+    "Service B":
+      type: static
+      prompt: "Question for Service B"
+      capture: service_b_answer
+  next: next_node_id
+```
+
+### Model Node (AI-Generated)
+```yaml
+- id: example_ai
+  type: model
+  model: gpt-4o
+  prompt: >
+    Based on the customer's answers, generate 1-3 clarifying questions.
+    Context: {{ all_previous_answers }}
+  next: review_summary
+```
+
+### Decision Node (Conditional Logic)
+```yaml
+- id: example_decision
+  type: decision
+  condition: has_sufficient_info
+  true: review_summary
+  false: ai_followup
+```
+
+---
+
+## Support & Resources
+
+- **YAML Syntax Validator:** [yamllint.com](http://www.yamllint.com/)
+- **Quote Agent Code:** `packages/backend/netlify/functions/quote-agent.mjs` (self-contained, works locally and on Netlify)
+- **Frontend Component:** `packages/frontend/src/features/requests/components/QuoteAgentModal-ChatKit.tsx`
+- **YAML Configuration:** `agents/quote-agent.yaml`
+
+**Questions?** Check the team documentation or reach out to the development team.
+
+---
+
+## Changelog
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2025-10-11 | Initial documentation | System |
+
+---
+
+**Happy Maintaining! 🛠️**
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/QuoteStateChangesWorkflow.md ---
@@ -11934,7 +12780,7 @@ Your work is now done. Provide this guide and the following technical specificat
       "yaml",
       "openai"
     ]
-    # Include the YAML config file since quoteAgentRunner is imported by requestRoutes
+    # Include the YAML config files for quote and triage agents
     included_files = [
       "agents/quote-agent.yaml",
       "agents/triage-agent.yaml"
@@ -12308,889 +13154,6 @@ sequenceDiagram
     server.js-->>Client: 200 OK (with questions array)
     deactivate server.js
 ```
---- END OF FILE ---
-
---- START OF FILE ./packages/backend/api/agents/quoteAgentRunner.js ---
-
-// packages/backend/api/agents/quoteAgentRunner.js
-// Local runner for QuoteAgent workflow using YAML definition as source of truth.
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import YAML from 'yaml';
-import OpenAI from 'openai';
-
-// Safely get __dirname for both ESM and bundled environments
-let __dirname;
-try {
-  const __filename = fileURLToPath(import.meta.url);
-  __dirname = path.dirname(__filename);
-} catch (error) {
-  // Fallback for bundled/Netlify environment where import.meta.url might not work
-  __dirname = process.cwd();
-  console.log('[QuoteAgentRunner] Using process.cwd() as __dirname:', __dirname);
-}
-
-// Try multiple paths to find the YAML file (works in both local and Netlify environments)
-let YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
-if (!fs.existsSync(YAML_PATH)) {
-  // In Netlify, try from the function root
-  YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
-}
-if (!fs.existsSync(YAML_PATH)) {
-  // Try relative to repository root
-  YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
-}
-if (!fs.existsSync(YAML_PATH)) {
-  // Try from current working directory
-  YAML_PATH = path.resolve(process.cwd(), '../../../../agents/quote-agent.yaml');
-}
-
-let yamlConfig;
-try {
-  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
-  console.log('[QuoteAgentRunner] Successfully loaded YAML config from:', YAML_PATH);
-} catch (error) {
-  console.error('[QuoteAgentRunner] Failed to load YAML config. Tried paths:', {
-    path1: path.resolve(__dirname, '../../../../agents/quote-agent.yaml'),
-    path2: path.resolve(process.cwd(), 'agents/quote-agent.yaml'),
-    path3: path.resolve(__dirname, '../../../../../agents/quote-agent.yaml'),
-    path4: path.resolve(process.cwd(), '../../../../agents/quote-agent.yaml'),
-    cwd: process.cwd(),
-    __dirname
-  });
-  throw new Error(`Failed to load quote-agent.yaml: ${error.message}`);
-}
-
-const openAiClient = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
-const REVIEW_STAGE = 'review_summary';
-
-function normalizeServiceKey(value) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
-
-function extractGenericQuestions() {
-  // Map YAML node IDs to question configurations
-  const nodeMappings = {
-    emergency_check: {
-      key: 'is_emergency',
-      question: 'Is this an emergency request?',
-      options: ['Yes', 'No'],
-    },
-    type_of_property: {
-      key: 'property_type',
-      question: 'What type of property is this service for?',
-      options: ['Residential', 'Apartment', 'Commercial', 'Other'],
-    },
-    do_you_own: {
-      key: 'is_homeowner',
-      question: 'Do you own this property?',
-      options: ['Yes', 'No'],
-    },
-    when_schedule: {
-      key: 'preferred_timing',
-      question: 'When would you like this service to be scheduled?',
-      options: null,
-    },
-  };
-
-  const questions = [];
-
-  // Extract questions from YAML nodes in the correct order
-  Object.keys(nodeMappings).forEach(nodeId => {
-    const node = yamlConfig.nodes.find((item) => item.id === nodeId);
-    if (node) {
-      const mapping = nodeMappings[nodeId];
-      questions.push({
-        key: mapping.key,
-        question: node.prompt || mapping.question,
-        options: node.options || mapping.options,
-      });
-    }
-  });
-
-  return questions;
-}
-
-function extractServicePrompts() {
-  const node = yamlConfig.nodes.find((item) => item.id === 'service_questions');
-  if (!node) return new Map();
-
-  const cases = node.cases ?? {};
-  const result = new Map();
-
-  Object.entries(cases).forEach(([label, caseDefinition]) => {
-    if (!caseDefinition?.prompt) return;
-    const lines = caseDefinition.prompt
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .filter((line) => line.startsWith('- '))
-      .map((line) => line.replace(/^-\s*/, '').trim())
-      .filter((line) => line.length > 0);
-
-    result.set(label, lines);
-  });
-
-  return result;
-}
-
-const GENERIC_QUESTIONS = extractGenericQuestions();
-const SERVICE_PROMPTS = extractServicePrompts();
-const SERVICE_OPTIONS = Array.from(SERVICE_PROMPTS.keys());
-
-function getServiceQuestions(serviceLabel) {
-  return SERVICE_PROMPTS.get(serviceLabel) ?? [];
-}
-
-const sessions = new Map();
-
-function createSession(sessionId, context = {}) {
-  const session = {
-    id: sessionId,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    stage: 'emergency_check', // Start with first YAML node
-    genericIndex: 0,
-    serviceIndex: 0,
-    followUpIndex: 0,
-    followUpQuestions: [],
-    followUpsGenerated: false,
-    answers: [],
-    followUpAnswers: [],
-    selectedServiceLabel: null,
-    selectedServiceKey: null,
-    isEmergency: null,
-    history: [],
-    processedUserMessages: 0,
-    preselectedService: context.preselectedService ?? null,
-    summary: null,
-  };
-
-  sessions.set(sessionId, session);
-
-  addAssistantMessage(
-    session,
-    "Hi there! I'm the AquaFlow quote assistant. I’ll ask a few quick questions so we can prepare your plumbing quote."
-  );
-
-  // Start with the first question from YAML
-  askCurrentGenericQuestion(session);
-
-  return session;
-}
-
-function getSession(sessionId, context = {}) {
-  if (!sessionId) {
-    throw new Error('Session ID is required to run the quote agent.');
-  }
-
-  const existing = sessions.get(sessionId);
-  if (existing) {
-    existing.updatedAt = Date.now();
-    if (context.preselectedService && !existing.selectedServiceLabel) {
-      existing.preselectedService = context.preselectedService;
-    }
-    return existing;
-  }
-  return createSession(sessionId, context);
-}
-
-function addAssistantMessage(session, text, extra = {}) {
-  session.history.push({ role: 'assistant', text, ...extra });
-}
-
-function addUserMessage(session, text) {
-  session.history.push({ role: 'user', text });
-}
-
-
-function askCurrentGenericQuestion(session) {
-  const item = GENERIC_QUESTIONS[session.genericIndex];
-  if (item) {
-    // Use the options from the extracted questions (which come from YAML)
-    if (Array.isArray(item.options) && item.options.length > 0) {
-      addAssistantMessage(session, item.question, {
-        type: 'choice',
-        options: item.options.map((option) => ({
-          label: option,
-          value: option,
-        })),
-      });
-    } else {
-      addAssistantMessage(session, item.question, {
-        type: 'input',
-        inputType: 'text',
-      });
-    }
-  } else {
-    session.stage = 'select_service';
-    sendServiceOptions(session);
-  }
-}
-
-function sendServiceOptions(session) {
-  addAssistantMessage(
-    session,
-    'What type of plumbing service do you need?',
-    {
-      type: 'choice',
-      options: SERVICE_OPTIONS.map((option) => ({
-        label: option,
-        value: option,
-      })),
-    }
-  );
-}
-
-function askNextServiceQuestion(session) {
-  const questions = getServiceQuestions(session.selectedServiceLabel);
-  const question = questions[session.serviceIndex];
-  if (question) {
-    console.log('[QuoteAgentRunner] Asking service question', {
-      service: session.selectedServiceLabel,
-      index: session.serviceIndex,
-      question,
-    });
-    addAssistantMessage(session, question, {
-      type: 'input',
-      inputType: 'text',
-    });
-  }
-}
-
-function askNextFollowUpQuestion(session) {
-  const question = session.followUpQuestions[session.followUpIndex];
-  if (question) {
-    addAssistantMessage(session, question, {
-      type: 'input',
-      inputType: 'text',
-    });
-  }
-}
-
-function recordAnswer(session, question, answer) {
-  session.answers.push({ question, answer });
-}
-
-function slugServiceLabel(label) {
-  return normalizeServiceKey(label);
-}
-
-async function generateFollowUpQuestions(session) {
-  if (!openAiClient) return [];
-
-  try {
-    const lines = session.answers
-      .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
-      .join('\n\n');
-
-    const service = session.selectedServiceLabel ?? 'General plumbing service';
-    const prompt = `You are an expert plumbing quote agent.
-You must determine if more information is required from the customer before submitting their request.
-
-Service category: ${service}
-Answers collected so far:
-${lines}
-
-If more details are needed to prepare an accurate quote, ask up to 3 follow-up questions.
-If everything is clear, return an empty list.
-
-Respond in JSON:
-{ "requiresFollowUp": boolean, "questions": ["question 1", ...] }`;
-
-    const completion = await openAiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'You craft follow-up questions for plumbing quotes.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 250,
-      temperature: 0.2,
-    });
-
-    const content = completion.choices?.[0]?.message?.content;
-    if (!content) return [];
-
-    const parsed = JSON.parse(content);
-    if (parsed?.requiresFollowUp && Array.isArray(parsed.questions)) {
-      return parsed.questions.filter((question) => typeof question === 'string' && question.trim().length > 0);
-    }
-    return [];
-  } catch (error) {
-    console.error('QuoteAgentRunner: Failed to generate follow-up questions', error);
-    return [];
-  }
-}
-
-function buildSummary(session) {
-  const summary = {
-    service: {
-      label: session.selectedServiceLabel,
-      key: session.selectedServiceKey,
-    },
-    emergency: session.isEmergency ?? false,
-    answers: [...session.answers, ...session.followUpAnswers],
-  };
-
-  session.summary = summary;
-  session.stage = REVIEW_STAGE;
-
-  const answerLines = summary.answers
-    .map((item) => `• ${item.question}\n  ${item.answer || 'Not provided'}`)
-    .join('\n');
-
-  addAssistantMessage(
-    session,
-    `Here’s a summary of what I collected:
-- Service: ${summary.service.label ?? 'Not selected'}
-- Emergency: ${summary.emergency ? 'Yes' : 'No'}
-
-Your answers:
-${answerLines}
-
-Let’s review your contact details, service location, and any attachments before we submit the quote.`
-  ,
-    { type: 'summary' }
-  );
-}
-
-async function handleGenericAnswer(session, answer) {
-  const questionItem = GENERIC_QUESTIONS[session.genericIndex];
-  if (questionItem) {
-    recordAnswer(session, questionItem.question, answer);
-
-    // Special handling for emergency question (first question)
-    if (questionItem.key === 'is_emergency') {
-      const normalized = (answer || '').trim().toLowerCase();
-      session.isEmergency = normalized.startsWith('y') || normalized === 'yes';
-    }
-  }
-
-  session.genericIndex += 1;
-
-  if (session.genericIndex < GENERIC_QUESTIONS.length) {
-    askCurrentGenericQuestion(session);
-    return;
-  }
-
-  session.stage = 'select_service';
-
-  if (session.preselectedService) {
-    const matched = SERVICE_OPTIONS.find(
-      (option) => slugServiceLabel(option) === normalizeServiceKey(session.preselectedService)
-    );
-    if (matched) {
-      session.selectedServiceLabel = matched;
-      session.selectedServiceKey = slugServiceLabel(matched);
-      recordAnswer(session, 'Selected service category', matched);
-      session.stage = 'service_questions';
-      askNextServiceQuestion(session);
-      return;
-    }
-  }
-
-  sendServiceOptions(session);
-}
-
-async function handleServiceSelection(session, answer) {
-  if (!answer) {
-    sendServiceOptions(session);
-    return;
-  }
-
-  const normalizedAnswer = answer.toLowerCase();
-  let matched = SERVICE_OPTIONS.find((option) => option.toLowerCase() === normalizedAnswer);
-
-  if (!matched) {
-    matched = SERVICE_OPTIONS.find((option) =>
-      slugServiceLabel(option) === normalizeServiceKey(answer)
-    );
-  }
-
-  if (!matched) {
-    addAssistantMessage(
-      session,
-      "I didn’t quite catch that service type. Please choose one of the listed options (for example, \"Leak Detection & Repair\")."
-    );
-    return;
-  }
-
-  session.selectedServiceLabel = matched;
-  session.selectedServiceKey = slugServiceLabel(matched);
-  recordAnswer(session, 'Selected service category', matched);
-  session.stage = 'service_questions';
-  askNextServiceQuestion(session);
-}
-
-async function handleServiceAnswer(session, answer) {
-  const question = getServiceQuestions(session.selectedServiceLabel)[session.serviceIndex];
-  if (question) {
-    recordAnswer(session, question, answer || 'Not provided');
-  }
-
-  session.serviceIndex += 1;
-
-  const questions = getServiceQuestions(session.selectedServiceLabel);
-  if (session.serviceIndex < questions.length) {
-    askNextServiceQuestion(session);
-    return;
-  }
-
-  if (!session.followUpsGenerated) {
-    session.followUpsGenerated = true;
-    const followUps = await generateFollowUpQuestions(session);
-    if (followUps.length > 0) {
-      session.followUpQuestions = followUps;
-      session.stage = 'ai_followup';
-      session.followUpIndex = 0;
-      askNextFollowUpQuestion(session);
-      return;
-    }
-  }
-
-  buildSummary(session);
-}
-
-async function handleFollowUpAnswer(session, answer) {
-  const question = session.followUpQuestions[session.followUpIndex];
-  if (question) {
-    session.followUpAnswers.push({ question, answer: answer || 'Not provided' });
-  }
-
-  session.followUpIndex += 1;
-
-  if (session.followUpIndex < session.followUpQuestions.length) {
-    askNextFollowUpQuestion(session);
-    return;
-  }
-
-  buildSummary(session);
-}
-
-async function handleUserInput(session, userText) {
-  switch (session.stage) {
-    case 'emergency_check':
-    case 'generic_questions':
-      console.log('[QuoteAgentRunner] Generic answer:', {
-        stage: session.stage,
-        index: session.genericIndex,
-        question: GENERIC_QUESTIONS[session.genericIndex]?.question,
-        answer: userText,
-      });
-      await handleGenericAnswer(session, userText);
-      break;
-    case 'select_service':
-      console.log('[QuoteAgentRunner] Service selection:', userText);
-      await handleServiceSelection(session, userText);
-      break;
-    case 'service_questions':
-      await handleServiceAnswer(session, userText);
-      break;
-    case 'ai_followup':
-      await handleFollowUpAnswer(session, userText);
-      break;
-    case REVIEW_STAGE:
-      addAssistantMessage(session, 'I already have all the details I need. Please review the summary and submit the request when ready.');
-      break;
-    default:
-      addAssistantMessage(session, 'Thanks! I’ll keep your answer noted.');
-      break;
-  }
-}
-
-
-function extractUserMessages(messages = []) {
-  return messages.filter((message) => message?.role === 'user');
-}
-
-export async function runQuoteAgent({ sessionId, messages = [], context = {} }) {
-  console.log('[runQuoteAgent] Called with:', { sessionId, messagesCount: messages.length, context });
-
-  const session = getSession(sessionId, context);
-  console.log('[runQuoteAgent] Session state:', {
-    stage: session.stage,
-    genericIndex: session.genericIndex,
-    processedUserMessages: session.processedUserMessages,
-    historyLength: session.history.length
-  });
-
-  const userMessages = extractUserMessages(messages);
-  console.log('[runQuoteAgent] User messages to process:', userMessages.length);
-
-  while (session.processedUserMessages < userMessages.length) {
-    const message = userMessages[session.processedUserMessages];
-    const content = typeof message.text === 'string'
-      ? message.text
-      : typeof message.content === 'string'
-      ? message.content
-      : Array.isArray(message.content)
-      ? message.content.map((chunk) => chunk?.text || chunk).join(' ')
-      : '';
-
-    console.log('[runQuoteAgent] Processing user message:', {
-      index: session.processedUserMessages,
-      content: content.trim(),
-      hasContent: !!(content && content.trim().length > 0)
-    });
-
-    if (content && content.trim().length > 0) {
-      addUserMessage(session, content.trim());
-      console.log('[runQuoteAgent] Added user message, calling handleUserInput');
-      await handleUserInput(session, content.trim());
-      console.log('[runQuoteAgent] handleUserInput completed');
-    }
-
-    session.processedUserMessages += 1;
-  }
-
-  console.log('[runQuoteAgent] Final session state:', {
-    stage: session.stage,
-    genericIndex: session.genericIndex,
-    processedUserMessages: session.processedUserMessages,
-    historyLength: session.history.length
-  });
-
-  const responseStage = session.stage === REVIEW_STAGE ? REVIEW_STAGE : 'chat';
-
-  console.log('[QuoteAgentRunner] Response stage:', {
-    sessionStage: session.stage,
-    responseStage,
-    lastMessage: session.history[session.history.length - 1],
-  });
-
-  return {
-    messages: session.history.map((item) => ({
-      role: item.role,
-      text: item.text,
-      type: item.type,
-      inputType: item.inputType,
-      options: item.options,
-    })),
-    stage: responseStage,
-    summary: session.stage === REVIEW_STAGE ? session.summary : null,
-    currentNode: session.stage,
-    completedNodes: [],
-  };
-}
-
-export function resetQuoteAgentSession(sessionId) {
-  if (sessionId) {
-    sessions.delete(sessionId);
-  }
-}
-
-export function clearStaleSessions(maxAgeMs = 60 * 60 * 1000) {
-  const cutoff = Date.now() - maxAgeMs;
-  for (const [sessionId, session] of sessions.entries()) {
-    if (session.updatedAt < cutoff) {
-      sessions.delete(sessionId);
-    }
-  }
-}
-
---- END OF FILE ---
-
---- START OF FILE ./packages/backend/api/agents/triageAgentRunner.js ---
-
-// packages/backend/api/agents/triageAgentRunner.js
-// Runner for TriageAgent workflow using YAML definition for intelligent request analysis
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import YAML from 'yaml';
-import OpenAI from 'openai';
-
-// Safely get __dirname for both ESM and bundled environments
-let __dirname;
-try {
-  const __filename = fileURLToPath(import.meta.url);
-  __dirname = path.dirname(__filename);
-} catch (error) {
-  // Fallback for bundled/Netlify environment
-  __dirname = process.cwd();
-  console.log('[TriageAgentRunner] Using process.cwd() as __dirname:', __dirname);
-}
-
-// Try multiple paths to find the YAML file
-let YAML_PATH = path.resolve(__dirname, '../../../../agents/triage-agent.yaml');
-if (!fs.existsSync(YAML_PATH)) {
-  YAML_PATH = path.resolve(process.cwd(), 'agents/triage-agent.yaml');
-}
-if (!fs.existsSync(YAML_PATH)) {
-  YAML_PATH = path.resolve(__dirname, '../../../../../agents/triage-agent.yaml');
-}
-if (!fs.existsSync(YAML_PATH)) {
-  YAML_PATH = path.resolve(process.cwd(), '../../../../agents/triage-agent.yaml');
-}
-
-let yamlConfig;
-try {
-  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
-  console.log('[TriageAgentRunner] Successfully loaded YAML config from:', YAML_PATH);
-} catch (error) {
-  console.error('[TriageAgentRunner] Failed to load YAML config. Tried paths:', {
-    path1: path.resolve(__dirname, '../../../../agents/triage-agent.yaml'),
-    path2: path.resolve(process.cwd(), 'agents/triage-agent.yaml'),
-    path3: path.resolve(__dirname, '../../../../../agents/triage-agent.yaml'),
-    path4: path.resolve(process.cwd(), '../../../../agents/triage-agent.yaml'),
-    cwd: process.cwd(),
-    __dirname
-  });
-  throw new Error(`Failed to load triage-agent.yaml: ${error.message}`);
-}
-
-const openAiClient = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
-/**
- * Calculate job complexity based on service category and details
- */
-function calculateJobComplexity(serviceCategory, problemDescription, locationDetails) {
-  const complexityMap = {
-    'leak_repair': 6,
-    'water_heater': 7,
-    'pipe_installation': 8,
-    'drain_cleaning': 4,
-    'fixture_install': 3,
-    'gas_line_services': 9,
-    'perimeter_drains': 7,
-    'main_line_repair': 9,
-    'emergency_service': 8,
-    'bathroom_reno': 8,
-    'other': 5
-  };
-
-  const baseComplexity = complexityMap[serviceCategory] || 5;
-
-  // Adjust based on location difficulty
-  let locationMultiplier = 1;
-  const location = (locationDetails || '').toLowerCase();
-  if (location.includes('basement') || location.includes('crawlspace')) {
-    locationMultiplier = 1.2;
-  } else if (location.includes('attic') || location.includes('under house')) {
-    locationMultiplier = 1.3;
-  }
-
-  return Math.min(10, Math.round(baseComplexity * locationMultiplier));
-}
-
-/**
- * Assess customer urgency based on emergency flag and timeline
- */
-function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) {
-  if (isEmergency) return 10;
-
-  const urgencyMap = {
-    'today': 9,
-    'tomorrow': 8,
-    'this week': 7,
-    'next week': 5,
-    'asap': 8,
-    'soon': 6,
-    'flexible': 3
-  };
-
-  const timeline = (timelineRequested || '').toLowerCase();
-  const timelineUrgency = urgencyMap[timeline] || 4;
-
-  // Boost urgency for severe problems
-  let severityBoost = 0;
-  const severity = (problemSeverity || '').toLowerCase();
-  if (severity.includes('flooding') || severity.includes('no water') || severity.includes('burst')) {
-    severityBoost = 2;
-  }
-
-  return Math.min(10, timelineUrgency + severityBoost);
-}
-
-/**
- * Format Q&A data for AI analysis
- */
-function formatAnswersForAnalysis(answers) {
-  if (!Array.isArray(answers)) return 'No answers provided';
-  
-  return answers
-    .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
-    .join('\n\n');
-}
-
-/**
- * Run triage analysis on a request
- */
-export async function runTriageAnalysis(requestData) {
-  if (!openAiClient) {
-    throw new Error('OpenAI API key not configured');
-  }
-
-  console.log('[TriageAgentRunner] Starting triage analysis for request:', requestData.id);
-
-  // Extract key information from request
-  const {
-    problem_category,
-    is_emergency,
-    answers,
-    problem_description,
-    service_address,
-    preferred_timing,
-    property_type,
-    additional_notes
-  } = requestData;
-
-  // Calculate preliminary scores using tools
-  const complexityScore = calculateJobComplexity(
-    problem_category,
-    problem_description,
-    additional_notes
-  );
-
-  const urgencyScore = assessCustomerUrgency(
-    is_emergency,
-    preferred_timing,
-    problem_description
-  );
-
-  // Format answers for AI analysis
-  const formattedAnswers = formatAnswersForAnalysis(answers);
-
-  // Find the analyze_request node from YAML config
-  const analyzeNode = yamlConfig.nodes.find(node => node.id === 'analyze_request');
-  if (!analyzeNode) {
-    throw new Error('analyze_request node not found in triage-agent.yaml');
-  }
-
-  // Build the prompt with actual data
-  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment in JSON format.
-
-**Request Details:**
-- Service Category: ${problem_category}
-- Emergency Status: ${is_emergency ? 'YES - EMERGENCY' : 'No'}
-- Property Type: ${property_type || 'Not specified'}
-- Preferred Timing: ${preferred_timing || 'Not specified'}
-- Service Address: ${service_address || 'Not specified'}
-
-**Problem Description:**
-${problem_description || 'Not provided'}
-
-**Customer Answers to Questions:**
-${formattedAnswers}
-
-**Additional Notes:**
-${additional_notes || 'None'}
-
-**Preliminary Scores:**
-- Calculated Complexity: ${complexityScore}/10
-- Calculated Urgency: ${urgencyScore}/10
-
-Based on all this information, provide a JSON response with:
-1. A concise triage summary (2-3 sentences) explaining what the customer needs
-2. Priority score (1-10) considering urgency, complexity, and business impact
-3. Priority explanation (why this score?)
-4. Profitability score (1-10) based on job type, complexity, and potential for additional services
-5. Profitability explanation (why this score?)
-
-Consider:
-- Urgency of the problem
-- Technical complexity of the job
-- Potential for upselling or additional services
-- Customer's timeline and flexibility
-- Emergency status and its impact on scheduling
-- Property type and accessibility challenges
-
-Return your analysis as a JSON object.`;
-
-  try {
-    const response = await openAiClient.chat.completions.create({
-      model: analyzeNode.model || 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: 'Please analyze this plumbing service request and provide the triage assessment.'
-        }
-      ],
-      response_format: { type: 'json_object' },
-      functions: [{
-        name: 'provide_triage_assessment',
-        description: 'Provide a structured triage assessment for a plumbing service request',
-        parameters: {
-          type: 'object',
-          properties: {
-            triage_summary: {
-              type: 'string',
-              description: 'Concise summary of the request (2-3 sentences)'
-            },
-            priority_score: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 10,
-              description: 'Priority score from 1-10'
-            },
-            priority_explanation: {
-              type: 'string',
-              description: 'Explanation of the priority score'
-            },
-            profitability_score: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 10,
-              description: 'Profitability score from 1-10'
-            },
-            profitability_explanation: {
-              type: 'string',
-              description: 'Explanation of the profitability score'
-            }
-          },
-          required: ['triage_summary', 'priority_score', 'priority_explanation', 'profitability_score', 'profitability_explanation']
-        }
-      }],
-      function_call: { name: 'provide_triage_assessment' }
-    });
-
-    const functionCall = response.choices[0]?.message?.function_call;
-    if (!functionCall || !functionCall.arguments) {
-      throw new Error('No function call response from OpenAI');
-    }
-
-    const analysis = JSON.parse(functionCall.arguments);
-
-    console.log('[TriageAgentRunner] Analysis completed:', {
-      priority: analysis.priority_score,
-      profitability: analysis.profitability_score
-    });
-
-    return {
-      triage_summary: analysis.triage_summary,
-      priority_score: analysis.priority_score,
-      priority_explanation: analysis.priority_explanation,
-      profitability_score: analysis.profitability_score,
-      profitability_explanation: analysis.profitability_explanation,
-      complexity_score: complexityScore,
-      urgency_score: urgencyScore
-    };
-
-  } catch (error) {
-    console.error('[TriageAgentRunner] Error during analysis:', error);
-    throw error;
-  }
-}
-
-export default {
-  runTriageAnalysis
-};
-
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/config/supabase/database.js ---
@@ -14163,7 +14126,27 @@ export {
 // packages/backend/api/controllers/triageController.js
 
 import { database as supabase } from '../config/supabase/index.js';
-import { runTriageAnalysis } from '../agents/triageAgentRunner.js';
+
+// Import the Netlify function handler to reuse the logic
+async function runTriageAnalysis(requestData) {
+  // Dynamically import to avoid circular dependencies
+  const { handler } = await import('../../netlify/functions/triage-agent.mjs');
+  
+  // Create a mock Netlify event
+  const event = {
+    httpMethod: 'POST',
+    body: JSON.stringify(requestData)
+  };
+  
+  const result = await handler(event, {});
+  const analysis = JSON.parse(result.body);
+  
+  if (result.statusCode !== 200) {
+    throw new Error(analysis.error || 'Triage analysis failed');
+  }
+  
+  return analysis;
+}
 
 const triageRequest = async (req, res) => {
   const {requestId} = req.params;
@@ -14180,7 +14163,7 @@ const triageRequest = async (req, res) => {
 
     console.log('[TriageController] Running AI triage analysis for request:', requestId);
 
-    // 2. Use the intelligent triage agent runner
+    // 2. Use the intelligent triage agent 
     const analysis = await runTriageAnalysis(request);
 
     // 3. Update the request in the database
@@ -14469,36 +14452,31 @@ export { validate };
 import express from 'express';
 import { submitQuoteRequest } from '../controllers/requestController.js';
 import { updateRequestTriage } from '../controllers/triageController.js';
-import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
 
 const router = express.Router();
 
-// Agent runner endpoint (development/local API usage)
+// Temporary local development proxy - calls Netlify function directly
+// TODO: Remove this when using Netlify Dev for local development
 router.post('/quote/run', async (req, res) => {
   try {
-    const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
-    const context = req.body?.context ?? {};
-    const sessionId = context.sessionId || context.userId || context.conversationId;
-
-    if (!sessionId) {
-      return res.status(400).json({
-        error: 'sessionId is required to run the quote agent.',
-      });
-    }
-
-    const result = await runQuoteAgent({
-      sessionId,
-      messages,
-      context,
-    });
-
-    return res.json(result);
+    // Dynamically import the Netlify function handler
+    const { handler } = await import('../../netlify/functions/quote-agent.mjs');
+    
+    // Transform Express request to Netlify function event format
+    const event = {
+      httpMethod: 'POST',
+      body: JSON.stringify(req.body),
+      headers: req.headers
+    };
+    
+    // Call the handler
+    const result = await handler(event, {});
+    
+    // Send response
+    res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {
-    console.error('Agent quote run error:', error);
-    return res.status(500).json({
-      error: 'Agent execution failed',
-      details: error.message,
-    });
+    console.error('Quote agent proxy error:', error);
+    res.status(500).json({ error: 'Agent execution failed', details: error.message });
   }
 });
 
@@ -14758,7 +14736,6 @@ import {
   markRequestAsViewed,
   cleanupTestData,
 } from '../controllers/requestController.js';
-import { runQuoteAgent } from '../agents/quoteAgentRunner.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validationMiddleware.js';
 import {
@@ -14778,18 +14755,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/gpt-follow-up', authenticate, validate(gptRequestSchema), getGptFollowUp);
 router.post('/submit', authenticate, validate(submitQuoteSchema), submitQuoteRequest);
-
-// --- Agent Routes ---
-router.post('/agents/quote/run', authenticate, async (req, res) => {
-  try {
-    const { sessionId, messages = [], context = {} } = req.body;
-    const result = await runQuoteAgent({ sessionId, messages, context });
-    res.json(result);
-  } catch (error) {
-    console.error('Quote agent error:', error);
-    res.status(500).json({ error: 'Failed to run quote agent' });
-  }
-});
 
 // --- SMS Test Route (moved to root level) ---
 router.post('/attachments', authenticate, upload.array('attachment', 10), uploadAttachment);
@@ -15549,10 +15514,445 @@ export async function handler(event, context) {
 --- START OF FILE ./packages/backend/netlify/functions/quote-agent.mjs ---
 
 // packages/backend/netlify/functions/quote-agent.mjs
-// Netlify function to run QuoteAgent using OpenAI Agents SDK
+// Self-contained YAML-driven quote agent - works locally and on Netlify
 
-import { runQuoteAgent } from "../../api/agents/quoteAgentRunner.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import YAML from 'yaml';
+import OpenAI from 'openai';
 
+// Environment detection
+const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+// Get __dirname for both ESM and bundled environments
+let __dirname;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (error) {
+  __dirname = process.cwd();
+}
+
+// Find YAML file (local vs Netlify paths)
+let YAML_PATH;
+if (isNetlify) {
+  YAML_PATH = path.resolve(process.cwd(), 'agents/quote-agent.yaml');
+} else {
+  YAML_PATH = path.resolve(__dirname, '../../../../agents/quote-agent.yaml');
+}
+
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/quote-agent.yaml');
+}
+
+let yamlConfig;
+try {
+  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+  console.log('[QuoteAgent] Loaded YAML from:', YAML_PATH);
+} catch (error) {
+  console.error('[QuoteAgent] Failed to load YAML:', error.message);
+  throw new Error(`Failed to load quote-agent.yaml: ${error.message}`);
+}
+
+const openAiClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+const REVIEW_STAGE = 'review_summary';
+const START_NODE = 'emergency_check';
+
+// In-memory session storage
+const sessions = new Map();
+
+// Helper functions
+function getNodeById(nodeId) {
+  return yamlConfig.nodes.find((node) => node.id === nodeId);
+}
+
+function normalizeServiceKey(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_$/g, '');
+}
+
+function createSession(sessionId) {
+  const session = {
+    id: sessionId,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    currentNodeId: START_NODE,
+    answers: [],
+    nodeData: {},
+    history: [],
+    processedUserMessages: 0,
+    summary: null,
+  };
+
+  sessions.set(sessionId, session);
+
+  addAssistantMessage(
+    session,
+    "Hi there! I'm the AquaFlow quote assistant. I'll ask a few quick questions so we can prepare your plumbing quote."
+  );
+
+  askCurrentNode(session);
+  return session;
+}
+
+function getSession(sessionId) {
+  if (!sessionId) {
+    throw new Error('Session ID is required.');
+  }
+
+  const existing = sessions.get(sessionId);
+  if (existing) {
+    existing.updatedAt = Date.now();
+    return existing;
+  }
+  return createSession(sessionId);
+}
+
+function addAssistantMessage(session, text, extra = {}) {
+  session.history.push({ role: 'assistant', text, ...extra });
+}
+
+function addUserMessage(session, text) {
+  session.history.push({ role: 'user', text });
+}
+
+function recordAnswer(session, nodeId, question, answer) {
+  const node = getNodeById(nodeId);
+  session.answers.push({
+    nodeId,
+    question,
+    answer,
+    captureKey: node?.capture || nodeId,
+  });
+}
+
+function askCurrentNode(session) {
+  const node = getNodeById(session.currentNodeId);
+
+  if (!node) {
+    console.error('[QuoteAgent] Node not found:', session.currentNodeId);
+    buildSummary(session);
+    return;
+  }
+
+  console.log('[QuoteAgent] Processing node:', node.id, 'type:', node.type);
+
+  switch (node.type) {
+    case 'choice':
+      addAssistantMessage(session, node.prompt, {
+        type: 'choice',
+        options: (node.options || []).map((option) => ({
+          label: option,
+          value: option,
+        })),
+      });
+      break;
+    case 'static':
+      addAssistantMessage(session, node.prompt, {
+        type: 'input',
+        inputType: 'text',
+      });
+      break;
+    case 'switch':
+      handleSwitchNode(session, node);
+      break;
+    default:
+      console.warn('[QuoteAgent] Unknown node type:', node.type);
+      buildSummary(session);
+  }
+}
+
+function handleSwitchNode(session, node) {
+  const variableValue = session.nodeData[node.variable];
+
+  if (!variableValue) {
+    console.error('[QuoteAgent] Switch variable not set:', node.variable);
+    buildSummary(session);
+    return;
+  }
+
+  const caseDefinition = node.cases?.[variableValue];
+
+  if (!caseDefinition) {
+    console.warn('[QuoteAgent] No case found for:', variableValue);
+    buildSummary(session);
+    return;
+  }
+
+  const questions = caseDefinition.prompt
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.replace(/^-\s*/, '').trim())
+    .filter((line) => line.length > 0);
+
+  if (questions.length === 0) {
+    moveToNextNode(session, node);
+    return;
+  }
+
+  const questionsKey = `${node.id}_questions`;
+  const indexKey = `${node.id}_index`;
+
+  if (!session.nodeData[questionsKey]) {
+    session.nodeData[questionsKey] = questions;
+    session.nodeData[indexKey] = 0;
+  }
+
+  const currentIndex = session.nodeData[indexKey];
+  const currentQuestion = questions[currentIndex];
+
+  if (currentQuestion) {
+    addAssistantMessage(session, currentQuestion, {
+      type: 'input',
+      inputType: 'text',
+    });
+  } else {
+    delete session.nodeData[questionsKey];
+    delete session.nodeData[indexKey];
+    moveToNextNode(session, node);
+  }
+}
+
+function moveToNextNode(session, currentNode) {
+  if (currentNode.next) {
+    session.currentNodeId = currentNode.next;
+    askCurrentNode(session);
+  } else {
+    checkForAiFollowUps(session);
+  }
+}
+
+async function checkForAiFollowUps(session) {
+  if (session.nodeData.followUpsGenerated) {
+    buildSummary(session);
+    return;
+  }
+
+  session.nodeData.followUpsGenerated = true;
+  const followUps = await generateFollowUpQuestions(session);
+
+  if (followUps.length > 0) {
+    session.nodeData.followUpQuestions = followUps;
+    session.nodeData.followUpIndex = 0;
+    askNextFollowUpQuestion(session);
+  } else {
+    buildSummary(session);
+  }
+}
+
+function askNextFollowUpQuestion(session) {
+  const questions = session.nodeData.followUpQuestions || [];
+  const index = session.nodeData.followUpIndex || 0;
+  const question = questions[index];
+
+  if (question) {
+    addAssistantMessage(session, question, {
+      type: 'input',
+      inputType: 'text',
+    });
+  } else {
+    buildSummary(session);
+  }
+}
+
+async function generateFollowUpQuestions(session) {
+  if (!openAiClient) return [];
+
+  try {
+    const conversationSummary = session.answers
+      .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
+      .join('\n\n');
+
+    const selectedService = session.nodeData.selected_service || 'General plumbing service';
+
+    const prompt = `You are an expert plumbing quote agent.
+You must determine if more information is required from the customer before submitting their request.
+
+Service category: ${selectedService}
+Answers collected so far:
+${conversationSummary}
+
+If more details are needed to prepare an accurate quote, ask up to 3 follow-up questions.
+If everything is clear, return an empty list.
+
+Respond in JSON:
+{ "requiresFollowUp": boolean, "questions": ["question 1", ...] }`;
+
+    const completion = await openAiClient.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You craft follow-up questions for plumbing quotes.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 250,
+      temperature: 0.2,
+    });
+
+    const content = completion.choices?.[0]?.message?.content;
+    if (!content) return [];
+
+    const parsed = JSON.parse(content);
+    if (parsed?.requiresFollowUp && Array.isArray(parsed.questions)) {
+      return parsed.questions.filter((q) => typeof q === 'string' && q.trim().length > 0);
+    }
+    return [];
+  } catch (error) {
+    console.error('[QuoteAgent] Failed to generate follow-up questions:', error);
+    return [];
+  }
+}
+
+function buildSummary(session) {
+  const emergencyAnswer = session.answers.find((a) => a.captureKey === 'is_emergency');
+  const isEmergency = emergencyAnswer?.answer?.toLowerCase().startsWith('y') || false;
+
+  const selectedService = session.nodeData.selected_service;
+  const selectedServiceKey = selectedService ? normalizeServiceKey(selectedService) : 'other';
+
+  const summary = {
+    service: {
+      label: selectedService || 'Plumbing Service',
+      key: selectedServiceKey,
+    },
+    emergency: isEmergency,
+    answers: session.answers.map((item) => ({
+      question: item.question,
+      answer: item.answer || 'Not provided',
+    })),
+  };
+
+  session.summary = summary;
+  session.currentNodeId = REVIEW_STAGE;
+
+  const answerLines = summary.answers
+    .map((item) => `• ${item.question}\n  ${item.answer}`)
+    .join('\n');
+
+  addAssistantMessage(
+    session,
+    `Here's a summary of what I collected:
+- Service: ${summary.service.label}
+- Emergency: ${summary.emergency ? 'Yes' : 'No'}
+
+Your answers:
+${answerLines}
+
+Let's review your contact details, service location, and any attachments before we submit the quote.`,
+    { type: 'summary' }
+  );
+}
+
+async function handleUserInput(session, userText) {
+  const currentNode = getNodeById(session.currentNodeId);
+
+  if (!currentNode) {
+    const followUpQuestions = session.nodeData.followUpQuestions || [];
+    const followUpIndex = session.nodeData.followUpIndex || 0;
+
+    if (followUpIndex < followUpQuestions.length) {
+      const question = followUpQuestions[followUpIndex];
+      recordAnswer(session, 'ai_followup', question, userText);
+      session.nodeData.followUpIndex = followUpIndex + 1;
+      askNextFollowUpQuestion(session);
+      return;
+    }
+
+    if (session.currentNodeId === REVIEW_STAGE) {
+      addAssistantMessage(
+        session,
+        'I already have all the details I need. Please review the summary and submit the request when ready.'
+      );
+    }
+    return;
+  }
+
+  switch (currentNode.type) {
+    case 'choice':
+    case 'static':
+      recordAnswer(session, currentNode.id, currentNode.prompt, userText);
+
+      if (currentNode.capture) {
+        session.nodeData[currentNode.capture] = userText;
+      }
+
+      moveToNextNode(session, currentNode);
+      break;
+
+    case 'switch':
+      const questionsKey = `${currentNode.id}_questions`;
+      const indexKey = `${currentNode.id}_index`;
+      const questions = session.nodeData[questionsKey] || [];
+      const currentIndex = session.nodeData[indexKey] || 0;
+      const currentQuestion = questions[currentIndex];
+
+      if (currentQuestion) {
+        recordAnswer(session, currentNode.id, currentQuestion, userText);
+        session.nodeData[indexKey] = currentIndex + 1;
+        handleSwitchNode(session, currentNode);
+      }
+      break;
+
+    default:
+      console.warn('[QuoteAgent] Unhandled node type:', currentNode.type);
+      buildSummary(session);
+  }
+}
+
+function extractUserMessages(messages = []) {
+  return messages.filter((message) => message?.role === 'user');
+}
+
+async function runQuoteAgent({ sessionId, messages = [] }) {
+  console.log('[QuoteAgent] Called with:', { sessionId, messagesCount: messages.length });
+
+  const session = getSession(sessionId);
+  const userMessages = extractUserMessages(messages);
+
+  while (session.processedUserMessages < userMessages.length) {
+    const message = userMessages[session.processedUserMessages];
+    const content =
+      typeof message.text === 'string'
+        ? message.text
+        : typeof message.content === 'string'
+        ? message.content
+        : Array.isArray(message.content)
+        ? message.content.map((chunk) => chunk?.text || chunk).join(' ')
+        : '';
+
+    if (content && content.trim().length > 0) {
+      addUserMessage(session, content.trim());
+      await handleUserInput(session, content.trim());
+    }
+
+    session.processedUserMessages += 1;
+  }
+
+  const responseStage = session.currentNodeId === REVIEW_STAGE ? REVIEW_STAGE : 'chat';
+
+  return {
+    messages: session.history.map((item) => ({
+      role: item.role,
+      text: item.text,
+      type: item.type,
+      inputType: item.inputType,
+      options: item.options,
+    })),
+    stage: responseStage,
+    summary: session.currentNodeId === REVIEW_STAGE ? session.summary : null,
+    currentNode: session.currentNodeId,
+    completedNodes: [],
+  };
+}
+
+// Netlify function handler
 export async function handler(event, context) {
   try {
     // Handle CORS preflight
@@ -15591,7 +15991,6 @@ export async function handler(event, context) {
     const result = await runQuoteAgent({
       sessionId,
       messages: messages || [],
-      context: agentContext || {},
     });
 
     return {
@@ -15602,13 +16001,11 @@ export async function handler(event, context) {
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type'
       },
-      body: JSON.stringify({
-        ...result
-      })
+      body: JSON.stringify(result)
     };
 
   } catch (error) {
-    console.error('QuoteAgent function error:', error);
+    console.error('[QuoteAgent] Function error:', error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -15678,10 +16075,287 @@ export async function handler(event) {
 --- START OF FILE ./packages/backend/netlify/functions/triage-agent.mjs ---
 
 // packages/backend/netlify/functions/triage-agent.mjs
-// Serverless function for AI-powered triage analysis
+// Self-contained YAML-driven triage agent - works locally and on Netlify
 
-import { runTriageAnalysis } from '../../api/agents/triageAgentRunner.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import YAML from 'yaml';
+import OpenAI from 'openai';
 
+// Environment detection
+const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+// Get __dirname for both ESM and bundled environments
+let __dirname;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (error) {
+  __dirname = process.cwd();
+}
+
+// Find YAML file (local vs Netlify paths)
+let YAML_PATH;
+if (isNetlify) {
+  YAML_PATH = path.resolve(process.cwd(), 'agents/triage-agent.yaml');
+} else {
+  YAML_PATH = path.resolve(__dirname, '../../../../agents/triage-agent.yaml');
+}
+
+if (!fs.existsSync(YAML_PATH)) {
+  YAML_PATH = path.resolve(__dirname, '../../../../../agents/triage-agent.yaml');
+}
+
+let yamlConfig;
+try {
+  yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
+  console.log('[TriageAgent] Loaded YAML from:', YAML_PATH);
+} catch (error) {
+  console.error('[TriageAgent] Failed to load YAML:', error.message);
+  throw new Error(`Failed to load triage-agent.yaml: ${error.message}`);
+}
+
+const openAiClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+/**
+ * Calculate job complexity based on service category and details
+ */
+function calculateJobComplexity(serviceCategory, problemDescription, locationDetails) {
+  const complexityMap = {
+    'leak_repair': 6,
+    'water_heater': 7,
+    'pipe_installation': 8,
+    'drain_cleaning': 4,
+    'fixture_install': 3,
+    'gas_line_services': 9,
+    'perimeter_drains': 7,
+    'main_line_repair': 9,
+    'emergency_service': 8,
+    'bathroom_reno': 8,
+    'other': 5
+  };
+
+  const baseComplexity = complexityMap[serviceCategory] || 5;
+
+  // Adjust based on location difficulty
+  let locationMultiplier = 1;
+  const location = (locationDetails || '').toLowerCase();
+  if (location.includes('basement') || location.includes('crawlspace')) {
+    locationMultiplier = 1.2;
+  } else if (location.includes('attic') || location.includes('under house')) {
+    locationMultiplier = 1.3;
+  }
+
+  return Math.min(10, Math.round(baseComplexity * locationMultiplier));
+}
+
+/**
+ * Assess customer urgency based on emergency flag and timeline
+ */
+function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) {
+  if (isEmergency) return 10;
+
+  const urgencyMap = {
+    'today': 9,
+    'tomorrow': 8,
+    'this week': 7,
+    'next week': 5,
+    'asap': 8,
+    'soon': 6,
+    'flexible': 3
+  };
+
+  const timeline = (timelineRequested || '').toLowerCase();
+  const timelineUrgency = urgencyMap[timeline] || 4;
+
+  // Boost urgency for severe problems
+  let severityBoost = 0;
+  const severity = (problemSeverity || '').toLowerCase();
+  if (severity.includes('flooding') || severity.includes('no water') || severity.includes('burst')) {
+    severityBoost = 2;
+  }
+
+  return Math.min(10, timelineUrgency + severityBoost);
+}
+
+/**
+ * Format Q&A data for AI analysis
+ */
+function formatAnswersForAnalysis(answers) {
+  if (!Array.isArray(answers)) return 'No answers provided';
+  
+  return answers
+    .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
+    .join('\n\n');
+}
+
+/**
+ * Run triage analysis on a request
+ */
+async function runTriageAnalysis(requestData) {
+  if (!openAiClient) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  console.log('[TriageAgent] Starting triage analysis for request:', requestData.id);
+
+  // Extract key information from request
+  const {
+    problem_category,
+    is_emergency,
+    answers,
+    problem_description,
+    service_address,
+    preferred_timing,
+    property_type,
+    additional_notes
+  } = requestData;
+
+  // Calculate preliminary scores using tools
+  const complexityScore = calculateJobComplexity(
+    problem_category,
+    problem_description,
+    additional_notes
+  );
+
+  const urgencyScore = assessCustomerUrgency(
+    is_emergency,
+    preferred_timing,
+    problem_description
+  );
+
+  // Format answers for AI analysis
+  const formattedAnswers = formatAnswersForAnalysis(answers);
+
+  // Find the analyze_request node from YAML config
+  const analyzeNode = yamlConfig.nodes.find(node => node.id === 'analyze_request');
+  if (!analyzeNode) {
+    throw new Error('analyze_request node not found in triage-agent.yaml');
+  }
+
+  // Build the prompt with actual data
+  const systemPrompt = `You are an expert plumbing business analyst. Analyze this customer request and provide a detailed triage assessment in JSON format.
+
+**Request Details:**
+- Service Category: ${problem_category}
+- Emergency Status: ${is_emergency ? 'YES - EMERGENCY' : 'No'}
+- Property Type: ${property_type || 'Not specified'}
+- Preferred Timing: ${preferred_timing || 'Not specified'}
+- Service Address: ${service_address || 'Not specified'}
+
+**Problem Description:**
+${problem_description || 'Not provided'}
+
+**Customer Answers to Questions:**
+${formattedAnswers}
+
+**Additional Notes:**
+${additional_notes || 'None'}
+
+**Preliminary Scores:**
+- Calculated Complexity: ${complexityScore}/10
+- Calculated Urgency: ${urgencyScore}/10
+
+Based on all this information, provide a JSON response with:
+1. A concise triage summary (2-3 sentences) explaining what the customer needs
+2. Priority score (1-10) considering urgency, complexity, and business impact
+3. Priority explanation (why this score?)
+4. Profitability score (1-10) based on job type, complexity, and potential for additional services
+5. Profitability explanation (why this score?)
+
+Consider:
+- Urgency of the problem
+- Technical complexity of the job
+- Potential for upselling or additional services
+- Customer's timeline and flexibility
+- Emergency status and its impact on scheduling
+- Property type and accessibility challenges
+
+Return your analysis as a JSON object.`;
+
+  try {
+    const response = await openAiClient.chat.completions.create({
+      model: analyzeNode.model || 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: 'Please analyze this plumbing service request and provide the triage assessment.'
+        }
+      ],
+      response_format: { type: 'json_object' },
+      functions: [{
+        name: 'provide_triage_assessment',
+        description: 'Provide a structured triage assessment for a plumbing service request',
+        parameters: {
+          type: 'object',
+          properties: {
+            triage_summary: {
+              type: 'string',
+              description: 'Concise summary of the request (2-3 sentences)'
+            },
+            priority_score: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 10,
+              description: 'Priority score from 1-10'
+            },
+            priority_explanation: {
+              type: 'string',
+              description: 'Explanation of the priority score'
+            },
+            profitability_score: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 10,
+              description: 'Profitability score from 1-10'
+            },
+            profitability_explanation: {
+              type: 'string',
+              description: 'Explanation of the profitability score'
+            }
+          },
+          required: ['triage_summary', 'priority_score', 'priority_explanation', 'profitability_score', 'profitability_explanation']
+        }
+      }],
+      function_call: { name: 'provide_triage_assessment' }
+    });
+
+    const functionCall = response.choices[0]?.message?.function_call;
+    if (!functionCall || !functionCall.arguments) {
+      throw new Error('No function call response from OpenAI');
+    }
+
+    const analysis = JSON.parse(functionCall.arguments);
+
+    console.log('[TriageAgent] Analysis completed:', {
+      priority: analysis.priority_score,
+      profitability: analysis.profitability_score
+    });
+
+    return {
+      triage_summary: analysis.triage_summary,
+      priority_score: analysis.priority_score,
+      priority_explanation: analysis.priority_explanation,
+      profitability_score: analysis.profitability_score,
+      profitability_explanation: analysis.profitability_explanation,
+      complexity_score: complexityScore,
+      urgency_score: urgencyScore
+    };
+
+  } catch (error) {
+    console.error('[TriageAgent] Error during analysis:', error);
+    throw error;
+  }
+}
+
+// Netlify function handler
 export async function handler(event, context) {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -15708,7 +16382,7 @@ export async function handler(event, context) {
   try {
     const requestData = JSON.parse(event.body);
     
-    console.log('[TriageFunction] Received triage request for:', requestData.id);
+    console.log('[TriageAgent] Received triage request for:', requestData.id);
 
     // Run the AI analysis
     const analysis = await runTriageAnalysis(requestData);
@@ -15723,7 +16397,7 @@ export async function handler(event, context) {
     };
 
   } catch (error) {
-    console.error('[TriageFunction] Error:', error);
+    console.error('[TriageAgent] Error:', error);
     
     return {
       statusCode: 500,
@@ -19093,6 +19767,7 @@ const isLocalHost =
     window.location.hostname === "127.0.0.1" ||
     window.location.hostname === "::1");
 
+// Local dev: Express proxy route, Production: Netlify function
 const AGENT_ENDPOINT = isLocalHost
   ? "/api/agents/quote/run"
   : "/.netlify/functions/quote-agent";
