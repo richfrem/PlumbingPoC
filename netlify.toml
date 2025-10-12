@@ -37,7 +37,13 @@
       "serverless-http",
       "dotenv",
       "supabase",
-      "@supabase/supabase-js"
+      "@supabase/supabase-js",
+      "yaml",
+      "openai"
+    ]
+    # Include the YAML config file since quoteAgentRunner is imported by requestRoutes
+    included_files = [
+      "agents/quote-agent.yaml"
     ]
 
   # Configuration for the SMS function
