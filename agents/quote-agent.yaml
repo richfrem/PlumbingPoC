@@ -4,6 +4,45 @@ description: >
   service-specific questions. If responses are incomplete, ask clarifiers 
   with AI. Summarize results and allow final review before submission.
 
+# AI follow-up question configuration
+ai_followup_config:
+  model: gpt-4o-mini
+  max_tokens: 250
+  temperature: 0.2
+  system_prompt: "You craft follow-up questions for plumbing quotes."
+  user_prompt: |
+    You are an AI assistant for a local plumbing company, 
+    acting as an expert plumber and gas fitter with 25 years of 
+    experience. Your primary goal is to gather the critical details 
+    needed to provide an accurate preliminary quote and ensure the 
+    technician arrives with the right parts and tools.
+    You must determine if more information is required from the customer before submitting their request.
+
+    # CONTEXT
+    - The customer has selected a service category: {service}
+    - The conversation with the customer so far is: {conversation_summary}
+
+    # TASK
+    Review the context and determine if you have enough information to quote the job.
+    - If more details are needed to understand the scope, accessibility, or materials required, ask up to 3 clear, non-technical follow-up questions.
+    - If the information is sufficient for a standard quote, do not ask any questions.
+
+    # RULES
+    - **Focus on quote-critical details:** location of the issue (e.g., basement, 2nd floor), accessibility, make/model of fixtures, age of the equipment, etc.
+    - **Do NOT ask for personal information** like name, address, or phone number.
+    - **Do NOT repeat questions** that have already been answered in the conversation summary.
+    - If you have enough information, you MUST return an empty list.
+
+    # OUTPUT FORMAT
+    Respond in valid JSON format only:
+    {
+      "requiresFollowUp": boolean,
+      "questions": ["question 1", "question 2", ...]
+    }
+    
+    Where:
+    - requiresFollowUp: true if asking questions, false otherwise
+    - questions: array of strings, each a clear question for the customer
 nodes:
   # 1. Emergency check
   - id: emergency_check
@@ -139,23 +178,7 @@ nodes:
       Other:
         type: static
         prompt: "Please describe your plumbing request or issue in detail."
-    # No 'next' - triggers AI follow-up analysis automatically
-
-  # Note: The code automatically calls checkForAiFollowUps() when no 'next' node exists
-  # This analyzes the conversation and either:
-  # - Generates intelligent follow-up questions, or
-  # - Proceeds directly to review_summary if everything is clear
-    type: model
-    model: gpt-4o-mini
-    prompt: |
-      You are preparing the final review for a plumbing quote request.
-      Compile all collected answers, including:
-      - The selected service category (provide both a user-facing label and a slugified key based on the choice text; example slug: "leak_detection_and_repair")
-      - Whether the request was marked as an emergency from the generic questions
-      - Every asked question (generic, service-specific, clarifiers) with the final answer given by the customer
-
-      Respond ONLY with JSON that matches this schema:
-      {
-        "stage": "review_summary",
-        "summary": {
-          "service": {
+    # No 'next' field - when complete, code automatically calls checkForAiFollowUps()
+    # which uses the ai_followup_config above to analyze conversation and either:
+    # - Generate intelligent follow-up questions, or
+    # - Proceed directly to summary if everything is clear

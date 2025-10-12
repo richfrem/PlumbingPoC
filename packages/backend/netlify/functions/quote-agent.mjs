@@ -251,34 +251,34 @@ function askNextFollowUpQuestion(session) {
 async function generateFollowUpQuestions(session) {
   if (!openAiClient) return [];
 
+  const config = yamlConfig.ai_followup_config;
+  if (!config) {
+    console.warn('[QuoteAgent] No ai_followup_config found in YAML');
+    return [];
+  }
+
   try {
+    // Build conversation summary
     const conversationSummary = session.answers
       .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
       .join('\n\n');
 
     const selectedService = session.nodeData.selected_service || 'General plumbing service';
 
-    const prompt = `You are an expert plumbing quote agent.
-You must determine if more information is required from the customer before submitting their request.
+    // Replace placeholders in prompt from YAML config
+    const prompt = config.user_prompt
+      .replace('{service}', selectedService)
+      .replace('{conversation_summary}', conversationSummary);
 
-Service category: ${selectedService}
-Answers collected so far:
-${conversationSummary}
-
-If more details are needed to prepare an accurate quote, ask up to 3 follow-up questions.
-If everything is clear, return an empty list.
-
-Respond in JSON:
-{ "requiresFollowUp": boolean, "questions": ["question 1", ...] }`;
-
+    // Use YAML config for API call
     const completion = await openAiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: config.model || 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You craft follow-up questions for plumbing quotes.' },
+        { role: 'system', content: config.system_prompt || 'You craft follow-up questions for plumbing quotes.' },
         { role: 'user', content: prompt },
       ],
-      max_tokens: 250,
-      temperature: 0.2,
+      max_tokens: config.max_tokens || 250,
+      temperature: config.temperature ?? 0.2,
     });
 
     const content = completion.choices?.[0]?.message?.content;
