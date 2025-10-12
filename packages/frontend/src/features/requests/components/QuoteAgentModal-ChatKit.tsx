@@ -22,7 +22,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Send, X as CloseIcon } from "lucide-react";
+import { 
+  Send, 
+  X as CloseIcon, 
+  Wrench, 
+  AlertCircle, 
+  Home, 
+  Calendar, 
+  ClipboardList,
+  MessageCircle,
+  User
+} from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import ServiceLocationManager from "./ServiceLocationManager";
 import AttachmentSection from "./AttachmentSection";
@@ -100,6 +110,27 @@ const sanitizeText = (value: unknown): string => {
     return sanitizeText((value as any).text);
   }
   return JSON.stringify(value);
+};
+
+// Helper function to determine contextual icon based on message content
+const getContextualIcon = (text: string) => {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('emergency')) {
+    return <AlertCircle size={18} style={{ color: '#dc2626' }} />;
+  }
+  if (lowerText.includes('property') || lowerText.includes('home')) {
+    return <Home size={18} style={{ color: '#3182CE' }} />;
+  }
+  if (lowerText.includes('when') || lowerText.includes('date') || lowerText.includes('time')) {
+    return <Calendar size={18} style={{ color: '#3182CE' }} />;
+  }
+  if (lowerText.includes('review') || lowerText.includes('confirm') || lowerText.includes('summary')) {
+    return <ClipboardList size={18} style={{ color: '#3182CE' }} />;
+  }
+  
+  // Default wrench icon for service-related questions
+  return <Wrench size={18} style={{ color: '#3182CE' }} />;
 };
 
 const resolveServiceKey = (summaryService?: SummaryPayload["service"]) => {
@@ -788,56 +819,57 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: isUser ? 'flex-end' : 'flex-start',
-                  marginBottom: '8px',
+                  marginBottom: '12px',
                 }}
               >
                 {!isUser && (
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '50%',
-                      background: '#f0f0f0',
+                      background: '#E0F0FF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginRight: '8px',
+                      marginRight: '10px',
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: '16px' }}>🔧</span>
+                    {getContextualIcon(promptText)}
                   </div>
                 )}
                 <div
                   style={{
                     maxWidth: '75%',
-                    background: isUser ? '#1976d2' : '#f9f9f9',
-                    color: isUser ? 'white' : '#333',
+                    background: isUser ? '#2563EB' : '#F8F9FA',
+                    color: isUser ? 'white' : '#1F2937',
                     padding: '12px 16px',
-                    borderRadius: '18px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    borderRadius: '16px',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                     whiteSpace: 'pre-wrap',
+                    lineHeight: '1.5',
                   }}
                 >
-                  <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
+                  <div style={{ fontSize: '14px' }}>
                     {promptText}
                   </div>
                 </div>
                 {isUser && (
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '50%',
-                      background: '#e3f2fd',
+                      background: '#2563EB',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginLeft: '8px',
+                      marginLeft: '10px',
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: '16px' }}>👤</span>
+                    <User size={18} style={{ color: 'white' }} />
                   </div>
                 )}
               </div>
@@ -849,7 +881,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: 1,
-                    marginLeft: '40px',
+                    marginLeft: '46px',
                     marginRight: 'auto',
                     maxWidth: '400px',
                     mt: 1
@@ -879,23 +911,31 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           console.log('[ChatPanel] Called onSendMessage');
                         }}
                         sx={{
-                          borderRadius: '20px',
+                          borderRadius: '24px',
                           textTransform: 'none',
-                          px: 2,
-                          py: 0.75,
+                          px: 2.5,
+                          py: 1,
                           fontSize: '0.9rem',
                           fontWeight: 500,
-                          border: '2px solid',
-                          borderColor: 'primary.main',
-                          color: 'primary.main',
+                          border: '1.5px solid',
+                          borderColor: '#3182CE',
+                          color: '#3182CE',
                           bgcolor: 'white',
-                          transition: 'all 0.2s ease',
+                          transition: 'all 0.2s ease-in-out',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                           '&:hover': {
-                            bgcolor: 'primary.main',
-                            color: 'white',
-                            borderColor: 'primary.main',
+                            bgcolor: '#E0F0FF',
+                            borderColor: '#2563EB',
+                            color: '#2563EB',
                             transform: 'translateY(-1px)',
-                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)'
+                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)'
+                          },
+                          '&:active': {
+                            bgcolor: '#2563EB',
+                            color: 'white',
+                            borderColor: '#2563EB',
+                            transform: 'translateY(0)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
                           }
                         }}
                         tabIndex={0}
@@ -915,13 +955,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              color: '#666',
-              padding: '8px 0',
+              gap: '10px',
+              marginBottom: '12px',
             }}
           >
-            <CircularProgress size={16} />
-            <span style={{ fontSize: '14px' }}>Assistant is typing…</span>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: '#E0F0FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <MessageCircle size={18} style={{ color: '#3182CE' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <CircularProgress size={16} sx={{ color: '#3182CE' }} />
+              <span style={{ fontSize: '14px', color: '#6B7280' }}>Assistant is typing…</span>
+            </div>
           </div>
         )}
         <div ref={scrollAnchorRef} />
@@ -1032,7 +1087,8 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
         flexDirection: "column",
         gap: 2,
         overflowY: "auto",
-        pr: 1,
+        p: 3,
+        pt: 2,
       }}
     >
       <Box sx={{ textAlign: "center", mb: 1 }}>
