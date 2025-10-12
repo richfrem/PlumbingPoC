@@ -139,26 +139,12 @@ nodes:
       Other:
         type: static
         prompt: "Please describe your plumbing request or issue in detail."
-    next: check_completion
+    # No 'next' - triggers AI follow-up analysis automatically
 
-  # 7. Check completion
-  - id: check_completion
-    type: decision
-    condition: "{{ all_required_questions_answered }}"
-    true: review_summary
-    false: ai_followup
-
-  # 8. AI clarifiers
-  - id: ai_followup
-    type: model
-    model: gpt-4o-mini
-    prompt: >
-      Review the answers provided so far. Ask only the clarifying questions 
-      needed to complete the quote request. Be concise.
-    next: review_summary
-
-  # 9. Summary / review
-  - id: review_summary
+  # Note: The code automatically calls checkForAiFollowUps() when no 'next' node exists
+  # This analyzes the conversation and either:
+  # - Generates intelligent follow-up questions, or
+  # - Proceeds directly to review_summary if everything is clear
     type: model
     model: gpt-4o-mini
     prompt: |
