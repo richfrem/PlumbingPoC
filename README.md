@@ -1,19 +1,22 @@
 # PlumbingPOC: AI-Powered Client Management & Quoting Platform
 
-**PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation, and extends into a full client portal for managing the entire job lifecycle.
+**PlumbingPOC** is an end-to-end, fullstack client management and quoting platform built for local trades businesses. It transforms the initial point of contact from a simple form into an intelligent, AI-driven conversation powered by **OpenAI's Agent Toolkit**, and extends into a full client portal for managing the entire job lifecycle.
 
-Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients in real-time. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI and Supabase for its core functionality.
+Beyond intelligent lead qualification, it provides a secure command center for business owners to manage job statuses, create quotes, and communicate directly with clients in real-time. The platform features a responsive Vite + React frontend, a scalable MVC-patterned Node.js/Express backend, and deep integrations with OpenAI's Agents API and Supabase for its core functionality.
 
 ## Features
 
--   **Modern Frontend:** A fully responsive web app built with Vite, React (TypeScript/TSX), and Tailwind CSS, architected with a professional, feature-based structure.
--   **Intelligent Quoting Agent:** A guided, conversational modal that uses expert logic and dynamic, AI-generated questions to ensure every lead is perfectly qualified.
+-   **Modern Frontend:** A fully responsive web app built with Vite, React (TypeScript/TSX), Material-UI, and custom styled components, architected with a professional, feature-based structure.
+-   **YAML-Driven AI Agents:** Configurable, intelligent agents defined in YAML files for quote intake and request triage, powered by OpenAI's function calling and structured outputs.
+-   **Intelligent Quote Agent:** A guided, conversational modal that dynamically generates contextual questions based on customer responses, ensuring perfect lead qualification with minimal friction.
+-   **AI-Powered Triage Agent:** Analyzes all customer Q&A data, problem descriptions, and service details to provide priority scores, profitability assessments, and business intelligence for incoming requests.
 -   **Scalable MVC Backend:** A robust Express/Node API architected for maintainability, featuring separate layers for routing, controllers, middleware, and validation.
+-   **Serverless Agent Functions:** Netlify Functions for quote-agent and triage-agent provide scalable, stateless execution of AI workflows.
 -   **Secure Database & Auth:** Full integration with Supabase for user profiles, requests, quotes, notes, file storage, and secure authentication (Email/Password, Google, and Azure/Microsoft).
 -   **Comprehensive Admin Dashboard:** A "Command Center" for business owners to view, manage, and act on all incoming quote requests in a professional, interactive UI.
 -   **Interactive Job Management:** Update the status of any job (`new`, `quoted`, `scheduled`, `completed`) directly from the dashboard.
 -   **Real-time Communication Log:** A live chat interface allowing admins and customers to communicate directly within a job's context, with messages appearing instantly for both parties.
--   **AI-Powered Triage:** With one click, admins can generate an AI summary, priority score, and profitability analysis for any new request, enabling them to focus on the most valuable jobs first.
+-   **Contextual UX Design:** Chat interfaces with contextual icons (emergency alerts, property, calendar, etc.) and smooth interactive button states for enhanced user experience.
 
 ## Project Structure
 
@@ -21,6 +24,9 @@ The repository follows a modern monorepo architecture with separate packages for
 
 ```
 .
+├── agents/               # YAML-driven AI agent definitions
+│   ├── quote-agent.yaml  # Conversational quote intake workflow
+│   └── triage-agent.yaml # Intelligent request analysis workflow
 ├── packages/
 │   ├── frontend/         # React/Vite application
 │   │   ├── src/          # React components and logic (TSX)
@@ -28,6 +34,10 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   │   │   ├── auth/
 │   │   │   │   ├── profile/
 │   │   │   │   └── requests/ # Components, hooks, and types co-located
+│   │   │   │       ├── components/
+│   │   │   │       │   ├── QuoteAgentModal-ChatKit.tsx # Agent-driven UI
+│   │   │   │       │   ├── RequestDetailModal.tsx      # Admin job management
+│   │   │   │       │   └── AITriageSummary.tsx         # Triage display
 │   │   │   └── lib/      # Shared libraries (Supabase client, API client)
 │   │   ├── public/       # Static assets (images, etc.)
 │   │   ├── index.html    # Main HTML template
@@ -35,17 +45,28 @@ The repository follows a modern monorepo architecture with separate packages for
 │   │   └── package.json  # Frontend dependencies
 │   └── backend/          # Node.js/Express API
 │       ├── api/          # Express server and routes
+│       │   ├── agents/   # AI agent runners
+│       │   │   ├── quoteAgentRunner.js  # Quote agent logic
+│       │   │   └── triageAgentRunner.js # Triage agent logic
 │       │   ├── controllers/
 │       │   ├── middleware/
 │       │   ├── routes/
 │       │   ├── services/
 │       │   └── server.js
 │       ├── netlify/
-│       │   └── functions/ # Serverless functions
+│       │   └── functions/ # Serverless agent functions
+│       │       ├── api.mjs           # Main API wrapper
+│       │       ├── quote-agent.mjs   # Quote agent endpoint
+│       │       ├── triage-agent.mjs  # Triage agent endpoint
+│       │       └── send-sms.mjs      # SMS notifications
 │       └── package.json  # Backend dependencies
-├── PROMPTS/              # Prompt engineering & agent logic
+├── PROMPTS/              # Prompt engineering & agent logic documentation
 ├── supabase/
 │   └── SUPABASE_DATABASE_AND_AUTH_SETUP.md # Full setup guide
+├── docs/
+│   └── NETLIFY_DEPLOYMENT.md         # Deployment guide
+│   └── NETLIFY_TROUBLESHOOTING.md    # Common deployment issues
+├── netlify.toml          # Netlify configuration with function settings
 ├── package.json          # Root workspace configuration
 └── ...
 ```
@@ -112,56 +133,138 @@ This script will start both services in the background and provide you with the 
 
 ---
 
+## AI Agent Architecture
+
+PlumbingPOC leverages **YAML-driven AI agents** powered by OpenAI's function calling and structured outputs to create intelligent, conversational workflows.
+
+### Agent Design Pattern
+
+Each agent follows a consistent pattern:
+
+1. **YAML Configuration** (`agents/*.yaml`) - Defines the workflow nodes, prompts, tools, and guardrails
+2. **Agent Runner** (`packages/backend/api/agents/*Runner.js`) - Implements the business logic and OpenAI integration
+3. **Netlify Function** (`packages/backend/netlify/functions/*.mjs`) - Provides serverless execution endpoint
+4. **Frontend Integration** - React components consume the agent via API calls
+
+### Quote Agent (`quote-agent.yaml`)
+
+**Purpose:** Conversational quote intake with dynamic question generation
+
+**Key Features:**
+- Multi-node workflow (emergency_check → service_selection → dynamic_questions → review_summary)
+- Context-aware question generation based on service type and previous answers
+- Structured output validation ensuring complete data collection
+- Session management for stateful conversations
+- Automatic summary generation for customer review
+
+**Technologies:**
+- OpenAI GPT-4o with function calling
+- YAML-based workflow definition
+- Serverless execution via Netlify Functions
+- Real-time UI updates with contextual icons (🚨 emergency, 🏠 property, 📅 calendar)
+
+### Triage Agent (`triage-agent.yaml`)
+
+**Purpose:** Intelligent analysis of quote requests for business prioritization
+
+**Key Features:**
+- Analyzes complete Q&A summaries from customer intake
+- Calculates job complexity based on service type and location
+- Assesses urgency using emergency status, timeline, and problem severity
+- Provides priority scores (1-10) with detailed explanations
+- Evaluates profitability potential considering job complexity and upsell opportunities
+
+**Business Intelligence Tools:**
+- `calculateJobComplexity()` - Service category and location-based scoring
+- `assessCustomerUrgency()` - Timeline and severity analysis
+- Structured JSON output with explanations for each score
+
+**Output:**
+```json
+{
+  "triage_summary": "2-3 sentence summary",
+  "priority_score": 8,
+  "priority_explanation": "Why this priority",
+  "profitability_score": 7,
+  "profitability_explanation": "Why this profitability",
+  "complexity_score": 6,
+  "urgency_score": 9
+}
+```
+
+### Benefits of YAML-Driven Agents
+
+✅ **Maintainability** - Workflow changes don't require code modifications  
+✅ **Testability** - Agents can be tested independently with mock data  
+✅ **Scalability** - New agents can be added following the same pattern  
+✅ **Transparency** - Business logic is visible in human-readable YAML  
+✅ **Version Control** - Workflow changes are tracked in git  
+
+---
+
 ## Application Flows
 
-### 1. The AI-Powered Intake Flow
-This diagram illustrates the initial, intelligent lead qualification process.
+### 1. The AI-Powered Intake Flow (YAML-Driven Agent)
+This diagram illustrates the intelligent, agent-driven lead qualification process using the OpenAI Agent Toolkit.
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Frontend
-    participant Backend API
-    participant OpenAI API
+    participant Frontend (ChatKit UI)
+    participant Quote Agent Runner
+    participant OpenAI API (GPT-4o)
     participant Supabase
 
-    User->>Frontend: Signs in or registers
-    Frontend->>Supabase: Authenticates user, gets session
-    Supabase-->>Frontend: Returns user session & profile
+    User->>Frontend (ChatKit UI): Signs in or registers
+    Frontend (ChatKit UI)->>Supabase: Authenticates user, gets session
+    Supabase-->>Frontend (ChatKit UI): Returns user session & profile
 
-    User->>Frontend: Clicks "Request a Quote"
-    Frontend->>User: Asks initial, pre-defined questions
-    User-->>Frontend: Provides answers
-
-    Frontend->>Backend API: POST /api/requests/gpt-follow-up (with answers)
-    activate Backend API
-    Backend API->>OpenAI API: Packages info and asks GPT-4 for follow-up questions
-    activate OpenAI API
-    OpenAI API-->>Backend API: Returns context-aware questions (or confirms none needed)
-    deactivate OpenAI API
-    Backend API-->>Frontend: Relays follow-up questions
-    deactivate Backend API
+    User->>Frontend (ChatKit UI): Clicks "Request a Quote"
     
-    loop Until GPT has no more questions
-        Frontend->>User: Asks AI-generated follow-up question
-        User-->>Frontend: Provides answer
+    Note over Frontend (ChatKit UI),Quote Agent Runner: Agent initialization with YAML config
+    Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (initialize session)
+    activate Quote Agent Runner
+    Quote Agent Runner->>Quote Agent Runner: Load quote-agent.yaml workflow definition
+    Quote Agent Runner->>OpenAI API (GPT-4o): Request initial question based on service type
+    OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns structured question with options
+    Quote Agent Runner-->>Frontend (ChatKit UI): First question (emergency check)
+    deactivate Quote Agent Runner
+    
+    Frontend (ChatKit UI)->>User: Displays question with interactive pill buttons
+    User-->>Frontend (ChatKit UI): Clicks response button
+    
+    loop Dynamic Conversation Flow (controlled by YAML nodes)
+        Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (with conversation history)
+        activate Quote Agent Runner
+        Quote Agent Runner->>Quote Agent Runner: Navigate YAML workflow nodes
+        Quote Agent Runner->>OpenAI API (GPT-4o): Analyze responses & determine next question
+        activate OpenAI API (GPT-4o)
+        OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns next question or completion signal
+        deactivate OpenAI API (GPT-4o)
+        Quote Agent Runner-->>Frontend (ChatKit UI): Next question with contextual icon
+        deactivate Quote Agent Runner
+        
+        Frontend (ChatKit UI)->>User: Displays question with contextual UI (🚨/🏠/📅)
+        User-->>Frontend (ChatKit UI): Provides answer
     end
     
-    Frontend->>User: Displays a final summary for confirmation
+    Note over Quote Agent Runner: Agent reaches review_summary stage
+    Quote Agent Runner->>Frontend (ChatKit UI): Returns summary payload with all answers
+    Frontend (ChatKit UI)->>User: Displays comprehensive review summary
 
-    User->>Frontend: Confirms and submits the final request
-    Frontend->>Backend API: POST /api/requests/submit (with all data)
-    activate Backend API
-    Backend API->>Supabase: Inserts the new row into 'requests' table
+    User->>Frontend (ChatKit UI): Confirms and submits the final request
+    Frontend (ChatKit UI)->>Supabase: POST /api/requests/submit (with structured data)
+    activate Supabase
+    Supabase->>Supabase: Inserts request with answers array, service address, geocoding
     
-    opt User uploaded a file
-        Frontend->>Backend API: POST /api/requests/attachments (with file)
-        Backend API->>Supabase: Uploads file to Storage & inserts record into 'quote_attachments'
+    opt User uploaded attachments
+        Frontend (ChatKit UI)->>Supabase: Upload files to Storage bucket
+        Supabase->>Supabase: Insert records into 'quote_attachments'
     end
 
-    Backend API-->>Frontend: Returns success confirmation
-    deactivate Backend API
-    Frontend->>User: Displays "Thank you" message
+    Supabase-->>Frontend (ChatKit UI): Returns success with request ID
+    deactivate Supabase
+    Frontend (ChatKit UI)->>User: Displays "Thank you" confirmation
 ```
 
 ### 2. The Client & Admin Management Flow
@@ -201,33 +304,51 @@ sequenceDiagram
     Frontend->>Customer: Displays the conversation log (with new note)
 ```
 
-### 3. The AI-Powered Triage Process
+### 3. The AI-Powered Triage Process (YAML-Driven Agent)
 
-This shows the backend process for automatically analyzing a new request.
+This shows the intelligent backend process for automatically analyzing a new request using the Triage Agent.
 
 ```mermaid
 sequenceDiagram
     participant Admin
-    participant Backend API
+    participant Frontend
+    participant Triage Agent Runner
     participant Supabase
-    participant OpenAI API
+    participant OpenAI API (GPT-4o)
 
-    Admin->>Backend API: POST /api/triage/:requestId (triggers triage)
-    activate Backend API
+    Admin->>Frontend: Clicks "AI Triage" button in Job Docket
+    Frontend->>Triage Agent Runner: POST /triage/:requestId (triggers analysis)
+    activate Triage Agent Runner
     
-    Backend API->>Supabase: Fetch request details (problem_category, answers)
-    Supabase-->>Backend API: Returns request data
+    Triage Agent Runner->>Triage Agent Runner: Load triage-agent.yaml workflow
+    Triage Agent Runner->>Supabase: Fetch complete request details
+    activate Supabase
+    Supabase-->>Triage Agent Runner: Returns request data with all Q&A answers
+    deactivate Supabase
     
-    Backend API->>OpenAI API: Send prompt with request details to GPT-4
-    activate OpenAI API
-    OpenAI API-->>Backend API: Returns JSON: { triage_summary, priority_score }
-    deactivate OpenAI API
+    Note over Triage Agent Runner: Calculate preliminary scores
+    Triage Agent Runner->>Triage Agent Runner: calculateJobComplexity(service, location)
+    Triage Agent Runner->>Triage Agent Runner: assessCustomerUrgency(emergency, timeline)
+    Triage Agent Runner->>Triage Agent Runner: formatAnswersForAnalysis(Q&A array)
     
-    Backend API->>Supabase: Update 'requests' table with triage_summary and priority_score
-    Supabase-->>Backend API: Confirms update
+    Triage Agent Runner->>OpenAI API (GPT-4o): Send comprehensive prompt with:<br/>- Service category<br/>- Emergency status<br/>- Formatted Q&A summaries<br/>- Problem description<br/>- Preliminary scores
+    activate OpenAI API (GPT-4o)
     
-    Backend API-->>Admin: Returns success message with triage results
-    deactivate Backend API
+    Note over OpenAI API (GPT-4o): Structured function calling
+    OpenAI API (GPT-4o)->>OpenAI API (GPT-4o): Analyze all data points<br/>Call: provide_triage_assessment()
+    
+    OpenAI API (GPT-4o)-->>Triage Agent Runner: Returns structured JSON:<br/>{<br/>  triage_summary,<br/>  priority_score (1-10),<br/>  priority_explanation,<br/>  profitability_score (1-10),<br/>  profitability_explanation<br/>}
+    deactivate OpenAI API (GPT-4o)
+    
+    Triage Agent Runner->>Supabase: UPDATE requests SET triage fields
+    activate Supabase
+    Supabase-->>Triage Agent Runner: Confirms update
+    deactivate Supabase
+    
+    Triage Agent Runner-->>Frontend: Returns complete analysis results
+    deactivate Triage Agent Runner
+    
+    Frontend->>Admin: Displays AI Triage Summary card with:<br/>- Priority badge (1-10)<br/>- Profitability indicator<br/>- Summary text<br/>- Explanations
 ```
 
 ### 4. Real-time Publish/Subscribe Synchronization
