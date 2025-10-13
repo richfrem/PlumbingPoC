@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-12T21:03:45.433Z
+Generated On: 2025-10-13T02:48:09.669Z
 
-# Mnemonic Weight (Token Count): ~338,802 tokens
+# Mnemonic Weight (Token Count): ~353,760 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -63,6 +63,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./adrs/026-agent-runner-local-first-strategy.md
   ./adrs/027-self-contained-agent-functions.md
   ./adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md
+  ./adrs/029-unified-customer-info-component-architecture.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -101,6 +102,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./agents/ui-designer-mcp.md
   ./all_markdown_and_code_snapshot_llm_distilled.txt
   ./capture_code_snapshot.js
+  ./check_invoice_permissions.sql
   ./debug-admin-auth.mjs
   ./docs/
   ./docs/AIContracts.md
@@ -111,6 +113,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./docs/CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md
   ./docs/CONSULTANT_03_DEPLOYMENT_CHECKLIST.md
   ./docs/CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md
+  ./docs/DEVELOPMENT_ENVIRONMENT_SETUP.md
   ./docs/DataContracts.md
   ./docs/FutureRoadmap.md
   ./docs/NETLIFY_DEPLOYMENT.md
@@ -124,6 +127,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
   ./environments/
+  ./find_invoice_fkey.sql
   ./netlify.toml
   ./package-lock.json
   ./package.json
@@ -139,6 +143,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./packages/backend/api/config/supabase/index.js
   ./packages/backend/api/controllers/
   ./packages/backend/api/controllers/followUpController.js
+  ./packages/backend/api/controllers/invoiceController.js
   ./packages/backend/api/controllers/requestController.js
   ./packages/backend/api/controllers/triageController.js
   ./packages/backend/api/controllers/userController.js
@@ -148,6 +153,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./packages/backend/api/routes/
   ./packages/backend/api/routes/agentRoutes.js
   ./packages/backend/api/routes/followUpRoutes.js
+  ./packages/backend/api/routes/invoiceRoutes.js
   ./packages/backend/api/routes/requestRoutes.js
   ./packages/backend/api/routes/triageRoutes.js
   ./packages/backend/api/routes/userRoutes.js
@@ -212,6 +218,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./packages/frontend/src/features/requests/components/CompleteJobModal.tsx
   ./packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
   ./packages/frontend/src/features/requests/components/Dashboard.tsx
+  ./packages/frontend/src/features/requests/components/InvoiceFormModal.tsx
   ./packages/frontend/src/features/requests/components/ModalFooter.tsx
   ./packages/frontend/src/features/requests/components/ModalHeader.tsx
   ./packages/frontend/src/features/requests/components/MyRequests.tsx
@@ -223,7 +230,6 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./packages/frontend/src/features/requests/components/RequestDetailModal.tsx
   ./packages/frontend/src/features/requests/components/RequestProblemDetails.tsx
   ./packages/frontend/src/features/requests/components/ScheduleJobSection.tsx
-  ./packages/frontend/src/features/requests/components/ServiceLocationManager.tsx
   ./packages/frontend/src/features/requests/types/
   ./packages/frontend/src/features/requests/types/index.ts
   ./packages/frontend/src/features/services/
@@ -244,6 +250,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./packages/frontend/tsconfig.json
   ./packages/frontend/vite.config.js
   ./playwright.config.ts
+  ./quick_invoice_check.sql
   ./scripts/
   ./shutdown.sh
   ./startup.sh
@@ -263,7 +270,9 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./supabase/functions/geocode/
   ./supabase/functions/geocode/index.ts
   ./supabase/migrations/
+  ./supabase/migrations/20251012_add_request_id_to_invoices.sql
   ./supabase/migrations/add_invoice_enhancements.sql
+  ./supabase/migrations/fix_status_constraint_local.sql
   ./supabase/schema.sql
   ./supabase/supabase/
   ./supabase/supabase/.temp/
@@ -386,6 +395,7 @@ Generated On: 2025-10-12T21:03:45.433Z
   ./tests/utils/
   ./tests/utils/apiClient.ts
   ./tests/utils/testUtils.ts
+  ./verify_invoice_join.sql
   ./vitest.config.ts
 
 --- START OF FILE ./.github/copilot-instructions.md ---
@@ -5536,6 +5546,195 @@ The OpenAI Agents SDK is not suitable for our use case.
 
 --- END OF FILE ---
 
+--- START OF FILE ./adrs/029-unified-customer-info-component-architecture.md ---
+
+# ADR 029: Unified Customer Info Component Architecture
+
+## Status
+Accepted
+
+## Date
+2025-10-12
+
+## Context
+We had two separate components handling customer information display:
+1. **CustomerInfoSection** - Displayed customer name, phone, email, and optionally service address (read-only)
+2. **ServiceLocationManager** - Handled service address with create/view/edit modes, including geocoding and Google Maps integration
+
+This led to:
+- **Code duplication**: Similar UI patterns repeated across components
+- **Inconsistent UX**: Different components had different capabilities (one editable, one not)
+- **Maintenance burden**: Changes to customer info display required updates in multiple places
+- **Confusing architecture**: Unclear which component to use in which context
+
+Four different modals needed customer information display:
+1. **QuoteAgentModal** - Create new requests (address entry)
+2. **QuoteFormModal** - View/edit quotes (customer info + address, admin can edit address)
+3. **RequestDetailModal** - View job details (customer name separate, address editable)
+4. **InvoiceFormModal** - Create/edit invoices (customer info + address, read-only)
+
+## Decision
+We will **merge CustomerInfoSection and ServiceLocationManager into a single unified component** that handles both customer information display and service location management with optional sections controlled by props.
+
+**Final Component Name: CustomerInfoSection** (reusing the original name for the unified component)
+
+### Component Design: CustomerInfoSection (Unified)
+
+**Props:**
+- `mode`: 'create' | 'view' | 'edit' - Controls editing capability
+- `showCustomerInfo`: boolean - When true, displays customer name/phone/email in addition to service address
+- `request`: QuoteRequest - Provides customer data when showCustomerInfo=true
+- `isAdmin`: boolean - Controls edit permissions
+- `onSave`: callback - Handles address updates
+- Other existing props: initialAddress, latitude, longitude, etc.
+
+**Rendering Modes:**
+
+1. **Unified View (showCustomerInfo=true)**
+   - Renders as single Paper component with "CUSTOMER INFO" header
+   - Displays customer name, phone (tel: link), email (mailto: link)
+   - Shows service address with Google Maps link
+   - Edit pencil icon (admins only) for address editing
+   - Used by: QuoteFormModal, InvoiceFormModal
+
+2. **Address-Only View (showCustomerInfo=false/undefined)**
+   - Renders as Grid item (backward compatible)
+   - Shows only service address with edit capability
+   - Used by: RequestDetailModal (customer name shown separately)
+
+3. **Create Mode**
+   - Address entry form with Street/City/Province/Postal Code fields
+   - Google Maps autocomplete integration
+   - Geocoding validation
+   - Used by: QuoteAgentModal
+
+4. **Edit Mode**
+   - Inline editing triggered by pencil icon
+   - Pre-populates current address (parses "Street, City, Province PostalCode")
+   - Save/Cancel buttons
+   - Used by: All admin contexts
+
+### Migration Plan
+
+**Phase 1: Core Unification (Completed)**
+- ✅ Enhanced ServiceLocationManager with showCustomerInfo prop
+- ✅ Added customer info rendering (name, phone, email) when showCustomerInfo=true
+- ✅ Migrated QuoteFormModal to use unified component
+
+**Phase 2: Complete Migration (Completed)**
+- ✅ Migrated InvoiceFormModal from old CustomerInfoSection to unified component
+- ✅ Migrated RequestDetailModal to use unified display
+- ✅ Verified all four modals use unified component consistently
+- ✅ Deprecated and removed old CustomerInfoSection component
+
+**Phase 3: Refinement (Completed)**
+- ✅ Renamed ServiceLocationManager to CustomerInfoSection (reusing original name)
+- ✅ Updated all imports across 5 component files
+- ✅ Updated documentation and ADR
+
+### Usage Examples
+
+```typescript
+// QuoteFormModal - Unified customer info + address
+<CustomerInfoSection 
+  mode="view"
+  showCustomerInfo={true}
+  request={request}
+  isAdmin={isAdmin}
+  onSave={handleAddressUpdate}
+/>
+
+// RequestDetailModal - NOW USING UNIFIED COMPONENT
+<CustomerInfoSection 
+  mode="view"
+  showCustomerInfo={true}
+  request={request}
+  initialAddress={request.service_address}
+  isAdmin={isAdmin}
+  onSave={handleAddressUpdate}
+  isUpdating={updateAddressMutation.isPending}
+/>
+
+// QuoteAgentModal - Create new request
+<CustomerInfoSection 
+  mode="create"
+  onSave={handleAddressSet}
+/>
+
+// InvoiceFormModal - Migrated to unified component
+<CustomerInfoSection 
+  mode="view"
+  showCustomerInfo={true}
+  request={request}
+  initialAddress={request.service_address}
+  isAdmin={false}
+  onSave={async () => {}}
+  onModeChange={() => {}}
+/>
+```
+
+## Consequences
+
+### Positive
+- **Single source of truth**: One component for all customer info + location needs
+- **DRY principle**: No code duplication between components
+- **Consistent UX**: Same display and editing behavior across all forms
+- **Easier maintenance**: Changes in one place affect all uses
+- **Flexible architecture**: Optional sections via props enable different contexts
+- **Backward compatible**: Grid mode preserved for RequestDetailModal
+- **Better testing**: One component to test thoroughly instead of two
+
+### Negative
+- **Component complexity**: Single component has more responsibilities
+- **Migration effort**: Need to update InvoiceFormModal and test all contexts
+- **Prop proliferation**: More optional props to control behavior
+- **Breaking change**: Requires updates to all consuming components (mitigated by migration plan)
+
+### Neutral
+- **Component size**: Larger single component vs multiple smaller ones (acceptable tradeoff)
+- **Naming**: May want to rename to reflect unified purpose (optional)
+
+## Implementation Details
+
+### Address Parsing
+Component handles format: `"Street, City, Province PostalCode"`
+- Splits on commas: ["Street", "City", "Province PostalCode"]
+- Province: 3rd word from end (before postal code)
+- Postal Code: Last 2 words
+- Pre-populates all fields when entering edit mode
+
+### Feature Flags
+- `showCustomerInfo`: Enables customer name/phone/email display
+- `isAdmin`: Controls edit pencil visibility
+- `mode`: Controls create/view/edit rendering
+
+### Dependencies
+- Material-UI: Paper, Grid, Typography components
+- Google Maps API: Geocoding and address autocomplete
+- lucide-react: User and Pencil icons
+- apiClient: Axios instance for API calls
+
+## Related ADRs
+- [ADR-015: Choice of Monorepo Structure](015-choice-of-monorepo-structure.md) - Shared component architecture
+- [ADR-006: Choice of UI Component Library](006-choice-of-ui-component-library.md) - Material-UI usage
+
+## Notes
+- Address editing requires admin role (controlled by isAdmin prop)
+- Geocoding validation ensures address accuracy
+- Province field added to match create mode functionality
+- Component serves both customer info display AND service location management
+- **Component renamed from ServiceLocationManager to CustomerInfoSection** to better reflect unified purpose
+- Final name reuses the original CustomerInfoSection name, making the evolution feel intentional
+
+## References
+- CustomerInfoSection: `/packages/frontend/src/features/requests/components/CustomerInfoSection.tsx`
+- QuoteFormModal: `/packages/frontend/src/features/requests/components/QuoteFormModal.tsx`
+- InvoiceFormModal: `/packages/frontend/src/features/requests/components/InvoiceFormModal.tsx`
+- RequestDetailModal: `/packages/frontend/src/features/requests/components/RequestDetailModal.tsx`
+- QuoteAgentModal: `/packages/frontend/src/features/requests/components/QuoteAgentModal.tsx`
+
+--- END OF FILE ---
+
 --- START OF FILE ./agents/AGENT_REPOS.md ---
 
 # Plumbing Quote Agent MCP Persona Repos
@@ -7376,6 +7575,70 @@ persona: |
   Your goal: Create interfaces users love and developers can build fast. Provide actionable feedback and implementation-ready specs for every UI/UX review.
 
 # Tools leveraged: Write, Read, MultiEdit, WebSearch, WebFetch, Playwright browser agent
+
+--- END OF FILE ---
+
+--- START OF FILE ./check_invoice_permissions.sql ---
+
+-- Check RLS status and policies for invoices table
+
+-- 1. Check if RLS is enabled on invoices table
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity as rls_enabled
+FROM pg_tables
+WHERE tablename = 'invoices';
+
+-- 2. List all RLS policies on invoices table
+SELECT 
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd as command,
+    qual as using_expression,
+    with_check as with_check_expression
+FROM pg_policies
+WHERE tablename = 'invoices'
+ORDER BY policyname;
+
+-- 3. Check table owner and grants
+SELECT 
+    grantee,
+    privilege_type,
+    is_grantable
+FROM information_schema.role_table_grants
+WHERE table_name = 'invoices'
+ORDER BY grantee, privilege_type;
+
+-- 4. Check foreign key relationship to requests table
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+    AND tc.table_schema = kcu.table_schema
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+    AND ccu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'FOREIGN KEY' 
+    AND tc.table_name = 'invoices';
+
+-- 5. Check if request_id column exists and its properties
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'invoices'
+    AND column_name = 'request_id';
 
 --- END OF FILE ---
 
@@ -10489,6 +10752,320 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 Complete AI-powered business management platform for the cost of 1-2 service calls per month.
 --- END OF FILE ---
 
+--- START OF FILE ./docs/DEVELOPMENT_ENVIRONMENT_SETUP.md ---
+
+# Development Environment Setup & Troubleshooting
+
+## Overview
+
+This document explains how the PlumbingPOC development environment is configured, how API requests are routed, and common troubleshooting steps.
+
+## Architecture
+
+### Local Development Stack
+
+- **Frontend (Vite)**: `http://localhost:5173`
+- **Backend (Express/Node)**: `http://localhost:3000`
+- **Database**: Supabase (remote)
+
+### API Request Flow in Development
+
+The frontend uses **direct API calls** to the backend server, bypassing Vite's proxy:
+
+```typescript
+// packages/frontend/src/api/apiClient.ts
+const apiClient = axios.create({
+  baseURL: import.meta.env.DEV ? 'http://localhost:3000/api' : '/api',
+  // ...
+});
+```
+
+**Key Points:**
+- ✅ In **development** (`import.meta.env.DEV === true`): Requests go directly to `http://localhost:3000/api`
+- ✅ In **production**: Requests go to `/api` (same origin as frontend)
+- ✅ Authentication tokens are automatically injected via axios interceptor
+- ⚠️ The Vite proxy configuration exists but is **not used** in development due to the direct baseURL
+
+### Why This Matters
+
+When debugging API issues:
+1. The **backend server must be running** on port 3000
+2. Vite proxy configuration is irrelevant for apiClient requests in dev mode
+3. Check backend logs, not Vite proxy logs
+
+## Starting the Development Environment
+
+### Quick Start
+
+```bash
+# From project root
+./startup.sh
+```
+
+This script:
+1. Cleans up existing processes on ports 3000 and 5173
+2. Starts backend server on port 3000
+3. Starts frontend dev server on port 5173
+4. Waits for both services to be ready
+
+### Stopping Services
+
+```bash
+./shutdown.sh
+```
+
+## Environment Variables
+
+### Required Variables
+
+The backend requires these environment variables to start:
+
+```bash
+# Supabase Configuration (Backend)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Application Ports
+BACKEND_PORT=3000
+FRONTEND_PORT=5173
+```
+
+### Loading Environment Variables
+
+The project uses a **root-level `.env` file** that all services load from:
+
+```
+PlumbingPOC/
+  .env                    ← Single source of truth
+  packages/
+    backend/
+      api/
+        config/
+          supabase/
+            database.js   ← Loads from ../../../../.env
+    frontend/
+      vite.config.js      ← Loads from ../../.env
+```
+
+**Important ESM Pattern:**
+
+```javascript
+// packages/backend/api/config/supabase/database.js
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// ESM modules don't have __dirname, must create it
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Use path.resolve for reliable relative path resolution
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+```
+
+⚠️ **Common Mistake:** Using string-based relative paths like `'../../../../.env'` directly in `dotenv.config()` can fail in ESM modules. Always use `path.resolve()` with `__dirname`.
+
+## Common Issues & Troubleshooting
+
+### Issue: "Failed to load invoice" (404 errors)
+
+**Symptoms:**
+```
+GET http://localhost:5173/api/invoices/xxx 404 (Not Found)
+Failed to load invoice: AxiosError
+```
+
+**Diagnosis Steps:**
+
+1. **Check if backend is running:**
+   ```bash
+   lsof -i :3000
+   ```
+   Should show a `node` process.
+
+2. **Test backend directly:**
+   ```bash
+   curl -i http://localhost:3000/api/invoices/some-id
+   ```
+   Should return `401 Unauthorized` (auth required, but proves endpoint exists).
+
+3. **Check backend logs for errors:**
+   - Look for "LOCAL DEV: API server running on http://localhost:3000"
+   - Look for errors about missing environment variables
+
+**Common Causes:**
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| `lsof -i :3000` returns nothing | Backend didn't start | Check backend logs for errors |
+| "Supabase URL or Service Role Key is missing" | Environment variables not loaded | Verify `.env` file exists and has `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` |
+| Backend starts but crashes immediately | Error in `database.js` or other startup code | Check terminal output from `./startup.sh` |
+| 404 on specific endpoint | Route not registered | Check `packages/backend/api/server.js` and route files |
+
+### Issue: Backend Won't Start - Missing Environment Variables
+
+**Error:**
+```
+Error: Supabase URL or Service Role Key is missing. Check Netlify environment variables.
+    at database.js:13
+```
+
+**Solution:**
+
+1. Verify `.env` file exists in project root:
+   ```bash
+   ls -la .env
+   ```
+
+2. Verify it contains required variables:
+   ```bash
+   grep SUPABASE .env
+   ```
+
+3. Check `database.js` is using correct path resolution:
+   ```javascript
+   // ✅ CORRECT
+   const __dirname = path.dirname(fileURLToPath(import.meta.url));
+   dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+   // ❌ WRONG (can fail in ESM)
+   dotenv.config({ path: '../../../../.env' });
+   ```
+
+4. Restart servers:
+   ```bash
+   ./shutdown.sh && ./startup.sh
+   ```
+
+### Issue: Requests Working But Invoices Failing
+
+**Observation:**
+- GET `/api/requests` works fine
+- GET `/api/invoices/:id` returns 404 or "Invoice not found"
+
+**Likely Causes:**
+
+1. **Backend not running** (most common)
+   - Solution: `./startup.sh`
+
+2. **Invoice route not registered**
+   - Check: `packages/backend/api/server.js` has `app.use('/api', invoiceRoutes)`
+   - Check: `packages/backend/api/routes/invoiceRoutes.js` exists and has GET route
+
+3. **Supabase JOIN syntax failing** ⚠️ **CRITICAL**
+   - **Problem:** Using simple table name in `.select()` for foreign key joins can fail
+   - **Bad:**
+     ```javascript
+     .select('*, requests(customer_name, service_address)')
+     ```
+   - **Better:** Fetch data separately (more reliable):
+     ```javascript
+     // Fetch invoice first
+     const { data: invoices } = await supabase
+       .from('invoices')
+       .select('*')
+       .eq('id', id);
+     
+     // Then fetch related request separately
+     if (invoices[0].request_id) {
+       const { data: request } = await supabase
+         .from('requests')
+         .select('customer_name, service_address, user_id')
+         .eq('id', invoices[0].request_id)
+         .single();
+       
+       invoices[0].requests = request;
+     }
+     ```
+   - **Best:** Use explicit foreign key constraint names (like requests controller does):
+     ```javascript
+     .select('*, requests!fk_invoices_request(customer_name, service_address)')
+     ```
+   - **Why:** Supabase's automatic FK detection can be unreliable, especially with newer tables
+   - **How to find FK name:**
+     ```sql
+     SELECT constraint_name, column_name, foreign_table_name
+     FROM information_schema.table_constraints tc
+     JOIN information_schema.key_column_usage kcu 
+       ON tc.constraint_name = kcu.constraint_name
+     WHERE tc.constraint_type = 'FOREIGN KEY' 
+       AND tc.table_name = 'invoices';
+     ```
+
+4. **Authentication middleware blocking requests**
+   - Check: apiClient is including JWT token in headers
+   - Check: Token is valid and not expired
+
+### Issue: Changes to Backend Not Reflecting
+
+**Problem:** Made changes to backend code but behavior hasn't changed.
+
+**Solutions:**
+
+1. **Restart backend:**
+   ```bash
+   ./shutdown.sh && ./startup.sh
+   ```
+
+2. **Check if old process is still running:**
+   ```bash
+   ps aux | grep node
+   pkill -f "node.*server"
+   ```
+
+3. **Clear Node module cache** (rare):
+   ```bash
+   rm -rf node_modules/.cache
+   ```
+
+### Issue: Port Already in Use
+
+**Error:**
+```
+✗ Port 3000 is still in use. Please free it manually.
+```
+
+**Solution:**
+
+1. **Find process using port:**
+   ```bash
+   lsof -i :3000
+   ```
+
+2. **Kill specific process:**
+   ```bash
+   kill -9 <PID>
+   ```
+
+3. **Nuclear option - kill all node processes:**
+   ```bash
+   pkill -9 node
+   ```
+
+## Verification Checklist
+
+After starting the development environment, verify:
+
+- [ ] Backend server running: `lsof -i :3000` shows node process
+- [ ] Frontend server running: `lsof -i :5173` shows node process
+- [ ] Backend responding: `curl http://localhost:3000/api/health` (if health endpoint exists)
+- [ ] Frontend accessible: Open `http://localhost:5173` in browser
+- [ ] API requests working: Check browser Network tab for successful API calls
+
+## Architecture Decisions
+
+Related ADRs:
+- [ADR-014: Pure ESM Strategy](../adrs/014-choice-of-pure-ESM-strategy.md) - Why we use ESM modules
+- [ADR-015: Monorepo Structure](../adrs/015-choice-of-monorepo-structure.md) - Package organization
+- [ADR-023: Backend Config Architecture](../adrs/023-choice-of-backend-config-architecture.md) - How configuration is loaded
+
+## Additional Resources
+
+- [Netlify Deployment Guide](./NETLIFY_DEPLOYMENT.md)
+- [Netlify Troubleshooting](./NETLIFY_TROUBLESHOOTING.md)
+- [Twilio & Netlify Setup](./TWILIO_AND_NETLIFY_SETUP.md)
+
+--- END OF FILE ---
+
 --- START OF FILE ./docs/DataContracts.md ---
 
 # PlumbingPOC: Data Contracts
@@ -10786,48 +11363,122 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 
 ### Phase 1: Manual Invoice Creation (Foundation)
 
-**Status:** 🔨 Planned
+**Status:** ✅ **COMPLETED** (December 2025)
 
-**Implementation Strategy:**
+**Implemented Features:**
 
-1. **"Create Invoice" Button** in Admin Dashboard
-   - Appears when job status = 'completed'
-   - Pre-populates from original quote
-   - Located in Request Detail Modal
+1. ✅ **"Create Invoice" / "Edit Invoice" / "View Invoice" Buttons** in Request Detail Modal
+   - Appears when job status = 'completed' (Create) or 'invoiced' (Edit/View)
+   - Modes: create, edit, view with proper access control
+   - Located in Request Detail Modal action buttons
 
-2. **Invoice Builder UI**
-   - Itemized line items (labor, materials, permits, fees)
-   - Auto-populate from quote, allow modifications
-   - Add/remove line items dynamically
-   - Tax calculation (configurable rate)
-   - Subtotal + Tax = Total Due
+2. ✅ **Invoice Builder UI (InvoiceFormModal.tsx)**
+   - Itemized line items for labor and materials
+   - Dynamic add/remove line items
+   - Real-time BC tax calculation (GST 5% on all, PST 7% on materials only)
+   - Subtotal + Tax = Total Due with auto-calculation
+   - Due date picker
+   - Payment method selector
+   - Notes field for additional context
 
-3. **Database Schema (Already Exists)**
+3. ✅ **Database Schema**
    ```sql
-   invoices table:
-   - id, user_id, quote_id (links to original estimate)
-   - amount_due, due_date
-   - status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'disputed'
-   - created_at
+   invoices table (Enhanced):
+   - id (UUID), request_id (FK to requests)
+   - line_items (JSONB array with type, description, quantity, unit_price)
+   - subtotal, gst_amount, pst_amount, total_amount
+   - due_date, payment_method, notes
+   - status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+   - paid_at, created_at, updated_at
    ```
 
-4. **Invoice PDF Generation**
-   - Use library like `pdfkit` or `react-pdf`
-   - Professional template with business logo
-   - Itemized breakdown
-   - Payment instructions
-   - Due date prominently displayed
+4. ✅ **Backend API (invoiceController.js)**
+   - POST `/api/requests/:requestId/invoices` - Create invoice
+   - GET `/api/invoices/:id` - Get invoice with request data (FK join fixed)
+   - PATCH `/api/invoices/:id` - Update invoice (blocks if paid)
+   - POST `/api/invoices/:id/mark-paid` - Mark as paid
+   - GET `/api/invoices` - List invoices (admin sees all, users see own)
+   - Authentication & authorization (admin or request owner)
 
-5. **Email Delivery**
-   - Send via Resend API (already integrated)
-   - Attach PDF invoice
-   - Include "View Invoice" link to customer portal
-   - "Pay Online" button (Phase 3)
+5. ✅ **Frontend Hook (useInvoiceById)**
+   - Follows same pattern as useRequestById for consistency
+   - Real-time data loading via TanStack Query
+   - Error handling and loading states
+
+6. ✅ **Unified Customer Info Display**
+   - CustomerInfoSection component shows customer name, phone, email
+   - Service address with edit capability
+   - Consistent styling across all modals (quotes, invoices, requests)
 
 **Status Synchronization:**
-- When invoice created: `request.status` → `'invoiced'`
-- When invoice sent: Email customer, update `invoice.status` → `'sent'`
-- Admin can track invoice status in Request Detail Modal
+- ✅ When invoice created: `request.status` → `'invoiced'`
+- ⏳ Email delivery pending (Phase 1.5)
+- ⏳ PDF generation pending (Phase 1.5)
+
+**Technical Achievements:**
+- ✅ Fixed Supabase FK join issues (documented in DEVELOPMENT_ENVIRONMENT_SETUP.md)
+- ✅ Proper separation of chip color vs header background color
+- ✅ Removed redundant customer name from modal header
+- ✅ Invoice data pre-population for edit mode
+
+---
+
+### Phase 1.5: Customer Portal & Payments (Next Up)
+
+**Status:** 🔨 **IN PROGRESS** - Starting Tomorrow
+
+**Implementation Order (Revised):**
+
+**NEXT STEPS (Tomorrow):**
+
+1. **Customer Portal Invoice View** ⏱️ 2-3 hours
+   - Create new route: `/invoices/:id` in customer portal
+   - Read-only invoice display showing:
+     - Customer name, service address
+     - Itemized line items (labor/materials)
+     - GST/PST tax breakdown
+     - Total amount due
+     - Due date
+   - Clean HTML/React view (no PDF yet)
+   - Authorization: customer can only view their own invoices
+   - Mobile-responsive design
+   - **Purpose:** Foundation for payment button integration
+
+2. **Stripe Test Mode Integration & Payment Testing** ⏱️ 4-5 hours
+   - Set up Stripe account in test mode
+   - Add environment variables:
+     - `STRIPE_TEST_SECRET_KEY`
+     - `STRIPE_TEST_PUBLISHABLE_KEY`
+   - Backend: Create payment intent endpoint `/api/invoices/:id/create-payment-intent`
+   - Backend: Stripe webhook handler `/netlify/functions/stripe-webhook.mjs`
+   - Frontend: "Pay Invoice" button in portal (from step 1)
+   - Frontend: Stripe Elements integration for card input
+   - Test with Stripe test cards:
+     - ✅ Success: `4242 4242 4242 4242`
+     - ❌ Decline: `4000 0000 0000 0002`
+   - End-to-end test:
+     - Create invoice → Customer views in portal → Pays with test card → 
+     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' → 
+     - Owner receives SMS notification
+   - Document test scenarios and results
+
+**LATER (After Payment Works):**
+
+3. **Invoice PDF Generation & Email Delivery** ⏱️ 6-8 hours
+   - Library: `react-pdf` or `pdfkit`
+   - Professional template with business logo
+   - PDF generation endpoint
+   - Email delivery via Resend API
+   - "Download PDF" button in portal
+   - Update `invoice.status` to 'sent' after email delivery
+
+**Total Phase 1.5 Effort:** 12-16 hours
+
+**Rationale for Order:**
+- ✅ Faster time to value: customers can pay invoices immediately
+- ✅ Payment processing is critical path; PDF is polish
+- ✅ Test Stripe integration before adding PDF complexity
+- ✅ Portal view provides foundation for both payment and PDF features
 
 ---
 
@@ -11026,28 +11677,46 @@ completed → invoiced → paid (OR overdue OR disputed)
 
 ### Implementation Roadmap
 
-**Month 1-2: Foundation (Phase 1)**
-- [ ] Design Invoice Builder UI
-- [ ] Implement itemized line item entry
-- [ ] PDF generation and email delivery
-- [ ] Basic status sync (invoiced)
-- [ ] Admin can create/send invoices manually
+**Phase 1: Foundation (COMPLETED ✅)**
+- [x] Design Invoice Builder UI (InvoiceFormModal.tsx)
+- [x] Implement itemized line item entry (labor + materials)
+- [x] BC tax calculation (GST 5% all, PST 7% materials)
+- [x] Basic status sync (invoiced)
+- [x] Admin can create/edit/view invoices
+- [x] Database schema with request_id FK
+- [x] Backend API with proper authentication
+- [x] useInvoiceById hook following request pattern
+- [x] Unified CustomerInfoSection component
+- [x] Fixed Supabase FK join issues
 
-**Month 3-4: AI Assistance (Phase 2)**
+**Phase 1.5: Customer Portal & Payments (IN PROGRESS 🔨 - Tomorrow)**
+- [ ] **TOMORROW:** Customer portal invoice view (HTML/React, 2-3 hours)
+- [ ] **TOMORROW:** Stripe test mode setup and integration (4-5 hours)
+- [ ] **TOMORROW:** Payment button with Stripe Elements
+- [ ] **TOMORROW:** Create payment intent endpoint
+- [ ] **TOMORROW:** Stripe webhook handler
+- [ ] **TOMORROW:** Test payment flow end-to-end
+- [ ] **TOMORROW:** Document test scenarios
+- [ ] **LATER:** Invoice PDF generation (react-pdf, 6-8 hours)
+- [ ] **LATER:** Email invoice to customer (Resend API)
+- [ ] **LATER:** Download PDF functionality
+- [ ] **LATER:** Update invoice.status to 'sent' automation
+
+**Phase 2: AI Assistance (Planned 🤖)**
 - [ ] Build invoice-generator-agent.yaml
 - [ ] AI reads completion notes → suggests line items
 - [ ] Variance detection and explanation generation
 - [ ] Dispute risk scoring
 - [ ] Test with historical job data
 
-**Month 5-6: Payments (Phase 3)**
+**Phase 3: Payments (Planned 💳)**
 - [ ] Stripe account setup and integration
 - [ ] Payment button in customer portal
 - [ ] Webhook for payment success
 - [ ] Status sync (paid, overdue)
 - [ ] Receipt generation and email
 
-**Month 7+: Advanced Features (Phase 4-5)**
+**Phase 4-5: Advanced Features (Future 🚀)**
 - [ ] Enhanced status workflow implementation
 - [ ] Automated overdue reminders
 - [ ] Dispute tracking and resolution
@@ -13960,6 +14629,26 @@ This is the final and most important step. It securely provides the credentials 
 Your work is now done. Provide this guide and the following technical specification to your developer. They will have everything they need to implement the feature. You may need to redeploy your site for the new environment variables to take effect.
 --- END OF FILE ---
 
+--- START OF FILE ./find_invoice_fkey.sql ---
+
+-- Find the foreign key constraint name for invoices.request_id
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY' 
+    AND tc.table_name = 'invoices'
+    AND kcu.column_name = 'request_id';
+
+--- END OF FILE ---
+
 --- START OF FILE ./netlify.toml ---
 
 # netlify.toml (v3 - Root Configuration)
@@ -14383,11 +15072,15 @@ sequenceDiagram
 
 // packages/backend/api/config/supabase/database.js
 import { createClient } from '@supabase/supabase-js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables early for development
 // This is safe - in production (Netlify), env vars are injected automatically
 import dotenv from 'dotenv';
-dotenv.config({ path: '../../../../.env' });
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -14458,6 +15151,298 @@ const sendFollowUpEmails = async (req, res) => {
 };
 
 export { sendFollowUpEmails };
+
+--- END OF FILE ---
+
+--- START OF FILE ./packages/backend/api/controllers/invoiceController.js ---
+
+// packages/backend/api/controllers/invoiceController.js
+
+import { database as supabase } from '../config/supabase/index.js';
+
+/**
+ * Create a new invoice for a completed request
+ */
+export async function createInvoice(req, res) {
+  try {
+    const { requestId } = req.params;
+    const { line_items, subtotal, tax_amount, total, due_date, notes, payment_method } = req.body;
+
+    console.log('📄 Creating invoice for request:', requestId);
+
+    // Verify request exists and is completed
+    const { data: request, error: requestError } = await supabase
+      .from('requests')
+      .select('id, status, user_id, invoice_id')
+      .eq('id', requestId)
+      .single();
+
+    if (requestError || !request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    if (request.status !== 'completed') {
+      return res.status(400).json({ error: 'Can only create invoice for completed requests' });
+    }
+
+    if (request.invoice_id) {
+      return res.status(400).json({ error: 'Invoice already exists for this request' });
+    }
+
+    // Create the invoice
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('invoices')
+      .insert({
+        request_id: requestId,
+        user_id: request.user_id,
+        line_items: line_items,
+        subtotal: subtotal,
+        tax_amount: tax_amount,
+        total: total,
+        due_date: due_date,
+        notes: notes,
+        status: 'sent', // Invoices start as 'sent' (not draft)
+        payment_method: payment_method || null
+      })
+      .select()
+      .single();
+
+    if (invoiceError) {
+      console.error('❌ Error creating invoice:', invoiceError);
+      return res.status(500).json({ error: 'Failed to create invoice' });
+    }
+
+    // Update request with invoice_id and change status to 'invoiced'
+    const { error: updateError } = await supabase
+      .from('requests')
+      .update({ 
+        invoice_id: invoice.id,
+        status: 'invoiced'
+      })
+      .eq('id', requestId);
+
+    if (updateError) {
+      console.error('❌ Error updating request with invoice_id:', updateError);
+      // Rollback: delete the invoice
+      await supabase.from('invoices').delete().eq('id', invoice.id);
+      return res.status(500).json({ error: 'Failed to link invoice to request' });
+    }
+
+    console.log('✅ Invoice created successfully:', invoice.id);
+    res.status(201).json(invoice);
+
+  } catch (error) {
+    console.error('❌ Error in createInvoice:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * Get a specific invoice
+ */
+export async function getInvoice(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Check if user is admin (same pattern as getRequestById)
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    // Build query - use explicit FK join like requests do
+    let query = supabase
+      .from('invoices')
+      .select('*');
+
+    const { data: invoices, error } = await query.eq('id', id);
+
+    if (error || !invoices || invoices.length === 0) {
+      console.error('❌ Error fetching invoice:', error);
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    const invoice = invoices[0];
+
+    // Fetch related request data separately (more reliable than join)
+    if (invoice.request_id) {
+      const { data: request } = await supabase
+        .from('requests')
+        .select('customer_name, service_address, user_id')
+        .eq('id', invoice.request_id)
+        .single();
+      
+      if (request) {
+        invoice.requests = request;
+        
+        // Check permissions: admin or customer who owns the request
+        if (!isAdmin && request.user_id !== userId) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+      }
+    }
+
+    res.json(invoice);
+
+  } catch (error) {
+    console.error('❌ Error in getInvoice:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * Update an invoice (only if not paid)
+ */
+export async function updateInvoice(req, res) {
+  try {
+    const { id } = req.params;
+    const { line_items, subtotal, tax_amount, total, due_date, notes, payment_method } = req.body;
+
+    // Check current invoice status
+    const { data: currentInvoice, error: fetchError } = await supabase
+      .from('invoices')
+      .select('status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !currentInvoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (currentInvoice.status === 'paid') {
+      return res.status(400).json({ error: 'Cannot modify a paid invoice' });
+    }
+
+    // Update the invoice
+    const { data: invoice, error: updateError } = await supabase
+      .from('invoices')
+      .update({
+        line_items: line_items,
+        subtotal: subtotal,
+        tax_amount: tax_amount,
+        total: total,
+        due_date: due_date,
+        notes: notes,
+        payment_method: payment_method || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('❌ Error updating invoice:', updateError);
+      return res.status(500).json({ error: 'Failed to update invoice' });
+    }
+
+    console.log('✅ Invoice updated successfully:', id);
+    res.json(invoice);
+
+  } catch (error) {
+    console.error('❌ Error in updateInvoice:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * Mark an invoice as paid
+ */
+export async function markInvoiceAsPaid(req, res) {
+  try {
+    const { id } = req.params;
+    const { payment_method } = req.body;
+
+    if (!payment_method) {
+      return res.status(400).json({ error: 'Payment method is required' });
+    }
+
+    // Get current invoice and request
+    const { data: invoice, error: fetchError } = await supabase
+      .from('invoices')
+      .select('*, requests(id)')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (invoice.status === 'paid') {
+      return res.status(400).json({ error: 'Invoice is already paid' });
+    }
+
+    // Update invoice to paid
+    const { data: updatedInvoice, error: updateError } = await supabase
+      .from('invoices')
+      .update({
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        payment_method: payment_method,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('❌ Error marking invoice as paid:', updateError);
+      return res.status(500).json({ error: 'Failed to mark invoice as paid' });
+    }
+
+    // Update request status to 'paid'
+    const { error: requestUpdateError } = await supabase
+      .from('requests')
+      .update({ status: 'paid' })
+      .eq('id', invoice.request_id);
+
+    if (requestUpdateError) {
+      console.error('❌ Error updating request status to paid:', requestUpdateError);
+    }
+
+    console.log('✅ Invoice marked as paid:', id);
+    res.json(updatedInvoice);
+
+  } catch (error) {
+    console.error('❌ Error in markInvoiceAsPaid:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * List invoices (admin sees all, customers see their own)
+ */
+export async function listInvoices(req, res) {
+  try {
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    let query = supabase
+      .from('invoices')
+      .select('*, requests(customer_name, problem_category)')
+      .order('created_at', { ascending: false });
+
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: invoices, error } = await query;
+
+    if (error) {
+      console.error('❌ Error fetching invoices:', error);
+      return res.status(500).json({ error: 'Failed to fetch invoices' });
+    }
+
+    res.json(invoices);
+
+  } catch (error) {
+    console.error('❌ Error in listInvoices:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 --- END OF FILE ---
 
@@ -15302,10 +16287,14 @@ const updateRequestStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, scheduled_start_date } = req.body;
 
+    console.log('updateRequestStatus called:', { id, status, scheduled_start_date });
+
     const updatePayload = { status };
     if (scheduled_start_date) {
         updatePayload.scheduled_start_date = new Date(scheduled_start_date).toISOString();
     }
+
+    console.log('updatePayload:', updatePayload);
 
     const { data, error } = await supabase
       .from('requests')
@@ -15314,13 +16303,17 @@ const updateRequestStatus = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
     if (!data) return res.status(404).json({ error: 'Request not found.' });
 
     await sendStatusUpdateEmail(data);
 
     res.status(200).json(data);
   } catch (err) {
+    console.error('updateRequestStatus error:', err);
     next(err);
   }
 };
@@ -15910,6 +16903,61 @@ export default router;
 
 --- END OF FILE ---
 
+--- START OF FILE ./packages/backend/api/routes/invoiceRoutes.js ---
+
+// packages/backend/api/routes/invoiceRoutes.js
+
+import { Router } from 'express';
+import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import {
+  createInvoice,
+  getInvoice,
+  updateInvoice,
+  markInvoiceAsPaid,
+  listInvoices
+} from '../controllers/invoiceController.js';
+
+const router = Router();
+
+/**
+ * @route   POST /api/requests/:requestId/invoices
+ * @desc    Create a new invoice for a completed request
+ * @access  Admin only
+ */
+router.post('/requests/:requestId/invoices', authenticate, isAdmin, createInvoice);
+
+/**
+ * @route   GET /api/invoices/:id
+ * @desc    Get a specific invoice
+ * @access  Admin or customer who owns the request
+ */
+router.get('/invoices/:id', authenticate, getInvoice);
+
+/**
+ * @route   PATCH /api/invoices/:id
+ * @desc    Update an invoice (only if status is not 'paid')
+ * @access  Admin only
+ */
+router.patch('/invoices/:id', authenticate, isAdmin, updateInvoice);
+
+/**
+ * @route   POST /api/invoices/:id/mark-paid
+ * @desc    Mark an invoice as paid
+ * @access  Admin only
+ */
+router.post('/invoices/:id/mark-paid', authenticate, isAdmin, markInvoiceAsPaid);
+
+/**
+ * @route   GET /api/invoices
+ * @desc    List all invoices (admin sees all, customers see their own)
+ * @access  Authenticated users
+ */
+router.get('/invoices', authenticate, listInvoices);
+
+export default router;
+
+--- END OF FILE ---
+
 --- START OF FILE ./packages/backend/api/routes/requestRoutes.js ---
 
 // packages/backend/api/routes/requestRoutes.js
@@ -16001,6 +17049,7 @@ router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request 
 router.delete('/cleanup-test-data', authenticate, isAdmin, cleanupTestData); // Admin cleanup of test data
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
+router.put('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus); // Legacy support
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
 router.delete('/:id/quotes/:quoteId', authenticate, isAdmin, deleteQuote);
@@ -16130,6 +17179,7 @@ import userRoutes from './routes/userRoutes.js';
 import followUpRoutes from './routes/followUpRoutes.js';
 import triageRoutes from './routes/triageRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
+import invoiceRoutes from './routes/invoiceRoutes.js';
 
 const app = express();
 
@@ -16143,6 +17193,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/follow-up', followUpRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api/agents', agentRoutes);
+app.use('/api', invoiceRoutes);
 app.use('/api', userRoutes);
 
 app.get('/api/health', (req, res) => {
@@ -16571,7 +17622,7 @@ const updateStatusSchema = z.object({
   }),
   body: z.object({
     status: z.string().min(1, "Status cannot be empty."),
-    scheduled_start_date: z.string().datetime({ offset: true }).optional(),
+    scheduled_start_date: z.string().datetime({ offset: true }).nullable().optional(),
   }),
 });
 
@@ -20343,97 +21394,540 @@ export default CompleteJobModal;
 // packages/frontend/src/features/requests/components/CustomerInfoSection.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, TextField, Grid, Button } from '@mui/material';
-import { User } from 'lucide-react';
+import { Box, Typography, Paper, TextField, Button, Grid, IconButton, Alert } from '@mui/material';
+import { Pencil, Check, X, User } from 'lucide-react';
 
-interface CustomerInfoSectionProps {
-  request: any;
-  isAdmin: boolean;
-  isDateEditable?: boolean;
-  scheduledStartDate?: string | null; // Allow null
-  setScheduledStartDate?: (date: string) => void;
-  currentStatus?: string;
-  setCurrentStatus?: (status: string) => void;
-  isUpdating?: boolean;
-  editable?: boolean; // For QuoteFormModal
-  goodUntil?: string; // For QuoteFormModal
-  setGoodUntil?: (date: string) => void; // For QuoteFormModal
-  onDateChange?: (date: string) => void; // New prop for streamlined workflow
+interface AddressData {
+  service_address: string;
+  latitude: number | null;
+  longitude: number | null;
+  geocoded_address: string | null;
 }
 
+interface CustomerInfoSectionProps {
+   mode: 'view' | 'edit' | 'create';
+   initialAddress?: string | AddressData;
+   profileAddress?: string;
+   isAdmin: boolean;
+   onSave?: (addressData: AddressData) => Promise<void>;
+   onCancel?: () => void;
+   onDataChange?: (addressData: Partial<AddressData>) => void;
+   onModeChange?: (useProfileAddress: boolean) => void;
+   isUpdating?: boolean;
+   request?: any; // For showing customer info
+   showCustomerInfo?: boolean; // Whether to show customer name/phone/email
+   canEdit?: boolean; // Whether user can edit (admin OR request owner)
+ }
+
 const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
-  request,
-  isAdmin,
-  isDateEditable,
-  scheduledStartDate,
-  setScheduledStartDate,
-  currentStatus,
-  setCurrentStatus,
-  isUpdating,
-  editable,
-  goodUntil,
-  setGoodUntil,
-  onDateChange, // New streamlined prop
-}) => {
-  const isRequestDetail = setScheduledStartDate !== undefined;
-  const customerProfile = request?.user_profiles;
+   mode,
+   initialAddress,
+   profileAddress,
+   isAdmin,
+   onSave,
+   onCancel,
+   onDataChange,
+   onModeChange,
+   isUpdating = false,
+   request,
+   showCustomerInfo = false,
+   canEdit = true, // Default to true for backward compatibility
+ }) => {
+  // State for edit mode
+  const [isEditing, setIsEditing] = useState(mode === 'edit');
+  const [useProfileAddress, setUseProfileAddress] = useState(true);
+  const [serviceAddress, setServiceAddress] = useState('');
+  const [serviceCity, setServiceCity] = useState('');
+  const [serviceProvince, setServiceProvince] = useState('BC'); // Default to BC
+  const [servicePostalCode, setServicePostalCode] = useState('');
+  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  // Only show the scheduling section if the status is 'accepted' or 'scheduled'
-  const canShowScheduling = isAdmin && isRequestDetail && (currentStatus === 'accepted' || currentStatus === 'scheduled');
+  // Initialize state based on mode and initialAddress
+  useEffect(() => {
+    if (mode === 'view' && typeof initialAddress === 'string') {
+      // For view mode, parse the address in case user clicks edit later
+      const parts = initialAddress.split(', ');
+      if (parts.length >= 3) {
+        // Format: "Street, City, Province PostalCode"
+        setServiceAddress(parts[0]);
+        const cityProvincePostal = parts.slice(1).join(', ');
+        const lastPart = cityProvincePostal.split(' ');
+        if (lastPart.length >= 3) {
+          // Last 2 items are Province and PostalCode (e.g. "BC V8Z 5G6" -> ["BC", "V8Z", "5G6"])
+          const postalCode = lastPart.slice(-2).join(' '); // "V8Z 5G6"
+          const province = lastPart[lastPart.length - 3]; // "BC"
+          const city = lastPart.slice(0, -3).join(' '); // "Victoria"
+          setServiceCity(city);
+          setServiceProvince(province);
+          setServicePostalCode(postalCode);
+        }
+      }
+      setIsEditing(false);
+    } else if (mode === 'edit' && typeof initialAddress === 'string') {
+      // Parse existing address for editing
+      const parts = initialAddress.split(', ');
+      if (parts.length >= 3) {
+        setServiceAddress(parts[0]);
+        const cityProvincePostal = parts.slice(1).join(', ');
+        const lastPart = cityProvincePostal.split(' ');
+        if (lastPart.length >= 3) {
+          const postalCode = lastPart.slice(-2).join(' ');
+          const province = lastPart[lastPart.length - 3];
+          const city = lastPart.slice(0, -3).join(' ');
+          setServiceCity(city);
+          setServiceProvince(province);
+          setServicePostalCode(postalCode);
+        }
+      }
+      setIsEditing(true);
+    } else if (mode === 'create') {
+      // For create mode, start with empty fields
+      setUseProfileAddress(true);
+      setServiceAddress('');
+      setServiceCity('');
+      setServicePostalCode('');
+      setServiceCoordinates(null);
+      setGeocodingStatus('idle');
+    }
+  }, [mode, initialAddress]);
 
-  return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><User size={16} /> Customer Info</Typography>
-      <Grid container spacing={2} sx={{ mt: 0.5 }}>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography>
-          <Typography variant="body1">{customerProfile?.name || 'N/A'}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Phone</Typography>
-          <Button component="a" href={`tel:${customerProfile?.phone}`} size="small" sx={{ p: 0, justifyContent: 'flex-start' }}>{customerProfile?.phone || 'N/A'}</Button>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography>
-          <Button component="a" href={`mailto:${customerProfile?.email}`} size="small" sx={{ p: 0, justifyContent: 'flex-start', textTransform: 'none' }}>{customerProfile?.email || 'N/A'}</Button>
-        </Grid>
+  // Geocoding function
+  const geocodeServiceAddress = async () => {
+    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
+      return;
+    }
 
-        {/* Conditional rendering for the date input */}
-        {canShowScheduling && (
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Scheduled Work Start</Typography>
-            <TextField
-              type="date"
-              value={scheduledStartDate ? scheduledStartDate.split('T')[0] : ''}
-              onChange={(e) => {
-                if (setScheduledStartDate) setScheduledStartDate(e.target.value);
-                // Streamlined workflow: when date is selected, automatically set status to scheduled
-                if (e.target.value && currentStatus === 'accepted' && setCurrentStatus) {
-                  setCurrentStatus('scheduled');
-                }
-                // Notify parent of date change for dynamic footer
-                if (onDateChange) onDateChange(e.target.value);
-              }}
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              disabled={isUpdating}
-              sx={{ mt: 0.5 }}
-            />
+    setGeocodingStatus('loading');
+
+    try {
+      const fullAddress = `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`;
+      console.log('Geocoding address:', fullAddress);
+
+      // Load Google Maps API if not already loaded
+      if (!window.google || !window.google.maps) {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not found');
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        await new Promise((resolve, reject) => {
+          script.onload = () => resolve(void 0);
+          script.onerror = (error) => reject(error);
+          document.head.appendChild(script);
+        });
+      }
+
+      // Use Google Maps Geocoding service
+      const geocoder = new (window as any).google.maps.Geocoder();
+
+      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
+        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+          const location = results[0].geometry.location;
+          const coords = { lat: location.lat(), lng: location.lng() };
+          setServiceCoordinates(coords);
+          setGeocodingStatus('success');
+
+          // Notify parent of geocoding success
+          if (onDataChange) {
+            onDataChange({
+              service_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}`,
+              latitude: coords.lat,
+              longitude: coords.lng,
+              geocoded_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`,
+            });
+          }
+        } else {
+          setGeocodingStatus('error');
+        }
+      });
+
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setGeocodingStatus('error');
+    }
+  };
+
+  // Handle field changes
+  const handleFieldChange = (field: string, value: string) => {
+    let newAddress = serviceAddress;
+    let newCity = serviceCity;
+    let newProvince = serviceProvince;
+    let newPostalCode = servicePostalCode;
+
+    switch (field) {
+      case 'street':
+        newAddress = value;
+        setServiceAddress(value);
+        break;
+      case 'city':
+        newCity = value;
+        setServiceCity(value);
+        break;
+      case 'province':
+        newProvince = value;
+        setServiceProvince(value);
+        break;
+      case 'postalCode':
+        newPostalCode = value;
+        setServicePostalCode(value);
+        break;
+    }
+
+    // Reset geocoding status when user changes address
+    if (geocodingStatus !== 'idle') {
+      setGeocodingStatus('idle');
+      setServiceCoordinates(null);
+    }
+
+    // Notify parent of data changes with full address
+    if (onDataChange) {
+      const fullAddress = `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}`;
+      onDataChange({
+        service_address: fullAddress,
+        latitude: serviceCoordinates?.lat || null,
+        longitude: serviceCoordinates?.lng || null,
+        geocoded_address: serviceCoordinates ? `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}, Canada` : null,
+      });
+    }
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    if (((mode === 'view' && isEditing) || mode === 'edit') && serviceCoordinates && onSave) {
+      const addressData: AddressData = {
+        service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+        latitude: serviceCoordinates.lat,
+        longitude: serviceCoordinates.lng,
+        geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
+      };
+
+      try {
+        await onSave(addressData);
+        // Exit edit mode on successful save
+        setIsEditing(false);
+      } catch (error) {
+        // Keep in edit mode on error so user can try again
+        console.error('Failed to save address:', error);
+      }
+    } else if (mode === 'create' && onDataChange) {
+      // For create mode, just notify parent of the current state
+      onDataChange({
+        service_address: useProfileAddress ? '' : `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
+        latitude: serviceCoordinates?.lat || null,
+        longitude: serviceCoordinates?.lng || null,
+        geocoded_address: serviceCoordinates ? `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada` : null,
+      });
+    }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (mode === 'view' || mode === 'edit') {
+      setIsEditing(false);
+    }
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  // Render view mode
+  if (mode === 'view' && !isEditing) {
+    const customerProfile = request?.user_profiles;
+    
+    if (showCustomerInfo) {
+      // Render as a Paper component with customer info AND service address
+      return (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <User size={16} /> Customer Info
+          </Typography>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Name</Typography>
+              <Typography variant="body1">{customerProfile?.name || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Phone</Typography>
+              <Button component="a" href={`tel:${customerProfile?.phone}`} size="small" sx={{ p: 0, justifyContent: 'flex-start' }}>
+                {customerProfile?.phone || 'N/A'}
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Email</Typography>
+              <Button component="a" href={`mailto:${customerProfile?.email}`} size="small" sx={{ p: 0, justifyContent: 'flex-start', textTransform: 'none' }}>
+                {customerProfile?.email || 'N/A'}
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                  Service Address
+                </Typography>
+                {canEdit && (
+                  <IconButton size="small" onClick={() => setIsEditing(true)} disabled={isUpdating}>
+                    <Pencil size={16} />
+                  </IconButton>
+                )}
+              </Box>
+              <Button
+                component="a"
+                href={`https://maps.google.com/?q=${encodeURIComponent(typeof initialAddress === 'string' ? initialAddress : '')}`}
+                target="_blank"
+                size="small"
+                sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left', mt: 0.5 }}
+              >
+                {typeof initialAddress === 'string' ? initialAddress : 'N/A'}
+              </Button>
+            </Grid>
           </Grid>
-        )}
-
-        {/* This is for the QuoteFormModal, which doesn't show the scheduled date */}
-        {!isRequestDetail && (
-          <Grid item xs={12} sm={6}>
-            <Box>
-              <TextField label="Good Until" type="date" value={goodUntil} onChange={e => setGoodUntil && setGoodUntil(e.target.value)} size="small" InputLabelProps={{ shrink: true }} disabled={!editable} sx={{ bgcolor: '#fff', borderRadius: 1 }} />
-            </Box>
-          </Grid>
-        )}
+        </Paper>
+      );
+    }
+    
+    // Original Grid item rendering (for RequestDetailModal compatibility)
+    return (
+      <Grid item xs={12} sm={6}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+            Service Address
+          </Typography>
+          {canEdit && (
+            <IconButton size="small" onClick={() => setIsEditing(true)} disabled={isUpdating}>
+              <Pencil size={16} />
+            </IconButton>
+          )}
+        </Box>
+        <Button
+          component="a"
+          href={`https://maps.google.com/?q=${encodeURIComponent(typeof initialAddress === 'string' ? initialAddress : '')}`}
+          target="_blank"
+          size="small"
+          sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}
+        >
+          {typeof initialAddress === 'string' ? initialAddress : 'N/A'}
+        </Button>
       </Grid>
-    </Paper>
-  );
+    );
+  }
+
+  // Render edit mode (for both 'view' mode when editing and 'edit' mode)
+  if ((mode === 'view' && isEditing) || (mode === 'edit' && isEditing)) {
+    return (
+      <Grid item xs={12}>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
+          Service Address
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <TextField
+            label="Street Address"
+            value={serviceAddress}
+            onChange={(e) => handleFieldChange('street', e.target.value)}
+            size="small"
+            fullWidth
+            placeholder="123 Main Street"
+            disabled={isUpdating}
+            autoFocus
+          />
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              label="City"
+              value={serviceCity}
+              onChange={(e) => handleFieldChange('city', e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="Victoria"
+              disabled={isUpdating}
+            />
+            <TextField
+              label="Province"
+              value={serviceProvince}
+              onChange={(e) => handleFieldChange('province', e.target.value)}
+              size="small"
+              placeholder="BC"
+              sx={{ minWidth: 80 }}
+              disabled={isUpdating}
+            />
+            <TextField
+              label="Postal Code"
+              value={servicePostalCode}
+              onChange={(e) => handleFieldChange('postalCode', e.target.value)}
+              size="small"
+              placeholder="V8W 1A1"
+              sx={{ minWidth: 120 }}
+              disabled={isUpdating}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={geocodeServiceAddress}
+              disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim() || isUpdating}
+            >
+              {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
+            </Button>
+            {geocodingStatus === 'success' && (
+              <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
+                ✓ Address verified
+              </Typography>
+            )}
+            {geocodingStatus === 'error' && (
+              <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                ✗ Could not verify
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Button size="small" onClick={handleCancel} disabled={isUpdating}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSave}
+              disabled={isUpdating || geocodingStatus !== 'success'}
+            >
+              Save Changes
+            </Button>
+          </Box>
+        </Box>
+      </Grid>
+    );
+  }
+
+  // Render create mode (for QuoteAgentModal)
+  if (mode === 'create') {
+    return (
+      <Paper sx={{
+        p: 3,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+          Service Location
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+          Where do you need the plumbing service performed?
+        </Typography>
+
+        {/* Address Option Toggle */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <Button
+              variant={useProfileAddress ? "contained" : "outlined"}
+              size="small"
+              onClick={() => {
+                setUseProfileAddress(true);
+                setServiceAddress("");
+                setServiceCity("");
+                setServiceProvince("BC");
+                setServicePostalCode("");
+                setServiceCoordinates(null);
+                setGeocodingStatus('idle');
+                if (onModeChange) {
+                  onModeChange(true);
+                }
+              }}
+              sx={{ flex: 1 }}
+            >
+              Use My Address
+            </Button>
+            <Button
+              variant={!useProfileAddress ? "contained" : "outlined"}
+              size="small"
+              onClick={() => {
+                setUseProfileAddress(false);
+                if (onModeChange) {
+                  onModeChange(false);
+                }
+              }}
+              sx={{ flex: 1 }}
+            >
+              Different Address
+            </Button>
+          </Box>
+
+          {useProfileAddress ? (
+            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
+                Service will be at your registered address:
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {profileAddress || 'No address found in profile'}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Street Address"
+                value={serviceAddress}
+                onChange={(e) => handleFieldChange('street', e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="123 Main Street"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label="City"
+                  value={serviceCity}
+                  onChange={(e) => handleFieldChange('city', e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="Victoria"
+                />
+                <TextField
+                  label="Province"
+                  value={serviceProvince}
+                  onChange={(e) => handleFieldChange('province', e.target.value)}
+                  size="small"
+                  placeholder="BC"
+                  sx={{ minWidth: 80 }}
+                />
+                <TextField
+                  label="Postal Code"
+                  value={servicePostalCode}
+                  onChange={(e) => handleFieldChange('postalCode', e.target.value)}
+                  size="small"
+                  placeholder="V8W 1A1"
+                  sx={{ minWidth: 120 }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={geocodeServiceAddress}
+                  disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
+                >
+                  {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
+                </Button>
+                {geocodingStatus === 'success' && (
+                  <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
+                    ✓ Address verified and located on map
+                  </Typography>
+                )}
+                {geocodingStatus === 'error' && (
+                  <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                    ✗ Could not verify address - please check spelling
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+    );
+  }
+
+  return null;
 };
 
 export default CustomerInfoSection;
@@ -20888,6 +22382,605 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 export default Dashboard;
 --- END OF FILE ---
 
+--- START OF FILE ./packages/frontend/src/features/requests/components/InvoiceFormModal.tsx ---
+
+// packages/frontend/src/features/requests/components/InvoiceFormModal.tsx
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Typography, TextField, Button, Divider, InputAdornment, Grid, MenuItem, Chip } from '@mui/material';
+import { useAuth } from '../../auth/AuthContext';
+import { QuoteRequest } from '../types';
+import apiClient from '../../../lib/apiClient';
+
+// Import reusable components
+import ModalHeader from './ModalHeader';
+import ModalFooter from './ModalFooter';
+import CustomerInfoSection from './CustomerInfoSection';
+
+interface InvoiceFormModalProps {
+  isOpen: boolean;
+  onClose: (updated?: boolean) => void;
+  invoice?: any;
+  mode: 'create' | 'edit' | 'view';
+  request: QuoteRequest;
+  requestId: string;
+}
+
+interface LineItem {
+  description: string;
+  quantity: string;
+  unit_price: string;
+  total: number;
+}
+
+const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  invoice, 
+  mode, 
+  request, 
+  requestId 
+}) => {
+  const { profile } = useAuth();
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  
+  const [laborItems, setLaborItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+  const [materialItems, setMaterialItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+  const [dueDate, setDueDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isAdmin = profile?.role === 'admin';
+  const editable = mode !== 'view' && isAdmin;
+  const isReadOnly = mode === 'view' || !isAdmin || request.status === 'paid';
+
+  useEffect(() => {
+    if (isOpen) {
+      if (invoice) {
+        // Load existing invoice data
+        const lineItems = invoice.line_items || [];
+        const labor = lineItems.filter((item: any) => item.type === 'labor');
+        const materials = lineItems.filter((item: any) => item.type === 'material');
+        
+        setLaborItems(labor.length > 0 ? labor : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        setMaterialItems(materials.length > 0 ? materials : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        setNotes(invoice.notes || '');
+        setDueDate(invoice.due_date?.split('T')[0] || '');
+        setPaymentMethod(invoice.payment_method || '');
+      } else if (mode === 'create' && request.accepted_quote_id) {
+        // Pre-populate from accepted quote
+        loadQuoteData(request.accepted_quote_id);
+      } else {
+        // New invoice with defaults
+        setLaborItems([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        setMaterialItems([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        setNotes('');
+        setPaymentMethod('');
+        
+        // Default due date to 30 days from now
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        setDueDate(thirtyDaysFromNow.toISOString().split('T')[0]);
+      }
+
+      // Auto-focus first field
+      setTimeout(() => {
+        if (firstFieldRef.current && editable) {
+          firstFieldRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [invoice, isOpen, mode, request.accepted_quote_id]);
+
+  const loadQuoteData = async (quoteId: string) => {
+    try {
+      // Fetch the accepted quote to pre-populate invoice
+      const response = await apiClient.get(`/quotes/${quoteId}`);
+      const quote = response.data;
+      
+      if (quote.details) {
+        const details = typeof quote.details === 'string' ? JSON.parse(quote.details) : quote.details;
+        
+        // Convert quote items to invoice line items
+        const laborLineItems = (details.labor_items || []).map((item: any) => ({
+          description: item.description,
+          quantity: '1',
+          unit_price: item.price,
+          total: parseFloat(item.price) || 0,
+          type: 'labor'
+        }));
+        
+        const materialLineItems = (details.material_items || []).map((item: any) => ({
+          description: item.description,
+          quantity: '1',
+          unit_price: item.price,
+          total: parseFloat(item.price) || 0,
+          type: 'material'
+        }));
+        
+        setLaborItems(laborLineItems.length > 0 ? laborLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        setMaterialItems(materialLineItems.length > 0 ? materialLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
+        
+        if (details.notes) {
+          setNotes(`Based on Quote #${quoteId.slice(0, 8)}\n\n${details.notes}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading quote data:', error);
+    }
+  };
+
+  const handleLineItemChange = (
+    items: LineItem[], 
+    setItems: React.Dispatch<React.SetStateAction<LineItem[]>>, 
+    index: number, 
+    field: keyof LineItem, 
+    value: string
+  ) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    // Recalculate total for this line
+    if (field === 'quantity' || field === 'unit_price') {
+      const qty = parseFloat(newItems[index].quantity) || 0;
+      const price = parseFloat(newItems[index].unit_price) || 0;
+      newItems[index].total = qty * price;
+    }
+    
+    setItems(newItems);
+  };
+
+  const addLineItem = (items: LineItem[], setItems: React.Dispatch<React.SetStateAction<LineItem[]>>) => {
+    setItems([...items, { description: '', quantity: '1', unit_price: '', total: 0 }]);
+  };
+
+  const removeLineItem = (items: LineItem[], setItems: React.Dispatch<React.SetStateAction<LineItem[]>>, index: number) => {
+    if (items.length > 1) {
+      setItems(items.filter((_, i) => i !== index));
+    }
+  };
+
+  const calculateTotals = () => {
+    const laborTotal = laborItems.reduce((sum, item) => sum + (item.total || 0), 0);
+    const materialTotal = materialItems.reduce((sum, item) => sum + (item.total || 0), 0);
+    const subtotal = laborTotal + materialTotal;
+    
+    // BC Tax Rules:
+    // GST (5%): Applied to ALL labor + materials
+    // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
+    const gst = subtotal * 0.05;
+    const pst = materialTotal * 0.07;
+    const totalTax = gst + pst;
+    const total = subtotal + totalTax;
+    
+    return {
+      laborTotal,
+      materialTotal,
+      subtotal,
+      gst,
+      pst,
+      totalTax,
+      total
+    };
+  };
+
+  const handleSaveInvoice = async () => {
+    const totals = calculateTotals();
+    
+    // Validation
+    if (totals.subtotal === 0) {
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { message: 'Please add at least one line item with a price.', severity: 'error' }
+      }));
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Prepare line items with type tags
+      const allLineItems = [
+        ...laborItems.filter(item => item.description && parseFloat(item.unit_price) > 0).map(item => ({ ...item, type: 'labor' })),
+        ...materialItems.filter(item => item.description && parseFloat(item.unit_price) > 0).map(item => ({ ...item, type: 'material' }))
+      ];
+
+      const invoiceData = {
+        request_id: requestId,
+        line_items: allLineItems,
+        subtotal: totals.subtotal,
+        tax_amount: totals.totalTax,
+        total: totals.total,
+        due_date: dueDate,
+        notes: notes,
+        status: mode === 'create' ? 'sent' : invoice?.status || 'sent',
+        payment_method: paymentMethod || null
+      };
+
+      let response;
+      if (mode === 'create') {
+        response = await apiClient.post(`/requests/${requestId}/invoices`, invoiceData);
+      } else {
+        response = await apiClient.patch(`/invoices/${invoice.id}`, invoiceData);
+      }
+
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { 
+          message: mode === 'create' ? 'Invoice created successfully!' : 'Invoice updated successfully!', 
+          severity: 'success' 
+        }
+      }));
+
+      onClose(true);
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { message: 'Failed to save invoice. Please try again.', severity: 'error' }
+      }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!invoice || !paymentMethod) {
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { message: 'Please select a payment method before marking as paid.', severity: 'error' }
+      }));
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await apiClient.post(`/invoices/${invoice.id}/mark-paid`, {
+        payment_method: paymentMethod
+      });
+
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { message: 'Invoice marked as paid!', severity: 'success' }
+      }));
+
+      onClose(true);
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      window.dispatchEvent(new CustomEvent('show-snackbar', {
+        detail: { message: 'Failed to mark invoice as paid. Please try again.', severity: 'error' }
+      }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const totals = calculateTotals();
+  const invoiceNumber = invoice?.id ? `INV-${invoice.id.slice(0, 8).toUpperCase()}` : 'New Invoice';
+  
+  // Chip color for status badge
+  const chipColor = invoice?.status === 'paid' ? 'success' : invoice?.status === 'overdue' ? 'error' : 'warning';
+  
+  // Header background color - always use default grey for consistency
+  const headerBgColor = undefined; // Let ModalHeader use its default
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        bgcolor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1300,
+        p: 2
+      }}
+      onClick={onClose}
+    >
+      <Box
+        sx={{
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          width: '100%',
+          maxWidth: 900,
+          maxHeight: '90vh',
+          overflow: 'auto',
+          boxShadow: 24
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ModalHeader
+          title={invoiceNumber}
+          onClose={onClose}
+          statusColor={headerBgColor}
+          actions={
+            invoice?.status && (
+              <Chip
+                label={invoice.status.toUpperCase()}
+                color={chipColor}
+                size="small"
+              />
+            )
+          }
+        />
+
+        <Box sx={{ p: 3, maxHeight: 'calc(90vh - 180px)', overflowY: 'auto' }}>
+          <CustomerInfoSection 
+            mode="view"
+            showCustomerInfo={true}
+            request={request}
+            initialAddress={request.service_address}
+            isAdmin={false}
+            onSave={async () => {}}
+            onModeChange={() => {}}
+          />
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Labor Items */}
+          <Typography variant="h6" gutterBottom>
+            Labor
+          </Typography>
+          {laborItems.map((item, index) => (
+            <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={5}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Description"
+                  value={item.description}
+                  onChange={(e) => handleLineItemChange(laborItems, setLaborItems, index, 'description', e.target.value)}
+                  disabled={isReadOnly}
+                  inputRef={index === 0 ? firstFieldRef : undefined}
+                />
+              </Grid>
+              <Grid item xs={4} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Qty"
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleLineItemChange(laborItems, setLaborItems, index, 'quantity', e.target.value)}
+                  disabled={isReadOnly}
+                />
+              </Grid>
+              <Grid item xs={4} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Unit Price"
+                  type="number"
+                  value={item.unit_price}
+                  onChange={(e) => handleLineItemChange(laborItems, setLaborItems, index, 'unit_price', e.target.value)}
+                  disabled={isReadOnly}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Total"
+                  value={item.total.toFixed(2)}
+                  disabled
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                  }}
+                />
+              </Grid>
+              <Grid item xs={1} sm={1}>
+                {!isReadOnly && laborItems.length > 1 && (
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => removeLineItem(laborItems, setLaborItems, index)}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </Grid>
+            </Grid>
+          ))}
+          {!isReadOnly && (
+            <Button size="small" onClick={() => addLineItem(laborItems, setLaborItems)}>
+              + Add Labor Item
+            </Button>
+          )}
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Material Items */}
+          <Typography variant="h6" gutterBottom>
+            Materials
+          </Typography>
+          {materialItems.map((item, index) => (
+            <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={5}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Description"
+                  value={item.description}
+                  onChange={(e) => handleLineItemChange(materialItems, setMaterialItems, index, 'description', e.target.value)}
+                  disabled={isReadOnly}
+                />
+              </Grid>
+              <Grid item xs={4} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Qty"
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleLineItemChange(materialItems, setMaterialItems, index, 'quantity', e.target.value)}
+                  disabled={isReadOnly}
+                />
+              </Grid>
+              <Grid item xs={4} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Unit Price"
+                  type="number"
+                  value={item.unit_price}
+                  onChange={(e) => handleLineItemChange(materialItems, setMaterialItems, index, 'unit_price', e.target.value)}
+                  disabled={isReadOnly}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3} sm={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Total"
+                  value={item.total.toFixed(2)}
+                  disabled
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>
+                  }}
+                />
+              </Grid>
+              <Grid item xs={1} sm={1}>
+                {!isReadOnly && materialItems.length > 1 && (
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => removeLineItem(materialItems, setMaterialItems, index)}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </Grid>
+            </Grid>
+          ))}
+          {!isReadOnly && (
+            <Button size="small" onClick={() => addLineItem(materialItems, setMaterialItems)}>
+              + Add Material Item
+            </Button>
+          )}
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Totals Summary */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+            <Box sx={{ minWidth: 300 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography>Labor Subtotal:</Typography>
+                <Typography>${totals.laborTotal.toFixed(2)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography>Materials Subtotal:</Typography>
+                <Typography>${totals.materialTotal.toFixed(2)}</Typography>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography>Subtotal:</Typography>
+                <Typography fontWeight="bold">${totals.subtotal.toFixed(2)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="caption">GST (5% on all):</Typography>
+                <Typography variant="caption">${totals.gst.toFixed(2)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="caption">PST (7% on materials):</Typography>
+                <Typography variant="caption">${totals.pst.toFixed(2)}</Typography>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="h6">Total:</Typography>
+                <Typography variant="h6" color="primary">${totals.total.toFixed(2)}</Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Due Date and Payment */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Due Date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                disabled={isReadOnly}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                label="Payment Method"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                disabled={isReadOnly && invoice?.status === 'paid'}
+              >
+                <MenuItem value="">Not specified</MenuItem>
+                <MenuItem value="stripe">Stripe (Online)</MenuItem>
+                <MenuItem value="check">Check</MenuItem>
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="etransfer">E-Transfer</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+
+          {/* Notes */}
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={isReadOnly}
+            placeholder="Add any notes or payment instructions for the customer..."
+          />
+        </Box>
+
+        <ModalFooter>
+          <Button onClick={() => onClose(false)}>
+            {isReadOnly ? 'Close' : 'Cancel'}
+          </Button>
+          
+          {!isReadOnly && (
+            <Button
+              variant="contained"
+              onClick={handleSaveInvoice}
+              disabled={isSaving || totals.subtotal === 0}
+            >
+              {isSaving ? 'Saving...' : mode === 'create' ? 'Create Invoice' : 'Save Changes'}
+            </Button>
+          )}
+          
+          {isAdmin && invoice?.status === 'sent' && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleMarkAsPaid}
+              disabled={isSaving || !paymentMethod}
+            >
+              {isSaving ? 'Processing...' : 'Mark as Paid'}
+            </Button>
+          )}
+        </ModalFooter>
+      </Box>
+    </Box>
+  );
+};
+
+export default InvoiceFormModal;
+
+--- END OF FILE ---
+
 --- START OF FILE ./packages/frontend/src/features/requests/components/ModalFooter.tsx ---
 
 // packages/frontend/src/features/requests/components/ModalFooter.tsx
@@ -20934,12 +23027,26 @@ interface ModalHeaderProps {
   subtitle?: string;
   onClose: () => void;
   // The 'actions' prop allows us to pass in any button or component, like the "AI Triage" button
-  actions?: React.ReactNode; 
+  actions?: React.ReactNode;
+  // Optional status color to theme the header
+  statusColor?: string;
 }
 
-const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions }) => {
+const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions, statusColor }) => {
+  // Use status color if provided, otherwise default to grey
+  const bgColor = statusColor || 'grey.800';
+  
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'grey.800', color: '#fff', px: 3, py: 2, flexShrink: 0 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      bgcolor: bgColor, 
+      color: '#fff', 
+      px: 3, 
+      py: 2, 
+      flexShrink: 0 
+    }}>
       <Box>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
           {title}
@@ -21366,7 +23473,7 @@ import {
   User
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import ServiceLocationManager from "./ServiceLocationManager";
+import CustomerInfoSection from "./CustomerInfoSection";
 import AttachmentSection from "./AttachmentSection";
 import { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
@@ -22485,7 +24592,7 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
         </Box>
       </Paper>
 
-      <ServiceLocationManager
+      <CustomerInfoSection
         mode="create"
         isAdmin={false}
         initialAddress={profileAddress}
@@ -22604,6 +24711,24 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const updateQuoteMutation = useUpdateQuote();
     const deleteQuoteMutation = useDeleteQuote();
 
+  // Handle address updates
+  const handleAddressUpdate = async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
+    try {
+      await apiClient.patch(`/requests/${requestId}`, addressData);
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Service address updated successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Failed to update service address:', error);
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Failed to update service address. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setNewAttachments([]);
@@ -22653,8 +24778,12 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const subtotal = laborTotal + materialTotal;
+    
+    // BC Tax Rules:
+    // GST (5%): Applied to ALL labor + materials
+    // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
     const gst = subtotal * 0.05;
-    const pst = subtotal * 0.07;
+    const pst = materialTotal * 0.07; // PST only on materials
     const totalPrice = subtotal + gst + pst;
 
     const payload = {
@@ -22783,12 +24912,15 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-            <CustomerInfoSection
+            <CustomerInfoSection 
+              mode="view" 
+              initialAddress={request.service_address} 
+              isAdmin={isAdmin} 
+              onSave={handleAddressUpdate} 
+              onModeChange={() => {}} 
+              isUpdating={false}
               request={request}
-              isAdmin={false}
-              editable={editable}
-              goodUntil={goodUntil}
-              setGoodUntil={setGoodUntil}
+              showCustomerInfo={true}
             />
 
             <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
@@ -22834,6 +24966,20 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               onRemovePendingFile={(index) => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
             />
 
+            {/* Good Until Date - moved to bottom */}
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <TextField
+                fullWidth
+                label="Good Until"
+                type="date"
+                value={goodUntil}
+                onChange={(e) => setGoodUntil(e.target.value)}
+                disabled={!editable}
+                InputLabelProps={{ shrink: true }}
+                helperText="Quote expiration date"
+              />
+            </Paper>
+
             {/* Summary Bar - Always visible pricing breakdown */}
             <Box sx={{
               p: 2,
@@ -22852,17 +24998,20 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               }}>
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   <Typography variant="body2" color="text.secondary">
-                    Subtotal: ${subtotal.toFixed(2)}
+                    Labor: ${laborTotal.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Materials: ${materialTotal.toFixed(2)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     GST (5%): ${gst.toFixed(2)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    PST (7%): ${pst.toFixed(2)}
+                    PST (7% on materials): ${pst.toFixed(2)}
                   </Typography>
                 </Box>
                 <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                  Grand Total: ${totalPrice.toFixed(2)}
+                  Total: ${totalPrice.toFixed(2)}
                 </Typography>
               </Box>
             </Box>
@@ -23074,7 +25223,18 @@ const RequestActions: React.FC<RequestActionsProps> = ({
       {isAdmin && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {currentStatus === 'scheduled' ? (
-            // STATE 1: Scheduled job - show "Mark as Completed" button
+            // STATE 1: Scheduled job - show "Start Job" button to mark as in_progress
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => onStatusChange('in_progress')}
+              disabled={isUpdating}
+              startIcon={<CheckCircle size={16} />}
+            >
+              Start Job
+            </Button>
+          ) : currentStatus === 'in_progress' ? (
+            // STATE 2: In progress job - show "Mark as Completed" button
             <Button
               variant="contained"
               color="success"
@@ -23085,7 +25245,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
               Mark as Completed
             </Button>
           ) : scheduledDateChanged ? (
-            // STATE 2: Date has been changed, show the primary action button
+            // STATE 3: Date has been changed, show the primary action button
             <Button
               variant="contained"
               color="success"
@@ -23095,7 +25255,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
               Save & Schedule
             </Button>
           ) : (
-            // STATE 3: Default view with status dropdown
+            // STATE 4: Default view with status dropdown (for new, viewed, quoted, accepted, etc.)
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Update Status</InputLabel>
               <Select
@@ -23109,6 +25269,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
                 <MenuItem value="quoted">Quoted</MenuItem>
                 <MenuItem value="accepted">Accepted</MenuItem>
                 <MenuItem value="scheduled">Scheduled</MenuItem>
+                <MenuItem value="in_progress">In Progress</MenuItem>
                 <MenuItem value="completed">Completed</MenuItem>
               </Select>
             </FormControl>
@@ -23142,7 +25303,6 @@ import { Zap, RefreshCw } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../../../lib/apiClient';
-import CustomerInfoSection from './CustomerInfoSection';
 import CommunicationLog from './CommunicationLog';
 import QuoteList from './QuoteList';
 import RequestProblemDetails from './RequestProblemDetails';
@@ -23151,11 +25311,13 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
-import ServiceLocationManager from './ServiceLocationManager';
+import InvoiceFormModal from './InvoiceFormModal';
+import CustomerInfoSection from './CustomerInfoSection';
 import ScheduleJobSection from './ScheduleJobSection';
-import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation, useMarkRequestAsViewed } from '../../../hooks';
+import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation, useMarkRequestAsViewed, useInvoiceById } from '../../../hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequestById } from '../../../hooks';
+import statusColors from '../../../lib/statusColors.json';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -23204,10 +25366,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     },
   });
 
+  // Load invoice data using the same pattern as request data
+  const invoiceId = (request as any)?.invoice_id;
+  const { data: invoiceArray } = useInvoiceById(invoiceId || '', {
+    enabled: !!invoiceId && isOpen
+  });
+  const invoiceData = invoiceArray?.[0];
 
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
@@ -23259,6 +25429,41 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     setScheduledStartDate(date);
     setScheduledDateChanged(true);
   }, []);
+
+  const handleCreateInvoice = () => {
+    setInvoiceMode('create');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleEditInvoice = () => {
+    if (!invoiceData) {
+      setSnackbarMessage('Invoice data not available. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    setInvoiceMode('edit');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleViewInvoice = () => {
+    if (!invoiceData) {
+      setSnackbarMessage('Invoice data not available. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    setInvoiceMode('view');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleInvoiceModalClose = (updated?: boolean) => {
+    setInvoiceModalOpen(false);
+    if (updated) {
+      refreshRequestData();
+      onUpdateRequest();
+    }
+  };
 
   const handleSaveAndSchedule = useCallback(async () => {
     if (!request || !scheduledStartDate) return;
@@ -23326,6 +25531,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const hasAcceptedQuotes = request.quotes?.some(q => q.status === 'accepted') || false;
   const isEditable = !isReadOnly && (isAdmin || !hasAcceptedQuotes);
   const canEditAttachments = !isReadOnly;
+  // Allow admin or request owner to edit address
+  const isRequestOwner = profile?.user_id === (request as any).user_id;
+  const canEditAddress = isAdmin || isRequestOwner;
+
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
@@ -23333,6 +25542,41 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const headerActions = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {loading && <RefreshCw size={14} className="animate-spin" />}
+      
+      {/* Invoice Button Logic */}
+      {isAdmin && request.status === 'completed' && !request.invoice_id && (
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small" 
+          onClick={handleCreateInvoice}
+        >
+          Create Invoice
+        </Button>
+      )}
+      
+      {isAdmin && request.status === 'invoiced' && request.invoice_id && (
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small" 
+          onClick={handleEditInvoice}
+        >
+          Edit Invoice
+        </Button>
+      )}
+      
+      {(['invoiced', 'paid', 'overdue', 'disputed'].includes(request.status) && request.invoice_id) && (
+        <Button 
+          variant="outlined" 
+          color="primary" 
+          size="small" 
+          onClick={handleViewInvoice}
+        >
+          View Invoice
+        </Button>
+      )}
+      
       {isAdmin && !request.triage_summary && (
         <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} startIcon={<Zap />}>
           {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
@@ -23345,18 +25589,29 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '800px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
         
-        <ModalHeader title={headerTitle} subtitle={headerSubtitle} onClose={onClose} actions={headerActions} />
+        <ModalHeader 
+          title={headerTitle} 
+          subtitle={headerSubtitle} 
+          onClose={onClose} 
+          actions={headerActions}
+          statusColor={statusColors[request.status as keyof typeof statusColors] || statusColors.default}
+        />
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <CustomerInfoSection 
+              mode="view"
+              showCustomerInfo={true}
+              request={request}
+              initialAddress={request.service_address}
+              isAdmin={isAdmin}
+              canEdit={canEditAddress}
+              onSave={handleAddressUpdate}
+              onModeChange={() => {}}
+              isUpdating={updateAddressMutation.isPending}
+            />
+            
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Customer Name</Typography>
-                  <Typography variant="body1">{request.user_profiles?.name || request.customer_name || 'N/A'}</Typography>
-                </Box>
-              </Grid>
-              <ServiceLocationManager mode="view" initialAddress={request.service_address} isAdmin={isAdmin} onSave={handleAddressUpdate} onModeChange={() => {}} isUpdating={updateAddressMutation.isPending}/>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Status</Typography>
@@ -23402,6 +25657,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       </Paper>
 
       <CompleteJobModal isOpen={isCompleteModalOpen} onClose={() => setCompleteModalOpen(false)} onConfirm={handleConfirmCompletion} isSubmitting={completeJobMutation.isPending} jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} />
+      
+      <InvoiceFormModal 
+        isOpen={isInvoiceModalOpen} 
+        onClose={handleInvoiceModalClose} 
+        invoice={invoiceData}
+        mode={invoiceMode}
+        request={request}
+        requestId={request.id}
+      />
+      
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
       </Snackbar>
@@ -23441,12 +25706,14 @@ interface RequestProblemDetailsProps {
 const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }) => {
   // Logic to separate the main description from other Q&A
   // Look for various description questions (most workflows have one)
-  const problemDescriptionAnswer = request.answers.find((a: { question: string; answer: string }) => {
+  const answers = request.answers || [];
+  
+  const problemDescriptionAnswer = answers.find((a: { question: string; answer: string }) => {
     const q = a.question.toLowerCase();
     return q.includes('describe') || q.includes('detail') || q.includes('issue') || q.includes('problem');
   });
   
-  const otherAnswers = request.answers.filter((a: { question: string; answer: string }) => 
+  const otherAnswers = answers.filter((a: { question: string; answer: string }) => 
     a !== problemDescriptionAnswer
   );
 
@@ -23549,461 +25816,6 @@ const ScheduleJobSection: React.FC<ScheduleJobSectionProps> = ({
 };
 
 export default ScheduleJobSection;
---- END OF FILE ---
-
---- START OF FILE ./packages/frontend/src/features/requests/components/ServiceLocationManager.tsx ---
-
-// packages/frontend/src/features/requests/components/ServiceLocationManager.tsx
-
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, TextField, Button, Grid, IconButton, Alert } from '@mui/material';
-import { Pencil, Check, X } from 'lucide-react';
-
-interface AddressData {
-  service_address: string;
-  latitude: number | null;
-  longitude: number | null;
-  geocoded_address: string | null;
-}
-
-interface ServiceLocationManagerProps {
-   mode: 'view' | 'edit' | 'create';
-   initialAddress?: string | AddressData;
-   profileAddress?: string;
-   isAdmin: boolean;
-   onSave?: (addressData: AddressData) => Promise<void>;
-   onCancel?: () => void;
-   onDataChange?: (addressData: Partial<AddressData>) => void;
-   onModeChange?: (useProfileAddress: boolean) => void;
-   isUpdating?: boolean;
- }
-
-const ServiceLocationManager: React.FC<ServiceLocationManagerProps> = ({
-   mode,
-   initialAddress,
-   profileAddress,
-   isAdmin,
-   onSave,
-   onCancel,
-   onDataChange,
-   onModeChange,
-   isUpdating = false,
- }) => {
-  // State for edit mode
-  const [isEditing, setIsEditing] = useState(mode === 'edit');
-  const [useProfileAddress, setUseProfileAddress] = useState(true);
-  const [serviceAddress, setServiceAddress] = useState('');
-  const [serviceCity, setServiceCity] = useState('');
-  const [serviceProvince, setServiceProvince] = useState('BC'); // Default to BC
-  const [servicePostalCode, setServicePostalCode] = useState('');
-  const [serviceCoordinates, setServiceCoordinates] = useState<{lat: number, lng: number} | null>(null);
-  const [geocodingStatus, setGeocodingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-
-  // Initialize state based on mode and initialAddress
-  useEffect(() => {
-    if (mode === 'view' && typeof initialAddress === 'string') {
-      // For view mode, we just display the address string
-      setIsEditing(false);
-    } else if (mode === 'edit' && typeof initialAddress === 'string') {
-      // Parse existing address for editing
-      const parts = initialAddress.split(', ');
-      if (parts.length >= 2) {
-        setServiceAddress(parts[0]);
-        const cityPostal = parts[1].split(' ');
-        if (cityPostal.length >= 2) {
-          setServiceCity(cityPostal.slice(0, -2).join(' '));
-          setServicePostalCode(cityPostal.slice(-2).join(' '));
-        }
-      }
-      setIsEditing(true);
-    } else if (mode === 'create') {
-      // For create mode, start with empty fields
-      setUseProfileAddress(true);
-      setServiceAddress('');
-      setServiceCity('');
-      setServicePostalCode('');
-      setServiceCoordinates(null);
-      setGeocodingStatus('idle');
-    }
-  }, [mode, initialAddress]);
-
-  // Geocoding function
-  const geocodeServiceAddress = async () => {
-    if (!serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()) {
-      return;
-    }
-
-    setGeocodingStatus('loading');
-
-    try {
-      const fullAddress = `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`;
-      console.log('Geocoding address:', fullAddress);
-
-      // Load Google Maps API if not already loaded
-      if (!window.google || !window.google.maps) {
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDkEszizq7L57f0sY73jl99ZvvwDwZ_MGY';
-
-        if (!apiKey) {
-          throw new Error('Google Maps API key not found');
-        }
-
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
-        script.async = true;
-        script.defer = true;
-
-        await new Promise((resolve, reject) => {
-          script.onload = () => resolve(void 0);
-          script.onerror = (error) => reject(error);
-          document.head.appendChild(script);
-        });
-      }
-
-      // Use Google Maps Geocoding service
-      const geocoder = new (window as any).google.maps.Geocoder();
-
-      geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
-        if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
-          const location = results[0].geometry.location;
-          const coords = { lat: location.lat(), lng: location.lng() };
-          setServiceCoordinates(coords);
-          setGeocodingStatus('success');
-
-          // Notify parent of geocoding success
-          if (onDataChange) {
-            onDataChange({
-              service_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}`,
-              latitude: coords.lat,
-              longitude: coords.lng,
-              geocoded_address: `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`,
-            });
-          }
-        } else {
-          setGeocodingStatus('error');
-        }
-      });
-
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      setGeocodingStatus('error');
-    }
-  };
-
-  // Handle field changes
-  const handleFieldChange = (field: string, value: string) => {
-    let newAddress = serviceAddress;
-    let newCity = serviceCity;
-    let newProvince = serviceProvince;
-    let newPostalCode = servicePostalCode;
-
-    switch (field) {
-      case 'street':
-        newAddress = value;
-        setServiceAddress(value);
-        break;
-      case 'city':
-        newCity = value;
-        setServiceCity(value);
-        break;
-      case 'province':
-        newProvince = value;
-        setServiceProvince(value);
-        break;
-      case 'postalCode':
-        newPostalCode = value;
-        setServicePostalCode(value);
-        break;
-    }
-
-    // Reset geocoding status when user changes address
-    if (geocodingStatus !== 'idle') {
-      setGeocodingStatus('idle');
-      setServiceCoordinates(null);
-    }
-
-    // Notify parent of data changes with full address
-    if (onDataChange) {
-      const fullAddress = `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}`;
-      onDataChange({
-        service_address: fullAddress,
-        latitude: serviceCoordinates?.lat || null,
-        longitude: serviceCoordinates?.lng || null,
-        geocoded_address: serviceCoordinates ? `${newAddress}, ${newCity}, ${newProvince} ${newPostalCode}, Canada` : null,
-      });
-    }
-  };
-
-  // Handle save
-  const handleSave = async () => {
-    if (((mode === 'view' && isEditing) || mode === 'edit') && serviceCoordinates && onSave) {
-      const addressData: AddressData = {
-        service_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
-        latitude: serviceCoordinates.lat,
-        longitude: serviceCoordinates.lng,
-        geocoded_address: `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada`
-      };
-
-      try {
-        await onSave(addressData);
-        // Exit edit mode on successful save
-        setIsEditing(false);
-      } catch (error) {
-        // Keep in edit mode on error so user can try again
-        console.error('Failed to save address:', error);
-      }
-    } else if (mode === 'create' && onDataChange) {
-      // For create mode, just notify parent of the current state
-      onDataChange({
-        service_address: useProfileAddress ? '' : `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}`,
-        latitude: serviceCoordinates?.lat || null,
-        longitude: serviceCoordinates?.lng || null,
-        geocoded_address: serviceCoordinates ? `${serviceAddress}, ${serviceCity}, BC ${servicePostalCode}, Canada` : null,
-      });
-    }
-  };
-
-  // Handle cancel
-  const handleCancel = () => {
-    if (mode === 'view' || mode === 'edit') {
-      setIsEditing(false);
-    }
-    if (onCancel) {
-      onCancel();
-    }
-  };
-
-  // Render view mode
-  if (mode === 'view' && !isEditing) {
-    return (
-      <Grid item xs={12} sm={6}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-            Service Address
-          </Typography>
-          {isAdmin && (
-            <IconButton size="small" onClick={() => setIsEditing(true)} disabled={isUpdating}>
-              <Pencil size={16} />
-            </IconButton>
-          )}
-        </Box>
-        <Button
-          component="a"
-          href={`https://maps.google.com/?q=${encodeURIComponent(typeof initialAddress === 'string' ? initialAddress : '')}`}
-          target="_blank"
-          size="small"
-          sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left' }}
-        >
-          {typeof initialAddress === 'string' ? initialAddress : 'N/A'}
-        </Button>
-      </Grid>
-    );
-  }
-
-  // Render edit mode (for both 'view' mode when editing and 'edit' mode)
-  if ((mode === 'view' && isEditing) || (mode === 'edit' && isEditing)) {
-    return (
-      <Grid item xs={12}>
-        <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
-          Service Address
-        </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <TextField
-            label="Street Address"
-            value={serviceAddress}
-            onChange={(e) => handleFieldChange('street', e.target.value)}
-            size="small"
-            fullWidth
-            placeholder="123 Main Street"
-            disabled={isUpdating}
-            autoFocus
-          />
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField
-              label="City"
-              value={serviceCity}
-              onChange={(e) => handleFieldChange('city', e.target.value)}
-              size="small"
-              fullWidth
-              placeholder="Victoria"
-              disabled={isUpdating}
-            />
-            <TextField
-              label="Postal Code"
-              value={servicePostalCode}
-              onChange={(e) => handleFieldChange('postalCode', e.target.value)}
-              size="small"
-              placeholder="V8W 1A1"
-              sx={{ minWidth: 120 }}
-              disabled={isUpdating}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={geocodeServiceAddress}
-              disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim() || isUpdating}
-            >
-              {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
-            </Button>
-            {geocodingStatus === 'success' && (
-              <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
-                ✓ Address verified
-              </Typography>
-            )}
-            {geocodingStatus === 'error' && (
-              <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                ✗ Could not verify
-              </Typography>
-            )}
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button size="small" onClick={handleCancel} disabled={isUpdating}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleSave}
-              disabled={isUpdating || geocodingStatus !== 'success'}
-            >
-              Save Changes
-            </Button>
-          </Box>
-        </Box>
-      </Grid>
-    );
-  }
-
-  // Render create mode (for QuoteAgentModal)
-  if (mode === 'create') {
-    return (
-      <Paper sx={{
-        p: 3,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-          Service Location
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-          Where do you need the plumbing service performed?
-        </Typography>
-
-        {/* Address Option Toggle */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Button
-              variant={useProfileAddress ? "contained" : "outlined"}
-              size="small"
-              onClick={() => {
-                setUseProfileAddress(true);
-                setServiceAddress("");
-                setServiceCity("");
-                setServiceProvince("BC");
-                setServicePostalCode("");
-                setServiceCoordinates(null);
-                setGeocodingStatus('idle');
-                if (onModeChange) {
-                  onModeChange(true);
-                }
-              }}
-              sx={{ flex: 1 }}
-            >
-              Use My Address
-            </Button>
-            <Button
-              variant={!useProfileAddress ? "contained" : "outlined"}
-              size="small"
-              onClick={() => {
-                setUseProfileAddress(false);
-                if (onModeChange) {
-                  onModeChange(false);
-                }
-              }}
-              sx={{ flex: 1 }}
-            >
-              Different Address
-            </Button>
-          </Box>
-
-          {useProfileAddress ? (
-            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                Service will be at your registered address:
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {profileAddress || 'No address found in profile'}
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Street Address"
-                value={serviceAddress}
-                onChange={(e) => handleFieldChange('street', e.target.value)}
-                fullWidth
-                size="small"
-                placeholder="123 Main Street"
-              />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <TextField
-                  label="City"
-                  value={serviceCity}
-                  onChange={(e) => handleFieldChange('city', e.target.value)}
-                  fullWidth
-                  size="small"
-                  placeholder="Victoria"
-                />
-                <TextField
-                  label="Province"
-                  value={serviceProvince}
-                  onChange={(e) => handleFieldChange('province', e.target.value)}
-                  size="small"
-                  placeholder="BC"
-                  sx={{ minWidth: 80 }}
-                />
-                <TextField
-                  label="Postal Code"
-                  value={servicePostalCode}
-                  onChange={(e) => handleFieldChange('postalCode', e.target.value)}
-                  size="small"
-                  placeholder="V8W 1A1"
-                  sx={{ minWidth: 120 }}
-                />
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={geocodeServiceAddress}
-                  disabled={geocodingStatus === 'loading' || !serviceAddress.trim() || !serviceCity.trim() || !servicePostalCode.trim()}
-                >
-                  {geocodingStatus === 'loading' ? 'Verifying...' : 'Verify Address'}
-                </Button>
-                {geocodingStatus === 'success' && (
-                  <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.8rem' }}>
-                    ✓ Address verified and located on map
-                  </Typography>
-                )}
-                {geocodingStatus === 'error' && (
-                  <Typography variant="body2" sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                    ✗ Could not verify address - please check spelling
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Paper>
-    );
-  }
-
-  return null;
-};
-
-export default ServiceLocationManager;
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/types/index.ts ---
@@ -24247,6 +26059,9 @@ export {
   useAllQuotes,
   useRequestNotes,
   useQuoteAttachments,
+
+  // Invoices
+  useInvoiceById,
 
   // Admin Dashboard
   useAdminDashboard,
@@ -25042,6 +26857,19 @@ export function useAdminDashboard() {
 // ========== UTILITY HOOKS ==========
 
 /**
+ * Get specific invoice by ID
+ */
+export function useInvoiceById(invoiceId: string, options?: { enabled?: boolean }) {
+  return useTableQuery<any>('invoices', {
+    endpoint: `/invoices/${invoiceId}`,
+    queryKey: ['invoice', invoiceId],
+    additionalTables: [],
+    enableRealtime: false,
+    enabled: options?.enabled,
+  });
+}
+
+/**
  * Get real-time statistics with automatic updates
  */
 export function useStatistics() {
@@ -25052,7 +26880,7 @@ export function useStatistics() {
     newRequests: requests.data.filter(r => r.status === 'new').length,
     quotedRequests: requests.data.filter(r => r.status === 'quoted').length,
     completedRequests: requests.data.filter(r => r.status === 'completed').length,
-    emergencyRequests: requests.data.filter(r => r.is_emergency).length,
+    emergencyRequests: requests.data.filter(r => r.status === 'emergency').length,
   };
 
   return {
@@ -25272,15 +27100,19 @@ export function useSupabaseRealtimeV3(
 
     // Subscribe to the channel
     channel.subscribe((status, err) => {
-      console.log(`🔌 Realtime v3 channel status: ${status}`, err ? { error: err } : '');
+      // Suppress noisy "mismatch between server and client bindings" errors
+      // These are harmless WebSocket protocol warnings that don't affect functionality
+      const isBindingMismatch = err?.message?.includes('mismatch between server and client bindings');
+      
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime v3 channel subscribed successfully');
         console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
-        console.log('🎧 Full table configs:', tableConfigs);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Realtime v3 channel error:', status, err);
-        // Don't throw error - just log it and continue without realtime
-        console.warn('⚠️ Continuing without realtime due to channel error');
+        // Only log non-binding-mismatch errors
+        if (!isBindingMismatch) {
+          console.error('❌ Realtime v3 channel error:', status, err);
+          console.warn('⚠️ Continuing without realtime due to channel error');
+        }
       } else if (status === 'TIMED_OUT') {
         console.error('⏰ Realtime v3 channel timed out');
         console.warn('⚠️ Continuing without realtime due to timeout');
@@ -26082,12 +27914,18 @@ type ChipColor = 'primary' | 'info' | 'warning' | 'success' | 'default' | 'error
  */
 export const getRequestStatusChipColor = (status: string): ChipColor => {
   const colorMap: { [key: string]: ChipColor } = {
-    new: 'info',      // MUI 'info' is a nice Blue, matching our "#0288D1"
-    viewed: 'warning',  // MUI 'warning' is Amber, matching our "#FBC02D"
-    quoted: 'primary',  // MUI 'primary' is often a strong color, great for "waiting on customer"
-    accepted: 'success',// MUI 'success' is Green, matching our "#388E3C"
-    scheduled: 'success',// We also use 'success' for scheduled, as it's a positive state.
-    completed: 'default', // MUI 'default' is Grey, matching our "#546E7A"
+    new: 'info',          // Blue - new request
+    viewed: 'primary',    // Purple - being reviewed
+    quoted: 'primary',    // Purple - quote sent
+    accepted: 'success',  // Green - customer accepted
+    scheduled: 'success', // Green - job scheduled
+    in_progress: 'warning', // Orange - work in progress
+    completed: 'info',    // Teal - job done, ready for invoicing
+    invoiced: 'info',     // Teal - invoice sent
+    paid: 'success',      // Green - payment received
+    overdue: 'error',     // Red - overdue invoice
+    disputed: 'error',    // Red - disputed invoice
+    cancelled: 'default', // Grey - cancelled
   };
   return colorMap[status] || 'default';
 };
@@ -26709,7 +28547,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: isNetlifyDev ? undefined : {
-        '/api': (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+        '/api': {
+          target: (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+          changeOrigin: true,
+          secure: false
+        }
       }
     }
   };
@@ -26768,6 +28610,28 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
 });
+--- END OF FILE ---
+
+--- START OF FILE ./quick_invoice_check.sql ---
+
+-- Quick check for invoices table RLS and permissions
+-- Run each query separately in Supabase SQL Editor
+
+-- Query 1: Is RLS enabled?
+SELECT tablename, rowsecurity as rls_enabled
+FROM pg_tables
+WHERE tablename = 'invoices';
+
+-- Query 2: What RLS policies exist?
+SELECT policyname, cmd, roles
+FROM pg_policies
+WHERE tablename = 'invoices';
+
+-- Query 3: Does request_id column exist?
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'invoices' AND column_name = 'request_id';
+
 --- END OF FILE ---
 
 --- START OF FILE ./shutdown.sh ---
@@ -28010,6 +29874,28 @@ Deno.serve(async (req: Request) => {
 });
 --- END OF FILE ---
 
+--- START OF FILE ./supabase/migrations/20251012_add_request_id_to_invoices.sql ---
+
+-- Migration: Add request_id to invoices table
+-- Date: 2025-10-12
+-- Description: Adds request_id column to invoices table to link invoices to requests
+-- INSTRUCTIONS: Copy and paste this entire file into Supabase SQL Editor and run
+
+-- Add request_id column to invoices table
+ALTER TABLE public.invoices ADD COLUMN request_id UUID;
+
+-- Add foreign key relationship to requests
+ALTER TABLE public.invoices
+  ADD CONSTRAINT fk_invoices_request
+  FOREIGN KEY (request_id) REFERENCES public.requests(id)
+  ON DELETE CASCADE;
+
+-- Add indexes for performance
+CREATE INDEX idx_invoices_request_id ON public.invoices(request_id);
+CREATE INDEX idx_requests_invoice_id ON public.requests(invoice_id);
+
+--- END OF FILE ---
+
 --- START OF FILE ./supabase/migrations/add_invoice_enhancements.sql ---
 
 -- Migration: Enhance invoices table and add invoice-related request statuses
@@ -28244,6 +30130,44 @@ WHERE trigger_name = 'trigger_sync_invoice_status';
 -- Note: This is commented out by default. Uncomment and run separately if needed.
 -- Current Realtime-enabled tables: requests, quotes, quote_attachments, request_notes
 
+
+--- END OF FILE ---
+
+--- START OF FILE ./supabase/migrations/fix_status_constraint_local.sql ---
+
+-- Quick fix for local database if the status constraint is outdated
+-- Run this if you get errors when trying to set status to 'in_progress'
+
+-- Drop the old constraint (suppress error if it doesn't exist)
+DO $$ 
+BEGIN
+  ALTER TABLE requests DROP CONSTRAINT requests_status_check;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END $$;
+
+-- Add the updated constraint with all 12 statuses
+ALTER TABLE requests ADD CONSTRAINT requests_status_check 
+  CHECK (status IN (
+    'new',
+    'viewed',
+    'quoted',
+    'accepted',
+    'scheduled',
+    'in_progress',
+    'completed',
+    'invoiced',
+    'paid',
+    'overdue',
+    'disputed',
+    'cancelled'
+  ));
+
+-- Verify the constraint was added
+SELECT conname, pg_get_constraintdef(oid) 
+FROM pg_constraint 
+WHERE conrelid = 'requests'::regclass 
+AND conname = 'requests_status_check';
 
 --- END OF FILE ---
 
@@ -28529,6 +30453,7 @@ CREATE TABLE IF NOT EXISTS "public"."invoices" (
     "notes" "text",
     "ai_generated" boolean DEFAULT false,
     "ai_variance_explanation" "text",
+    "request_id" "uuid",
     CONSTRAINT "invoices_payment_method_check" CHECK (("payment_method" = ANY (ARRAY['stripe'::"text", 'check'::"text", 'cash'::"text", 'etransfer'::"text", 'other'::"text"]))),
     CONSTRAINT "invoices_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'paid'::"text", 'overdue'::"text", 'cancelled'::"text", 'disputed'::"text", 'partially_paid'::"text"])))
 );
@@ -28773,6 +30698,10 @@ CREATE INDEX "idx_invoices_paid_at" ON "public"."invoices" USING "btree" ("paid_
 
 
 
+CREATE INDEX "idx_invoices_request_id" ON "public"."invoices" USING "btree" ("request_id");
+
+
+
 CREATE INDEX "idx_invoices_status" ON "public"."invoices" USING "btree" ("status");
 
 
@@ -28834,6 +30763,11 @@ COMMENT ON TRIGGER "trigger_sync_invoice_status" ON "public"."invoices" IS 'Sync
 
 
 CREATE OR REPLACE TRIGGER "update_requests_updated_at" BEFORE UPDATE ON "public"."requests" FOR EACH ROW EXECUTE FUNCTION "public"."update_requests_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."invoices"
+    ADD CONSTRAINT "fk_invoices_request" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE CASCADE;
 
 
 
@@ -39470,6 +41404,30 @@ export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0))
 
 export * from '@testing-library/react';
 export { customRender as render };
+--- END OF FILE ---
+
+--- START OF FILE ./verify_invoice_join.sql ---
+
+-- Check if the specific invoice exists and has proper request_id
+SELECT 
+    id,
+    request_id,
+    status,
+    created_at
+FROM invoices 
+WHERE id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
+
+-- Check if the request_id is valid (has matching request)
+SELECT 
+    i.id as invoice_id,
+    i.request_id,
+    r.id as request_id_check,
+    r.customer_name,
+    r.service_address
+FROM invoices i
+LEFT JOIN requests r ON i.request_id = r.id
+WHERE i.id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
+
 --- END OF FILE ---
 
 --- START OF FILE ./vitest.config.ts ---

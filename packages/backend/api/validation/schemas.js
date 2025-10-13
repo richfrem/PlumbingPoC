@@ -80,7 +80,7 @@ const updateStatusSchema = z.object({
   }),
   body: z.object({
     status: z.string().min(1, "Status cannot be empty."),
-    scheduled_start_date: z.string().datetime({ offset: true }).optional(),
+    scheduled_start_date: z.string().datetime({ offset: true }).nullable().optional(),
   }),
 });
 

@@ -13,7 +13,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: isNetlifyDev ? undefined : {
-        '/api': (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+        '/api': {
+          target: (env.VITE_BACKEND_BASE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+          changeOrigin: true,
+          secure: false
+        }
       }
     }
   };

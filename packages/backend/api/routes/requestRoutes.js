@@ -87,6 +87,7 @@ router.patch('/:id/viewed', authenticate, markRequestAsViewed); // Mark request 
 router.delete('/cleanup-test-data', authenticate, isAdmin, cleanupTestData); // Admin cleanup of test data
 router.post('/:id/notes', authenticate, validate(addNoteSchema), addRequestNote);
 router.patch('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus);
+router.put('/:id/status', authenticate, isAdmin, validate(updateStatusSchema), updateRequestStatus); // Legacy support
 router.post('/:id/quotes', authenticate, isAdmin, validate(createQuoteSchema), createQuoteForRequest);
 router.put('/:id/quotes/:quoteId', authenticate, isAdmin, validate(updateQuoteSchema), updateQuote);
 router.delete('/:id/quotes/:quoteId', authenticate, isAdmin, deleteQuote);

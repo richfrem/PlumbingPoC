@@ -36,7 +36,18 @@ const RequestActions: React.FC<RequestActionsProps> = ({
       {isAdmin && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {currentStatus === 'scheduled' ? (
-            // STATE 1: Scheduled job - show "Mark as Completed" button
+            // STATE 1: Scheduled job - show "Start Job" button to mark as in_progress
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => onStatusChange('in_progress')}
+              disabled={isUpdating}
+              startIcon={<CheckCircle size={16} />}
+            >
+              Start Job
+            </Button>
+          ) : currentStatus === 'in_progress' ? (
+            // STATE 2: In progress job - show "Mark as Completed" button
             <Button
               variant="contained"
               color="success"
@@ -47,7 +58,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
               Mark as Completed
             </Button>
           ) : scheduledDateChanged ? (
-            // STATE 2: Date has been changed, show the primary action button
+            // STATE 3: Date has been changed, show the primary action button
             <Button
               variant="contained"
               color="success"
@@ -57,7 +68,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
               Save & Schedule
             </Button>
           ) : (
-            // STATE 3: Default view with status dropdown
+            // STATE 4: Default view with status dropdown (for new, viewed, quoted, accepted, etc.)
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Update Status</InputLabel>
               <Select
@@ -71,6 +82,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
                 <MenuItem value="quoted">Quoted</MenuItem>
                 <MenuItem value="accepted">Accepted</MenuItem>
                 <MenuItem value="scheduled">Scheduled</MenuItem>
+                <MenuItem value="in_progress">In Progress</MenuItem>
                 <MenuItem value="completed">Completed</MenuItem>
               </Select>
             </FormControl>

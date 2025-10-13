@@ -9,12 +9,26 @@ interface ModalHeaderProps {
   subtitle?: string;
   onClose: () => void;
   // The 'actions' prop allows us to pass in any button or component, like the "AI Triage" button
-  actions?: React.ReactNode; 
+  actions?: React.ReactNode;
+  // Optional status color to theme the header
+  statusColor?: string;
 }
 
-const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions }) => {
+const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions, statusColor }) => {
+  // Use status color if provided, otherwise default to grey
+  const bgColor = statusColor || 'grey.800';
+  
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'grey.800', color: '#fff', px: 3, py: 2, flexShrink: 0 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      bgcolor: bgColor, 
+      color: '#fff', 
+      px: 3, 
+      py: 2, 
+      flexShrink: 0 
+    }}>
       <Box>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
           {title}

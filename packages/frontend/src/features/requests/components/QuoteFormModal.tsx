@@ -44,6 +44,24 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const updateQuoteMutation = useUpdateQuote();
     const deleteQuoteMutation = useDeleteQuote();
 
+  // Handle address updates
+  const handleAddressUpdate = async (addressData: { service_address: string; latitude: number | null; longitude: number | null; geocoded_address: string | null }): Promise<void> => {
+    try {
+      await apiClient.patch(`/requests/${requestId}`, addressData);
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Service address updated successfully!', severity: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Failed to update service address:', error);
+      const event = new CustomEvent('show-snackbar', {
+        detail: { message: 'Failed to update service address. Please try again.', severity: 'error' }
+      });
+      window.dispatchEvent(event);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setNewAttachments([]);
@@ -93,8 +111,12 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const subtotal = laborTotal + materialTotal;
+    
+    // BC Tax Rules:
+    // GST (5%): Applied to ALL labor + materials
+    // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
     const gst = subtotal * 0.05;
-    const pst = subtotal * 0.07;
+    const pst = materialTotal * 0.07; // PST only on materials
     const totalPrice = subtotal + gst + pst;
 
     const payload = {
@@ -223,12 +245,15 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-            <CustomerInfoSection
+            <CustomerInfoSection 
+              mode="view" 
+              initialAddress={request.service_address} 
+              isAdmin={isAdmin} 
+              onSave={handleAddressUpdate} 
+              onModeChange={() => {}} 
+              isUpdating={false}
               request={request}
-              isAdmin={false}
-              editable={editable}
-              goodUntil={goodUntil}
-              setGoodUntil={setGoodUntil}
+              showCustomerInfo={true}
             />
 
             <Paper variant="outlined" sx={{p: 2, bgcolor: 'grey.50'}}>
@@ -274,6 +299,20 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               onRemovePendingFile={(index) => setNewAttachments(prev => prev.filter((_, i) => i !== index))}
             />
 
+            {/* Good Until Date - moved to bottom */}
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <TextField
+                fullWidth
+                label="Good Until"
+                type="date"
+                value={goodUntil}
+                onChange={(e) => setGoodUntil(e.target.value)}
+                disabled={!editable}
+                InputLabelProps={{ shrink: true }}
+                helperText="Quote expiration date"
+              />
+            </Paper>
+
             {/* Summary Bar - Always visible pricing breakdown */}
             <Box sx={{
               p: 2,
@@ -292,17 +331,20 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
               }}>
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   <Typography variant="body2" color="text.secondary">
-                    Subtotal: ${subtotal.toFixed(2)}
+                    Labor: ${laborTotal.toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Materials: ${materialTotal.toFixed(2)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     GST (5%): ${gst.toFixed(2)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    PST (7%): ${pst.toFixed(2)}
+                    PST (7% on materials): ${pst.toFixed(2)}
                   </Typography>
                 </Box>
                 <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                  Grand Total: ${totalPrice.toFixed(2)}
+                  Total: ${totalPrice.toFixed(2)}
                 </Typography>
               </Box>
             </Box>

@@ -11,12 +11,18 @@ type ChipColor = 'primary' | 'info' | 'warning' | 'success' | 'default' | 'error
  */
 export const getRequestStatusChipColor = (status: string): ChipColor => {
   const colorMap: { [key: string]: ChipColor } = {
-    new: 'info',      // MUI 'info' is a nice Blue, matching our "#0288D1"
-    viewed: 'warning',  // MUI 'warning' is Amber, matching our "#FBC02D"
-    quoted: 'primary',  // MUI 'primary' is often a strong color, great for "waiting on customer"
-    accepted: 'success',// MUI 'success' is Green, matching our "#388E3C"
-    scheduled: 'success',// We also use 'success' for scheduled, as it's a positive state.
-    completed: 'default', // MUI 'default' is Grey, matching our "#546E7A"
+    new: 'info',          // Blue - new request
+    viewed: 'primary',    // Purple - being reviewed
+    quoted: 'primary',    // Purple - quote sent
+    accepted: 'success',  // Green - customer accepted
+    scheduled: 'success', // Green - job scheduled
+    in_progress: 'warning', // Orange - work in progress
+    completed: 'info',    // Teal - job done, ready for invoicing
+    invoiced: 'info',     // Teal - invoice sent
+    paid: 'success',      // Green - payment received
+    overdue: 'error',     // Red - overdue invoice
+    disputed: 'error',    // Red - disputed invoice
+    cancelled: 'default', // Grey - cancelled
   };
   return colorMap[status] || 'default';
 };

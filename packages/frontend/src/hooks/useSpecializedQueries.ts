@@ -218,6 +218,19 @@ export function useAdminDashboard() {
 // ========== UTILITY HOOKS ==========
 
 /**
+ * Get specific invoice by ID
+ */
+export function useInvoiceById(invoiceId: string, options?: { enabled?: boolean }) {
+  return useTableQuery<any>('invoices', {
+    endpoint: `/invoices/${invoiceId}`,
+    queryKey: ['invoice', invoiceId],
+    additionalTables: [],
+    enableRealtime: false,
+    enabled: options?.enabled,
+  });
+}
+
+/**
  * Get real-time statistics with automatic updates
  */
 export function useStatistics() {
@@ -228,7 +241,7 @@ export function useStatistics() {
     newRequests: requests.data.filter(r => r.status === 'new').length,
     quotedRequests: requests.data.filter(r => r.status === 'quoted').length,
     completedRequests: requests.data.filter(r => r.status === 'completed').length,
-    emergencyRequests: requests.data.filter(r => r.is_emergency).length,
+    emergencyRequests: requests.data.filter(r => r.status === 'emergency').length,
   };
 
   return {

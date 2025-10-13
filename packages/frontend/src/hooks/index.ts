@@ -127,6 +127,9 @@ export {
   useRequestNotes,
   useQuoteAttachments,
 
+  // Invoices
+  useInvoiceById,
+
   // Admin Dashboard
   useAdminDashboard,
   useStatistics,

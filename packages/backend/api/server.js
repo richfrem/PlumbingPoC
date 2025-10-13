@@ -13,6 +13,7 @@ import userRoutes from './routes/userRoutes.js';
 import followUpRoutes from './routes/followUpRoutes.js';
 import triageRoutes from './routes/triageRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
+import invoiceRoutes from './routes/invoiceRoutes.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/follow-up', followUpRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api/agents', agentRoutes);
+app.use('/api', invoiceRoutes);
 app.use('/api', userRoutes);
 
 app.get('/api/health', (req, res) => {

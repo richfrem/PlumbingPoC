@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS "public"."invoices" (
     "notes" "text",
     "ai_generated" boolean DEFAULT false,
     "ai_variance_explanation" "text",
+    "request_id" "uuid",
     CONSTRAINT "invoices_payment_method_check" CHECK (("payment_method" = ANY (ARRAY['stripe'::"text", 'check'::"text", 'cash'::"text", 'etransfer'::"text", 'other'::"text"]))),
     CONSTRAINT "invoices_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'paid'::"text", 'overdue'::"text", 'cancelled'::"text", 'disputed'::"text", 'partially_paid'::"text"])))
 );
@@ -522,6 +523,10 @@ CREATE INDEX "idx_invoices_paid_at" ON "public"."invoices" USING "btree" ("paid_
 
 
 
+CREATE INDEX "idx_invoices_request_id" ON "public"."invoices" USING "btree" ("request_id");
+
+
+
 CREATE INDEX "idx_invoices_status" ON "public"."invoices" USING "btree" ("status");
 
 
@@ -583,6 +588,11 @@ COMMENT ON TRIGGER "trigger_sync_invoice_status" ON "public"."invoices" IS 'Sync
 
 
 CREATE OR REPLACE TRIGGER "update_requests_updated_at" BEFORE UPDATE ON "public"."requests" FOR EACH ROW EXECUTE FUNCTION "public"."update_requests_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."invoices"
+    ADD CONSTRAINT "fk_invoices_request" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE CASCADE;
 
 
 

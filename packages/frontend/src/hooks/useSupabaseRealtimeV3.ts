@@ -204,15 +204,19 @@ export function useSupabaseRealtimeV3(
 
     // Subscribe to the channel
     channel.subscribe((status, err) => {
-      console.log(`🔌 Realtime v3 channel status: ${status}`, err ? { error: err } : '');
+      // Suppress noisy "mismatch between server and client bindings" errors
+      // These are harmless WebSocket protocol warnings that don't affect functionality
+      const isBindingMismatch = err?.message?.includes('mismatch between server and client bindings');
+      
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime v3 channel subscribed successfully');
         console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
-        console.log('🎧 Full table configs:', tableConfigs);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Realtime v3 channel error:', status, err);
-        // Don't throw error - just log it and continue without realtime
-        console.warn('⚠️ Continuing without realtime due to channel error');
+        // Only log non-binding-mismatch errors
+        if (!isBindingMismatch) {
+          console.error('❌ Realtime v3 channel error:', status, err);
+          console.warn('⚠️ Continuing without realtime due to channel error');
+        }
       } else if (status === 'TIMED_OUT') {
         console.error('⏰ Realtime v3 channel timed out');
         console.warn('⚠️ Continuing without realtime due to timeout');

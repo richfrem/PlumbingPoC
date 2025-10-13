@@ -837,10 +837,14 @@ const updateRequestStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, scheduled_start_date } = req.body;
 
+    console.log('updateRequestStatus called:', { id, status, scheduled_start_date });
+
     const updatePayload = { status };
     if (scheduled_start_date) {
         updatePayload.scheduled_start_date = new Date(scheduled_start_date).toISOString();
     }
+
+    console.log('updatePayload:', updatePayload);
 
     const { data, error } = await supabase
       .from('requests')
@@ -849,13 +853,17 @@ const updateRequestStatus = async (req, res, next) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
     if (!data) return res.status(404).json({ error: 'Request not found.' });
 
     await sendStatusUpdateEmail(data);
 
     res.status(200).json(data);
   } catch (err) {
+    console.error('updateRequestStatus error:', err);
     next(err);
   }
 };

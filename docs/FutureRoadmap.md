@@ -72,48 +72,122 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 
 ### Phase 1: Manual Invoice Creation (Foundation)
 
-**Status:** 🔨 Planned
+**Status:** ✅ **COMPLETED** (December 2025)
 
-**Implementation Strategy:**
+**Implemented Features:**
 
-1. **"Create Invoice" Button** in Admin Dashboard
-   - Appears when job status = 'completed'
-   - Pre-populates from original quote
-   - Located in Request Detail Modal
+1. ✅ **"Create Invoice" / "Edit Invoice" / "View Invoice" Buttons** in Request Detail Modal
+   - Appears when job status = 'completed' (Create) or 'invoiced' (Edit/View)
+   - Modes: create, edit, view with proper access control
+   - Located in Request Detail Modal action buttons
 
-2. **Invoice Builder UI**
-   - Itemized line items (labor, materials, permits, fees)
-   - Auto-populate from quote, allow modifications
-   - Add/remove line items dynamically
-   - Tax calculation (configurable rate)
-   - Subtotal + Tax = Total Due
+2. ✅ **Invoice Builder UI (InvoiceFormModal.tsx)**
+   - Itemized line items for labor and materials
+   - Dynamic add/remove line items
+   - Real-time BC tax calculation (GST 5% on all, PST 7% on materials only)
+   - Subtotal + Tax = Total Due with auto-calculation
+   - Due date picker
+   - Payment method selector
+   - Notes field for additional context
 
-3. **Database Schema (Already Exists)**
+3. ✅ **Database Schema**
    ```sql
-   invoices table:
-   - id, user_id, quote_id (links to original estimate)
-   - amount_due, due_date
-   - status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled' | 'disputed'
-   - created_at
+   invoices table (Enhanced):
+   - id (UUID), request_id (FK to requests)
+   - line_items (JSONB array with type, description, quantity, unit_price)
+   - subtotal, gst_amount, pst_amount, total_amount
+   - due_date, payment_method, notes
+   - status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+   - paid_at, created_at, updated_at
    ```
 
-4. **Invoice PDF Generation**
-   - Use library like `pdfkit` or `react-pdf`
-   - Professional template with business logo
-   - Itemized breakdown
-   - Payment instructions
-   - Due date prominently displayed
+4. ✅ **Backend API (invoiceController.js)**
+   - POST `/api/requests/:requestId/invoices` - Create invoice
+   - GET `/api/invoices/:id` - Get invoice with request data (FK join fixed)
+   - PATCH `/api/invoices/:id` - Update invoice (blocks if paid)
+   - POST `/api/invoices/:id/mark-paid` - Mark as paid
+   - GET `/api/invoices` - List invoices (admin sees all, users see own)
+   - Authentication & authorization (admin or request owner)
 
-5. **Email Delivery**
-   - Send via Resend API (already integrated)
-   - Attach PDF invoice
-   - Include "View Invoice" link to customer portal
-   - "Pay Online" button (Phase 3)
+5. ✅ **Frontend Hook (useInvoiceById)**
+   - Follows same pattern as useRequestById for consistency
+   - Real-time data loading via TanStack Query
+   - Error handling and loading states
+
+6. ✅ **Unified Customer Info Display**
+   - CustomerInfoSection component shows customer name, phone, email
+   - Service address with edit capability
+   - Consistent styling across all modals (quotes, invoices, requests)
 
 **Status Synchronization:**
-- When invoice created: `request.status` → `'invoiced'`
-- When invoice sent: Email customer, update `invoice.status` → `'sent'`
-- Admin can track invoice status in Request Detail Modal
+- ✅ When invoice created: `request.status` → `'invoiced'`
+- ⏳ Email delivery pending (Phase 1.5)
+- ⏳ PDF generation pending (Phase 1.5)
+
+**Technical Achievements:**
+- ✅ Fixed Supabase FK join issues (documented in DEVELOPMENT_ENVIRONMENT_SETUP.md)
+- ✅ Proper separation of chip color vs header background color
+- ✅ Removed redundant customer name from modal header
+- ✅ Invoice data pre-population for edit mode
+
+---
+
+### Phase 1.5: Customer Portal & Payments (Next Up)
+
+**Status:** 🔨 **IN PROGRESS** - Starting Tomorrow
+
+**Implementation Order (Revised):**
+
+**NEXT STEPS (Tomorrow):**
+
+1. **Customer Portal Invoice View** ⏱️ 2-3 hours
+   - Create new route: `/invoices/:id` in customer portal
+   - Read-only invoice display showing:
+     - Customer name, service address
+     - Itemized line items (labor/materials)
+     - GST/PST tax breakdown
+     - Total amount due
+     - Due date
+   - Clean HTML/React view (no PDF yet)
+   - Authorization: customer can only view their own invoices
+   - Mobile-responsive design
+   - **Purpose:** Foundation for payment button integration
+
+2. **Stripe Test Mode Integration & Payment Testing** ⏱️ 4-5 hours
+   - Set up Stripe account in test mode
+   - Add environment variables:
+     - `STRIPE_TEST_SECRET_KEY`
+     - `STRIPE_TEST_PUBLISHABLE_KEY`
+   - Backend: Create payment intent endpoint `/api/invoices/:id/create-payment-intent`
+   - Backend: Stripe webhook handler `/netlify/functions/stripe-webhook.mjs`
+   - Frontend: "Pay Invoice" button in portal (from step 1)
+   - Frontend: Stripe Elements integration for card input
+   - Test with Stripe test cards:
+     - ✅ Success: `4242 4242 4242 4242`
+     - ❌ Decline: `4000 0000 0000 0002`
+   - End-to-end test:
+     - Create invoice → Customer views in portal → Pays with test card → 
+     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' → 
+     - Owner receives SMS notification
+   - Document test scenarios and results
+
+**LATER (After Payment Works):**
+
+3. **Invoice PDF Generation & Email Delivery** ⏱️ 6-8 hours
+   - Library: `react-pdf` or `pdfkit`
+   - Professional template with business logo
+   - PDF generation endpoint
+   - Email delivery via Resend API
+   - "Download PDF" button in portal
+   - Update `invoice.status` to 'sent' after email delivery
+
+**Total Phase 1.5 Effort:** 12-16 hours
+
+**Rationale for Order:**
+- ✅ Faster time to value: customers can pay invoices immediately
+- ✅ Payment processing is critical path; PDF is polish
+- ✅ Test Stripe integration before adding PDF complexity
+- ✅ Portal view provides foundation for both payment and PDF features
 
 ---
 
@@ -312,28 +386,46 @@ completed → invoiced → paid (OR overdue OR disputed)
 
 ### Implementation Roadmap
 
-**Month 1-2: Foundation (Phase 1)**
-- [ ] Design Invoice Builder UI
-- [ ] Implement itemized line item entry
-- [ ] PDF generation and email delivery
-- [ ] Basic status sync (invoiced)
-- [ ] Admin can create/send invoices manually
+**Phase 1: Foundation (COMPLETED ✅)**
+- [x] Design Invoice Builder UI (InvoiceFormModal.tsx)
+- [x] Implement itemized line item entry (labor + materials)
+- [x] BC tax calculation (GST 5% all, PST 7% materials)
+- [x] Basic status sync (invoiced)
+- [x] Admin can create/edit/view invoices
+- [x] Database schema with request_id FK
+- [x] Backend API with proper authentication
+- [x] useInvoiceById hook following request pattern
+- [x] Unified CustomerInfoSection component
+- [x] Fixed Supabase FK join issues
 
-**Month 3-4: AI Assistance (Phase 2)**
+**Phase 1.5: Customer Portal & Payments (IN PROGRESS 🔨 - Tomorrow)**
+- [ ] **TOMORROW:** Customer portal invoice view (HTML/React, 2-3 hours)
+- [ ] **TOMORROW:** Stripe test mode setup and integration (4-5 hours)
+- [ ] **TOMORROW:** Payment button with Stripe Elements
+- [ ] **TOMORROW:** Create payment intent endpoint
+- [ ] **TOMORROW:** Stripe webhook handler
+- [ ] **TOMORROW:** Test payment flow end-to-end
+- [ ] **TOMORROW:** Document test scenarios
+- [ ] **LATER:** Invoice PDF generation (react-pdf, 6-8 hours)
+- [ ] **LATER:** Email invoice to customer (Resend API)
+- [ ] **LATER:** Download PDF functionality
+- [ ] **LATER:** Update invoice.status to 'sent' automation
+
+**Phase 2: AI Assistance (Planned 🤖)**
 - [ ] Build invoice-generator-agent.yaml
 - [ ] AI reads completion notes → suggests line items
 - [ ] Variance detection and explanation generation
 - [ ] Dispute risk scoring
 - [ ] Test with historical job data
 
-**Month 5-6: Payments (Phase 3)**
+**Phase 3: Payments (Planned 💳)**
 - [ ] Stripe account setup and integration
 - [ ] Payment button in customer portal
 - [ ] Webhook for payment success
 - [ ] Status sync (paid, overdue)
 - [ ] Receipt generation and email
 
-**Month 7+: Advanced Features (Phase 4-5)**
+**Phase 4-5: Advanced Features (Future 🚀)**
 - [ ] Enhanced status workflow implementation
 - [ ] Automated overdue reminders
 - [ ] Dispute tracking and resolution

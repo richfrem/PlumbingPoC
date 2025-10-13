@@ -7,7 +7,6 @@ import { Zap, RefreshCw } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import AttachmentSection from './AttachmentSection';
 import apiClient from '../../../lib/apiClient';
-import CustomerInfoSection from './CustomerInfoSection';
 import CommunicationLog from './CommunicationLog';
 import QuoteList from './QuoteList';
 import RequestProblemDetails from './RequestProblemDetails';
@@ -16,11 +15,13 @@ import ModalHeader from './ModalHeader';
 import ModalFooter from './ModalFooter';
 import RequestActions from './RequestActions';
 import CompleteJobModal from './CompleteJobModal';
-import ServiceLocationManager from './ServiceLocationManager';
+import InvoiceFormModal from './InvoiceFormModal';
+import CustomerInfoSection from './CustomerInfoSection';
 import ScheduleJobSection from './ScheduleJobSection';
-import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation, useMarkRequestAsViewed } from '../../../hooks';
+import { useUpdateRequestStatus, useAcceptQuote, useTriageRequest, useUpdateAddressMutation, useMarkRequestAsViewed, useInvoiceById } from '../../../hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequestById } from '../../../hooks';
+import statusColors from '../../../lib/statusColors.json';
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -69,10 +70,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     },
   });
 
+  // Load invoice data using the same pattern as request data
+  const invoiceId = (request as any)?.invoice_id;
+  const { data: invoiceArray } = useInvoiceById(invoiceId || '', {
+    enabled: !!invoiceId && isOpen
+  });
+  const invoiceData = invoiceArray?.[0];
 
   const [scheduledStartDate, setScheduledStartDate] = useState('');
   const [scheduledDateChanged, setScheduledDateChanged] = useState(false);
   const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
@@ -124,6 +133,41 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     setScheduledStartDate(date);
     setScheduledDateChanged(true);
   }, []);
+
+  const handleCreateInvoice = () => {
+    setInvoiceMode('create');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleEditInvoice = () => {
+    if (!invoiceData) {
+      setSnackbarMessage('Invoice data not available. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    setInvoiceMode('edit');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleViewInvoice = () => {
+    if (!invoiceData) {
+      setSnackbarMessage('Invoice data not available. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    setInvoiceMode('view');
+    setInvoiceModalOpen(true);
+  };
+
+  const handleInvoiceModalClose = (updated?: boolean) => {
+    setInvoiceModalOpen(false);
+    if (updated) {
+      refreshRequestData();
+      onUpdateRequest();
+    }
+  };
 
   const handleSaveAndSchedule = useCallback(async () => {
     if (!request || !scheduledStartDate) return;
@@ -191,6 +235,10 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const hasAcceptedQuotes = request.quotes?.some(q => q.status === 'accepted') || false;
   const isEditable = !isReadOnly && (isAdmin || !hasAcceptedQuotes);
   const canEditAttachments = !isReadOnly;
+  // Allow admin or request owner to edit address
+  const isRequestOwner = profile?.user_id === (request as any).user_id;
+  const canEditAddress = isAdmin || isRequestOwner;
+
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
@@ -198,6 +246,41 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const headerActions = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {loading && <RefreshCw size={14} className="animate-spin" />}
+      
+      {/* Invoice Button Logic */}
+      {isAdmin && request.status === 'completed' && !request.invoice_id && (
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small" 
+          onClick={handleCreateInvoice}
+        >
+          Create Invoice
+        </Button>
+      )}
+      
+      {isAdmin && request.status === 'invoiced' && request.invoice_id && (
+        <Button 
+          variant="contained" 
+          color="primary" 
+          size="small" 
+          onClick={handleEditInvoice}
+        >
+          Edit Invoice
+        </Button>
+      )}
+      
+      {(['invoiced', 'paid', 'overdue', 'disputed'].includes(request.status) && request.invoice_id) && (
+        <Button 
+          variant="outlined" 
+          color="primary" 
+          size="small" 
+          onClick={handleViewInvoice}
+        >
+          View Invoice
+        </Button>
+      )}
+      
       {isAdmin && !request.triage_summary && (
         <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} startIcon={<Zap />}>
           {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
@@ -210,18 +293,29 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '800px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
         
-        <ModalHeader title={headerTitle} subtitle={headerSubtitle} onClose={onClose} actions={headerActions} />
+        <ModalHeader 
+          title={headerTitle} 
+          subtitle={headerSubtitle} 
+          onClose={onClose} 
+          actions={headerActions}
+          statusColor={statusColors[request.status as keyof typeof statusColors] || statusColors.default}
+        />
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <CustomerInfoSection 
+              mode="view"
+              showCustomerInfo={true}
+              request={request}
+              initialAddress={request.service_address}
+              isAdmin={isAdmin}
+              canEdit={canEditAddress}
+              onSave={handleAddressUpdate}
+              onModeChange={() => {}}
+              isUpdating={updateAddressMutation.isPending}
+            />
+            
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Customer Name</Typography>
-                  <Typography variant="body1">{request.user_profiles?.name || request.customer_name || 'N/A'}</Typography>
-                </Box>
-              </Grid>
-              <ServiceLocationManager mode="view" initialAddress={request.service_address} isAdmin={isAdmin} onSave={handleAddressUpdate} onModeChange={() => {}} isUpdating={updateAddressMutation.isPending}/>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Status</Typography>
@@ -267,6 +361,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       </Paper>
 
       <CompleteJobModal isOpen={isCompleteModalOpen} onClose={() => setCompleteModalOpen(false)} onConfirm={handleConfirmCompletion} isSubmitting={completeJobMutation.isPending} jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} />
+      
+      <InvoiceFormModal 
+        isOpen={isInvoiceModalOpen} 
+        onClose={handleInvoiceModalClose} 
+        invoice={invoiceData}
+        mode={invoiceMode}
+        request={request}
+        requestId={request.id}
+      />
+      
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
       </Snackbar>

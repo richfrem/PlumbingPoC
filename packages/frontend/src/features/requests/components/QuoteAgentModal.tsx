@@ -34,7 +34,7 @@ import {
   User
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import ServiceLocationManager from "./ServiceLocationManager";
+import CustomerInfoSection from "./CustomerInfoSection";
 import AttachmentSection from "./AttachmentSection";
 import { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
@@ -1153,7 +1153,7 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
         </Box>
       </Paper>
 
-      <ServiceLocationManager
+      <CustomerInfoSection
         mode="create"
         isAdmin={false}
         initialAddress={profileAddress}
