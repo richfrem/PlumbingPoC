@@ -128,10 +128,10 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [filteredRequests, viewMode]);
 
   const handleRowClick = (params: any) => {
-    const fullRequestData = allRequests.find(r => r.id === params.id);
-    if (fullRequestData) {
-      setSelectedRequest(fullRequestData);
-      setIsModalOpen(true);
+    // Instead of directly opening the modal, navigate via hash so URL reflects state
+    const id = params.id as string;
+    if (id) {
+      window.location.hash = `#/requests/${id}`;
     }
   };
 
@@ -140,9 +140,43 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [refreshRequests]);
 
   const handleCloseModal = () => {
+    // Close by navigating back to dashboard route
+    window.location.hash = '#/dashboard';
     setIsModalOpen(false);
     setSelectedRequest(null);
   };
+
+  // Sync modal state with URL hash: if #/requests/:id, open modal for that id
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash || '';
+      if (hash.startsWith('#/requests/')) {
+        const id = hash.split('/')[2];
+        if (id) {
+          const found = allRequests.find(r => r.id === id);
+          if (found) {
+            setSelectedRequest(found);
+            setIsModalOpen(true);
+          } else {
+            // If not found yet (list may still be loading), keep modal closed but
+            // allow the RequestDetailModalLoader to fetch details via hook if needed.
+            setSelectedRequest(null);
+            setIsModalOpen(true);
+          }
+          return;
+        }
+      }
+      // Default: not a request deep-link
+      setIsModalOpen(false);
+      setSelectedRequest(null);
+    };
+
+    // Run on mount and whenever allRequests changes
+    checkHash();
+    const onHashChange = () => checkHash();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [allRequests]);
 
   const handleStageClick = useCallback((stageId: string, statuses: string[]) => {
     // If clicking the same stage, clear filter to show all

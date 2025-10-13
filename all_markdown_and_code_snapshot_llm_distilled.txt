@@ -1,13 +1,16 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-13T03:50:14.755Z
+Generated On: 2025-10-13T23:35:57.123Z
 
-# Mnemonic Weight (Token Count): ~353,988 tokens
+# Mnemonic Weight (Token Count): ~364,715 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
   ./.env
   ./.env.example
+  ./.env.test
+  ./.githooks/
+  ./.githooks/pre-commit
   ./.github/
   ./.github/copilot-instructions.md
   ./.github/workflows/
@@ -64,6 +67,7 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./adrs/027-self-contained-agent-functions.md
   ./adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md
   ./adrs/029-unified-customer-info-component-architecture.md
+  ./adrs/030-domain-registration-and-dns-hosting-strategy.md
   ./agents/
   ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
@@ -124,8 +128,10 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./docs/REALTIME_SYSTEM.md
   ./docs/RESEND_FREE_PLAN_LIMITATIONS.md
   ./docs/RealTimeSynchronization.md
+  ./docs/SECURITY.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
+  ./docs/configuring-resend-email.md
   ./environments/
   ./find_invoice_fkey.sql
   ./netlify.toml
@@ -230,6 +236,8 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./packages/frontend/src/features/requests/components/RequestDetailModal.tsx
   ./packages/frontend/src/features/requests/components/RequestProblemDetails.tsx
   ./packages/frontend/src/features/requests/components/ScheduleJobSection.tsx
+  ./packages/frontend/src/features/requests/pages/
+  ./packages/frontend/src/features/requests/pages/RequestView.tsx
   ./packages/frontend/src/features/requests/types/
   ./packages/frontend/src/features/requests/types/index.ts
   ./packages/frontend/src/features/services/
@@ -252,6 +260,7 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./playwright.config.ts
   ./quick_invoice_check.sql
   ./scripts/
+  ./scripts/setup-git-hooks.sh
   ./shutdown.sh
   ./startup.sh
   ./supabase/
@@ -271,6 +280,7 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./supabase/functions/geocode/index.ts
   ./supabase/migrations/
   ./supabase/migrations/20251012_add_request_id_to_invoices.sql
+  ./supabase/migrations/20251013_create_email_audit_table.sql
   ./supabase/migrations/add_invoice_enhancements.sql
   ./supabase/migrations/fix_status_constraint_local.sql
   ./supabase/schema.sql
@@ -364,6 +374,7 @@ Generated On: 2025-10-13T03:50:14.755Z
   ./tests/e2e/specs/admin-journeys/admin-quote-workflow.spec.ts
   ./tests/e2e/specs/admin-journeys/admin-request-management.spec.ts
   ./tests/e2e/specs/admin-journeys/admin-test-roadmap.md
+  ./tests/e2e/specs/admin-journeys/request-deeplink.spec.ts
   ./tests/e2e/specs/integration/
   ./tests/e2e/specs/integration/complete-user-admin-journey.spec.ts
   ./tests/e2e/specs/integration/realtime-sync.spec.ts
@@ -5732,6 +5743,102 @@ Component handles format: `"Street, City, Province PostalCode"`
 - InvoiceFormModal: `/packages/frontend/src/features/requests/components/InvoiceFormModal.tsx`
 - RequestDetailModal: `/packages/frontend/src/features/requests/components/RequestDetailModal.tsx`
 - QuoteAgentModal: `/packages/frontend/src/features/requests/components/QuoteAgentModal.tsx`
+
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/030-domain-registration-and-dns-hosting-strategy.md ---
+
+---
+adr: 030
+title: "Domain Registration and DNS Hosting Strategy"
+date: 2025-10-13
+status: Accepted
+---
+
+# ADR 030 — Domain Registration and DNS Hosting Strategy
+
+Status: Accepted
+
+Date: 2025-10-13
+
+## Context
+
+The PlumbingPOC project (public-facing product: CopilotForTrades.com) requires a public domain name to be pointed at our web application hosted on Netlify. We must decide where to register the domain and where to manage DNS records. This choice affects cost, flexibility, security, and day-to-day management.
+
+Key constraints and requirements:
+
+- Competitive registrar pricing and basic domain management features.
+- High-performance DNS hosting with fast propagation and built-in HTTPS/SSL support.
+- Minimizing vendor lock-in for future host migrations.
+- Separation of concerns for security (domain registrar vs. hosting provider access).
+
+## Decision
+
+We will register the domain with Namecheap (a dedicated domain registrar) and delegate DNS management to Netlify by updating the domain's nameservers at Namecheap to Netlify's nameservers.
+
+In short: register at Namecheap; manage DNS records in Netlify.
+
+## Considered Options
+
+1. Register with Namecheap and manage DNS at Namecheap
+   - Register domain at Namecheap and use Namecheap DNS to create A/CNAME/TXT records pointing to Netlify.
+
+2. Register and manage DNS with Netlify
+   - Use Netlify's integrated domain registration and DNS management for the whole workflow.
+
+3. Register with Namecheap, delegate DNS to Netlify (Chosen)
+   - Register domain at Namecheap, then update Namecheap's nameservers to Netlify's nameservers so Netlify manages DNS records.
+
+## Rationale
+
+We selected Option 3 (register at Namecheap and delegate DNS to Netlify) because it provides the best balance of portability, operational simplicity for day-to-day DNS changes, cost-effectiveness, and security separation.
+
+- Portability & Avoiding Vendor Lock-in
+  - Keeping domain registration at a separate registrar (Namecheap) ensures the domain is not locked into Netlify. If we need to migrate hosting to Vercel, AWS, or another provider, we retain full control over the domain and can change DNS delegation without transferring registration.
+
+- Leverage Platform-Specific Benefits
+  - Netlify provides a high-performance DNS platform and tight integration with Netlify Hosts (automatic SSL provisioning, simple site-to-record mapping, and convenient UI for DNS records). Registering at Namecheap (which typically has lower registration costs and a focused registrar feature set) plus using Netlify DNS yields the advantages of both.
+
+- Security: Separation of Concerns
+  - If a hosting account is compromised, the attacker would not automatically have control of domain registration (which remains in Namecheap). This separation reduces blast radius and provides clearer account boundaries.
+
+- Simplicity of Day-to-Day Management (Post-Setup)
+  - After initial delegation, day-to-day DNS management (adding MX/TXT records for email providers such as Resend, updating A/CNAME records, or adding verification records) is handled in the Netlify dashboard alongside site deploys. This centralizes operational changes for site owners and ops engineers.
+
+## Consequences
+
+Positive:
+
+- Increased flexibility and portability — the domain can be re-pointed to another provider without transferring registration.
+- Ability to leverage Netlify's DNS performance, automatic TLS, and UI-driven DNS changes.
+- Security benefit from separating registrar account credentials from hosting credentials.
+
+Negative:
+
+- Requires managing credentials for two accounts (Namecheap and Netlify) and ensuring both use strong authentication (preferably MFA).
+- Slightly more complex initial setup (nameserver delegation + verification) compared to an all-in-one registrar+host approach.
+
+## Implementation Notes / Next Steps
+
+1. Purchase domain at Namecheap using the organizational account.
+2. Configure Nameserver Delegation in Namecheap to the Netlify nameservers provided in the Netlify Domains/DNS settings.
+3. In Netlify, add the domain (CopilotForTrades.com) to the site and verify ownership following Netlify's instructions.
+4. Verify SSL provisioning and that the site serves over HTTPS.
+5. Add operational docs (credentials owners, MFA requirements, registrar account contact details) to the project's secure ops documentation.
+6. Add DNS change and domain transfer playbooks to `docs/OPS.md` or equivalent (include steps for rotating registrar credentials and transferring the domain if required).
+
+## Alternatives and Revisit Conditions
+
+- If Netlify's DNS capabilities become insufficient for our needs (e.g., advanced DNS features not supported), we may revisit and delegate DNS to a dedicated DNS provider (Cloudflare, AWS Route 53) while keeping registration at Namecheap.
+- If organizational policy requires consolidation of domain registration and DNS at a single enterprise provider, revisit this ADR.
+
+## References
+
+- Netlify DNS documentation: https://docs.netlify.com/domains-https/netlify-dns/
+- Namecheap registrar: https://www.namecheap.com/
+
+---
+Signed-off-by: Project Maintainers
 
 --- END OF FILE ---
 
@@ -12241,6 +12348,55 @@ import dotenv from 'dotenv';
 dotenv.config();
 ```
 
+### Issue 13: Supabase client init crash in Netlify Lambda (fileURLToPath on undefined)
+
+**Problem:** After deployment the API functions were returning HTTP 502 (Bad Gateway). Netlify function logs showed repeated runtime crashes during function initialization with the following error:
+
+```
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+    at fileURLToPath (node:internal/url:1606:11)
+    at packages/backend/api/config/supabase/database.js (..):<line>
+```
+
+**Symptoms:**
+- Frontend console: repeated 502 errors when calling `/api/requests`
+- Netlify function logs: Unhandled Promise Rejection during init, pointing to `fileURLToPath(import.meta.url)` usage inside the Supabase client initializer
+
+**Root Cause:**
+- The Supabase client module (`packages/backend/api/config/supabase/database.js`) used `fileURLToPath(import.meta.url)` to resolve a `.env` file path. In Netlify's bundled Lambda environment `import.meta.url` can be undefined, causing `fileURLToPath(undefined)` and an immediate crash during module import — which prevents the function from starting and yields 502 responses.
+
+**Fix Applied:**
+- Replaced `import.meta.url` usage with a safe `.env` loading strategy that:
+  - Only attempts to load a `.env` file when required (i.e., when `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` are not present in process.env) to avoid unnecessary file I/O in production lambdas.
+  - Uses `process.cwd()` as the path base to resolve `.env` (no reliance on `import.meta.url`).
+  - Wraps `.env` loading in a try/catch so that failure to locate `.env` doesn't throw during lambda init.
+
+Key change (conceptual):
+
+```js
+// Before: used fileURLToPath(import.meta.url) -> could be undefined in lambda
+// After: try load .env from process.cwd() only when needed, fallback safely
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
+```
+
+**Commit:** 9170270 (fix(supabase): robust .env loading for Netlify lambdas (avoid import.meta.url))
+
+**Verification steps performed:**
+1. Locally imported the modified module to ensure it does not throw on startup:
+   - `node -e "(async()=>{ await import('./packages/backend/api/config/supabase/database.js'); console.log('ok'); })()"`
+2. Pushed the fix and monitored Netlify function logs for the `api` function.
+3. Confirmed Netlify no longer shows the `ERR_INVALID_ARG_TYPE` stack trace originating from `database.js`.
+4. Exercised the endpoint (`GET /api/requests`) in the deployed site; 502s stopped and the endpoint returned expected responses (after ensuring required env vars were present in Netlify).
+
+**Prevention & Recommendations:**
+- Never rely on `import.meta.url` for path resolution inside serverless/bundled environments; use `process.cwd()` or explicit environment-driven paths instead.
+- Always guard file-system operations with try/catch during module initialization so that missing local files do not crash lambdas.
+- Ensure critical environment variables (e.g., `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) are configured in Netlify UI — in production lambdas `.env` won't be available and the code must rely on env vars only.
+- Add a short smoke-test in the deploy pipeline that calls a simple function endpoint after deployment (e.g., `/api/health` or `/api/requests?limit=1`) and fails the deploy if it returns 5xx.
+
+
 ### Issue 8: ESM vs CommonJS Module Conflicts
 
 **Problem:** Netlify functions initially used CommonJS syntax (`.cjs`, `require()`) but the backend application code was written using ES Modules (`.js` with `"type": "module"`, `import`), causing module loading failures.
@@ -14410,6 +14566,81 @@ The comprehensive real-time system now correctly handles all status synchronizat
 - `packages/frontend/src/lib/apiClient.ts` - Fixed development routing to bypass Vite proxy issues
 --- END OF FILE ---
 
+--- START OF FILE ./docs/SECURITY.md ---
+
+## Security guidance for PlumbingPOC
+
+This file documents a few practical steps and guidelines to protect secrets and reduce the risk of leaking API keys (OpenAI, Gemini, Twilio, Resend, etc.).
+
+1) .env handling (local only)
+
+- Keep sensitive keys out of the repository. The repository's `.gitignore` already contains `.env*` and `!.env.example` so example files are tracked but real secrets are not.
+- Never commit real `.env` files. Use environment variables in CI and deployment platforms (Netlify, Vercel, etc.) or a secrets manager.
+
+2) If you accidentally committed a secret
+
+- Rotate the secret immediately in the provider console (OpenAI, Gemini, Twilio, Resend). Treat the key as compromised.
+- Remove the secret from the repo in a non-destructive way:
+
+  ```bash
+  # remove file from index but keep locally
+  git rm --cached .env
+  git commit -m "chore: remove .env from repo"
+  git push
+  ```
+
+- If the secret was included in past commits, consider a history purge (e.g. `git filter-repo`) and coordinate with your team. See the note below for suggested commands.
+
+3) Quick commands to locate possible leaked keys in history
+
+```bash
+# Search for literal occurrences of common secret names
+git log -S 'OPENAI_API_KEY' --source --all
+git grep -n "OPENAI_API_KEY" $(git rev-list --all)
+``` 
+
+If you find evidence of a leaked key in history, rotate the key before rewriting history. Rewriting history is disruptive; preferred flow is rotation + removal from tip (see above). If you must rewrite history, `git filter-repo` is recommended over `filter-branch`.
+
+4) Pre-commit hooks and developer setup
+
+- This repo includes a versioned Git hook in `.githooks/pre-commit` that blocks commits that attempt to add or modify `.env*` files. To enable it locally, run:
+
+```bash
+bash scripts/setup-git-hooks.sh
+```
+
+- The setup script sets your `core.hooksPath` to `.githooks` so the hook will run automatically for commits.
+
+5) CI and real-AI tests
+
+- By default, tests should not use real AI provider keys. Gate real-AI integration tests behind an environment variable such as `RUN_REAL_AI=true`. CI should not set this variable unless explicitly configured.
+
+6) Rotating an OpenAI key (example)
+
+1. Go to https://platform.openai.com/account/api-keys
+2. Revoke the old key and create a new one
+3. Update your deployment environment variables (Netlify / Vercel / CI secret store)
+4. Remove any local `.env` copies or move them to a secure vault
+
+7) If you need help
+
+If you'd like, I can help: 1) scan Git history for secrets, 2) prepare a safe `git filter-repo` script, and 3) add a GitHub Actions secret-rotation reminder. Ask me to proceed and I'll prepare the changes.
+
+---
+
+Appendix: example commands for history rewrite (use only after rotation and team coordination):
+
+```bash
+# Install git-filter-repo if needed, then:
+# WARNING: this rewrites history. Coordinate with all collaborators.
+git clone --mirror <repo-url> repo.git
+cd repo.git
+git filter-repo --invert-paths --path .env
+git push --force
+```
+
+--- END OF FILE ---
+
 --- START OF FILE ./docs/SMS_TROUBLESHOOTING.md ---
 
 # SMS Implementation Troubleshooting Guide
@@ -14627,6 +14858,75 @@ This is the final and most important step. It securely provides the credentials 
 ### **Setup Complete!**
 
 Your work is now done. Provide this guide and the following technical specification to your developer. They will have everything they need to implement the feature. You may need to redeploy your site for the new environment variables to take effect.
+--- END OF FILE ---
+
+--- START OF FILE ./docs/configuring-resend-email.md ---
+
+# How to Configure Resend for Email Sending on Netlify
+
+When your domain's nameservers point to Netlify, all DNS records (including those required by third-party services such as Resend) must be created and managed in the Netlify DNS UI. Do **not** attempt to add these records at your domain registrar (for example, Namecheap) because changes there will be ignored while Netlify is authoritative for DNS.
+
+## Prerequisites
+
+- Access to the Netlify account that manages your domain (site owner or team member with DNS edit permissions).
+- Access to the Resend dashboard and the `Domains` section for your Resend account.
+- The domain already added to Netlify and the Netlify nameservers configured at your registrar (this project uses `CopilotForTrades.com`).
+- A short propagation window allowance (DNS changes can take minutes to hours to propagate).
+
+## Step-by-Step Configuration
+
+### Step 1 — Get the DNS records from Resend
+
+1. Sign in to the Resend dashboard.
+2. Open `Domains` and select your domain (e.g., `CopilotForTrades.com`).
+3. Copy the DNS records Resend lists for `MX`, `TXT` (SPF), `TXT` (DKIM), and `_dmarc`.
+
+### Step 2 — Open the Netlify DNS panel for your domain
+
+1. Sign in to Netlify and open your site.
+2. Go to `Domains` and click the domain name (`CopilotForTrades.com`).
+3. Open the `DNS` panel where you can view and add DNS records.
+
+### Step 3 — Add the records to Netlify
+
+1. Click `Add new record` for each record Resend provided.
+2. For each record, paste the `Type`, `Name` (Netlify's Name field), and `Value` exactly as Resend shows them.
+3. For `MX` records, set the `Priority` field as instructed.
+4. Save each record. Repeat until all required records are added.
+
+## Required DNS Records for `CopilotForTrades.com`
+
+Add the following records in Netlify's DNS editor for `CopilotForTrades.com`.
+
+| Type | Name (in Netlify) | Value (in Netlify) | Priority (for MX) |
+|------|-------------------|--------------------|-------------------|
+| `MX` | `send` | `feedback-smtp.us-east-1.amazonses.com` | `10` |
+| `TXT` | `send` | `v=spf1 include:amazonses.com ~all` | `N/A` |
+| `TXT` | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCnFve...` (the full DKIM key) | `N/A` |
+| `TXT` | `_dmarc` | `v=DMARC1; p=none;` | `N/A` |
+
+> Note: Replace the truncated DKIM value above with the full, long key exactly as Resend provides. The DKIM entry typically begins with `p=` and is a long base64-encoded string.
+
+## Verification
+
+After adding all records in Netlify:
+
+1. Return to the Resend dashboard `Domains` section for `CopilotForTrades.com`.
+2. Click the `Verify Records` button.
+3. Wait for Resend to report verification success. DNS propagation can take from a few minutes up to 48 hours depending on DNS caches.
+
+If verification fails after an hour, re-check that:
+
+- The `Name` fields match exactly (Netlify's `Name` should be `send`, `resend._domainkey`, or `_dmarc` as appropriate).
+- The `Value` strings are copied exactly, with no extra quotes or missing characters.
+- The `MX` priority is set to `10` for the `send` record.
+
+If you still cannot verify, open a support ticket with Resend and include the DNS records screenshots from Netlify.
+
+---
+
+If you'd like, I can create a short script or a checklist to export Netlify DNS records for auditing, or add an entry to `docs/OPS.md` showing who owns the registrar and Netlify accounts and where to find MFA/contact info.
+
 --- END OF FILE ---
 
 --- START OF FILE ./find_invoice_fkey.sql ---
@@ -15073,14 +15373,25 @@ sequenceDiagram
 // packages/backend/api/config/supabase/database.js
 import { createClient } from '@supabase/supabase-js';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load environment variables early for development
-// This is safe - in production (Netlify), env vars are injected automatically
 import dotenv from 'dotenv';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+// In Netlify/production the environment variables are injected by the platform.
+// For local development we try to load a .env file from the repository root.
+// Avoid using `import.meta.url` here because some bundlers or runtime
+// environments (Netlify Lambda) may not expose it in the bundled lambda,
+// which causes fileURLToPath(undefined) runtime errors.
+try {
+  // Only attempt to load .env when the key env vars are missing (local dev)
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const envPath = path.resolve(process.cwd(), '.env');
+    dotenv.config({ path: envPath });
+  }
+} catch (err) {
+  // If anything goes wrong, we continue and let the missing env vars be handled later.
+  // This keeps Netlify Lambdas from failing during init due to import.meta.url usage.
+  // eslint-disable-next-line no-console
+  console.warn('Could not load .env from process.cwd():', err && err.message);
+}
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15671,7 +15982,36 @@ const submitQuoteRequest = async (req, res, next) => {
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 
-    await sendRequestSubmittedEmail(data);
+    // Ensure we include the user's profile (name/email) so the email helper can resolve recipient
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('name, email')
+      .eq('user_id', req.user.id)
+      .single();
+
+    const requestWithProfile = { ...data, user_profiles: userProfile || null };
+
+    // Log that we're about to attempt sending the request-submitted email.
+    // Include minimal identifying info so we can trace the flow in logs.
+    console.log('📧 EMAIL DEBUG: Attempting to call sendRequestSubmittedEmail', {
+      requestId: requestWithProfile.id,
+      recipient: requestWithProfile.user_profiles?.email || null,
+      userId: req.user.id
+    });
+
+    // Fire-and-forget the email send so failures don't block the API response.
+    // Any errors are logged but won't fail the request submission.
+    sendRequestSubmittedEmail(requestWithProfile)
+      .then((result) => {
+        if (result && result.error) {
+          console.error('❌ EMAIL ERROR: sendRequestSubmittedEmail returned error for request', requestWithProfile.id, result.error);
+        } else {
+          console.log('✅ EMAIL INFO: sendRequestSubmittedEmail completed for request', requestWithProfile.id);
+        }
+      })
+      .catch((emailErr) => {
+        console.error('❌ EMAIL EXCEPTION: sendRequestSubmittedEmail threw for request', requestWithProfile.id, emailErr);
+      });
 
     console.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
     try {
@@ -15827,7 +16167,8 @@ const createQuoteForRequest = async (req, res, next) => {
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
-      .select('user_id, contact_info')
+      // Fetch the request including the user profile so we can email the customer
+      .select('*, user_profiles(*)')
       .eq('id', id)
       .single();
     if (requestError) throw requestError;
@@ -15845,7 +16186,17 @@ const createQuoteForRequest = async (req, res, next) => {
     
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
-    await sendQuoteAddedEmail(requestData, newQuote);
+    // Ensure requestData includes user_profiles (some queries returned a slim object)
+    const requestForEmail = requestData.user_profiles ? requestData : (await (async () => {
+      const { data: fullRequest } = await supabase
+        .from('requests')
+        .select('*, user_profiles(*)')
+        .eq('id', id)
+        .single();
+      return fullRequest || requestData;
+    })());
+
+    await sendQuoteAddedEmail(requestForEmail, newQuote);
 
     res.status(201).json(newQuote);
   } catch (err) {
@@ -16296,11 +16647,12 @@ const updateRequestStatus = async (req, res, next) => {
 
     console.log('updatePayload:', updatePayload);
 
+    // Return the updated request including user_profiles so notification helpers can find the recipient
     const { data, error } = await supabase
       .from('requests')
       .update(updatePayload)
       .eq('id', id)
-      .select()
+      .select('*, user_profiles(*)')
       .single();
 
     if (error) {
@@ -17217,21 +17569,21 @@ export default app;
 // packages/backend/api/services/email/resend/client.js
 
 import { Resend } from 'resend';
+import { database as supabase } from '../../../config/supabase/index.js';
 
-// IMPORTANT: This assumes RESEND_API_KEY, BASE_URL, RESEND_ENABLED, and RESEND_FROM_EMAIL are loaded into your environment variables.
-// You may need to install and configure dotenv if you haven't already.
+// Load environment variables correctly.
 const resend = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.VITE_BACKEND_BASE_URL || 'http://process.env.BACKEND_BASE_URL'; // Fallback for development
-const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true'; // Convert to boolean
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Plumbing Co <onboarding@resend.dev>'; // Configurable from address
+// This should be the URL of your FRONTEND application.
+const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173'; 
+const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true';
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <noreply@copilotfortrades.com>';
 
 /**
  * A generic email sending function.
- * NOTE: You must configure a verified domain with Resend to send emails to arbitrary recipients.
- * For testing with an unverified domain, the 'to' address must be your verified Resend account email.
  */
-const sendEmail = async ({ to, subject, html }) => {
+const sendEmail = async ({ to, subject, html, text }) => {
   console.log(`📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
+  console.log(`📧 EMAIL DEBUG: Attempting to send email from: ${RESEND_FROM_EMAIL}`);
   console.log(`📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
   console.log(`📧 EMAIL DEBUG: Subject: ${subject}`);
 
@@ -17243,47 +17595,153 @@ const sendEmail = async ({ to, subject, html }) => {
   try {
     console.log('📤 EMAIL DEBUG: Calling Resend API...');
     const { data, error } = await resend.emails.send({
-      from: RESEND_FROM_EMAIL, // Use configurable from address
+      from: RESEND_FROM_EMAIL,
       to,
       subject,
       html,
+      text,
     });
 
     if (error) {
       console.error('❌ EMAIL ERROR: Resend Error:', error);
+      // Persist failure if possible
+      try {
+        await supabase.from('email_audit').insert({
+          request_id: request?.id || null,
+          recipient: to,
+          resend_message_id: null,
+          status: 'error',
+          provider_response: error ? JSON.parse(JSON.stringify(error)) : null,
+          created_at: new Date().toISOString()
+        });
+      } catch (persistErr) {
+        console.warn('Could not persist email_audit (error):', persistErr?.message || persistErr);
+      }
       return { error };
     }
 
     console.log('✅ EMAIL SUCCESS: Email sent successfully:', data);
+
+    // Persist send audit if supabase is available
+    try {
+      await supabase.from('email_audit').insert({
+        request_id: request?.id || null,
+        recipient: to,
+        resend_message_id: data?.id || null,
+        status: 'sent',
+        provider_response: data ? data : null,
+        created_at: new Date().toISOString()
+      });
+    } catch (persistErr) {
+      console.warn('Could not persist email_audit (success):', persistErr?.message || persistErr);
+    }
+
     return { data };
   } catch (error) {
     console.error('❌ EMAIL FAILED: Failed to send email:', error);
+    try {
+      await supabase.from('email_audit').insert({
+        request_id: request?.id || null,
+        recipient: to,
+        resend_message_id: null,
+        status: 'failed',
+        provider_response: { message: error?.message || String(error) },
+        created_at: new Date().toISOString()
+      });
+    } catch (persistErr) {
+      console.warn('Could not persist email_audit (exception):', persistErr?.message || persistErr);
+    }
     return { error };
   }
 };
 
+// CRITICAL CHANGE: This now returns the customer's email.
 const getRecipientEmail = (request) => {
-  // TEMPORARY: For Resend free plan testing, only send to verified admin email
-  // TODO: Revert to customer email once domain is verified or paid plan is active
-  return 'rfremmer@hotmail.com'; // Your verified Resend email
+  // The domain is now verified, so we can send to the actual customer.
+  return request?.user_profiles?.email;
+};
 
-  // Original code (uncomment when ready):
-  // return request?.user_profiles?.email;
-}
-
+// RECOMMENDED IMPROVEMENT: Link directly to the request if your frontend supports it.
 const getRequestUrl = (requestId) => {
-  return `${BASE_URL}`; // Link to main page for better mobile experience
-}
+  // Use hash-based route so the SPA can handle the client-side route
+  return `${BASE_URL}/#/requests/${requestId}`;
+};
 
 const sendRequestSubmittedEmail = (request) => {
   const recipientEmail = getRecipientEmail(request);
-  if (!recipientEmail) return;
+  if (!recipientEmail) {
+    console.log('📧 EMAIL DEBUG: No recipient email found on request. Aborting sendRequestSubmittedEmail.');
+    console.log('📧 EMAIL DEBUG: request.user_profiles =', request?.user_profiles);
+    return;
+  }
+
+  // Extra debug information to help trace any delivery issues
+  console.log('📧 EMAIL DEBUG: Preparing to send request-submitted email');
+  console.log('📧 EMAIL DEBUG: RESEND_ENABLED =', RESEND_ENABLED);
+  console.log('📧 EMAIL DEBUG: RESEND_FROM_EMAIL =', RESEND_FROM_EMAIL);
+  console.log('📧 EMAIL DEBUG: recipientEmail =', recipientEmail);
+  console.log('📧 EMAIL DEBUG: request.id =', request?.id);
 
   const requestUrl = getRequestUrl(request.id);
   const subject = `Your request has been received!`;
-  const html = `<h1>Thank you for your request!</h1><p>We have received your request for "${request.problem_category.replace(/_/g, ' ')}" and will be in touch shortly.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
-  
-  return sendEmail({ to: recipientEmail, subject, html });
+  // Build readable fields
+  const humanizedCategory = request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+  const customerName = request.user_profiles?.name || 'N/A';
+  const customerEmail = request.user_profiles?.email || 'N/A';
+  const customerPhone = request.user_profiles?.phone || 'N/A';
+  const serviceAddress = request.service_address || 'N/A';
+  const quotesCount = Array.isArray(request.quotes) ? request.quotes.length : 0;
+  const triage = request.triage_summary || null;
+  const asapFlag = request.asap ? 'Yes' : 'No';
+  const scheduled = request.scheduled_date ? new Date(request.scheduled_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (request.asap ? 'ASAP' : 'Not scheduled');
+  const rawSummary = request.description || '';
+  const htmlSummary = rawSummary.length > 400 ? `${rawSummary.slice(0,400)}…` : rawSummary;
+
+  const html = `
+    <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width:600px; margin:0 auto;">
+      <h2 style="color:#111827">We've received your request</h2>
+      <p style="color:#374151">Thanks — we've recorded your request for "${humanizedCategory}". Click the button below to view details and manage quotes.</p>
+      <p style="text-align:center; margin:24px 0;">
+        <a href="${requestUrl}" style="background:#2563eb;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block">View request</a>
+      </p>
+
+      <h3 style="color:#111827; font-size:16px; margin-top:8px;">Request details</h3>
+      <table style="width:100%; font-size:14px; color:#374151; border-collapse:collapse;">
+        <tr><td style="padding:6px 0; width:150px; color:#6b7280">Request ID</td><td style="padding:6px 0">${request.id}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Summary</td><td style="padding:6px 0">${htmlSummary || 'N/A'}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Type</td><td style="padding:6px 0">${humanizedCategory}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Emergency Request?</td><td style="padding:6px 0">${asapFlag}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Scheduled</td><td style="padding:6px 0">${scheduled}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Service address</td><td style="padding:6px 0">${serviceAddress}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Customer</td><td style="padding:6px 0">${customerName} — ${customerEmail} — ${customerPhone}</td></tr>
+        <tr><td style="padding:6px 0; color:#6b7280">Quotes</td><td style="padding:6px 0">${quotesCount}</td></tr>
+        ${triage ? `<tr><td style="padding:6px 0; color:#6b7280">Triage</td><td style="padding:6px 0">${triage}</td></tr>` : ''}
+      </table>
+
+      <p style="font-size:12px;color:#6b7280; margin-top:12px">Or open this link in your browser: <a href="${requestUrl}">${requestUrl}</a></p>
+      <hr />
+      <p style="color:#374151">Thanks,<br/>Plumbing POC</p>
+    </div>
+  `;
+
+  const text = `We've received your request for "${humanizedCategory}".
+
+Request ID: ${request.id}
+Summary: ${rawSummary}
+Type: ${humanizedCategory}
+Emergency Request?: ${asapFlag}
+Scheduled: ${scheduled}
+Service address: ${serviceAddress}
+Customer: ${customerName} — ${customerEmail} — ${customerPhone}
+Quotes: ${quotesCount}
+${triage ? `Triage: ${triage}\n` : ''}
+
+View it here: ${requestUrl}
+
+Thanks,
+Plumbing POC`;
+
+  return sendEmail({ to: recipientEmail, subject, html, text });
 };
 
 const sendStatusUpdateEmail = (request) => {
@@ -17292,9 +17750,36 @@ const sendStatusUpdateEmail = (request) => {
 
   const requestUrl = getRequestUrl(request.id);
   const subject = `Update on your request`;
-  const html = `<p>The status of your request has been updated to: <strong>${request.status}</strong>.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+  // Shared field formatting
+  const humanizedCategory = request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+  const rawSummary = request.description || '';
+  const htmlSummary = rawSummary.length > 300 ? `${rawSummary.slice(0,300)}…` : rawSummary;
+  const asapFlag = request.asap ? 'Yes' : 'No';
+  const scheduled = request.scheduled_date ? new Date(request.scheduled_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (request.asap ? 'ASAP' : 'Not scheduled');
+  const customerName = request.user_profiles?.name || 'N/A';
+  const customerPhone = request.user_profiles?.phone || 'N/A';
+  const serviceAddress = request.service_address || 'N/A';
+  const quotesCount = Array.isArray(request.quotes) ? request.quotes.length : 0;
 
-  return sendEmail({ to: recipientEmail, subject, html });
+  const html = `
+    <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width:600px; margin:0 auto;">
+      <p style="color:#374151">The status of your request has been updated to: <strong>${request.status}</strong>.</p>
+      <p style="text-align:center; margin:16px 0;"><a href="${requestUrl}" style="background:#2563eb;color:white;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block">View request</a></p>
+
+      <h4 style="margin-top:8px;color:#111827">Request details</h4>
+      <p style="color:#374151; font-size:14px; line-height:1.4">${htmlSummary || 'N/A'}</p>
+      <p style="color:#6b7280; font-size:13px">Type: ${humanizedCategory} • Emergency: ${asapFlag} • Scheduled: ${scheduled}</p>
+      <p style="color:#6b7280; font-size:13px">Address: ${serviceAddress} • Customer: ${customerName} • Phone: ${customerPhone} • Quotes: ${quotesCount}</p>
+
+      <p style="font-size:12px;color:#6b7280; margin-top:12px">Request ID: ${request.id} — or open: <a href="${requestUrl}">${requestUrl}</a></p>
+      <hr />
+      <p style="color:#374151">Thanks,<br/>Plumbing POC</p>
+    </div>
+  `;
+
+  const text = `The status of your request has been updated to: ${request.status}\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\nQuotes: ${quotesCount}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
+
+  return sendEmail({ to: recipientEmail, subject, html, text });
 };
 
 const sendQuoteAddedEmail = (request, quote) => {
@@ -17303,9 +17788,34 @@ const sendQuoteAddedEmail = (request, quote) => {
 
     const requestUrl = getRequestUrl(request.id);
     const subject = `You have a new quote for your request`;
-    const html = `<p>A new quote for <strong>${quote.quote_amount.toFixed(2)}</strong> has been added to your request. Please log in to your portal to view the details.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+    const humanizedCategory = request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+    const rawSummary = request.description || '';
+    const htmlSummary = rawSummary.length > 300 ? `${rawSummary.slice(0,300)}…` : rawSummary;
+    const asapFlag = request.asap ? 'Yes' : 'No';
+    const scheduled = request.scheduled_date ? new Date(request.scheduled_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (request.asap ? 'ASAP' : 'Not scheduled');
+    const customerName = request.user_profiles?.name || 'N/A';
+    const customerPhone = request.user_profiles?.phone || 'N/A';
+    const serviceAddress = request.service_address || 'N/A';
 
-    return sendEmail({ to: recipientEmail, subject, html });
+    const html = `
+      <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width:600px; margin:0 auto;">
+        <p style="color:#374151">A new quote for <strong>$${quote.quote_amount.toFixed(2)}</strong> has been added to your request.</p>
+        <p style="text-align:center; margin:16px 0;"><a href="${requestUrl}" style="background:#10b981;color:white;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block">View quote</a></p>
+
+        <h4 style="margin-top:8px;color:#111827">Request details</h4>
+        <p style="color:#374151; font-size:14px; line-height:1.4">${htmlSummary || 'N/A'}</p>
+        <p style="color:#6b7280; font-size:13px">Type: ${humanizedCategory} • Emergency: ${asapFlag} • Scheduled: ${scheduled}</p>
+        <p style="color:#6b7280; font-size:13px">Address: ${serviceAddress} • Customer: ${customerName} • Phone: ${customerPhone}</p>
+
+        <p style="font-size:12px;color:#6b7280; margin-top:12px">Request ID: ${request.id} — or open: <a href="${requestUrl}">${requestUrl}</a></p>
+        <hr />
+        <p style="color:#374151">Thanks,<br/>Plumbing POC</p>
+      </div>
+    `;
+
+    const text = `A new quote for $${quote.quote_amount.toFixed(2)} has been added.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
+
+    return sendEmail({ to: recipientEmail, subject, html, text });
 };
 
 const sendFollowUpEmail = (request) => {
@@ -17314,9 +17824,35 @@ const sendFollowUpEmail = (request) => {
 
   const requestUrl = getRequestUrl(request.id);
   const subject = `Following up on your quote for ${request.problem_category.replace(/_/g, ' ')}`;
-  const html = `<p>Hi ${request.user_profiles?.name || 'there'},</p><p>Just wanted to follow up on the quote we sent you for your recent request. Please let us know if you have any questions or if you'd like to move forward.</p><p>Request ID: ${request.id}</p><p><a href="${requestUrl}">View your request here</a></p>`;
+  const humanizedCategory = request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A';
+  const rawSummary = request.description || '';
+  const htmlSummary = rawSummary.length > 300 ? `${rawSummary.slice(0,300)}…` : rawSummary;
+  const asapFlag = request.asap ? 'Yes' : 'No';
+  const scheduled = request.scheduled_date ? new Date(request.scheduled_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (request.asap ? 'ASAP' : 'Not scheduled');
+  const customerName = request.user_profiles?.name || 'N/A';
+  const customerPhone = request.user_profiles?.phone || 'N/A';
+  const serviceAddress = request.service_address || 'N/A';
 
-  return sendEmail({ to: recipientEmail, subject, html });
+  const html = `
+    <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width:600px; margin:0 auto;">
+      <p style="color:#374151">Hi ${customerName},</p>
+      <p style="color:#374151">Just wanted to follow up on the quote we sent you for your recent request. Please let us know if you have any questions or if you'd like to move forward.</p>
+      <p style="text-align:center; margin:16px 0;"><a href="${requestUrl}" style="background:#2563eb;color:white;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block">View request</a></p>
+
+      <h4 style="margin-top:8px;color:#111827">Request details</h4>
+      <p style="color:#374151; font-size:14px; line-height:1.4">${htmlSummary || 'N/A'}</p>
+      <p style="color:#6b7280; font-size:13px">Type: ${humanizedCategory} • Emergency: ${asapFlag} • Scheduled: ${scheduled}</p>
+      <p style="color:#6b7280; font-size:13px">Address: ${serviceAddress} • Customer: ${customerName} • Phone: ${customerPhone}</p>
+
+      <p style="font-size:12px;color:#6b7280; margin-top:12px">Request ID: ${request.id} — or open: <a href="${requestUrl}">${requestUrl}</a></p>
+      <hr />
+      <p style="color:#374151">Thanks,<br/>Plumbing POC</p>
+    </div>
+  `;
+
+  const text = `Hi ${customerName},\n\nJust wanted to follow up on the quote we sent you for your recent request.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
+
+  return sendEmail({ to: recipientEmail, subject, html, text });
 };
 
 
@@ -17326,7 +17862,6 @@ export {
   sendQuoteAddedEmail,
   sendFollowUpEmail,
 };
-
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/services/email/resend/index.js ---
@@ -22065,10 +22600,10 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [filteredRequests, viewMode]);
 
   const handleRowClick = (params: any) => {
-    const fullRequestData = allRequests.find(r => r.id === params.id);
-    if (fullRequestData) {
-      setSelectedRequest(fullRequestData);
-      setIsModalOpen(true);
+    // Instead of directly opening the modal, navigate via hash so URL reflects state
+    const id = params.id as string;
+    if (id) {
+      window.location.hash = `#/requests/${id}`;
     }
   };
 
@@ -22077,9 +22612,43 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [refreshRequests]);
 
   const handleCloseModal = () => {
+    // Close by navigating back to dashboard route
+    window.location.hash = '#/dashboard';
     setIsModalOpen(false);
     setSelectedRequest(null);
   };
+
+  // Sync modal state with URL hash: if #/requests/:id, open modal for that id
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash || '';
+      if (hash.startsWith('#/requests/')) {
+        const id = hash.split('/')[2];
+        if (id) {
+          const found = allRequests.find(r => r.id === id);
+          if (found) {
+            setSelectedRequest(found);
+            setIsModalOpen(true);
+          } else {
+            // If not found yet (list may still be loading), keep modal closed but
+            // allow the RequestDetailModalLoader to fetch details via hook if needed.
+            setSelectedRequest(null);
+            setIsModalOpen(true);
+          }
+          return;
+        }
+      }
+      // Default: not a request deep-link
+      setIsModalOpen(false);
+      setSelectedRequest(null);
+    };
+
+    // Run on mount and whenever allRequests changes
+    checkHash();
+    const onHashChange = () => checkHash();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [allRequests]);
 
   const handleStageClick = useCallback((stageId: string, statuses: string[]) => {
     // If clicking the same stage, clear filter to show all
@@ -25108,9 +25677,16 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
         </Typography>
 
         {request.quotes.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            No quotes yet.
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, gap: 2 }}>
+            <FilePlus size={38} />
+            <Typography variant="h6">No quotes have been added yet</Typography>
+            <Typography variant="body2" color="text.secondary">Once a contractor adds a quote it'll appear here.</Typography>
+            {isAdmin ? (
+              <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 1 }} onClick={() => handleOpenQuoteForm('create')}>
+                + Add First Quote
+              </Button>
+            ) : null}
+          </Box>
         ) : (
           <List>
             {request.quotes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote) => (
@@ -25816,6 +26392,95 @@ const ScheduleJobSection: React.FC<ScheduleJobSectionProps> = ({
 };
 
 export default ScheduleJobSection;
+--- END OF FILE ---
+
+--- START OF FILE ./packages/frontend/src/features/requests/pages/RequestView.tsx ---
+
+import React from 'react';
+import { Box, Typography, CircularProgress, Grid, Paper } from '@mui/material';
+import { useRequestById } from '../../../hooks';
+import { useAuth } from '../../auth/AuthContext';
+import CustomerInfoSection from '../components/CustomerInfoSection';
+import RequestProblemDetails from '../components/RequestProblemDetails';
+import QuoteList from '../components/QuoteList';
+import ModalHeader from '../components/ModalHeader';
+import RequestActions from '../components/RequestActions';
+
+interface RequestViewProps {
+  requestId: string;
+}
+
+const RequestView: React.FC<RequestViewProps> = ({ requestId }) => {
+  const { data: requestArray, loading, error } = useRequestById(requestId, { enabled: !!requestId });
+  const request = Array.isArray(requestArray) ? requestArray[0] : requestArray;
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+
+  if (!requestId) {
+    return <Typography color="error">Request id is missing from the URL.</Typography>;
+  }
+
+  if (loading) {
+    return (
+      <Box className="p-8 text-center">
+        <CircularProgress />
+        <Typography mt={2}>Loading request...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Typography color="error">Failed to load request: {String(error)}</Typography>;
+  }
+
+  if (!request) {
+    return <Typography>No request found with id {requestId}</Typography>;
+  }
+
+  return (
+    <Box sx={{ px: 2, py: 4 }}>
+      <Paper sx={{ maxWidth: 1024, mx: 'auto', bgcolor: '#f9fafb', borderRadius: 2, boxShadow: 3, overflow: 'hidden' }}>
+        <ModalHeader 
+          title={`Job Docket: ${request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Request'}`} 
+          subtitle={`ID: ${request.id}`} 
+          onClose={() => { window.history.back(); }}
+          actions={<RequestActions request={request} isAdmin={isAdmin} currentStatus={request.status} isUpdating={false} onStatusChange={() => {}} />}
+          statusColor={undefined}
+        />
+
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <CustomerInfoSection
+                mode="view"
+                initialAddress={request.service_address}
+                isAdmin={isAdmin}
+                request={request}
+                showCustomerInfo={true}
+                canEdit={isAdmin}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <RequestProblemDetails request={request} />
+            </Grid>
+            <Grid item xs={12}>
+              <QuoteList
+                request={request}
+                isReadOnly={!isAdmin}
+                isUpdating={false}
+                onAcceptQuote={() => { console.log('Accept quote called from RequestView (noop)'); }}
+                onUpdateRequest={() => { /* noop for read-only view */ }}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
+export default RequestView;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/types/index.ts ---
@@ -28001,7 +28666,7 @@ import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
 import { ServiceDefinition } from './lib/serviceDefinitions';
 import ServiceDetailPage from './features/services/ServiceDetailPage';
-import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
+import { useUserRequests, useAllRequests, useRequestById } from './hooks'; // New standardized hooks
 import {
   Phone,
   Wrench,
@@ -28064,9 +28729,11 @@ const AppContent: React.FC = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [route, setRoute] = useState(window.location.hash);
+  const prevRouteRef = React.useRef<string | null>(null);
 
   useEffect(() => {
     const handleHashChange = () => {
+      prevRouteRef.current = route; // store previous route
       setRoute(window.location.hash);
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -28103,6 +28770,29 @@ const AppContent: React.FC = () => {
     if (route.startsWith('#/services/')) {
       const serviceKey = route.split('/')[2];
       return <ServiceDetailPage serviceKey={serviceKey} />;
+    }
+
+    // Direct request view: #/requests/<id>
+    if (route.startsWith('#/requests/')) {
+      const requestId = route.split('/')[2];
+
+      // Always render the dashboard as the base and open the RequestDetailModal as an overlay.
+      // The Dashboard component will handle access control (admin-only) and will render
+      // MyRequests for non-admins if desired.
+      const DashboardWithModal = () => (
+        <>
+          {isAdmin ? (
+            <Dashboard requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+          ) : (
+            <MyRequests requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+          )}
+          <React.Suspense fallback={<div className="p-8 text-center">Loading request...</div>}>
+            <RequestDetailModalLoader requestId={requestId} />
+          </React.Suspense>
+        </>
+      );
+
+      return <DashboardWithModal />;
     }
 
     // THE CORE CHANGE: The /dashboard route now handles BOTH user roles.
@@ -28311,6 +29001,33 @@ const AppContent: React.FC = () => {
         <ReviewsSection />
         <ContactSection />
       </>
+    );
+  };
+
+  // Loader component: fetch request by id and render the existing RequestDetailModal
+  const RequestDetailModalLoader: React.FC<{ requestId: string }> = ({ requestId }) => {
+    const { data: requestArray, loading: requestLoading, error: requestError, refetch: refetchRequest } = useRequestById(requestId || '', { enabled: !!requestId });
+    const request = requestArray?.[0] || null;
+    const [isOpen, setIsOpen] = useState(true);
+
+    const RequestDetailModal = React.lazy(() => import('./features/requests/components/RequestDetailModal'));
+
+    const handleClose = () => {
+      setIsOpen(false);
+      // Navigate back to dashboard state when modal closes
+      setTimeout(() => setRoute('#/dashboard'), 0);
+      // Refresh the main requests list
+      refetch();
+    };
+
+    if (requestLoading && !request) return <div className="p-8 text-center">Loading request...</div>;
+    if (requestError) return <div className="p-8 text-center text-red-600">Failed to load request.</div>;
+    if (!request) return null;
+
+    return (
+      <React.Suspense fallback={<div className="p-8 text-center">Loading request...</div>}>
+        <RequestDetailModal isOpen={isOpen} onClose={handleClose} request={request} onUpdateRequest={() => { if (refetchRequest) refetchRequest(); }} />
+      </React.Suspense>
     );
   };
 
@@ -28634,6 +29351,19 @@ SELECT column_name, data_type, is_nullable
 FROM information_schema.columns
 WHERE table_name = 'invoices' AND column_name = 'request_id';
 
+--- END OF FILE ---
+
+--- START OF FILE ./scripts/setup-git-hooks.sh ---
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+
+echo "Setting git hooks path to ${REPO_ROOT}/.githooks"
+git config core.hooksPath ".githooks"
+
+echo "Done. Pre-commit hooks will run on your next commit.
 --- END OF FILE ---
 
 --- START OF FILE ./shutdown.sh ---
@@ -29898,6 +30628,40 @@ CREATE INDEX idx_requests_invoice_id ON public.requests(invoice_id);
 
 --- END OF FILE ---
 
+--- START OF FILE ./supabase/migrations/20251013_create_email_audit_table.sql ---
+
+-- Migration: create email_audit table with RLS and admin SELECT policy
+-- Created: 2025-10-13
+
+-- Create table
+CREATE TABLE IF NOT EXISTS public.email_audit (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  request_id uuid REFERENCES public.requests(id) ON DELETE SET NULL,
+  recipient text,
+  resend_message_id text,
+  provider_response jsonb,
+  status text NOT NULL DEFAULT 'sent'
+);
+
+-- Helpful index for lookups by request
+CREATE INDEX IF NOT EXISTS idx_email_audit_request_id ON public.email_audit(request_id);
+
+-- Enable Row Level Security so client-side access can be controlled
+ALTER TABLE public.email_audit ENABLE ROW LEVEL SECURITY;
+
+-- Remove any existing policy of the same name, then create admin-select policy
+DROP POLICY IF EXISTS allow_admin_select_on_email_audit ON public.email_audit;
+
+CREATE POLICY allow_admin_select_on_email_audit
+  ON public.email_audit
+  FOR SELECT
+  USING (
+    (current_setting('request.jwt.claims', true)::json ->> 'role') = 'admin'
+  );
+
+--- END OF FILE ---
+
 --- START OF FILE ./supabase/migrations/add_invoice_enhancements.sql ---
 
 -- Migration: Enhance invoices table and add invoice-related request statuses
@@ -30436,6 +31200,20 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "public"."email_audit" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid",
+    "recipient" "text",
+    "resend_message_id" "text",
+    "provider_response" "jsonb",
+    "status" "text" DEFAULT 'sent'::"text" NOT NULL
+);
+
+
+ALTER TABLE "public"."email_audit" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."invoices" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -30657,6 +31435,11 @@ COMMENT ON COLUMN "public"."user_profiles"."geocoded_address" IS 'Full formatted
 
 
 
+ALTER TABLE ONLY "public"."email_audit"
+    ADD CONSTRAINT "email_audit_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."invoices"
     ADD CONSTRAINT "invoices_pkey" PRIMARY KEY ("id");
 
@@ -30689,6 +31472,10 @@ ALTER TABLE ONLY "public"."user_profiles"
 
 ALTER TABLE ONLY "public"."user_profiles"
     ADD CONSTRAINT "user_profiles_user_id_key" UNIQUE ("user_id");
+
+
+
+CREATE INDEX "idx_email_audit_request_id" ON "public"."email_audit" USING "btree" ("request_id");
 
 
 
@@ -30765,6 +31552,11 @@ COMMENT ON TRIGGER "trigger_sync_invoice_status" ON "public"."invoices" IS 'Sync
 
 
 CREATE OR REPLACE TRIGGER "update_requests_updated_at" BEFORE UPDATE ON "public"."requests" FOR EACH ROW EXECUTE FUNCTION "public"."update_requests_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."email_audit"
+    ADD CONSTRAINT "email_audit_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE SET NULL;
 
 
 
@@ -30902,6 +31694,13 @@ CREATE POLICY "Enable update for users and admins" ON "public"."requests" FOR UP
 
 CREATE POLICY "Enable update for users and admins" ON "public"."user_profiles" FOR UPDATE USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
 
+
+
+CREATE POLICY "allow_admin_select_on_email_audit" ON "public"."email_audit" FOR SELECT USING (((("current_setting"('request.jwt.claims'::"text", true))::json ->> 'role'::"text") = 'admin'::"text"));
+
+
+
+ALTER TABLE "public"."email_audit" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."invoices" ENABLE ROW LEVEL SECURITY;
@@ -31303,6 +32102,12 @@ GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "servi
 
 
 
+
+
+
+GRANT ALL ON TABLE "public"."email_audit" TO "anon";
+GRANT ALL ON TABLE "public"."email_audit" TO "authenticated";
+GRANT ALL ON TABLE "public"."email_audit" TO "service_role";
 
 
 
@@ -37598,6 +38403,96 @@ npx playwright test admin-request-management.spec.ts --workers=1
 ---
 
 *This roadmap ensures the admin test suite grows systematically while maintaining reliability and ease of maintenance.*
+--- END OF FILE ---
+
+--- START OF FILE ./tests/e2e/specs/admin-journeys/request-deeplink.spec.ts ---
+
+import { test, expect } from '@playwright/test';
+import { AuthPage } from '../../page-objects/pages/AuthPage';
+// Create requests directly via API to keep this test focused and avoid heavy page-object imports
+
+test.describe('Admin deep-link -> dashboard modal', () => {
+  test('email deep-link opens request modal on dashboard', async ({ page }) => {
+    const authPage = new AuthPage(page);
+
+    // 1) Create a request directly via the API (no frontend interactions) to act as the emailed resource
+    const apiBase = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
+    const createBody = {
+      clarifyingAnswers: [ { question: 'What is the property type?', answer: 'House' } ],
+      contactInfo: { name: 'E2E Test', email: 'e2e@example.com' },
+      category: 'leak_repair',
+      isEmergency: false,
+      property_type: 'House',
+      is_homeowner: 'Yes',
+      problem_description: 'E2E test leak',
+      preferred_timing: 'ASAP'
+    };
+
+    // Authenticate via Supabase to get a Bearer token for creating the request
+    let authToken: string | null = null;
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
+      const creds = { email: process.env.TEST_USER_EMAIL || '', password: process.env.TEST_USER_PASSWORD || '' };
+      if (creds.email && creds.password) {
+        const { data, error } = await supabase.auth.signInWithPassword(creds as any);
+        if (error) {
+          console.warn('Supabase signInWithPassword failed:', error.message);
+        } else {
+          authToken = data?.session?.access_token || null;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase auth setup failed in test:', err);
+    }
+
+    const headers: any = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+    const createResp = await page.request.post(`${apiBase}/api/requests/submit`, { data: createBody, headers });
+    if (!createResp.ok()) {
+      const text = await createResp.text();
+      console.error('Create request failed:', createResp.status, text);
+    }
+    expect(createResp.ok()).toBeTruthy();
+    const createJson = await createResp.json();
+    const requestId = createJson.request?.id;
+    expect(requestId).toBeTruthy();
+
+    // 2) Sign in as admin (the dashboard user)
+    await authPage.signInAsUserType('admin');
+
+    // Ensure dashboard base content is present
+    await expect(page.getByText("Plumber's Command Center")).toBeVisible({ timeout: 10000 });
+
+    // 3) Simulate clicking an email deep-link by injecting an anchor and clicking it
+    await page.evaluate((id) => {
+      const a = document.createElement('a');
+      a.href = `/#/requests/${id}`;
+      a.id = 'test-deeplink-anchor';
+      a.text = 'Open Request Deep Link';
+      // Make sure the anchor is visible/clickable
+      a.style.position = 'fixed';
+      a.style.left = '10px';
+      a.style.top = '10px';
+      a.style.zIndex = '9999';
+      document.body.appendChild(a);
+      // Click the link
+      (a as HTMLAnchorElement).click();
+    }, requestId);
+
+    // 4) Assert the modal overlay opens (RequestDetailModal uses header titled 'Job Docket:')
+    await expect(page.getByText(/^Job Docket:/)).toBeVisible({ timeout: 10000 });
+
+    // Assert dashboard still visible underneath
+    await expect(page.getByText("Plumber's Command Center")).toBeVisible();
+
+    // 5) Close the modal by navigating back to dashboard and assert it disappears
+    await page.evaluate(() => { window.location.hash = '#/dashboard'; });
+    await expect(page.getByText(/^Job Docket:/)).toHaveCount(0, { timeout: 5000 });
+  });
+});
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/integration/complete-user-admin-journey.spec.ts ---

@@ -238,6 +238,55 @@ import dotenv from 'dotenv';
 dotenv.config();
 ```
 
+### Issue 13: Supabase client init crash in Netlify Lambda (fileURLToPath on undefined)
+
+**Problem:** After deployment the API functions were returning HTTP 502 (Bad Gateway). Netlify function logs showed repeated runtime crashes during function initialization with the following error:
+
+```
+TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string or an instance of URL. Received undefined
+    at fileURLToPath (node:internal/url:1606:11)
+    at packages/backend/api/config/supabase/database.js (..):<line>
+```
+
+**Symptoms:**
+- Frontend console: repeated 502 errors when calling `/api/requests`
+- Netlify function logs: Unhandled Promise Rejection during init, pointing to `fileURLToPath(import.meta.url)` usage inside the Supabase client initializer
+
+**Root Cause:**
+- The Supabase client module (`packages/backend/api/config/supabase/database.js`) used `fileURLToPath(import.meta.url)` to resolve a `.env` file path. In Netlify's bundled Lambda environment `import.meta.url` can be undefined, causing `fileURLToPath(undefined)` and an immediate crash during module import — which prevents the function from starting and yields 502 responses.
+
+**Fix Applied:**
+- Replaced `import.meta.url` usage with a safe `.env` loading strategy that:
+  - Only attempts to load a `.env` file when required (i.e., when `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` are not present in process.env) to avoid unnecessary file I/O in production lambdas.
+  - Uses `process.cwd()` as the path base to resolve `.env` (no reliance on `import.meta.url`).
+  - Wraps `.env` loading in a try/catch so that failure to locate `.env` doesn't throw during lambda init.
+
+Key change (conceptual):
+
+```js
+// Before: used fileURLToPath(import.meta.url) -> could be undefined in lambda
+// After: try load .env from process.cwd() only when needed, fallback safely
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
+```
+
+**Commit:** 9170270 (fix(supabase): robust .env loading for Netlify lambdas (avoid import.meta.url))
+
+**Verification steps performed:**
+1. Locally imported the modified module to ensure it does not throw on startup:
+   - `node -e "(async()=>{ await import('./packages/backend/api/config/supabase/database.js'); console.log('ok'); })()"`
+2. Pushed the fix and monitored Netlify function logs for the `api` function.
+3. Confirmed Netlify no longer shows the `ERR_INVALID_ARG_TYPE` stack trace originating from `database.js`.
+4. Exercised the endpoint (`GET /api/requests`) in the deployed site; 502s stopped and the endpoint returned expected responses (after ensuring required env vars were present in Netlify).
+
+**Prevention & Recommendations:**
+- Never rely on `import.meta.url` for path resolution inside serverless/bundled environments; use `process.cwd()` or explicit environment-driven paths instead.
+- Always guard file-system operations with try/catch during module initialization so that missing local files do not crash lambdas.
+- Ensure critical environment variables (e.g., `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) are configured in Netlify UI — in production lambdas `.env` won't be available and the code must rely on env vars only.
+- Add a short smoke-test in the deploy pipeline that calls a simple function endpoint after deployment (e.g., `/api/health` or `/api/requests?limit=1`) and fails the deploy if it returns 5xx.
+
+
 ### Issue 8: ESM vs CommonJS Module Conflicts
 
 **Problem:** Netlify functions initially used CommonJS syntax (`.cjs`, `require()`) but the backend application code was written using ES Modules (`.js` with `"type": "module"`, `import`), causing module loading failures.

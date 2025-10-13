@@ -221,7 +221,36 @@ const submitQuoteRequest = async (req, res, next) => {
     const { data, error } = await supabase.from('requests').insert(requestData).select().single();
     if (error) throw error;
 
-    await sendRequestSubmittedEmail(data);
+    // Ensure we include the user's profile (name/email) so the email helper can resolve recipient
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('name, email')
+      .eq('user_id', req.user.id)
+      .single();
+
+    const requestWithProfile = { ...data, user_profiles: userProfile || null };
+
+    // Log that we're about to attempt sending the request-submitted email.
+    // Include minimal identifying info so we can trace the flow in logs.
+    console.log('📧 EMAIL DEBUG: Attempting to call sendRequestSubmittedEmail', {
+      requestId: requestWithProfile.id,
+      recipient: requestWithProfile.user_profiles?.email || null,
+      userId: req.user.id
+    });
+
+    // Fire-and-forget the email send so failures don't block the API response.
+    // Any errors are logged but won't fail the request submission.
+    sendRequestSubmittedEmail(requestWithProfile)
+      .then((result) => {
+        if (result && result.error) {
+          console.error('❌ EMAIL ERROR: sendRequestSubmittedEmail returned error for request', requestWithProfile.id, result.error);
+        } else {
+          console.log('✅ EMAIL INFO: sendRequestSubmittedEmail completed for request', requestWithProfile.id);
+        }
+      })
+      .catch((emailErr) => {
+        console.error('❌ EMAIL EXCEPTION: sendRequestSubmittedEmail threw for request', requestWithProfile.id, emailErr);
+      });
 
     console.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
     try {
@@ -377,7 +406,8 @@ const createQuoteForRequest = async (req, res, next) => {
     
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
-      .select('user_id, contact_info')
+      // Fetch the request including the user profile so we can email the customer
+      .select('*, user_profiles(*)')
       .eq('id', id)
       .single();
     if (requestError) throw requestError;
@@ -395,7 +425,17 @@ const createQuoteForRequest = async (req, res, next) => {
     
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
-    await sendQuoteAddedEmail(requestData, newQuote);
+    // Ensure requestData includes user_profiles (some queries returned a slim object)
+    const requestForEmail = requestData.user_profiles ? requestData : (await (async () => {
+      const { data: fullRequest } = await supabase
+        .from('requests')
+        .select('*, user_profiles(*)')
+        .eq('id', id)
+        .single();
+      return fullRequest || requestData;
+    })());
+
+    await sendQuoteAddedEmail(requestForEmail, newQuote);
 
     res.status(201).json(newQuote);
   } catch (err) {
@@ -846,11 +886,12 @@ const updateRequestStatus = async (req, res, next) => {
 
     console.log('updatePayload:', updatePayload);
 
+    // Return the updated request including user_profiles so notification helpers can find the recipient
     const { data, error } = await supabase
       .from('requests')
       .update(updatePayload)
       .eq('id', id)
-      .select()
+      .select('*, user_profiles(*)')
       .single();
 
     if (error) {

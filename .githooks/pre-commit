@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Prevent committing .env files accidentally
+
+set -euo pipefail
+
+# Check staged files for .env or files that look like they contain API keys
+STAGED=$(git diff --cached --name-only --relative)
+
+if echo "$STAGED" | grep -E "(^|/)(\.env|\.env\..*|\.env.local)$" >/dev/null; then
+  echo "\nError: Attempt to commit .env file detected. Aborting commit.\n"
+  echo "Please keep secrets out of the repository. Use environment variables or a secrets manager."
+  exit 1
+fi
+
+# Optional: simple check for literal API key patterns in staged files
+if echo "$STAGED" | xargs grep -EI "(OPENAI_API_KEY|GEMINI_API_KEY|TWILIO|RESEND|API_KEY)" --line-number --quiet 2>/dev/null; then
+  echo "\nWarning: one or more staged files contain strings that match common API key names." >&2
+  echo "If these are false positives, you can proceed after verifying the staged changes." >&2
+  echo "Aborting commit to avoid accidental leaks. Remove keys or move them to env files before committing." >&2
+  exit 1
+fi
+
+exit 0

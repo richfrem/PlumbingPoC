@@ -18,7 +18,7 @@ import MyRequests from './features/requests/components/MyRequests';
 import { QuoteRequest } from './features/requests/types';
 import { ServiceDefinition } from './lib/serviceDefinitions';
 import ServiceDetailPage from './features/services/ServiceDetailPage';
-import { useUserRequests, useAllRequests } from './hooks'; // New standardized hooks
+import { useUserRequests, useAllRequests, useRequestById } from './hooks'; // New standardized hooks
 import {
   Phone,
   Wrench,
@@ -81,9 +81,11 @@ const AppContent: React.FC = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [preselectedService, setPreselectedService] = useState<string | null>(null);
   const [route, setRoute] = useState(window.location.hash);
+  const prevRouteRef = React.useRef<string | null>(null);
 
   useEffect(() => {
     const handleHashChange = () => {
+      prevRouteRef.current = route; // store previous route
       setRoute(window.location.hash);
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -120,6 +122,29 @@ const AppContent: React.FC = () => {
     if (route.startsWith('#/services/')) {
       const serviceKey = route.split('/')[2];
       return <ServiceDetailPage serviceKey={serviceKey} />;
+    }
+
+    // Direct request view: #/requests/<id>
+    if (route.startsWith('#/requests/')) {
+      const requestId = route.split('/')[2];
+
+      // Always render the dashboard as the base and open the RequestDetailModal as an overlay.
+      // The Dashboard component will handle access control (admin-only) and will render
+      // MyRequests for non-admins if desired.
+      const DashboardWithModal = () => (
+        <>
+          {isAdmin ? (
+            <Dashboard requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+          ) : (
+            <MyRequests requests={requests} loading={loading} error={error} refreshRequests={refetch} />
+          )}
+          <React.Suspense fallback={<div className="p-8 text-center">Loading request...</div>}>
+            <RequestDetailModalLoader requestId={requestId} />
+          </React.Suspense>
+        </>
+      );
+
+      return <DashboardWithModal />;
     }
 
     // THE CORE CHANGE: The /dashboard route now handles BOTH user roles.
@@ -328,6 +353,33 @@ const AppContent: React.FC = () => {
         <ReviewsSection />
         <ContactSection />
       </>
+    );
+  };
+
+  // Loader component: fetch request by id and render the existing RequestDetailModal
+  const RequestDetailModalLoader: React.FC<{ requestId: string }> = ({ requestId }) => {
+    const { data: requestArray, loading: requestLoading, error: requestError, refetch: refetchRequest } = useRequestById(requestId || '', { enabled: !!requestId });
+    const request = requestArray?.[0] || null;
+    const [isOpen, setIsOpen] = useState(true);
+
+    const RequestDetailModal = React.lazy(() => import('./features/requests/components/RequestDetailModal'));
+
+    const handleClose = () => {
+      setIsOpen(false);
+      // Navigate back to dashboard state when modal closes
+      setTimeout(() => setRoute('#/dashboard'), 0);
+      // Refresh the main requests list
+      refetch();
+    };
+
+    if (requestLoading && !request) return <div className="p-8 text-center">Loading request...</div>;
+    if (requestError) return <div className="p-8 text-center text-red-600">Failed to load request.</div>;
+    if (!request) return null;
+
+    return (
+      <React.Suspense fallback={<div className="p-8 text-center">Loading request...</div>}>
+        <RequestDetailModal isOpen={isOpen} onClose={handleClose} request={request} onUpdateRequest={() => { if (refetchRequest) refetchRequest(); }} />
+      </React.Suspense>
     );
   };
 

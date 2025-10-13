@@ -259,6 +259,20 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+CREATE TABLE IF NOT EXISTS "public"."email_audit" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "request_id" "uuid",
+    "recipient" "text",
+    "resend_message_id" "text",
+    "provider_response" "jsonb",
+    "status" "text" DEFAULT 'sent'::"text" NOT NULL
+);
+
+
+ALTER TABLE "public"."email_audit" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."invoices" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -480,6 +494,11 @@ COMMENT ON COLUMN "public"."user_profiles"."geocoded_address" IS 'Full formatted
 
 
 
+ALTER TABLE ONLY "public"."email_audit"
+    ADD CONSTRAINT "email_audit_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."invoices"
     ADD CONSTRAINT "invoices_pkey" PRIMARY KEY ("id");
 
@@ -512,6 +531,10 @@ ALTER TABLE ONLY "public"."user_profiles"
 
 ALTER TABLE ONLY "public"."user_profiles"
     ADD CONSTRAINT "user_profiles_user_id_key" UNIQUE ("user_id");
+
+
+
+CREATE INDEX "idx_email_audit_request_id" ON "public"."email_audit" USING "btree" ("request_id");
 
 
 
@@ -588,6 +611,11 @@ COMMENT ON TRIGGER "trigger_sync_invoice_status" ON "public"."invoices" IS 'Sync
 
 
 CREATE OR REPLACE TRIGGER "update_requests_updated_at" BEFORE UPDATE ON "public"."requests" FOR EACH ROW EXECUTE FUNCTION "public"."update_requests_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."email_audit"
+    ADD CONSTRAINT "email_audit_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE SET NULL;
 
 
 
@@ -725,6 +753,13 @@ CREATE POLICY "Enable update for users and admins" ON "public"."requests" FOR UP
 
 CREATE POLICY "Enable update for users and admins" ON "public"."user_profiles" FOR UPDATE USING ((("auth"."uid"() = "user_id") OR "public"."is_admin"()));
 
+
+
+CREATE POLICY "allow_admin_select_on_email_audit" ON "public"."email_audit" FOR SELECT USING (((("current_setting"('request.jwt.claims'::"text", true))::json ->> 'role'::"text") = 'admin'::"text"));
+
+
+
+ALTER TABLE "public"."email_audit" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."invoices" ENABLE ROW LEVEL SECURITY;
@@ -1126,6 +1161,12 @@ GRANT ALL ON FUNCTION "public"."urlencode"("string" character varying) TO "servi
 
 
 
+
+
+
+GRANT ALL ON TABLE "public"."email_audit" TO "anon";
+GRANT ALL ON TABLE "public"."email_audit" TO "authenticated";
+GRANT ALL ON TABLE "public"."email_audit" TO "service_role";
 
 
 

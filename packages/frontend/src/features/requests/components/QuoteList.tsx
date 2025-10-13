@@ -46,9 +46,16 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
         </Typography>
 
         {request.quotes.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            No quotes yet.
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6, gap: 2 }}>
+            <FilePlus size={38} />
+            <Typography variant="h6">No quotes have been added yet</Typography>
+            <Typography variant="body2" color="text.secondary">Once a contractor adds a quote it'll appear here.</Typography>
+            {isAdmin ? (
+              <Button variant="contained" startIcon={<FilePlus />} sx={{ mt: 1 }} onClick={() => handleOpenQuoteForm('create')}>
+                + Add First Quote
+              </Button>
+            ) : null}
+          </Box>
         ) : (
           <List>
             {request.quotes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((quote) => (
