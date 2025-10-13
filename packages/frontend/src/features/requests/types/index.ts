@@ -54,4 +54,6 @@ export interface QuoteRequest {
   geocoded_address: string | null;
   actual_cost: number | null;
   completion_notes: string | null;
+  invoice_id: string | null;
+  accepted_quote_id: string | null;
 }

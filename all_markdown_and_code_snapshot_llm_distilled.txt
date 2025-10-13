@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-13T02:53:46.747Z
+Generated On: 2025-10-13T03:50:14.755Z
 
-# Mnemonic Weight (Token Count): ~353,970 tokens
+# Mnemonic Weight (Token Count): ~353,988 tokens
 
 # Directory Structure (relative to project root)
   ./.DS_Store
@@ -22678,7 +22678,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         zIndex: 1300,
         p: 2
       }}
-      onClick={onClose}
+      onClick={() => onClose()}
     >
       <Box
         sx={{
@@ -25876,6 +25876,8 @@ export interface QuoteRequest {
   geocoded_address: string | null;
   actual_cost: number | null;
   completion_notes: string | null;
+  invoice_id: string | null;
+  accepted_quote_id: string | null;
 }
 
 --- END OF FILE ---

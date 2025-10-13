@@ -292,7 +292,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         zIndex: 1300,
         p: 2
       }}
-      onClick={onClose}
+      onClick={() => onClose()}
     >
       <Box
         sx={{
