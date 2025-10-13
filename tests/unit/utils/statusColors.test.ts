@@ -7,7 +7,7 @@ describe('Request Status Colors', () => {
   });
 
   it('should return correct color for "viewed" status', () => {
-    expect(getRequestStatusChipColor('viewed')).toBe('warning');
+    expect(getRequestStatusChipColor('viewed')).toBe('primary');
   });
 
   it('should return correct color for "quoted" status', () => {
@@ -22,8 +22,32 @@ describe('Request Status Colors', () => {
     expect(getRequestStatusChipColor('scheduled')).toBe('success');
   });
 
+  it('should return correct color for "in_progress" status', () => {
+    expect(getRequestStatusChipColor('in_progress')).toBe('warning');
+  });
+
   it('should return correct color for "completed" status', () => {
-    expect(getRequestStatusChipColor('completed')).toBe('default');
+    expect(getRequestStatusChipColor('completed')).toBe('info');
+  });
+
+  it('should return correct color for "invoiced" status', () => {
+    expect(getRequestStatusChipColor('invoiced')).toBe('info');
+  });
+
+  it('should return correct color for "paid" status', () => {
+    expect(getRequestStatusChipColor('paid')).toBe('success');
+  });
+
+  it('should return correct color for "overdue" status', () => {
+    expect(getRequestStatusChipColor('overdue')).toBe('error');
+  });
+
+  it('should return correct color for "disputed" status', () => {
+    expect(getRequestStatusChipColor('disputed')).toBe('error');
+  });
+
+  it('should return correct color for "cancelled" status', () => {
+    expect(getRequestStatusChipColor('cancelled')).toBe('default');
   });
 
   it('should return default color for unknown status', () => {
