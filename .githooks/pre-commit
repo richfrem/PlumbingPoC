@@ -39,9 +39,29 @@ WHITELIST_CONTAINS = [
     "!!", "?.", "session?.", "auth.",                 # JavaScript expressions
     "`",                                              # Template literals
     "import.meta", "process.env",                     # Module references
-    "[", "]", "(", ")", ";", "args[", "params.",      # Variable access, function calls
+    "[", "]", "(", ")", "args[", "params.",           # Variable access, function calls
     "<", ">",                                         # Placeholder brackets
 ]
+
+def is_whitelisted_rhs(rhs):
+    """Check if RHS indicates legitimate code reference rather than hardcoded secret."""
+    # Exact matches
+    if rhs in WHITELIST_EXACT:
+        return True
+
+    # Prefix matches
+    if any(rhs.startswith(prefix) for prefix in WHITELIST_PREFIXES):
+        return True
+
+    # Contains matches
+    if any(pattern in rhs for pattern in WHITELIST_CONTAINS):
+        return True
+
+    # Special case: semicolon at end (function call like getKey();)
+    if rhs.endswith(';'):
+        return True
+
+    return False
 
 def is_variable_name(value):
     """Check if a value looks like a variable name or property access (not a hardcoded secret)."""
@@ -114,7 +134,7 @@ def scan_file_for_secrets(filepath):
             rhs = extract_rhs_value(line)
 
             # Skip if no assignment found or RHS is whitelisted
-            if not rhs or rhs in WHITELIST_EXACT or any(rhs.startswith(prefix) for prefix in WHITELIST_PREFIXES) or any(pattern in rhs for pattern in WHITELIST_CONTAINS):
+            if not rhs or is_whitelisted_rhs(rhs):
                 continue
 
             # For specific API keys, don't allow variable names (too risky)
