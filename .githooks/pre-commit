@@ -5,34 +5,58 @@
 # 2) Scan staged files for key assignments; block unless RHS empty or '<REDACTED>'
 # 3) Summarize violations
 
+# Bash strict mode: exit on error, treat unset variables as errors, propagate pipeline failures
+# -e exit immediately with an non-zero status
+# -u treat unset variables as an error
+# -o pipefail the return value of a pipeline is the status of the last command to exit with a non-zero status
 set -euo pipefail
+# Set Internal Field Separator to newline and tab only (safer word splitting)
 IFS=$'\n\t'
 
 # Configurable exclusions
 EXCLUDED_DIRS=("node_modules")
-EXCLUDED_PATTERNS=(".githooks/*" "*.jpg" "*.jpeg" "*.png" "*.gif" "*.bmp" "*.tiff" "*.mp4" "*.avi" "*.mov" "*.webm" "*.mkv" "all_markdown_and_code_snapshot_llm_distilled.txt" "playwright-report/index.html")
+EXCLUDED_PATTERNS=(".githooks/*" "*.jpg" "*.jpeg" "*.png" "*.gif" "*.bmp" "*.tiff" "*.mp4" "*.avi" "*.mov" "*.webm" "*.mkv" "playwright-report/index.html")
 
+# Keys to scan for in assignments (case-insensitive regex)
 KEYS="GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY|API_KEY|SECRET|TOKEN|PASSWORD"
+# Whitelisted RHS values that are allowed (e.g., redacted placeholders)
 WHITELIST="<REDACTED>|'<REDACTED>'"
 
-# Collect staged files NUL-safe
+# Collect staged files NUL-safe (handles filenames with spaces/newlines)
+# define an array to hold full list of staged files by git diff
 STAGED=()
-while IFS= read -r -d '' f; do STAGED+=("$f"); done < <(git diff --cached --name-only -z)
+# Default internal field separator -- IFS (space, tab, newline) e.g. "hello world" treated as two words
+# but in this case with file names, we want to treat the entire filename as a single word so no separator
+# no IFS provided so a file name like "my file.txt" is treated as a single word
+# read -r = raw mode, also allows backslashes in filenames
+# -d '' = read until null byte (NUL), not newline.  d stands for null \0 delimiter?
+#       -d delim The first character of delim is used to terminate the input line,  rather than newline.
+while IFS= read -r -d '' f
+do
+    STAGED+=("$f")
+done < <(git diff --cached --name-only -z)  
+#gets list of staged files, separated by null bytes. names only -z stands for null byte
+
+# If no staged files, exit early (nothing to check)
+if [ ${#STAGED[@]} -eq 0 ]; then exit 0; fi
 
 EXIT_CODE=0
+
+# Array to hold violation messages
 VIOLATIONS=()
 
+# Loop through each staged file array
 for FILE in "${STAGED[@]}"; do
-  [ -n "$FILE" ] || continue
+  [ -n "$FILE" ] || continue  # Skip empty filenames
 
-  # Check excluded directories
+  # Check if file is in excluded directories
   for dir in "${EXCLUDED_DIRS[@]}"; do
-    if [[ "$FILE" == $dir/* ]]; then continue 2; fi
+    if [[ "$FILE" == $dir/* ]]; then continue 2; fi  # Skip this file
   done
 
-  # Check excluded patterns
+  # Check if file matches excluded patterns
   for pat in "${EXCLUDED_PATTERNS[@]}"; do
-    if [[ "$FILE" == $pat ]]; then continue 2; fi
+    if [[ "$FILE" == $pat ]]; then continue 2; fi  # Skip this file
   done
 
   # Rule 1: block .env files except .env.example
@@ -48,9 +72,10 @@ for FILE in "${STAGED[@]}"; do
   # Rule 2: scan staged content for key assignments
   while IFS=: read -r lineno rest; do
     line="$rest"
+    # Extract RHS of assignment using sed regex
     rhs=$(printf '%s\n' "$line" | sed -nE "s/.*($KEYS)\s*[:=]\s*['\"]?([^'\"\s]*)['\"]?.*/\2/p")
-    [ -z "$rhs" ] && continue  # no assignment found
-    if [[ "$WHITELIST" == *"$rhs"* ]]; then continue; fi  # whitelisted
+    [ -z "$rhs" ] && continue  # No assignment found
+    if [[ "$WHITELIST" == *"$rhs"* ]]; then continue; fi  # Whitelisted value
     VIOLATIONS+=("VIOLATION: $FILE:$lineno -> $line")
     EXIT_CODE=1
   done < <(git show :"$FILE" 2>/dev/null | nl -ba -w1 -s: | grep -Eni "$KEYS" || true)
