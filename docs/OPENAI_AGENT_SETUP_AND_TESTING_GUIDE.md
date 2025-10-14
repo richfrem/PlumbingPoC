@@ -172,12 +172,12 @@ Then render them:
    - Set your OpenAI API key for CLI authentication
    - For zsh (macOS default):
      ```bash
-     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.zshrc
+     echo 'export OPENAI_API_KEY="<REDACTED>"' >> ~/.zshrc
      source ~/.zshrc
      ```
    - For bash:
      ```bash
-     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc
+     echo 'export OPENAI_API_KEY="<REDACTED>"' >> ~/.bashrc
      source ~/.bashrc
      ```
    - Test: `openai models list` (should show available models like gpt-4o-mini, gpt-4o)

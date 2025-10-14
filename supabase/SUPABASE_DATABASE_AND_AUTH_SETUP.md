@@ -319,7 +319,7 @@ brew install supabase/tap/supabase
 supabase --version
 
 ## supabase database dump
-export PGPASSWORD='YOUR_PASSWORD'
+export PGPASSWORD='<REDACTED>'
 pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
 
 #### Query 1: Table & Column Schema

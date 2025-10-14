@@ -1,20 +1,14 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-13T23:35:57.123Z
+Generated On: 2025-10-14T03:16:23.422Z
 
-# Mnemonic Weight (Token Count): ~364,715 tokens
+# Mnemonic Weight (Token Count): ~363,979 tokens
 
 # Directory Structure (relative to project root)
-  ./.DS_Store
-  ./.env
-  ./.env.example
-  ./.env.test
   ./.githooks/
-  ./.githooks/pre-commit
   ./.github/
   ./.github/copilot-instructions.md
   ./.github/workflows/
-  ./.gitignore
   ./.netlify/
   ./.netlify/blobs-serve/
   ./.netlify/functions-internal/
@@ -69,14 +63,12 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./adrs/029-unified-customer-info-component-architecture.md
   ./adrs/030-domain-registration-and-dns-hosting-strategy.md
   ./agents/
-  ./agents/.DS_Store
   ./agents/AGENT_REPOS.md
   ./agents/README2.md
   ./agents/backend-architect-mcp-agent.js
   ./agents/backend-architect-mcp.md
   ./agents/browserAuth.js
   ./agents/feedback/
-  ./agents/feedback/.DS_Store
   ./agents/feedback/archive/
   ./agents/feedback/archive/ui-feedback-2025-08-30T20-13-29.101Z.json
   ./agents/feedback/archive/ui-feedback-2025-08-30T20-24-09.859Z.json
@@ -93,20 +85,9 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./agents/projectFileManifest.js
   ./agents/quote-agent.yaml
   ./agents/screenshots/
-  ./agents/screenshots/after-user-menu-click.png
-  ./agents/screenshots/before-user-menu-full.png
-  ./agents/screenshots/dashboard-analysis.png
-  ./agents/screenshots/login-failure-debug.png
-  ./agents/screenshots/login-modal-debug.png
-  ./agents/screenshots/login-success-debug.png
-  ./agents/screenshots/logout-failure-debug.png
-  ./agents/screenshots/quote-agent-modal-analysis.png
   ./agents/triage-agent.yaml
   ./agents/ui-designer-mcp-agent.js
   ./agents/ui-designer-mcp.md
-  ./all_markdown_and_code_snapshot_llm_distilled.txt
-  ./capture_code_snapshot.js
-  ./check_invoice_permissions.sql
   ./debug-admin-auth.mjs
   ./docs/
   ./docs/AIContracts.md
@@ -133,9 +114,7 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
   ./docs/configuring-resend-email.md
   ./environments/
-  ./find_invoice_fkey.sql
   ./netlify.toml
-  ./package-lock.json
   ./package.json
   ./packages/
   ./packages/backend/
@@ -190,10 +169,8 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./packages/frontend/config/azure/
   ./packages/frontend/config/netlify/
   ./packages/frontend/config/netlify/vite.config.js
-  ./packages/frontend/index.html
   ./packages/frontend/package.json
   ./packages/frontend/public/
-  ./packages/frontend/public/plumber.jpg
   ./packages/frontend/src/
   ./packages/frontend/src/components/
   ./packages/frontend/src/components/examples/
@@ -258,23 +235,17 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./packages/frontend/tsconfig.json
   ./packages/frontend/vite.config.js
   ./playwright.config.ts
-  ./quick_invoice_check.sql
   ./scripts/
   ./scripts/setup-git-hooks.sh
   ./shutdown.sh
   ./startup.sh
   ./supabase/
   ./supabase/.temp/
-  ./supabase/.temp/cli-latest
-  ./supabase/.temp/gotrue-version
-  ./supabase/.temp/pooler-url
-  ./supabase/.temp/postgres-version
-  ./supabase/.temp/project-ref
-  ./supabase/.temp/rest-version
-  ./supabase/.temp/storage-version
   ./supabase/DeployingGeocodeInSupabase.md
   ./supabase/HowToGenerateSupabaseSchema.md
   ./supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md
+  ./supabase/check_invoice_permissions.sql
+  ./supabase/find_invoice_fkey.sql
   ./supabase/functions/
   ./supabase/functions/geocode/
   ./supabase/functions/geocode/index.ts
@@ -283,53 +254,21 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./supabase/migrations/20251013_create_email_audit_table.sql
   ./supabase/migrations/add_invoice_enhancements.sql
   ./supabase/migrations/fix_status_constraint_local.sql
+  ./supabase/quick_invoice_check.sql
   ./supabase/schema.sql
   ./supabase/supabase/
   ./supabase/supabase/.temp/
-  ./supabase/supabase/.temp/cli-latest
-  ./supabase/supabase/.temp/gotrue-version
-  ./supabase/supabase/.temp/pooler-url
-  ./supabase/supabase/.temp/postgres-version
-  ./supabase/supabase/.temp/project-ref
-  ./supabase/supabase/.temp/rest-version
-  ./supabase/supabase/.temp/storage-version
   ./supabase/supabase/functions/
   ./supabase/supabase/functions/index.ts
+  ./supabase/verify_invoice_join.sql
   ./tests/
   ./tests/README.md
   ./tests/e2e/
-  ./tests/e2e/.DS_Store
   ./tests/e2e/E2E_NEXT_STEPS.md
   ./tests/e2e/README.md
   ./tests/e2e/debug/
-  ./tests/e2e/debug/debug-after-click.png
-  ./tests/e2e/debug/debug-before-modal-open.png
-  ./tests/e2e/debug/debug-emergency-question-failure-1758694929662.png
-  ./tests/e2e/debug/debug-modal-did-not-open.png
-  ./tests/e2e/debug/debug-no-modal.png
-  ./tests/e2e/debug/debug-question-1-failure-1758695090628.png
-  ./tests/e2e/debug/debug-question-1-failure-1758695154802.png
-  ./tests/e2e/debug/debug-question-1-failure-1758695424310.png
-  ./tests/e2e/debug/debug-question-1-failure-1758696107844.png
-  ./tests/e2e/debug/debug-question-1-failure-1758696555366.png
-  ./tests/e2e/debug/debug-question-2-failure-1758696673170.png
-  ./tests/e2e/debug/debug-question-6-failure-1758765501626.png
-  ./tests/e2e/debug/debug-question-6-failure-1758767107416.png
-  ./tests/e2e/debug/debug-question-8-failure-1758764905414.png
-  ./tests/e2e/debug/debug-question-8-failure-1758764926919.png
-  ./tests/e2e/debug/debug-question-8-failure-1758764948687.png
-  ./tests/e2e/debug/debug-question-8-failure-1758764970256.png
-  ./tests/e2e/debug/debug-question-8-failure-1758765031104.png
-  ./tests/e2e/debug/debug-question-failure-1758693570689.png
-  ./tests/e2e/debug/debug-question-failure-1758693707464.png
-  ./tests/e2e/debug/debug-question-failure-1758694171390.png
-  ./tests/e2e/debug/debug-remaining-question-failure-1758694992321.png
-  ./tests/e2e/debug/debug-submission-failed-modal-still-open.png
   ./tests/e2e/fixtures/
   ./tests/e2e/fixtures/example-images/
-  ./tests/e2e/fixtures/example-images/crawl-space-leak.jpg
-  ./tests/e2e/fixtures/example-images/leak-under-kitchensink.jpg
-  ./tests/e2e/fixtures/example-images/main-water-leak.jpg
   ./tests/e2e/fixtures/test-data.ts
   ./tests/e2e/fixtures/testFixtures.ts
   ./tests/e2e/page-objects/
@@ -353,19 +292,6 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./tests/e2e/page-objects/pages/README.md
   ./tests/e2e/run-tests.sh
   ./tests/e2e/screenshots/
-  ./tests/e2e/screenshots/signin-failure-1758476651303.png
-  ./tests/e2e/screenshots/signin-failure-1758476652687.png
-  ./tests/e2e/screenshots/signin-failure-1758476652751.png
-  ./tests/e2e/screenshots/signin-failure-1758476652892.png
-  ./tests/e2e/screenshots/signin-failure-1758476677388.png
-  ./tests/e2e/screenshots/signin-failure-1758476678126.png
-  ./tests/e2e/screenshots/signin-failure-1758476679215.png
-  ./tests/e2e/screenshots/signin-failure-1758476679270.png
-  ./tests/e2e/screenshots/signin-failure-1758477366535.png
-  ./tests/e2e/screenshots/signin-failure-1758478602613.png
-  ./tests/e2e/screenshots/signin-failure-1758553690293.png
-  ./tests/e2e/screenshots/signin-failure-1758553799618.png
-  ./tests/e2e/screenshots/signin-failure-1758553972171.png
   ./tests/e2e/specs/
   ./tests/e2e/specs/admin-journeys/
   ./tests/e2e/specs/admin-journeys/admin-authentication.spec.ts
@@ -406,7 +332,6 @@ Generated On: 2025-10-13T23:35:57.123Z
   ./tests/utils/
   ./tests/utils/apiClient.ts
   ./tests/utils/testUtils.ts
-  ./verify_invoice_join.sql
   ./vitest.config.ts
 
 --- START OF FILE ./.github/copilot-instructions.md ---
@@ -1079,7 +1004,7 @@ It must contain asynchronous methods relevant to our core entity, `[Your Core En
 *   `get[Your Core Entity]ById(id: string): Promise<[Your Core Entity] | null>`
 *   `delete[Your Core Entity]ById(id: string): Promise<void>` (for cleanup)
 
-Assume the API requires a bearer token for authentication, and provide a method to set it.
+Assume the API requires a Bearer [REDACTED] for authentication, and provide a method to set it.
 
 ---
 
@@ -1136,6 +1061,8 @@ This specialized E2E testing prompt integrates with the Quantum Diamond Framewor
 These resources support reuse of this prompt for future projects requiring similar modular E2E test suite development.
 
 **[END PROMPT]**
+
+[NOTE] Sensitive values were detected and redacted in this file.
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/README.md ---
@@ -5967,7 +5894,7 @@ The agents require API keys and URLs to function.
 
     ```
     # Your Gemini API Key from Google AI Studio
-    GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
+    GEMINI_API_KEY=<REDACTED>
 
     # The full URL where your local Vite/React app is running
     VITE_FRONTEND_BASE_URL=http://localhost:5173
@@ -7682,70 +7609,6 @@ persona: |
   Your goal: Create interfaces users love and developers can build fast. Provide actionable feedback and implementation-ready specs for every UI/UX review.
 
 # Tools leveraged: Write, Read, MultiEdit, WebSearch, WebFetch, Playwright browser agent
-
---- END OF FILE ---
-
---- START OF FILE ./check_invoice_permissions.sql ---
-
--- Check RLS status and policies for invoices table
-
--- 1. Check if RLS is enabled on invoices table
-SELECT 
-    schemaname,
-    tablename,
-    rowsecurity as rls_enabled
-FROM pg_tables
-WHERE tablename = 'invoices';
-
--- 2. List all RLS policies on invoices table
-SELECT 
-    schemaname,
-    tablename,
-    policyname,
-    permissive,
-    roles,
-    cmd as command,
-    qual as using_expression,
-    with_check as with_check_expression
-FROM pg_policies
-WHERE tablename = 'invoices'
-ORDER BY policyname;
-
--- 3. Check table owner and grants
-SELECT 
-    grantee,
-    privilege_type,
-    is_grantable
-FROM information_schema.role_table_grants
-WHERE table_name = 'invoices'
-ORDER BY grantee, privilege_type;
-
--- 4. Check foreign key relationship to requests table
-SELECT
-    tc.constraint_name,
-    tc.table_name,
-    kcu.column_name,
-    ccu.table_name AS foreign_table_name,
-    ccu.column_name AS foreign_column_name
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-    ON tc.constraint_name = kcu.constraint_name
-    AND tc.table_schema = kcu.table_schema
-JOIN information_schema.constraint_column_usage AS ccu
-    ON ccu.constraint_name = tc.constraint_name
-    AND ccu.table_schema = tc.table_schema
-WHERE tc.constraint_type = 'FOREIGN KEY' 
-    AND tc.table_name = 'invoices';
-
--- 5. Check if request_id column exists and its properties
-SELECT 
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns
-WHERE table_name = 'invoices'
-    AND column_name = 'request_id';
 
 --- END OF FILE ---
 
@@ -10930,7 +10793,7 @@ The backend requires these environment variables to start:
 ```bash
 # Supabase Configuration (Backend)
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
 # Application Ports
 BACKEND_PORT=3000
@@ -11440,6 +11303,13 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 **Value Proposition:**
 *   **For the Owner:** Saves hours of administrative work and captures revenue that would otherwise be lost.
 
+> Operational note: the `email_audit` table and Supabase migration were added during the recent email work, and transactional emails are successfully sending via Resend from Netlify. However, the current send path is not inserting audit rows into `email_audit` — the table exists but contains no records. Next steps are to wire the Resend response handling into an insert (or upsert) so each sent message and provider response is persisted, add retry/error-handling for failed inserts, and add quick visibility (admin table view) for auditing.
+
+Next steps for tomorrow's work (high priority):
+- Implement insertion of audit records in `packages/backend/api/services/email/resend/client.js` immediately after a successful Resend send call. Persist fields: `request_id`, `recipient`, `resend_message_id` (provider id), `provider_response` (jsonb), `status`, `sent_at`.
+- Add unit tests and an integration test for audit insertion (run against local Supabase dev or test DB).
+- After audit persistence is confirmed, implement PDF invoice generation and attach/send invoice PDF via Resend (see Phase 1.5 + Phase 1 above for the workflow).
+
 ---
 
 ## 3. Invoice Management & Payment System
@@ -11554,8 +11424,8 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 2. **Stripe Test Mode Integration & Payment Testing** ⏱️ 4-5 hours
    - Set up Stripe account in test mode
    - Add environment variables:
-     - `STRIPE_TEST_SECRET_KEY`
-     - `STRIPE_TEST_PUBLISHABLE_KEY`
+     - `STRIPE_TEST_SECRET_KEY=<REDACTED>`
+     - `STRIPE_TEST_PUBLISHABLE_KEY=<REDACTED>`
    - Backend: Create payment intent endpoint `/api/invoices/:id/create-payment-intent`
    - Backend: Stripe webhook handler `/netlify/functions/stripe-webhook.mjs`
    - Frontend: "Pay Invoice" button in portal (from step 1)
@@ -12998,12 +12868,12 @@ Then render them:
    - Set your OpenAI API key for CLI authentication
    - For zsh (macOS default):
      ```bash
-     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.zshrc
+     echo 'export OPENAI_API_KEY="<REDACTED>"' >> ~/.zshrc
      source ~/.zshrc
      ```
    - For bash:
      ```bash
-     echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc
+     echo 'export OPENAI_API_KEY="<REDACTED>"' >> ~/.bashrc
      source ~/.bashrc
      ```
    - Test: `openai models list` (should show available models like gpt-4o-mini, gpt-4o)
@@ -14328,7 +14198,7 @@ packages/backend/api/services/email/
 
 ### Environment Variables Required
 ```bash
-RESEND_API_KEY=your_resend_api_key
+RESEND_API_KEY=<REDACTED>
 RESEND_FROM_EMAIL=noreply@yourdomain.com  # Must be verified domain
 RESEND_ENABLED=true
 ```
@@ -14926,26 +14796,6 @@ If you still cannot verify, open a support ticket with Resend and include the DN
 ---
 
 If you'd like, I can create a short script or a checklist to export Netlify DNS records for auditing, or add an entry to `docs/OPS.md` showing who owns the registrar and Netlify accounts and where to find MFA/contact info.
-
---- END OF FILE ---
-
---- START OF FILE ./find_invoice_fkey.sql ---
-
--- Find the foreign key constraint name for invoices.request_id
-SELECT
-    tc.constraint_name,
-    tc.table_name,
-    kcu.column_name,
-    ccu.table_name AS foreign_table_name,
-    ccu.column_name AS foreign_column_name
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-    ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage AS ccu
-    ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY' 
-    AND tc.table_name = 'invoices'
-    AND kcu.column_name = 'request_id';
 
 --- END OF FILE ---
 
@@ -17581,7 +17431,8 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <n
 /**
  * A generic email sending function.
  */
-const sendEmail = async ({ to, subject, html, text }) => {
+// requestId is optional but should be provided by callers so audit rows can link to a request
+const sendEmail = async ({ to, subject, html, text, requestId = null }) => {
   console.log(`📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
   console.log(`📧 EMAIL DEBUG: Attempting to send email from: ${RESEND_FROM_EMAIL}`);
   console.log(`📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
@@ -17607,7 +17458,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       // Persist failure if possible
       try {
         await supabase.from('email_audit').insert({
-          request_id: request?.id || null,
+          request_id: requestId || null,
           recipient: to,
           resend_message_id: null,
           status: 'error',
@@ -17625,7 +17476,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     // Persist send audit if supabase is available
     try {
       await supabase.from('email_audit').insert({
-        request_id: request?.id || null,
+        request_id: requestId || null,
         recipient: to,
         resend_message_id: data?.id || null,
         status: 'sent',
@@ -17641,7 +17492,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.error('❌ EMAIL FAILED: Failed to send email:', error);
     try {
       await supabase.from('email_audit').insert({
-        request_id: request?.id || null,
+        request_id: requestId || null,
         recipient: to,
         resend_message_id: null,
         status: 'failed',
@@ -17741,7 +17592,7 @@ View it here: ${requestUrl}
 Thanks,
 Plumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendStatusUpdateEmail = (request) => {
@@ -17779,7 +17630,7 @@ const sendStatusUpdateEmail = (request) => {
 
   const text = `The status of your request has been updated to: ${request.status}\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\nQuotes: ${quotesCount}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendQuoteAddedEmail = (request, quote) => {
@@ -17815,7 +17666,7 @@ const sendQuoteAddedEmail = (request, quote) => {
 
     const text = `A new quote for $${quote.quote_amount.toFixed(2)} has been added.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-    return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendFollowUpEmail = (request) => {
@@ -17852,7 +17703,7 @@ const sendFollowUpEmail = (request) => {
 
   const text = `Hi ${customerName},\n\nJust wanted to follow up on the quote we sent you for your recent request.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 
@@ -29331,28 +29182,6 @@ export default defineConfig({
 });
 --- END OF FILE ---
 
---- START OF FILE ./quick_invoice_check.sql ---
-
--- Quick check for invoices table RLS and permissions
--- Run each query separately in Supabase SQL Editor
-
--- Query 1: Is RLS enabled?
-SELECT tablename, rowsecurity as rls_enabled
-FROM pg_tables
-WHERE tablename = 'invoices';
-
--- Query 2: What RLS policies exist?
-SELECT policyname, cmd, roles
-FROM pg_policies
-WHERE tablename = 'invoices';
-
--- Query 3: Does request_id column exist?
-SELECT column_name, data_type, is_nullable
-FROM information_schema.columns
-WHERE table_name = 'invoices' AND column_name = 'request_id';
-
---- END OF FILE ---
-
 --- START OF FILE ./scripts/setup-git-hooks.sh ---
 
 #!/usr/bin/env bash
@@ -30259,7 +30088,7 @@ brew install supabase/tap/supabase
 supabase --version
 
 ## supabase database dump
-export PGPASSWORD='YOUR_PASSWORD'
+export PGPASSWORD='<REDACTED>'
 pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
 
 #### Query 1: Table & Column Schema
@@ -30415,6 +30244,90 @@ sequenceDiagram
 SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 
 _Last updated: August 21, 2025_
+--- END OF FILE ---
+
+--- START OF FILE ./supabase/check_invoice_permissions.sql ---
+
+-- Check RLS status and policies for invoices table
+
+-- 1. Check if RLS is enabled on invoices table
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity as rls_enabled
+FROM pg_tables
+WHERE tablename = 'invoices';
+
+-- 2. List all RLS policies on invoices table
+SELECT 
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd as command,
+    qual as using_expression,
+    with_check as with_check_expression
+FROM pg_policies
+WHERE tablename = 'invoices'
+ORDER BY policyname;
+
+-- 3. Check table owner and grants
+SELECT 
+    grantee,
+    privilege_type,
+    is_grantable
+FROM information_schema.role_table_grants
+WHERE table_name = 'invoices'
+ORDER BY grantee, privilege_type;
+
+-- 4. Check foreign key relationship to requests table
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+    AND tc.table_schema = kcu.table_schema
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+    AND ccu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'FOREIGN KEY' 
+    AND tc.table_name = 'invoices';
+
+-- 5. Check if request_id column exists and its properties
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'invoices'
+    AND column_name = 'request_id';
+
+--- END OF FILE ---
+
+--- START OF FILE ./supabase/find_invoice_fkey.sql ---
+
+-- Find the foreign key constraint name for invoices.request_id
+SELECT
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY' 
+    AND tc.table_name = 'invoices'
+    AND kcu.column_name = 'request_id';
+
 --- END OF FILE ---
 
 --- START OF FILE ./supabase/functions/geocode/index.ts ---
@@ -30934,6 +30847,28 @@ SELECT conname, pg_get_constraintdef(oid)
 FROM pg_constraint 
 WHERE conrelid = 'requests'::regclass 
 AND conname = 'requests_status_check';
+
+--- END OF FILE ---
+
+--- START OF FILE ./supabase/quick_invoice_check.sql ---
+
+-- Quick check for invoices table RLS and permissions
+-- Run each query separately in Supabase SQL Editor
+
+-- Query 1: Is RLS enabled?
+SELECT tablename, rowsecurity as rls_enabled
+FROM pg_tables
+WHERE tablename = 'invoices';
+
+-- Query 2: What RLS policies exist?
+SELECT policyname, cmd, roles
+FROM pg_policies
+WHERE tablename = 'invoices';
+
+-- Query 3: Does request_id column exist?
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'invoices' AND column_name = 'request_id';
 
 --- END OF FILE ---
 
@@ -32393,6 +32328,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
 });
 --- END OF FILE ---
 
+--- START OF FILE ./supabase/verify_invoice_join.sql ---
+
+-- Check if the specific invoice exists and has proper request_id
+SELECT 
+    id,
+    request_id,
+    status,
+    created_at
+FROM invoices 
+WHERE id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
+
+-- Check if the request_id is valid (has matching request)
+SELECT 
+    i.id as invoice_id,
+    i.request_id,
+    r.id as request_id_check,
+    r.customer_name,
+    r.service_address
+FROM invoices i
+LEFT JOIN requests r ON i.request_id = r.id
+WHERE i.id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
+
+--- END OF FILE ---
+
 --- START OF FILE ./tests/README.md ---
 
 # 🏗️ **Testing Strategy: Google Testing Pyramid**
@@ -32468,11 +32427,11 @@ E2E tests create real database records for validation. Use the cleanup API to re
 ```bash
 # Dry run - see what would be deleted (safe)
 curl -X DELETE "https://your-api.com/api/requests/cleanup-test-data" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+  -H "Authorization: Bearer [REDACTED]"
 
 # Actually delete test data (dangerous - use carefully)
 curl -X DELETE "https://your-api.com/api/requests/cleanup-test-data" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Authorization: Bearer [REDACTED]" \
   -H "Content-Type: application/json" \
   -d '{"dryRun": false, "confirmDelete": true}'
 ```
@@ -32776,6 +32735,8 @@ While the core test suite is complete and functional, future enhancements could 
 - **Performance Testing**: Response time and load validation
 - **Visual Regression**: Screenshot comparison testing
 - **Cross-browser Matrix**: Full browser compatibility validation
+
+[NOTE] Sensitive values were detected and redacted in this file.
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/E2E_NEXT_STEPS.md ---
@@ -38428,7 +38389,7 @@ test.describe('Admin deep-link -> dashboard modal', () => {
       preferred_timing: 'ASAP'
     };
 
-    // Authenticate via Supabase to get a Bearer token for creating the request
+    // Authenticate via Supabase to get a Bearer [REDACTED] for creating the request
     let authToken: string | null = null;
     try {
       const { createClient } = await import('@supabase/supabase-js');
@@ -38493,6 +38454,8 @@ test.describe('Admin deep-link -> dashboard modal', () => {
   });
 });
 
+
+[NOTE] Sensitive values were detected and redacted in this file.
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/integration/complete-user-admin-journey.spec.ts ---
@@ -42325,30 +42288,6 @@ export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0))
 
 export * from '@testing-library/react';
 export { customRender as render };
---- END OF FILE ---
-
---- START OF FILE ./verify_invoice_join.sql ---
-
--- Check if the specific invoice exists and has proper request_id
-SELECT 
-    id,
-    request_id,
-    status,
-    created_at
-FROM invoices 
-WHERE id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
-
--- Check if the request_id is valid (has matching request)
-SELECT 
-    i.id as invoice_id,
-    i.request_id,
-    r.id as request_id_check,
-    r.customer_name,
-    r.service_address
-FROM invoices i
-LEFT JOIN requests r ON i.request_id = r.id
-WHERE i.id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
-
 --- END OF FILE ---
 
 --- START OF FILE ./vitest.config.ts ---

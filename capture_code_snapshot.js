@@ -28,6 +28,7 @@ const alwaysExcludeFiles = new Set([
     'all_markdown_and_code_snapshot_llm_distilled.txt',
     '.gitignore',
     '.DS_Store',
+    '.env',
     'capture_code_snapshot.js',
     'package-lock.json', // Exclude lock files as they are very large and machine-generated
     'pnpm-lock.yaml',
@@ -51,9 +52,45 @@ function appendFileContent(filePath, basePath) {
         fileContent = `[Content not captured due to read error: ${readError.message}.]`;
     }
 
+    // --- Sensitive content redaction ---------------------------------
+    // Configurable list of environment/key names to redact when found
+    const sensitiveKeyNames = [
+        'OPENAI_API_KEY',
+        'GEMINI_API_KEY',
+        'RESEND_API_KEY',
+        'RESEND_FROM_EMAIL',
+        'TWILIO_AUTH_TOKEN',
+        'TWILIO_ACCOUNT_SID',
+        'TWILIO_PHONE_NUMBER',
+        'VITE_GOOGLE_MAPS_API_KEY',
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'SUPABASE_ANON_KEY',
+        'PGPASSWORD'
+    ];
+
+    // Build a regex that matches assignments like KEY=VALUE or KEY: "value"
+    const sensAlt = sensitiveKeyNames.join('|').replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const keyAssignRegex = new RegExp(`\\b(${sensAlt})\\b\\s*[:=]\\s*['\"]?[^'\"\n\\r]*`, 'gi');
+
+    // Redact bearer tokens and likely long-looking secret tokens (e.g., sk-...)
+    const bearerRegex = /Bearer\s+[A-Za-z0-9\-_.]+/gi;
+    const longKeyRegex = /\b(sk-[A-Za-z0-9\-_.]{10,})\b/gi;
+
+    // Perform redactions on fileContent; produce sanitized copy for snapshot
+    let sanitized = fileContent
+        .replace(keyAssignRegex, (m, p1) => `${p1}=[REDACTED]`)
+        .replace(bearerRegex, 'Bearer [REDACTED]')
+        .replace(longKeyRegex, '[REDACTED_LONG_KEY]');
+
+    // If we redacted anything, annotate the snapshot output for this file
+    const redacted = sanitized !== fileContent;
+
     // Use the standardized relativePath with ./ prefix in the separator
     let output = `${fileSeparatorStart} ${relativePath} ---\n\n`;
-    output += fileContent;
+    output += sanitized;
+    if (redacted) {
+        output += `\n\n[NOTE] Sensitive values were detected and redacted in this file.`;
+    }
     output += `\n${fileSeparatorEnd} ---\n\n`;
     return output;
 }
@@ -85,16 +122,17 @@ try {
             }
         }
         
-        // Add item to the directory tree structure, also prefixed with ./
-        if (relativePath) { // Don't add the root itself to the tree list
-            fileTreeLines.push('./' + relativePath + (fs.statSync(currentPath).isDirectory() ? '/' : ''));
-        }
-
+        // If this is a directory, add it to the tree and recurse
         if (fs.statSync(currentPath).isDirectory()) {
+            if (relativePath) { // Don't add the root itself to the tree list
+                fileTreeLines.push('./' + relativePath + '/');
+            }
             const items = fs.readdirSync(currentPath).sort();
             for (const item of items) {
                 traverseAndCapture(path.join(currentPath, item));
             }
+
+        // If it's a file, perform exclusion checks first, then add to tree and capture
         } else if (fs.statSync(currentPath).isFile()) {
             // Rule 3: Exclude specific filenames (e.g., .DS_Store)
             if (alwaysExcludeFiles.has(baseName)) {
@@ -102,7 +140,7 @@ try {
                 return;
             }
 
-            // Rule 4: Handle special .env file logic
+            // Rule 4: Handle special .env file logic (exclude all real env files, allow .env.example)
             if (baseName.startsWith('.env') && baseName !== '.env.example') {
                 itemsSkipped++;
                 return;
@@ -114,7 +152,10 @@ try {
                 return;
             }
 
-            // If all checks pass, capture the file content
+            // Passed all checks: add to file tree and capture the file content
+            if (relativePath) {
+                fileTreeLines.push('./' + relativePath);
+            }
             distilledContent += appendFileContent(currentPath, projectRoot);
             filesCaptured++;
         }

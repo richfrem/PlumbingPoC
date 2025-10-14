@@ -42,6 +42,13 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 **Value Proposition:**
 *   **For the Owner:** Saves hours of administrative work and captures revenue that would otherwise be lost.
 
+> Operational note: the `email_audit` table and Supabase migration were added during the recent email work, and transactional emails are successfully sending via Resend from Netlify. However, the current send path is not inserting audit rows into `email_audit` — the table exists but contains no records. Next steps are to wire the Resend response handling into an insert (or upsert) so each sent message and provider response is persisted, add retry/error-handling for failed inserts, and add quick visibility (admin table view) for auditing.
+
+Next steps for tomorrow's work (high priority):
+- Implement insertion of audit records in `packages/backend/api/services/email/resend/client.js` immediately after a successful Resend send call. Persist fields: `request_id`, `recipient`, `resend_message_id` (provider id), `provider_response` (jsonb), `status`, `sent_at`.
+- Add unit tests and an integration test for audit insertion (run against local Supabase dev or test DB).
+- After audit persistence is confirmed, implement PDF invoice generation and attach/send invoice PDF via Resend (see Phase 1.5 + Phase 1 above for the workflow).
+
 ---
 
 ## 3. Invoice Management & Payment System
@@ -156,8 +163,8 @@ The architecture of the platform (using Netlify Functions and Supabase) makes ad
 2. **Stripe Test Mode Integration & Payment Testing** ⏱️ 4-5 hours
    - Set up Stripe account in test mode
    - Add environment variables:
-     - `STRIPE_TEST_SECRET_KEY`
-     - `STRIPE_TEST_PUBLISHABLE_KEY`
+     - `STRIPE_TEST_SECRET_KEY=<REDACTED>`
+     - `STRIPE_TEST_PUBLISHABLE_KEY=<REDACTED>`
    - Backend: Create payment intent endpoint `/api/invoices/:id/create-payment-intent`
    - Backend: Stripe webhook handler `/netlify/functions/stripe-webhook.mjs`
    - Frontend: "Pay Invoice" button in portal (from step 1)

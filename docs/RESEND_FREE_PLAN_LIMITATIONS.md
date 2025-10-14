@@ -142,7 +142,7 @@ packages/backend/api/services/email/
 
 ### Environment Variables Required
 ```bash
-RESEND_API_KEY=your_resend_api_key
+RESEND_API_KEY=<REDACTED>
 RESEND_FROM_EMAIL=noreply@yourdomain.com  # Must be verified domain
 RESEND_ENABLED=true
 ```

@@ -13,7 +13,8 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <n
 /**
  * A generic email sending function.
  */
-const sendEmail = async ({ to, subject, html, text }) => {
+// requestId is optional but should be provided by callers so audit rows can link to a request
+const sendEmail = async ({ to, subject, html, text, requestId = null }) => {
   console.log(`📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
   console.log(`📧 EMAIL DEBUG: Attempting to send email from: ${RESEND_FROM_EMAIL}`);
   console.log(`📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
@@ -39,7 +40,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       // Persist failure if possible
       try {
         await supabase.from('email_audit').insert({
-          request_id: request?.id || null,
+          request_id: requestId || null,
           recipient: to,
           resend_message_id: null,
           status: 'error',
@@ -57,7 +58,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     // Persist send audit if supabase is available
     try {
       await supabase.from('email_audit').insert({
-        request_id: request?.id || null,
+        request_id: requestId || null,
         recipient: to,
         resend_message_id: data?.id || null,
         status: 'sent',
@@ -73,7 +74,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.error('❌ EMAIL FAILED: Failed to send email:', error);
     try {
       await supabase.from('email_audit').insert({
-        request_id: request?.id || null,
+        request_id: requestId || null,
         recipient: to,
         resend_message_id: null,
         status: 'failed',
@@ -173,7 +174,7 @@ View it here: ${requestUrl}
 Thanks,
 Plumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendStatusUpdateEmail = (request) => {
@@ -211,7 +212,7 @@ const sendStatusUpdateEmail = (request) => {
 
   const text = `The status of your request has been updated to: ${request.status}\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\nQuotes: ${quotesCount}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendQuoteAddedEmail = (request, quote) => {
@@ -247,7 +248,7 @@ const sendQuoteAddedEmail = (request, quote) => {
 
     const text = `A new quote for $${quote.quote_amount.toFixed(2)} has been added.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-    return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 const sendFollowUpEmail = (request) => {
@@ -284,7 +285,7 @@ const sendFollowUpEmail = (request) => {
 
   const text = `Hi ${customerName},\n\nJust wanted to follow up on the quote we sent you for your recent request.\n\nRequest ID: ${request.id}\nSummary: ${rawSummary}\nType: ${humanizedCategory}\nEmergency?: ${asapFlag}\nScheduled: ${scheduled}\nService address: ${serviceAddress}\nCustomer: ${customerName} — ${customerPhone}\n\nView it here: ${requestUrl}\n\nThanks,\nPlumbing POC`;
 
-  return sendEmail({ to: recipientEmail, subject, html, text });
+  return sendEmail({ to: recipientEmail, subject, html, text, requestId: request.id });
 };
 
 

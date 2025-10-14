@@ -35,7 +35,7 @@ The agents require API keys and URLs to function.
 
     ```
     # Your Gemini API Key from Google AI Studio
-    GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
+    GEMINI_API_KEY=<REDACTED>
 
     # The full URL where your local Vite/React app is running
     VITE_FRONTEND_BASE_URL=http://localhost:5173
