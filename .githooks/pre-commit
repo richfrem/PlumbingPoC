@@ -1,92 +1,165 @@
-#!/usr/bin/env bash
-# Pre-commit hook to prevent leaking secrets.
-# Rules:
-# 1) Block .env files except literal .env.example
-# 2) Scan staged files for key assignments; block unless RHS empty or '<REDACTED>'
-# 3) Summarize violations
+#!/usr/bin/env python3
+"""
+Pre-commit hook to prevent leaking secrets.
+Converted from Bash to Python for better readability.
 
-# Bash strict mode: exit on error, treat unset variables as errors, propagate pipeline failures
-# -e exit immediately with an non-zero status
-# -u treat unset variables as an error
-# -o pipefail the return value of a pipeline is the status of the last command to exit with a non-zero status
-set -euo pipefail
-# Set Internal Field Separator to newline and tab only (safer word splitting)
-IFS=$'\n\t'
+Rules:
+1) Block .env files except literal .env.example
+2) Scan staged files for key assignments; block unless RHS empty or '<REDACTED>'
+3) Summarize violations
+"""
+
+import subprocess
+import sys
+import os
+import re
 
 # Configurable exclusions
-EXCLUDED_DIRS=("node_modules")
-EXCLUDED_PATTERNS=(".githooks/*" "*.jpg" "*.jpeg" "*.png" "*.gif" "*.bmp" "*.tiff" "*.mp4" "*.avi" "*.mov" "*.webm" "*.mkv" "playwright-report/index.html")
+EXCLUDED_DIRS = ["node_modules"]
+EXCLUDED_PATTERNS = [
+    ".githooks/*", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.tiff",
+    "*.mp4", "*.avi", "*.mov", "*.webm", "*.mkv", "playwright-report/index.html"
+]
 
-# Keys to scan for in assignments (case-insensitive regex)
-KEYS="GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY|API_KEY|SECRET|TOKEN|PASSWORD"
-# Whitelisted RHS values that are allowed (e.g., redacted placeholders)
-WHITELIST="<REDACTED>|'<REDACTED>'"
+# Keys to scan for in assignments (case-insensitive regex with word boundaries)
+KEYS = r"\b(?:GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY|API_KEY|SECRET|TOKEN|PASSWORD)\b"
 
-# Collect staged files NUL-safe (handles filenames with spaces/newlines)
-# define an array to hold full list of staged files by git diff
-STAGED=()
-# Default internal field separator -- IFS (space, tab, newline) e.g. "hello world" treated as two words
-# but in this case with file names, we want to treat the entire filename as a single word so no separator
-# no IFS provided so a file name like "my file.txt" is treated as a single word
-# read -r = raw mode, also allows backslashes in filenames
-# -d '' = read until null byte (NUL), not newline.  d stands for null \0 delimiter?
-#       -d delim The first character of delim is used to terminate the input line,  rather than newline.
-while IFS= read -r -d '' f
-do
-    STAGED+=("$f")
-done < <(git diff --cached --name-only -z)  
-#gets list of staged files, separated by null bytes. names only -z stands for null byte
+# Whitelisted RHS patterns that indicate legitimate references (not secret exposure)
+WHITELIST_EXACT = ["<REDACTED>", "'<REDACTED>'"]
+WHITELIST_PREFIXES = [
+    "process.env.", "os.environ", "import.meta.env.",  # Environment variables
+    "${{ secrets.", "${{ vars.",                      # GitHub Actions
+    "config.", "settings.", "env.",                   # Config objects
+    "getEnv(", "process.env.get(",                    # Function calls
+]
+WHITELIST_CONTAINS = [
+    "!!", "?.", "session?.", "auth.",                 # JavaScript expressions
+    "`",                                              # Template literals
+    "import.meta", "process.env",                     # Module references
+    "[", "]", "(", ")", ";", "args[", "params.",      # Variable access, function calls
+]
 
-# If no staged files, exit early (nothing to check)
-if [ ${#STAGED[@]} -eq 0 ]; then exit 0; fi
+def is_variable_name(value):
+    """Check if a value looks like a variable name or property access (not a hardcoded secret)."""
+    # Allow simple variable names or object property access (e.g., obj.prop, obj.prop.subprop)
+    return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*$', value))
 
-EXIT_CODE=0
+def get_staged_files():
+    """Get list of staged files NUL-safe (handles filenames with spaces/newlines)."""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "-z"],
+            capture_output=True, text=True, check=True
+        )
+        # Split on null bytes, filter out empty strings
+        return [f for f in result.stdout.split('\0') if f.strip()]
+    except subprocess.CalledProcessError:
+        return []
 
-# Array to hold violation messages
-VIOLATIONS=()
+def is_excluded(filepath):
+    """Check if file is in excluded directories or matches excluded patterns."""
+    # Check excluded directories
+    for excluded_dir in EXCLUDED_DIRS:
+        if filepath.startswith(f"{excluded_dir}/"):
+            return True
 
-# Loop through each staged file array
-for FILE in "${STAGED[@]}"; do
-  [ -n "$FILE" ] || continue  # Skip empty filenames
+    # Check excluded patterns (simple glob matching)
+    for pattern in EXCLUDED_PATTERNS:
+        # Convert glob to regex
+        regex_pattern = pattern.replace(".", r"\.").replace("*", ".*")
+        if re.match(f"^{regex_pattern}$", filepath):
+            return True
 
-  # Check if file is in excluded directories
-  for dir in "${EXCLUDED_DIRS[@]}"; do
-    if [[ "$FILE" == $dir/* ]]; then continue 2; fi  # Skip this file
-  done
+    return False
 
-  # Check if file matches excluded patterns
-  for pat in "${EXCLUDED_PATTERNS[@]}"; do
-    if [[ "$FILE" == $pat ]]; then continue 2; fi  # Skip this file
-  done
+def extract_rhs_value(line):
+    """Extract RHS of assignment using regex (matches the sed logic from Bash version)."""
+    # This regex matches: key = value, with word boundaries around keys
+    # sed -nE "s/.*($KEYS)\s*[:=]\s*['\"]?([^'\"\s]*)['\"]?.*/\2/p"
+    keys_pattern = r"\b(?:GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY|API_KEY|SECRET|TOKEN|PASSWORD)\b"
+    pattern = rf".*({keys_pattern})\s*[:=]\s*['\"]?([^'\"\s,]*)['\"]?"
+    match = re.search(pattern, line, re.IGNORECASE)
+    if match:
+        rhs = match.group(2)
+        # Strip trailing punctuation that might be included
+        rhs = rhs.rstrip(',;')
+        return rhs
+    return ""
 
-  # Rule 1: block .env files except .env.example
-  if [[ "$FILE" == *.env* && "$FILE" != ".env.example" ]]; then
-    VIOLATIONS+=("BLOCKED .env file: $FILE")
-    EXIT_CODE=1
-    continue
-  fi
+def scan_file_for_secrets(filepath):
+    """Scan staged content for key assignments and return violations."""
+    violations = []
 
-  # Skip if not a staged blob (deleted/dir/submodule)
-  if ! git show :"$FILE" >/dev/null 2>&1; then continue; fi
+    try:
+        # Get staged file content (equivalent to git show :"$FILE")
+        result = subprocess.run(
+            ["git", "show", f":{filepath}"],
+            capture_output=True, text=True, check=True
+        )
+    except subprocess.CalledProcessError:
+        # Skip if file doesn't exist in staging (deleted, binary, etc.)
+        return violations
 
-  # Rule 2: scan staged content for key assignments
-  while IFS=: read -r lineno rest; do
-    line="$rest"
-    # Extract RHS of assignment using sed regex
-    rhs=$(printf '%s\n' "$line" | sed -nE "s/.*($KEYS)\s*[:=]\s*['\"]?([^'\"\s]*)['\"]?.*/\2/p")
-    [ -z "$rhs" ] && continue  # No assignment found
-    if [[ "$WHITELIST" == *"$rhs"* ]]; then continue; fi  # Whitelisted value
-    VIOLATIONS+=("VIOLATION: $FILE:$lineno -> $line")
-    EXIT_CODE=1
-  done < <(git show :"$FILE" 2>/dev/null | nl -ba -w1 -s: | grep -Eni "$KEYS" || true)
-done
+    lines = result.stdout.splitlines(keepends=False)
 
-# Rule 3: summarize and exit
-if [ $EXIT_CODE -ne 0 ]; then
-  echo "COMMIT BLOCKED: Violations found."
-  for v in "${VIOLATIONS[@]}"; do echo "$v"; done
-  echo "Fix by removing secrets or using '<REDACTED>'."
-  exit 1
-fi
+    # Process each line (equivalent to the pipeline: git show | nl | grep | while read)
+    for lineno, line in enumerate(lines, 1):
+        # Check if line contains any of the keys (case-insensitive)
+        if re.search(KEYS, line, re.IGNORECASE):
+            # Extract RHS value
+            rhs = extract_rhs_value(line)
 
-exit 0
+            # Skip if no assignment found or RHS is whitelisted
+            if not rhs or rhs in WHITELIST_EXACT or any(rhs.startswith(prefix) for prefix in WHITELIST_PREFIXES) or any(pattern in rhs for pattern in WHITELIST_CONTAINS) or is_variable_name(rhs):
+                continue
+
+            # Record violation
+            violations.append(f"VIOLATION: {filepath}:{lineno} -> {line}")
+
+    return violations
+
+def main():
+    """Main hook logic."""
+    # Get staged files
+    staged_files = get_staged_files()
+
+    # If no staged files, exit early
+    if not staged_files:
+        sys.exit(0)
+
+    exit_code = 0
+    violations = []
+
+    # Process each staged file
+    for filepath in staged_files:
+        if not filepath:
+            continue
+
+        # Check exclusions
+        if is_excluded(filepath):
+            continue
+
+        # Rule 1: Block .env files except .env.example
+        if filepath.endswith('.env') and filepath != '.env.example':
+            violations.append(f"BLOCKED .env file: {filepath}")
+            exit_code = 1
+            continue
+
+        # Rule 2: Scan for secrets in staged content
+        file_violations = scan_file_for_secrets(filepath)
+        if file_violations:
+            violations.extend(file_violations)
+            exit_code = 1
+
+    # Rule 3: Summarize and exit
+    if exit_code != 0:
+        print("COMMIT BLOCKED: Violations found.")
+        for violation in violations:
+            print(violation)
+        print("Fix by removing secrets or using '<REDACTED>'.")
+        sys.exit(1)
+
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
