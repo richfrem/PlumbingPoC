@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-14T04:13:36.102Z
+Generated On: 2025-10-14T04:35:24.498Z
 
-# Mnemonic Weight (Token Count): ~365,375 tokens
+# Mnemonic Weight (Token Count): ~366,612 tokens
 
 # Directory Structure (relative to project root)
   ./.githooks/
@@ -16,6 +16,7 @@ Generated On: 2025-10-14T04:13:36.102Z
   ./.netlify/state.json
   ./.netlify/v1/
   ./.netlify/v1/functions/
+  ./.pre-commit-config.yaml
   ./PROMPTS/
   ./PROMPTS/00_framework-overview.md
   ./PROMPTS/01_playbook-genesis-cycle.md
@@ -63,6 +64,7 @@ Generated On: 2025-10-14T04:13:36.102Z
   ./adrs/028-choice-of-custom-yaml-over-openai-agents-sdk.md
   ./adrs/029-unified-customer-info-component-architecture.md
   ./adrs/030-domain-registration-and-dns-hosting-strategy.md
+  ./adrs/031-choice-of-secrets-detection-implementation.md
   ./agents/
   ./agents/AGENT_REPOS.md
   ./agents/README2.md
@@ -536,6 +538,53 @@ exit 0
 }
 --- END OF FILE ---
 
+--- START OF FILE ./.pre-commit-config.yaml ---
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(package-lock\.json|\.secrets\.baseline)$
+
+  - repo: local
+    hooks:
+      - id: block-env-files
+        name: Block .env files (except .env.example)
+        entry: python3
+        language: system
+        files: ^\.env$
+        exclude: ^\.env\.example$
+        args:
+          - -c
+          - |
+            import sys
+            filename = sys.argv[1]
+            if filename != '.env.example':
+                print(f"ERROR: Attempting to commit {filename} file!")
+                print("Use .env.example for templates and keep secrets in .env.local")
+                sys.exit(1)
+
+      - id: custom-secrets-scan
+        name: Custom secrets scanner (legacy Python hook)
+        entry: python3
+        language: system
+        files: .*
+        pass_filenames: false
+        args:
+          - .githooks/pre-commit
+
+--- END OF FILE ---
+
 --- START OF FILE ./PROMPTS/00_framework-overview.md ---
 
 # The Quantum Diamond AI Application Development Framework
@@ -668,7 +717,6 @@ For practical implementation examples and specialized prompts that demonstrate t
 
 These prompts serve as reusable templates for future projects, illustrating how to apply the Quantum Diamond Framework to produce similar AI-native application outputs with consistent quality and structure.
 
-
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/01_playbook-genesis-cycle.md ---
@@ -731,7 +779,6 @@ This playbook is part of the Quantum Diamond Framework. For complementary resour
 - **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for E2E testing, supporting the framework's quality assurance practices.
 
 These resources enable reuse of this playbook for future projects requiring similar creative AI-human collaboration phases.
-
 
 --- END OF FILE ---
 
@@ -821,6 +868,7 @@ This playbook is part of the Quantum Diamond Framework. For supporting resources
 - **[Playwright Automated Testing Prompt](./PlaywrightAutomatedTestingPrompt.md)**: Specialized prompt for E2E testing, directly supporting the framework's quality assurance requirements.
 
 These resources facilitate reuse of this playbook for future projects requiring disciplined engineering of AI-native applications.
+
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/MasterPromptArchitectingFullTestSuite.md.md ---
@@ -981,6 +1029,7 @@ This master prompt complements the Quantum Diamond Framework's testing and valid
 These resources enable reuse of this prompt for future projects requiring similar multi-layered test suite architectures.
 
 **[END PROMPT]**
+
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/PlaywrightAutomatedTestingPrompt.md ---
@@ -1174,6 +1223,7 @@ These resources support reuse of this prompt for future projects requiring simil
 
 **[END PROMPT]**
 
+
 [NOTE] Sensitive values were detected and redacted in this file.
 --- END OF FILE ---
 
@@ -1281,6 +1331,7 @@ When adding new prompts, ensure they include:
 - Cross-references to related prompts
 - Integration with the Quantum Diamond Framework
 - Reusability for similar project types
+
 --- END OF FILE ---
 
 --- START OF FILE ./PROMPTS/meta-agent-prompt.md ---
@@ -2056,6 +2107,7 @@ Execute these mandates in order. This will result in a more professional, scalab
 - Package a summary of the request in a user-readable format, including contact info.
 - Display the summary to the user before submission.
 - On submission, show: "Submitting request for quote. We will get back to you with a quote soon. Thank you very much."
+
 --- END OF FILE ---
 
 --- START OF FILE ./RequirementsAndGoals/consulting_launch_blueprint.md ---
@@ -2242,6 +2294,7 @@ Thanks,
 **[Your Name]**
 [Link to your Carrd Landing Page]
 Victoria, B.C.
+
 --- END OF FILE ---
 
 --- START OF FILE ./RequirementsAndGoals/transcript.md ---
@@ -2324,6 +2377,7 @@ Victoria, B.C.
 "This is the kind of comprehensive tool that transforms how trades businesses operate, saving hours every week on calls, drive time, and paperwork while providing a competitive edge."
 
 **(End Recording)**
+
 --- END OF FILE ---
 
 --- START OF FILE ./TASKS.md ---
@@ -2501,6 +2555,7 @@ This file tracks all major requirements, tasks, and progress for the Plumbing Qu
 - Add new tasks as requirements evolve.
 - Check off items as they are completed.
 - Use agent prompts and CLI commands as documented in `agents/README.md`.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/001-choice-of-backend-platform.md ---
@@ -2535,6 +2590,7 @@ We will use **Supabase** as the primary Backend-as-a-Service (BaaS) platform. Th
 *   **Alternatives Considered:**
     *   **Firebase/Firestore:** A strong competitor. We chose Supabase due to its foundation in standard Postgres and its more transparent, S3-like Storage solution.
     *   **Custom Backend (Node.js + Postgres + S3 on AWS):** This would offer maximum flexibility but was rejected due to the significantly higher initial development and operational effort, which would have compromised our goal of rapid prototyping.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/002-choice-of-ai-provider.md ---
@@ -2571,6 +2627,7 @@ We will use the **OpenAI API**, specifically leveraging GPT-4 class models (`gpt
 *   **Alternatives Considered:**
     *   **Anthropic Claude:** A very strong competitor, particularly for its large context windows and strong reasoning. At the time of implementation, OpenAI's ecosystem and JSON mode were deemed slightly more mature for this specific use case.
     *   **Self-hosted Open Source Models (e.g., Llama 3):** This would provide maximum data privacy and potentially lower long-term cost. However, it was rejected due to the immense initial infrastructure and MLOps overhead (GPU provisioning, model deployment, monitoring), which was out of scope for a rapid POC.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/003-choice-of-backend-api-framework.md ---
@@ -2604,6 +2661,7 @@ We will use **Node.js with the Express framework** to build our backend API. Thi
 *   **Alternatives Considered:**
     *   **Python (FastAPI/Flask):** While popular in the AI space, this would introduce a second language and package manager into the project, increasing complexity without a compelling benefit, as the Node.js `openai` library is excellent.
     *   **Supabase Edge Functions:** These could have been used to house the AI logic. A separate Express server was chosen for a more traditional and portable local development experience and to avoid potential execution time limits of serverless functions for more complex, future AI chains.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/004-choice-of-frontend-framework.md ---
@@ -2638,6 +2696,7 @@ We will use **React (with TypeScript)** as the frontend framework, powered by th
     *   **Vue.js:** Another excellent component-based framework. The choice of React was primarily driven by developer familiarity and the breadth of the existing library ecosystem.
     *   **Svelte/SvelteKit:** Offers potentially better performance by compiling away the framework at build time. It was considered a higher risk for a rapid POC due to its smaller ecosystem.
     *   **Angular:** A more opinionated, all-in-one framework. It was deemed too heavyweight and complex for the project's goal of high-speed prototyping.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/005-choice-of-hosting-and-deployment-platform.md ---
@@ -2673,6 +2732,7 @@ We will use **Netlify** as our primary platform for hosting the frontend, deploy
     *   **Vercel:** The most direct competitor to Netlify, offering a very similar feature set. The choice of Netlify was likely based on developer preference or prior experience.
     *   **AWS Amplify:** A powerful alternative from AWS that also provides an integrated full-stack workflow. It is often perceived as more complex to configure than Netlify.
     *   **Self-Managed on AWS (S3/CloudFront + Lambda):** This approach offers maximum power and flexibility but was rejected due to its immense configuration and operational complexity, which would have been contrary to the project's goal of rapid development.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/006-choice-of-ui-component-library.md ---
@@ -2706,6 +2766,7 @@ We will use **Material UI (MUI)** as the primary UI component library for the Re
 *   **Alternatives Considered:**
     *   **Tailwind CSS:** A utility-first CSS framework that provides maximum flexibility. It was not chosen as the primary library because it would have required building complex components like modals and data grids from scratch, slowing down the initial prototyping.
     *   **Shadcn/ui:** A popular library that provides unstyled, composable components. It's an excellent middle ground but requires more setup and composition for each component, making it slightly slower for a rapid POC compared to MUI's ready-to-use components.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/007-choice-of-data-validation-library.md ---
@@ -2739,6 +2800,7 @@ We will use **Zod** as the data validation library for our Node.js/Express backe
     *   **Joi:** An older, very popular validation library, particularly in the JavaScript ecosystem. Zod was chosen for its superior TypeScript integration.
     *   **Yup:** Often used for client-side form validation (especially with Formik). Zod was chosen for its versatility and strong server-side use case.
     *   **Manual Validation:** Writing custom validation logic in each controller was rejected as it is highly repetitive, error-prone, and difficult to maintain.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/008-choice-of-transactional-email-service.md ---
@@ -2771,6 +2833,7 @@ We will use **Resend** as our transactional email service provider, integrated v
 *   **Alternatives Considered:**
     *   **SendGrid / Mailgun:** These are larger, more established players in the space. Resend was chosen for its modern API and strong focus on the developer experience.
     *   **AWS Simple Email Service (SES):** A very powerful and cost-effective solution. It was rejected for this project due to its significantly more complex setup and configuration process, which would have slowed down development.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/009-choice-of-ai-component-testing-strategy.md ---
@@ -2860,6 +2923,7 @@ tests/unit/ai/
 - ADR-002: Choice of Primary AI Provider (OpenAI)
 - ADR-003: Choice of Backend API Framework (Express/Node)
 - ADR-007: Choice of Data Validation Library (Zod for contracts)
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/010-choice-of-server-state-management-library.md ---
@@ -2912,6 +2976,7 @@ We will adopt **TanStack Query (React Query)** as our server state management li
     *   **Redux Toolkit Query (RTK Query):** Excellent for complex state management but overkill for our server-state needs. TanStack Query provides the same benefits with less boilerplate.
     *   **Custom Implementation:** Continue with the existing `useRequests` hook. Rejected due to maintenance burden and lack of advanced features like optimistic updates and request deduplication.
     *   **Apollo Client:** Powerful GraphQL client but unnecessary since we're using REST APIs with Supabase.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/011-choice-of-sms-notification-service.md ---
@@ -2967,6 +3032,7 @@ We will use **Twilio** as our SMS notification service provider, integrated via 
 * Twilio credentials are stored as Netlify environment variables
 * Admin phone numbers are retrieved dynamically from Supabase user_profiles table
 * Failed SMS attempts are logged but don't break the main application flow
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/012-choice-of-Dependency-Management-Strategy.md ---
@@ -3007,6 +3073,7 @@ We will adopt a **unified, monorepo-style workspace strategy** for all dependenc
 
 1.  **`npm overrides`:** This was attempted first. It failed to resolve the issue, likely due to complexities in how Vite's bundler resolves modules from nested `node_modules` directories. It treated the symptom but not the underlying structural problem.
 2.  **Native Drag-and-Drop Implementation:** We considered removing the `react-dropzone` dependency and building the feature with native browser APIs. While this would have solved the immediate error, it would have left the flawed dependency structure in place, risking similar conflicts with future packages. **Fixing the core project structure was deemed the more valuable long-term solution.**
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/013-choice-of-nodejs-module-system-alignment.md.md ---
@@ -3053,6 +3120,7 @@ The `.cjs` extension serves as an explicit instruction to the Node.js runtime to
     *   The current CJS implementation is stable and well-understood; there was no compelling business reason to rewrite it.
 2.  **Remove `"type": "module"` from `packages/frontend/package.json`:** This was rejected as it would break the Vite build process and violate the conventions of the modern frontend tooling we are using.
 3.  **Run Backend from a Separate Workspace:** We could have moved the `api` folder into its own workspace without `"type": "module"`. The chosen solution was simpler and kept the backend and frontend logically grouped within the `packages/` directory structure.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/014-choice-of-pure-ESM-strategy.md ---
@@ -3099,6 +3167,7 @@ The implementation will involve:
 2.  **Remove Dependencies Causing Conflicts:** This was rejected as it would mean sacrificing valuable functionality (`react-dropzone`) to avoid addressing the underlying architectural inconsistency.
 
 This decision represents a commitment to a higher standard of code quality and long-term maintainability, which is appropriate and achievable for a project of this size.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/015-choice-of-monorepo-structure.md ---
@@ -3261,6 +3330,7 @@ We will refactor to a clean monorepo structure with separate packages for fronte
 - All documentation updated to reflect new structure
 - All tests updated with new import paths
 - Build and deployment scripts updated
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/016-choice-of-e2e-testing-architecture.md ---
@@ -3389,6 +3459,7 @@ All test files follow standardized documentation:
 
 ## Authors
 PlumbingPOC Development Team
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/017-choice-of-options-object-pattern-for-test-method-parameters.md ---
@@ -3579,6 +3650,7 @@ async createQuoteRequest(categoryKey: string, options?: QuoteRequestOptions): Pr
 
 ## Author
 Kilo Code (AI Assistant)
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/018-choice-of-seo-implementation-strategy.md ---
@@ -3662,6 +3734,7 @@ We will implement a comprehensive SEO strategy using **react-helmet-async** for 
 - Consider implementing Open Graph meta tags for social sharing
 - Evaluate need for server-side rendering as application scales
 - Regular updates to schema markup for changing business information
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/019-choice-of-single-repository-strategy-for-azure-poc.md ---
@@ -4023,6 +4096,7 @@ export async function updateRequest(requestId, updates) {
 ---
 
 **Note:** This ADR reflects the decision to use a single repository strategy specifically for the Azure POC phase. The approach may be re-evaluated based on POC results and long-term maintenance requirements.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/020-choice-of-azure-static-web-apps-for-frontend-hosting.md ---
@@ -4234,6 +4308,7 @@ az network dns record-set cname create \
 ---
 
 **Note:** Azure Static Web Apps is ideal for modern SPAs with low to medium traffic. For high-traffic enterprise applications, consider Azure Front Door + Azure App Service combination.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/021-choice-of-azure-database-for-postgresql.md ---
@@ -4484,6 +4559,7 @@ USING (
 ---
 
 **Note:** Azure Database for PostgreSQL Basic tier is ideal for development, testing, and small production applications. For enterprise workloads requiring high availability, consider General Purpose or Memory Optimized tiers.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/022-choice-of-azure-ad-b2c-for-authentication.md ---
@@ -4844,6 +4920,7 @@ USING (
 ---
 
 **Note:** Azure AD B2C is ideal for consumer-facing applications requiring multiple authentication methods. For enterprise-only applications, consider Azure AD instead.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/023-choice-of-backend-config-architecture.md ---
@@ -4946,6 +5023,7 @@ packages/backend/
 - [ ] Clean directory structure
 - [ ] Tests pass with new import paths
 - [ ] Easy to add new platform configurations
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/024-choice-of-service-organization-strategy.md ---
@@ -5074,6 +5152,7 @@ services/
 - [x] Easy to update individual services for Azure migration
 - [x] No unnecessary directory complexity
 - [x] Future-ready for multi-provider scenarios
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md ---
@@ -5136,6 +5215,7 @@ Implementation includes:
 4. **Expensive Models Only**: Use GPT-4 or GPT-5 for all interactions. Rejected due to cost concerns for a small business application.
 
 This pattern balances cost efficiency with intelligent automation, ensuring the application remains profitable while providing modern AI capabilities.
+
 --- END OF FILE ---
 
 --- START OF FILE ./adrs/026-agent-runner-local-first-strategy.md ---
@@ -5881,6 +5961,134 @@ Signed-off-by: Project Maintainers
 
 --- END OF FILE ---
 
+--- START OF FILE ./adrs/031-choice-of-secrets-detection-implementation.md ---
+
+# ADR-031: Choice of Secrets Detection Implementation with Pre-commit Hooks
+
+**Date:** 2025-10-13
+
+**Status:** Decided & Implemented
+
+## Context
+
+The PlumbingPOC project handles sensitive data including API keys, database credentials, and user authentication tokens. During development, there was an incident where hardcoded secrets were nearly committed to the repository. We needed a robust, automated solution to prevent accidental secret leaks while allowing legitimate code patterns like environment variable references and variable assignments.
+
+The initial implementation used a custom Python pre-commit hook, but this required ongoing maintenance of secret patterns and whitelisting logic. As a common security need, we sought a more professional, maintainable solution.
+
+## Decision
+
+We will use **detect-secrets** (by Yelp) integrated with the **pre-commit framework** for automated secrets detection. This replaces our custom Python hook with industry-standard tools that provide:
+
+- Comprehensive secret pattern detection (20+ secret types)
+- Regular updates for new secret patterns
+- Sophisticated baseline management
+- Integration with standard pre-commit workflows
+
+## Implementation
+
+The solution consists of:
+
+1. **detect-secrets**: Scans for hardcoded secrets using entropy analysis and pattern matching
+2. **pre-commit framework**: Manages hook execution and provides additional code quality checks
+3. **Baseline file**: Documents existing "acceptable" secrets in the codebase
+4. **Configuration**: YAML-based setup for easy maintenance
+
+### Configuration Details
+
+```yaml
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(package-lock\.json|\.secrets\.baseline)$
+
+  - repo: local
+    hooks:
+      - id: block-env-files
+        name: Block .env files (except .env.example)
+        entry: python3
+        files: ^\.env$
+        exclude: ^\.env\.example$
+        args: [-c, "import sys; filename = sys.argv[1]; ..."]
+```
+
+## Consequences
+
+*   **Pros:**
+    *   **Professional Security**: Industry-standard tool used by major companies (Yelp, GitHub, etc.)
+    *   **Comprehensive Coverage**: Detects 20+ types of secrets including API keys, tokens, passwords, and private keys
+    *   **Automatic Updates**: New secret patterns added as they're discovered in the wild
+    *   **Baseline Management**: Tracks existing secrets to avoid false positives during refactoring
+    *   **Performance**: Optimized scanning with baseline caching
+    *   **Integration**: Works seamlessly with existing pre-commit workflows
+    *   **Additional Checks**: Includes trailing whitespace, YAML validation, and large file detection
+
+*   **Cons:**
+    *   **Learning Curve**: Requires understanding of baseline management and configuration
+    *   **Dependency**: Adds external tool dependencies to the development environment
+    *   **False Positives**: May require baseline updates when legitimate code patterns change
+    *   **Configuration Complexity**: YAML configuration can become complex for advanced use cases
+
+*   **Security Benefits:**
+    *   **Proactive Prevention**: Catches secrets before they reach the repository
+    *   **Pattern Recognition**: Uses entropy analysis to detect obfuscated secrets
+    *   **Comprehensive Scanning**: Checks all file types, not just code files
+    *   **Audit Trail**: Baseline provides visibility into what secrets exist in the codebase
+
+*   **Maintenance Benefits:**
+    *   **Zero Custom Code**: No need to maintain custom regex patterns
+    *   **Community Support**: Active development and security updates
+    *   **Standard Tooling**: Familiar to security teams and auditors
+
+## Alternatives Considered
+
+*   **Custom Python Hook (Original Implementation)**:
+    *   **Pros**: Full control, tailored to our specific patterns
+    *   **Cons**: High maintenance burden, limited secret pattern coverage, manual updates required
+    *   **Rejected**: Too much ongoing maintenance for a common security need
+
+*   **GitLeaks**:
+    *   **Pros**: Popular Go-based scanner, fast performance, extensive secret patterns
+    *   **Cons**: More complex setup, less integration with pre-commit framework
+    *   **Considered**: Strong alternative, but detect-secrets has better pre-commit integration
+
+*   **TruffleHog**:
+    *   **Pros**: Most comprehensive scanning, includes git history analysis
+    *   **Cons**: Overkill for pre-commit use case, slower performance
+    *   **Considered**: Better suited for CI/CD pipelines than pre-commit hooks
+
+*   **Git-Secrets (AWS)**:
+    *   **Pros**: AWS-backed, good pattern coverage
+    *   **Cons**: Limited to git, fewer secret types than detect-secrets
+    *   **Rejected**: Less comprehensive than detect-secrets
+
+## Usage Guidelines
+
+### For Developers:
+- Run `pre-commit run --all-files` to test hooks locally
+- Update baseline with `detect-secrets scan --baseline .secrets.baseline` after legitimate changes
+- Use `<REDACTED>` in code when documenting secret usage
+
+### For CI/CD:
+- Include pre-commit checks in pipeline
+- Monitor for new secret patterns requiring baseline updates
+- Regular baseline audits to ensure no secrets have been inadvertently added
+
+### For Security Team:
+- Review baseline changes during code reviews
+- Monitor detect-secrets releases for new capabilities
+- Conduct periodic secret audits using the baseline as a reference
+
+## Related Documentation
+
+- [detect-secrets documentation](https://github.com/Yelp/detect-secrets)
+- [pre-commit framework](https://pre-commit.com/)
+- Project security guidelines in `docs/SECURITY.md`
+
+--- END OF FILE ---
+
 --- START OF FILE ./agents/AGENT_REPOS.md ---
 
 # Plumbing Quote Agent MCP Persona Repos
@@ -6006,7 +6214,7 @@ The agents require API keys and URLs to function.
 
     ```
     # Your Gemini API Key from Google AI Studio
-    GEMINI_API_KEY=<REDACTED>
+    GEMINI_API_KEY=<your_gemini_api_key_here>
 
     # The full URL where your local Vite/React app is running
     VITE_FRONTEND_BASE_URL=http://localhost:5173
@@ -6130,6 +6338,7 @@ sequenceDiagram
     Playwright Library-->>Agent Script: Returns 'browser' object for automation
     Agent Script->>Agent Script: Executes automation steps (login, screenshot, etc.)
 ```
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/backend-architect-mcp-agent.js ---
@@ -6286,6 +6495,7 @@ if (command === 'review-backend') {
 } else {
   console.log('Usage: node backend-architect-mcp-agent.js review-backend');
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/backend-architect-mcp.md ---
@@ -6457,6 +6667,7 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
 }
 
 module.exports = { signInEmailPassword, signOut, clickSignInButton };
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-13-29.101Z.json ---
@@ -6470,6 +6681,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "      <div className=\"mt-8 flex flex-col items-center gap-6\">"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-24-09.859Z.json ---
@@ -6483,6 +6695,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "          <Button variant=\"outline\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button>"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-28-32.043Z.json ---
@@ -6496,6 +6709,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "        {/* <Button variant=\"destructive\"><Phone className=\"mr-2 h-4 w-4\" /> Emergency Line</Button> */}"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-43-35.608Z.json ---
@@ -6509,6 +6723,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "<span className=\"text-sm font-medium\">Dashboard</span>"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-48-12.876Z.json ---
@@ -6522,6 +6737,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "          <button key={request.id} onClick={() => setSelectedRequest(request)} className=\"w-full bg-white p-4 rounded-lg shadow-md flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200\">"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T20-50-58.626Z.json ---
@@ -6535,6 +6751,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     "new_string": "      { name: '5-Star Rated', description: 'Proven customer satisfaction' },"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T21-11-18.780Z.json ---
@@ -6560,6 +6777,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     }
   ]
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/feedback/archive/ui-feedback-2025-08-30T21-37-59.686Z.json ---
@@ -6585,6 +6803,7 @@ module.exports = { signInEmailPassword, signOut, clickSignInButton };
     }
   ]
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/frontend-developer-mcp-agent.js ---
@@ -6765,6 +6984,7 @@ const [,, command, ...args] = process.argv;
     console.log('Invalid command. Available commands: login-logout-test, implement-feedback');
   }
 })();
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/frontend-developer-mcp.md ---
@@ -6990,6 +7210,7 @@ if (command === 'run-workflow' && email && password) {
 } else {
   console.log('Usage: node project-manager-mcp-agent.js run-workflow <email> <password> [--target <target_name>]');
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/project-manager-mcp.md ---
@@ -7105,6 +7326,7 @@ const editableFileManifest = [
 module.exports = {
   editableFileManifest
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/quote-agent.yaml ---
@@ -7477,6 +7699,7 @@ guardrails:
     rules:
       - block: ["personal opinions", "unethical advice"]
       - allow: ["business analysis", "priority assessment", "profitability evaluation"]
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/ui-designer-mcp-agent.js ---
@@ -7668,6 +7891,7 @@ if (command === 'analyze-ui' && email && password) {
 } else {
   console.log('Usage: node ui-designer-mcp-agent.js analyze-ui <email> <password> [--target <target_name>]');
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/ui-designer-mcp.md ---
@@ -7827,6 +8051,7 @@ async function debugAdminAuth() {
 }
 
 debugAdminAuth();
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/AIContracts.md ---
@@ -7865,6 +8090,7 @@ These contracts define the interaction between our backend and the external Open
 ```
 *Note: As per the refactoring plan, this text-based output is considered fragile and should be updated to a more robust JSON format.*
 ```
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/AI_TRIAGE_CONFIGURATION.md ---
@@ -9304,6 +9530,7 @@ The migration from Netlify/Supabase to Azure is **technically feasible** and fol
 ---
 
 *This analysis is based on current Azure pricing (October 2025) and typical usage patterns for a small business application. Actual costs may vary based on specific usage, region selection, and Azure commitment tiers.*
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/CONSULTANT_00_MASTER_GUIDE.md ---
@@ -9664,6 +9891,7 @@ Billing questions → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
 ---
 
 **🎯 Remember: Start with the business strategy, move to client-facing materials, then execute with technical checklists. Each document builds on the others to create a complete consulting practice!**
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md ---
@@ -10249,6 +10477,7 @@ Total Year 1: $51,800 CAD
 **For growth phase:** Offer both models and let the market decide. Many clients will prefer the transparency of client-owned accounts, while others will pay premium for fully managed service.
 
 The key is being **transparent about your approach** and **delivering exceptional value** regardless of the billing model chosen.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md ---
@@ -10378,6 +10607,7 @@ Once your core platform is live, we can add these powerful automation features a
 *   **Advanced Analytics & Reporting** for business intelligence.
 
 We can discuss these value-added services after your core system is up and running.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/CONSULTANT_03_DEPLOYMENT_CHECKLIST.md ---
@@ -10540,6 +10770,7 @@ The client should be sharing their screen for this entire phase. Your job is to 
 *   [ ] During the call, walk the client through the entire system.
 *   [ ] Send a follow-up email with links to their live site, a reminder of their monthly costs, and an offer for an ongoing support/maintenance plan.
 *   [ ] **Mark project as complete.**
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md ---
@@ -10832,6 +11063,7 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 
 **🎯 Client Value Proposition:**
 Complete AI-powered business management platform for the cost of 1-2 service calls per month.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/DEVELOPMENT_ENVIRONMENT_SETUP.md ---
@@ -11367,6 +11599,7 @@ Performs AI-powered triage analysis (admin only).
   "profitability_explanation": "string"
 }
 ```
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/FutureRoadmap.md ---
@@ -11941,6 +12174,7 @@ netlify/functions/
 
 **Value Proposition:**
 *   **For the Owner:** Make data-driven decisions to grow the business instead of relying on gut feeling.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/NETLIFY_DEPLOYMENT.md ---
@@ -12086,6 +12320,7 @@ The application requires these environment variables to be set in the Netlify da
 - `docs/NETLIFY_TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
 - Netlify Functions: https://docs.netlify.com/functions/overview/
 - Netlify Build Configuration: https://docs.netlify.com/configure-builds/overview/
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/NETLIFY_TROUBLESHOOTING.md ---
@@ -12802,6 +13037,7 @@ If you need to relink your repository (e.g., after repository restructuring, web
 - [Vite Configuration](https://vitejs.dev/config/) - Vite build configuration options
 - [TypeScript Compiler](https://www.typescriptlang.org/docs/handbook/compiler-options.html) - tsc command line options
 - [Vitest](https://vitest.dev/) - Testing framework configuration and usage
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/OPENAI_AGENT_SETUP_AND_TESTING_GUIDE.md ---
@@ -13139,6 +13375,7 @@ The SDK provides full control over agent logic, tools, guardrails, and handoffs 
 - [ADR-025: OpenAI Agent Toolkit Implementation Pattern](adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md)
 - [Netlify Deployment Guide](NETLIFY_DEPLOYMENT.md)
 - [OpenAI Agent Toolkit Documentation](https://platform.openai.com/docs/agent-toolkit)
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/QUOTE_AGENT_MAINTENANCE.md ---
@@ -13848,6 +14085,7 @@ stateDiagram-v2
         'quoted' request.
     end note
 ```
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/REALTIME_SYSTEM.md ---
@@ -14162,6 +14400,7 @@ Planned improvements:
 - **Query retry strategies** for better error handling
 - **Real-time presence indicators** (who's online)
 - **Real-time notifications** system integration
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/RESEND_FREE_PLAN_LIMITATIONS.md ---
@@ -14386,6 +14625,7 @@ The current SMS + limited email setup provides excellent operational functionali
 ---
 
 *Note: This limitation is actually a strength of Resend's platform - it ensures high deliverability rates and prevents spam, which benefits legitimate business users in the long term.*
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/RealTimeSynchronization.md ---
@@ -14546,6 +14786,7 @@ The comprehensive real-time system now correctly handles all status synchronizat
 
 ### Configuration
 - `packages/frontend/src/lib/apiClient.ts` - Fixed development routing to bypass Vite proxy issues
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/SECURITY.md ---
@@ -14767,6 +15008,7 @@ Frontend Request → Netlify Function → SMS Service → Twilio API → SMS Del
 2. Test full quote request flow
 3. Integrate with admin user phone numbers
 4. Deploy to production
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/TWILIO_AND_NETLIFY_SETUP.md ---
@@ -14840,6 +15082,7 @@ This is the final and most important step. It securely provides the credentials 
 ### **Setup Complete!**
 
 Your work is now done. Provide this guide and the following technical specification to your developer. They will have everything they need to implement the feature. You may need to redeploy your site for the new environment variables to take effect.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/configuring-resend-email.md ---
@@ -15328,6 +15571,7 @@ sequenceDiagram
     server.js-->>Client: 200 OK (with questions array)
     deactivate server.js
 ```
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/config/supabase/database.js ---
@@ -15365,6 +15609,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default supabase;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/config/supabase/index.js ---
@@ -15372,6 +15617,7 @@ export default supabase;
 // packages/backend/api/config/supabase/index.js
 
 export { default as database } from './database.js';
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/controllers/followUpController.js ---
@@ -16649,6 +16895,7 @@ export {
   markRequestAsViewed,
   cleanupTestData,
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/controllers/triageController.js ---
@@ -16853,6 +17100,7 @@ export {
   createUserProfile,
   getUserProfile,
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/middleware/authMiddleware.js ---
@@ -16937,6 +17185,7 @@ export {
   authenticate,
   isAdmin,
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/middleware/validationMiddleware.js ---
@@ -16974,6 +17223,7 @@ const validate = (schema) => (req, res, next) => {
 };
 
 export { validate };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/routes/agentRoutes.js ---
@@ -17371,6 +17621,7 @@ router.post('/:id/quotes/:quoteId/accept', authenticate, acceptQuote);
 router.get('/:id', authenticate, getRequestById);
 
 export default router;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/routes/triageRoutes.js ---
@@ -17474,6 +17725,7 @@ router.post('/profile', authenticate, createUserProfile);
 router.put('/profile', authenticate, updateUserProfile);
 
 export default router;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/server.js ---
@@ -17524,6 +17776,7 @@ app.use((err, req, res, next) => {
 
 // The serverless wrapper will import this `app` object.
 export default app;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/services/email/resend/client.js ---
@@ -17825,6 +18078,7 @@ export {
   sendQuoteAddedEmail,
   sendFollowUpEmail,
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/services/email/resend/index.js ---
@@ -17832,6 +18086,7 @@ export {
 // packages/backend/api/services/email/resend/index.js
 
 export * from './client.js';
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/services/sms/twilio/client.js ---
@@ -18027,6 +18282,7 @@ export const sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
 
   adminNumbers.forEach(number => triggerSms(number, messageBody));
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/services/sms/twilio/index.js ---
@@ -18034,6 +18290,7 @@ export const sendQuoteAcceptedNotification = async (request, acceptedQuote) => {
 // packages/backend/api/services/sms/twilio/index.js
 
 export * from './client.js';
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/api/validation/schemas.js ---
@@ -18133,6 +18390,7 @@ export {
   getObjectSchema,
   updateStatusSchema,
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/netlify/functions/README.md ---
@@ -18263,6 +18521,7 @@ When modifying functions:
 - `docs/NETLIFY_TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
 - `docs/SMS_TROUBLESHOOTING.md` - SMS-specific issues
 - Netlify Functions documentation: https://docs.netlify.com/functions/overview/
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/netlify/functions/api.mjs ---
@@ -18887,6 +19146,7 @@ export async function handler(event) {
     return { statusCode: 500, body: JSON.stringify({ success: false, error: error.message }) };
   }
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/netlify/functions/triage-agent.mjs ---
@@ -19201,6 +19461,7 @@ export async function handler(event, context) {
     "start": "node start.js"
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/start.js ---
@@ -19216,6 +19477,7 @@ const PORT = process.env.BACKEND_PORT || 3000;
 app.listen(PORT, () => {
   console.log(`LOCAL DEV: API server running on http://localhost:${PORT}`);
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/config/netlify/vite.config.js ---
@@ -19240,6 +19502,7 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/package.json ---
@@ -19426,6 +19689,7 @@ const AdminDemo: React.FC = () => {
     </div>
   );
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/admin/components/MapView.tsx ---
@@ -19587,6 +19851,7 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
 };
 
 export default MapView;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/auth/AuthContext.tsx ---
@@ -19701,6 +19966,7 @@ export const useAuth = () => {
   }
   return context;
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/auth/components/AuthModal.tsx ---
@@ -19975,6 +20241,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
 };
 
 export default UserMenu;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/landing/components/AboutSection.tsx ---
@@ -20073,6 +20340,7 @@ const AboutSection: React.FC = () => (
 );
 
 export default AboutSection;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/landing/components/ContactSection.tsx ---
@@ -20341,6 +20609,7 @@ const ServicesSection: React.FC<ServicesSectionProps> = ({ onServiceSelect }) =>
 );
 
 export default ServicesSection;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/profile/components/ProfileModal.tsx ---
@@ -21102,6 +21371,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
   );
 };
 export default ProfileModal;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/AITriageSummary.tsx ---
@@ -21310,6 +21580,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
 };
 
 export default AITriageSummary;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/AttachmentSection.tsx ---
@@ -21634,6 +21905,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
 };
 
 export default AttachmentSection;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/CommunicationLog.tsx ---
@@ -21773,6 +22045,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
 };
 
 export default CommunicationLog;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/CompleteJobModal.tsx ---
@@ -21885,6 +22158,7 @@ const CompleteJobModal: React.FC<CompleteJobModalProps> = ({ isOpen, onClose, on
 };
 
 export default CompleteJobModal;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/CustomerInfoSection.tsx ---
@@ -22429,6 +22703,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
 };
 
 export default CustomerInfoSection;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/Dashboard.tsx ---
@@ -22912,6 +23187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 };
 
 export default Dashboard;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/InvoiceFormModal.tsx ---
@@ -23544,6 +23820,7 @@ const ModalFooter: React.FC<ModalFooterProps> = ({ children }) => {
 };
 
 export default ModalFooter;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/ModalHeader.tsx ---
@@ -23600,6 +23877,7 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, act
 };
 
 export default ModalHeader;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/MyRequests.tsx ---
@@ -23733,6 +24011,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
 };
 
 export default MyRequests;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/PipelineView.tsx ---
@@ -25588,6 +25867,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
 };
 
 export default QuoteFormModal;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/QuoteList.tsx ---
@@ -25720,6 +26000,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
 };
 
 export default QuoteList;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/RequestActions.tsx ---
@@ -25829,6 +26110,7 @@ const RequestActions: React.FC<RequestActionsProps> = ({
 };
 
 export default RequestActions;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/RequestDetailModal.tsx ---
@@ -26215,6 +26497,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 };
 
 export default RequestDetailModal;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/RequestProblemDetails.tsx ---
@@ -26279,6 +26562,7 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
 };
 
 export default RequestProblemDetails;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/components/ScheduleJobSection.tsx ---
@@ -26355,6 +26639,7 @@ const ScheduleJobSection: React.FC<ScheduleJobSectionProps> = ({
 };
 
 export default ScheduleJobSection;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/features/requests/pages/RequestView.tsx ---
@@ -26557,6 +26842,7 @@ const ServiceDetailPage: React.FC<ServiceDetailPageProps> = ({ serviceKey }) => 
 };
 
 export default ServiceDetailPage;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/hooks/index.ts ---
@@ -27263,6 +27549,7 @@ export function useUpdateAddressMutation() {
     },
   });
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/hooks/useSpecializedQueries.ts ---
@@ -27520,6 +27807,7 @@ export function useStatistics() {
     refetch: requests.refetch
   };
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/hooks/useSupabaseRealtimeV3.ts ---
@@ -27822,6 +28110,7 @@ export function useRealtimeInvalidation(userId?: string) {
     };
   }, [queryClient, userId]);
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/hooks/useTableQuery.ts ---
@@ -28080,6 +28369,7 @@ export function useUsersQuery(options?: TableQueryOptions<any>) {
     additionalTables: ['profiles']
   });
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/lib/apiClient.ts ---
@@ -28166,6 +28456,7 @@ export const uploadAttachments = async (requestId: string, files: File[], quoteI
 };
 
 export default apiClient;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/lib/serviceDefinitions.ts ---
@@ -28508,6 +28799,7 @@ Be knowledgeable about different water heater types and their pros/cons. Guide c
     questions: ["Please describe your plumbing request or issue in detail."],
   },
 ];
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/lib/statusColors.json ---
@@ -28527,6 +28819,7 @@ Be knowledgeable about different water heater types and their pros/cons. Guide c
   "cancelled": "#9E9E9E",
   "default": "#757575"
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/lib/statusColors.ts ---
@@ -29179,6 +29472,7 @@ if (root) {
     </HelmetProvider>
   );
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/tsconfig.json ---
@@ -29210,6 +29504,7 @@ if (root) {
   },
   "include": ["src"]
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/vite.config.js ---
@@ -29238,6 +29533,7 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./playwright.config.ts ---
@@ -29292,6 +29588,7 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./scripts/setup-git-hooks.sh ---
@@ -29305,6 +29602,7 @@ echo "Setting git hooks path to ${REPO_ROOT}/.githooks"
 git config core.hooksPath ".githooks"
 
 echo "Done. Pre-commit hooks will run on your next commit.
+
 --- END OF FILE ---
 
 --- START OF FILE ./shutdown.sh ---
@@ -29359,6 +29657,7 @@ end tell
 ' 2>/dev/null || echo -e "\033[0;32m✓\033[0m Terminal cleanup completed"
 
 echo "Shutdown complete."
+
 --- END OF FILE ---
 
 --- START OF FILE ./startup.sh ---
@@ -29875,6 +30174,7 @@ After the command completes, you should have a new file at `supabase/schema.sql`
 *   You **SHOULD NOT** see any commands like `INSERT INTO ...` or `COPY ...` that contain actual user or request data.
 
 You have now successfully created a reusable schema file. You can commit this file to your Git repository so the entire team has a version-controlled copy of the database structure.
+
 --- END OF FILE ---
 
 --- START OF FILE ./supabase/SUPABASE_DATABASE_AND_AUTH_SETUP.md ---
@@ -30356,6 +30656,7 @@ sequenceDiagram
 SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 
 _Last updated: August 21, 2025_
+
 --- END OF FILE ---
 
 --- START OF FILE ./supabase/check_invoice_permissions.sql ---
@@ -30629,6 +30930,7 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./supabase/migrations/20251012_add_request_id_to_invoices.sql ---
@@ -30920,7 +31222,6 @@ WHERE trigger_name = 'trigger_sync_invoice_status';
 --
 -- Note: This is commented out by default. Uncomment and run separately if needed.
 -- Current Realtime-enabled tables: requests, quotes, quote_attachments, request_notes
-
 
 --- END OF FILE ---
 
@@ -32438,6 +32739,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./supabase/verify_invoice_join.sql ---
@@ -32848,6 +33150,7 @@ While the core test suite is complete and functional, future enhancements could 
 - **Visual Regression**: Screenshot comparison testing
 - **Cross-browser Matrix**: Full browser compatibility validation
 
+
 [NOTE] Sensitive values were detected and redacted in this file.
 --- END OF FILE ---
 
@@ -32932,6 +33235,7 @@ Once core functionality works:
 
 *Last updated: 2025-09-24*
 *Status: Ready for next phase of E2E testing*
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/README.md ---
@@ -33694,6 +33998,7 @@ npx playwright show-report
 ---
 
 **Note**: This roadmap evolves based on project needs and team capacity. Start small and expand gradually for sustainable testing practices.
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/fixtures/test-data.ts ---
@@ -33784,6 +34089,7 @@ export const TIMEOUTS = {
   navigation: 5000,
   element: 10000
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/fixtures/testFixtures.ts ---
@@ -33837,6 +34143,7 @@ export const test = base.extend<{
 });
 
 export { expect } from '@playwright/test';
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/base/BasePage.ts ---
@@ -33912,6 +34219,7 @@ export class BasePage {
     );
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/AITriageSummary.ts ---
@@ -34054,6 +34362,7 @@ export class AITriageSummary extends BasePage {
     }; // Placeholder
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/AttachmentSection.ts ---
@@ -34151,6 +34460,7 @@ export class AttachmentSection extends BasePage {
     console.log('✅ Attachment download initiated');
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/CommandMenu.ts ---
@@ -34306,6 +34616,7 @@ export class CommandMenu extends BasePage {
     return options;
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/CommunicationLog.ts ---
@@ -34376,6 +34687,7 @@ export class CommunicationLog extends BasePage {
     console.log('✅ Latest message verified');
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/QuoteList.ts ---
@@ -34491,6 +34803,7 @@ export class QuoteList extends BasePage {
     }; // Placeholder
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/README.md ---
@@ -34613,6 +34926,7 @@ export class RequestDetailPage extends BasePage {
 - `../pages/README.md` - Page-level object mappings
 - `../base/BasePage.ts` - Common functionality
 - `../../../utils/` - Global utilities
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/components/ServiceLocationManager.ts ---
@@ -34784,6 +35098,7 @@ export class ServiceLocationManager extends BasePage {
     return null; // Placeholder
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/AuthPage.ts ---
@@ -35006,6 +35321,7 @@ export class AuthPage extends BasePage {
     console.log(`✅ Successfully signed in as ${userType}.`);
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/DashboardPage.ts ---
@@ -35365,6 +35681,7 @@ export class DashboardPage extends BasePage {
     console.log(`✅ Successfully opened request ${requestId}.`);
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/MyRequestsPage.ts ---
@@ -35477,6 +35794,7 @@ export class MyRequestsPage extends BasePage {
     console.log(`✅ Successfully viewed details for user request ${requestId}.`);
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/ProfilePage.ts ---
@@ -35712,6 +36030,7 @@ export class ProfilePage extends BasePage {
     console.log('✅ Profile modal verification completed');
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/QuotePage.ts ---
@@ -35815,6 +36134,7 @@ export class QuotePage extends BasePage {
     console.log(`✅ Quote ${quoteId} deleted successfully.`);
   }
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/QuoteRequestPage.ts ---
@@ -36594,6 +36914,7 @@ Examples based on your situation:
 
 
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/page-objects/pages/README.md ---
@@ -36852,6 +37173,7 @@ When adding new Page Objects:
 - `../../../README.md` - Main E2E testing overview
 - `../base/BasePage.ts` - Common page functionality
 - `../../../utils/` - Building block utilities
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/run-tests.sh ---
@@ -37114,6 +37436,7 @@ npx playwright show-report
 echo -e "${BLUE}🎉 E2E test run complete!${NC}"
 
 exit $EXIT_CODE
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-authentication.spec.ts ---
@@ -37175,6 +37498,7 @@ test.describe('Admin Authentication', () => {
     console.log('✅ Admin already logged in handling test passed');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-dashboard-access.spec.ts ---
@@ -37325,6 +37649,7 @@ test.describe('Admin Dashboard Access', () => {
     console.log('✅ Admin dashboard UI verification test passed');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-integration.spec.ts ---
@@ -37589,6 +37914,7 @@ test.describe('Admin Integration Workflows', () => {
     console.log('🎉 Admin integration workflow test passed');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-quote-workflow.spec.ts ---
@@ -37958,6 +38284,7 @@ test.describe('Admin Quote Workflow', () => {
   //   console.log('✅ Quote status management test completed');
   // });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-request-management.spec.ts ---
@@ -38241,6 +38568,7 @@ test.describe('Admin Request Management', () => {
   //   console.log('✅ Request filtering test completed');
   // });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/admin-test-roadmap.md ---
@@ -38476,6 +38804,7 @@ npx playwright test admin-request-management.spec.ts --workers=1
 ---
 
 *This roadmap ensures the admin test suite grows systematically while maintaining reliability and ease of maintenance.*
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/admin-journeys/request-deeplink.spec.ts ---
@@ -38505,8 +38834,8 @@ test.describe('Admin deep-link -> dashboard modal', () => {
     let authToken: string | null = null;
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
-      const creds = { email: process.env.TEST_USER_EMAIL || '', password: process.env.TEST_USER_PASSWORD || '' };
+      const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY);
+      const creds = { email: process.env.TEST_USER_EMAIL || '', password: process.env.TEST_USER_PASSWORD};
       if (creds.email && creds.password) {
         const { data, error } = await supabase.auth.signInWithPassword(creds as any);
         if (error) {
@@ -38654,6 +38983,7 @@ test.describe('Complete User-to-Admin Workflow Integration', () => {
     console.log('🎉 Complete user-to-admin workflow test finished successfully!');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/integration/realtime-sync.spec.ts ---
@@ -38886,6 +39216,7 @@ test.describe('Real-time Synchronization', () => {
     }
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/comprehensive-quote-creation.spec.ts ---
@@ -38955,6 +39286,7 @@ test.describe('Comprehensive Quote Creation - All Service Categories', () => {
     console.log('🧹 Test data cleanup should be handled at the E2E suite level');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/leak-repair-quote-with-attachment.spec.ts ---
@@ -39214,6 +39546,7 @@ test.describe('Leak Repair Quote Comprehensive Scenarios', () => {
   });
 
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/main-line-repair-quote-with-attachment.spec.ts ---
@@ -39473,6 +39806,7 @@ test.describe('Main Line Repair Quote Comprehensive Scenarios', () => {
   });
 
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/other-service-quote-with-attachment.spec.ts ---
@@ -39732,6 +40066,7 @@ test.describe('Other Service Quote Comprehensive Scenarios', () => {
   // });
 
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/perimeter-drain-quote-comprehensive.spec.ts ---
@@ -39993,6 +40328,7 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
   });
 
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/user-building-blocks.md ---
@@ -40130,6 +40466,7 @@ createQuoteRequest → adminQuote → viewUserRequestDetails
 
 *Last Updated: User building blocks ready for integration testing*
 *Status: ✅ All 7 building blocks implemented and validated*
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/e2e/specs/user-journeys/user-login.spec.ts ---
@@ -40310,6 +40647,7 @@ test.describe('User Authentication', () => {
     console.log('✅ Sign in → wait → sign out test completed successfully!');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/integration/api/README.md ---
@@ -40436,6 +40774,7 @@ npm run test:run -- --coverage tests/integration/api/
 - **Database State Validation**: Direct database checks
 - **External API Mocking**: Third-party service simulation
 - **Contract Testing**: API specification validation
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/integration/api/health.test.ts ---
@@ -40464,6 +40803,7 @@ describe('Health Check API', () => {
     expect(response.body).toHaveProperty('status', 'ok');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/integration/api/requests.test.ts ---
@@ -40865,6 +41205,7 @@ describe('API Integration Tests', () => {
     });
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/integration/realtime-hooks.spec.ts ---
@@ -41002,6 +41343,7 @@ test.describe('Real-time Hooks Integration', () => {
     expect(result.current).toHaveProperty('refetch');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/manual/README.md ---
@@ -41294,6 +41636,7 @@ Verify production environment has correct values:
 - Monitor API performance
 - Test authentication flows in production
 - Verify Supabase redirects work correctly
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/setup.ts ---
@@ -41338,6 +41681,7 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
   disconnect() {}
 };
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/unit/README.md ---
@@ -41482,6 +41826,7 @@ npm run test -- --watch tests/unit/
 - **Performance Testing**: Function execution timing
 - **Snapshot Testing**: UI component snapshots
 - **Visual Regression**: Component appearance validation
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/unit/ai/openai-integration.test.ts ---
@@ -41997,6 +42342,7 @@ describe('Leak Repair Category', () => {
     expect(hasActiveQuestion).toBe(true);
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/unit/utils/statusColors.test.ts ---
@@ -42097,6 +42443,7 @@ describe('Status Color Functions - Edge Cases', () => {
     expect(getQuoteStatusChipColor('ACCEPTED')).toBe('default');
   });
 });
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/utils/apiClient.ts ---
@@ -42327,6 +42674,7 @@ export async function createApiClient(baseURL?: string): Promise<TestApiClient> 
   await client.init();
   return client;
 }
+
 --- END OF FILE ---
 
 --- START OF FILE ./tests/utils/testUtils.ts ---
@@ -42400,6 +42748,7 @@ export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0))
 
 export * from '@testing-library/react';
 export { customRender as render };
+
 --- END OF FILE ---
 
 --- START OF FILE ./vitest.config.ts ---
@@ -42435,4 +42784,5 @@ export default defineConfig({
     },
   },
 });
+
 --- END OF FILE ---
