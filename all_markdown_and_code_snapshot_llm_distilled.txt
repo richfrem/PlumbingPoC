@@ -1,6 +1,6 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-14T04:35:24.498Z
+Generated On: 2025-10-14T04:37:18.977Z
 
 # Mnemonic Weight (Token Count): ~366,612 tokens
 
@@ -376,7 +376,7 @@ STAGED=()
 while IFS= read -r -d '' f
 do
     STAGED+=("$f")
-done < <(git diff --cached --name-only -z)
+done < <(git diff --cached --name-only -z)  
 #gets list of staged files, separated by null bytes. names only -z stands for null byte
 
 # If no staged files, exit early (nothing to check)
@@ -413,8 +413,8 @@ for FILE in "${STAGED[@]}"; do
 
   # Rule 2: scan staged content for key assignments
   # Read each input line: lineno gets the line number, rest gets the line content (split on ':' from nl command)
-  # For each line in the staged file that contains a secret key, extract the assigned
-  #value and check if it's allowed.
+  # For each line in the staged file that contains a secret key, extract the assigned 
+  #value and check if it's allowed.  
   # Plain language: For each staged file, process lines with secret keys; if RHS value isn't whitelisted, record violation
   while IFS=: read -r lineno rest; do
     line="$rest"
@@ -424,20 +424,20 @@ for FILE in "${STAGED[@]}"; do
     if [[ "$WHITELIST" == *"$rhs"* ]]; then continue; fi  # Whitelisted value
     VIOLATIONS+=("VIOLATION: $FILE:$lineno -> $line")
     EXIT_CODE=1
-  # Process substitution: feed the output of the pipeline (numbered lines containing key matches)
+  # Process substitution: feed the output of the pipeline (numbered lines containing key matches) 
   # into the while loop's stdin, where 'read -r lineno rest' splits each line on ':' into lineno and rest variables
   # < <(pipeline): process substitution - executes the pipeline in a subshell and redirects its stdout as input to the while loop
-  # nl = numbered lines -ba = number all lines (including blank)
-  # -w1 = width 1 (min digits)
+  # nl = numbered lines -ba = number all lines (including blank) 
+  # -w1 = width 1 (min digits) 
   # -s: = separate number and line with colon
-  # grep -Eni = grep with -E extended regex, -n show line numbers
+  # grep -Eni = grep with -E extended regex, -n show line numbers 
   done < <(git show :"$FILE" 2>/dev/null | nl -ba -w1 -s: | grep -Eni "$KEYS" || true) # while loop for each line with a key match
 done #for loop over files
 
 # Rule 3: summarize and exit
 if [ $EXIT_CODE -ne 0 ]; then
   echo "COMMIT BLOCKED: Violations found."
-  for v in "${VIOLATIONS[@]}";
+  for v in "${VIOLATIONS[@]}"; 
   do
     echo "$v"
   done
@@ -42786,3 +42786,4 @@ export default defineConfig({
 });
 
 --- END OF FILE ---
+

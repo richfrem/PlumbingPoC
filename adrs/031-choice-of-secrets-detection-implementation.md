@@ -12,87 +12,105 @@ The initial implementation used a custom Python pre-commit hook, but this requir
 
 ## Decision
 
-We will use **detect-secrets** (by Yelp) integrated with the **pre-commit framework** for automated secrets detection. This replaces our custom Python hook with industry-standard tools that provide:
-
-- Comprehensive secret pattern detection (20+ secret types)
-- Regular updates for new secret patterns
-- Sophisticated baseline management
-- Integration with standard pre-commit workflows
-
-## Implementation
+We will use **detect-secrets** (by Yelp) integrated with the **pre-commit framework** for automated secrets detection, **combined with our enhanced custom Python hook** for dual-layer protection. This provides both industry-standard comprehensive scanning and our tailored logic for specific API key patterns.
 
 The solution consists of:
 
-1. **detect-secrets**: Scans for hardcoded secrets using entropy analysis and pattern matching
-2. **pre-commit framework**: Manages hook execution and provides additional code quality checks
-3. **Baseline file**: Documents existing "acceptable" secrets in the codebase
-4. **Configuration**: YAML-based setup for easy maintenance
+- **detect-secrets**: Professional tool with 20+ secret types, entropy analysis, and baseline management
+- **Custom Python Hook**: Enhanced with key-specific whitelisting for precise control over API keys vs generic terms
+- **pre-commit framework**: Orchestrates both systems with additional code quality checks
+- **Baseline management**: Tracks existing secrets to prevent false positives
 
-### Configuration Details
+## Implementation
 
+Both detection systems run automatically on every commit:
+
+### detect-secrets Configuration
 ```yaml
-repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: ^(package-lock\.json|\.secrets\.baseline)$
-
-  - repo: local
-    hooks:
-      - id: block-env-files
-        name: Block .env files (except .env.example)
-        entry: python3
-        files: ^\.env$
-        exclude: ^\.env\.example$
-        args: [-c, "import sys; filename = sys.argv[1]; ..."]
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+    - id: detect-secrets
+      args: ['--baseline', '.secrets.baseline']
+      exclude: ^(package-lock\.json|\.secrets\.baseline)$
 ```
+
+### Custom Python Hook Configuration
+```yaml
+- repo: local
+  hooks:
+    - id: custom-secrets-scan
+      name: Custom secrets scanner (legacy Python hook)
+      entry: python3
+      language: system
+      files: .*
+      pass_filenames: false
+      args:
+        - .githooks/pre-commit
+```
+
+### Key-Specific Whitelisting Logic
+
+The custom hook implements sophisticated whitelisting:
+
+- **Specific API Keys** (GEMINI_API_KEY, OPENAI_API_KEY, etc.): Strict - no variable name whitelisting
+- **Generic Terms** (PASSWORD, SECRET, TOKEN): Permissive - allows variable names like `adminPassword`
+- **Safe Patterns**: Environment variables, config objects, function calls, and placeholder brackets
 
 ## Consequences
 
 *   **Pros:**
-    *   **Professional Security**: Industry-standard tool used by major companies (Yelp, GitHub, etc.)
-    *   **Comprehensive Coverage**: Detects 20+ types of secrets including API keys, tokens, passwords, and private keys
-    *   **Automatic Updates**: New secret patterns added as they're discovered in the wild
-    *   **Baseline Management**: Tracks existing secrets to avoid false positives during refactoring
+    *   **Dual-Layer Protection**: Both professional tool AND custom logic provide maximum security
+    *   **Professional Security**: Industry-standard detect-secrets used by major companies
+    *   **Comprehensive Coverage**: 20+ secret types + custom API key patterns
+    *   **Precise Control**: Key-specific whitelisting prevents false positives
+    *   **Automatic Updates**: New secret patterns added as they're discovered
+    *   **Baseline Management**: Tracks existing secrets to avoid false positives
     *   **Performance**: Optimized scanning with baseline caching
     *   **Integration**: Works seamlessly with existing pre-commit workflows
     *   **Additional Checks**: Includes trailing whitespace, YAML validation, and large file detection
 
 *   **Cons:**
-    *   **Learning Curve**: Requires understanding of baseline management and configuration
-    *   **Dependency**: Adds external tool dependencies to the development environment
-    *   **False Positives**: May require baseline updates when legitimate code patterns change
-    *   **Configuration Complexity**: YAML configuration can become complex for advanced use cases
+    *   **Complexity**: Running two systems requires coordination
+    *   **Maintenance**: Both systems need updates and monitoring
+    *   **Learning Curve**: Understanding both baseline management and custom logic
+    *   **Performance**: Slightly slower with dual scanning
+    *   **Configuration Complexity**: Managing two different detection systems
 
 *   **Security Benefits:**
+    *   **Maximum Protection**: Two independent systems catch different threat patterns
     *   **Proactive Prevention**: Catches secrets before they reach the repository
-    *   **Pattern Recognition**: Uses entropy analysis to detect obfuscated secrets
+    *   **Pattern Recognition**: Entropy analysis + custom regex patterns
     *   **Comprehensive Scanning**: Checks all file types, not just code files
-    *   **Audit Trail**: Baseline provides visibility into what secrets exist in the codebase
+    *   **Audit Trail**: Baseline + custom logic provide complete visibility
 
 *   **Maintenance Benefits:**
-    *   **Zero Custom Code**: No need to maintain custom regex patterns
-    *   **Community Support**: Active development and security updates
+    *   **Best of Both Worlds**: Professional tool + tailored custom logic
+    *   **Community Support**: Active development and security updates for detect-secrets
     *   **Standard Tooling**: Familiar to security teams and auditors
+    *   **Flexible Updates**: Can update either system independently
 
 ## Alternatives Considered
 
-*   **Custom Python Hook (Original Implementation)**:
-    *   **Pros**: Full control, tailored to our specific patterns
+*   **Custom Python Hook Alone (Original Implementation)**:
+    *   **Pros**: Full control, tailored to our specific patterns, no external dependencies
     *   **Cons**: High maintenance burden, limited secret pattern coverage, manual updates required
-    *   **Rejected**: Too much ongoing maintenance for a common security need
+    *   **Outcome**: **COMBINED** - Used alongside detect-secrets for dual-layer protection
+
+*   **detect-secrets Alone**:
+    *   **Pros**: Professional tool, comprehensive coverage, automatic updates
+    *   **Cons**: Generic patterns might miss project-specific issues, less control over whitelisting
+    *   **Outcome**: **COMBINED** - Used alongside custom hook for maximum security
 
 *   **GitLeaks**:
     *   **Pros**: Popular Go-based scanner, fast performance, extensive secret patterns
     *   **Cons**: More complex setup, less integration with pre-commit framework
-    *   **Considered**: Strong alternative, but detect-secrets has better pre-commit integration
+    *   **Rejected**: detect-secrets has better pre-commit integration
 
 *   **TruffleHog**:
     *   **Pros**: Most comprehensive scanning, includes git history analysis
     *   **Cons**: Overkill for pre-commit use case, slower performance
-    *   **Considered**: Better suited for CI/CD pipelines than pre-commit hooks
+    *   **Rejected**: Better suited for CI/CD pipelines than pre-commit hooks
 
 *   **Git-Secrets (AWS)**:
     *   **Pros**: AWS-backed, good pattern coverage

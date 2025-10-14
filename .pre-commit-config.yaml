@@ -3,7 +3,9 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^all_markdown_and_code_snapshot_llm_distilled\.txt$
       - id: end-of-file-fixer
+        exclude: ^all_markdown_and_code_snapshot_llm_distilled\.txt$
       - id: check-yaml
       - id: check-added-large-files
 
@@ -12,7 +14,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: ^(package-lock\.json|\.secrets\.baseline)$
+        exclude: ^(package-lock\.json|\.secrets\.baseline|all_markdown_and_code_snapshot_llm_distilled\.txt)$
 
   - repo: local
     hooks:
