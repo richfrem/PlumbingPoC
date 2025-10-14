@@ -21,7 +21,7 @@ const authenticate = async (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized: Missing JWT token.' });
   }
   const token = authHeader.split(' ')[1];
-  
+
   try {
     // This function uses the supabaseAuth client (initialized with SUPABASE_ANON_KEY)
     // for token validation. This is the correct and secure way to validate user tokens.
@@ -66,7 +66,7 @@ const isAdmin = async (req, res, next) => {
     if (!profile || profile.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden: Admin access required.' });
     }
-    
+
     // User is an admin, proceed to the next handler
     next();
   } catch (error) {

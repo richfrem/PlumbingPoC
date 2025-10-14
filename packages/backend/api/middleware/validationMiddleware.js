@@ -1,9 +1,9 @@
 // /middleware/validationMiddleware.js
 /*
-This file creates a generic, reusable middleware function. 
-Instead of writing validation logic inside every controller, 
-we use this function to check an incoming request against a 
-zod schema. If the data is bad, it stops the request and sends 
+This file creates a generic, reusable middleware function.
+Instead of writing validation logic inside every controller,
+we use this function to check an incoming request against a
+zod schema. If the data is bad, it stops the request and sends
 a helpful error. If the data is good, it passes the request on to the controller.
 */
 /**

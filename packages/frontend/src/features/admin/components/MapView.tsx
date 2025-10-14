@@ -17,7 +17,7 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_ID;
 
   if (!apiKey) {
-    return ( 
+    return (
       <Paper sx={{ height: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="error">

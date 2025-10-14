@@ -18,7 +18,7 @@
 ALTER TABLE public.invoices
   ADD COLUMN line_items JSONB;
 
-COMMENT ON COLUMN public.invoices.line_items IS 
+COMMENT ON COLUMN public.invoices.line_items IS
   'Array of line items: [{description, quantity, unit_price, total}, ...]';
 
 -- Add financial calculation fields
@@ -58,10 +58,10 @@ ALTER TABLE public.invoices
   DROP CONSTRAINT IF EXISTS invoices_status_check;
 
 ALTER TABLE public.invoices
-  ADD CONSTRAINT invoices_status_check 
+  ADD CONSTRAINT invoices_status_check
   CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled', 'disputed', 'partially_paid'));
 
-COMMENT ON COLUMN public.invoices.status IS 
+COMMENT ON COLUMN public.invoices.status IS
   'Invoice status: draft, sent, paid, overdue, cancelled, disputed, partially_paid';
 
 -- ============================================================================
@@ -113,7 +113,7 @@ ALTER TABLE public.requests
     'cancelled'     -- Request cancelled
   ));
 
-COMMENT ON COLUMN public.requests.status IS 
+COMMENT ON COLUMN public.requests.status IS
   'Request lifecycle status: new → viewed → quoted → accepted → scheduled → in_progress → completed → invoiced → paid/overdue/disputed';
 
 -- ============================================================================
@@ -145,7 +145,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Only update request status if invoice status changed
   IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
-    
+
     -- Update the associated request's status based on invoice status
     UPDATE public.requests
     SET status = CASE NEW.status
@@ -159,14 +159,14 @@ BEGIN
     WHERE id = (
       SELECT id FROM public.requests WHERE invoice_id = NEW.id
     );
-    
+
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION sync_invoice_status_to_request IS 
+COMMENT ON FUNCTION sync_invoice_status_to_request IS
   'Automatically updates request.status when invoice.status changes';
 
 -- ============================================================================
@@ -182,7 +182,7 @@ CREATE TRIGGER trigger_sync_invoice_status
   FOR EACH ROW
   EXECUTE FUNCTION sync_invoice_status_to_request();
 
-COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS 
+COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS
   'Syncs invoice status changes to associated request status';
 
 -- ============================================================================
@@ -190,7 +190,7 @@ COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS
 -- ============================================================================
 
 -- Rename amount_due to be clearer (optional - keeps backward compatibility)
-COMMENT ON COLUMN public.invoices.amount_due IS 
+COMMENT ON COLUMN public.invoices.amount_due IS
   'DEPRECATED: Use total instead. Kept for backward compatibility.';
 
 -- ============================================================================
@@ -198,22 +198,22 @@ COMMENT ON COLUMN public.invoices.amount_due IS
 -- ============================================================================
 
 -- Verify the migration
-SELECT 
+SELECT
   'Invoices table columns' as check_type,
   COUNT(*) as column_count
-FROM information_schema.columns 
-WHERE table_name = 'invoices' 
+FROM information_schema.columns
+WHERE table_name = 'invoices'
   AND table_schema = 'public';
 
-SELECT 
+SELECT
   'Requests invoice_id column' as check_type,
   COUNT(*) as exists
-FROM information_schema.columns 
-WHERE table_name = 'requests' 
+FROM information_schema.columns
+WHERE table_name = 'requests'
   AND table_schema = 'public'
   AND column_name = 'invoice_id';
 
-SELECT 
+SELECT
   'Invoice status trigger' as check_type,
   COUNT(*) as exists
 FROM information_schema.triggers
@@ -222,11 +222,10 @@ WHERE trigger_name = 'trigger_sync_invoice_status';
 -- ============================================================================
 -- OPTIONAL: Enable Realtime on invoices table (run if needed)
 -- ============================================================================
--- 
+--
 -- If you want real-time updates for invoices (recommended for live invoice status):
--- 
+--
 -- ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.invoices;
 --
 -- Note: This is commented out by default. Uncomment and run separately if needed.
 -- Current Realtime-enabled tables: requests, quotes, quote_attachments, request_notes
-

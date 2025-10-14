@@ -23,7 +23,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
   });
   const request = requestArray?.[0]; // Extract single request from array
   const notes = request?.request_notes || [];
-  
+
   console.log('🔍 CommunicationLog render:', {
     notesLength: notes?.length,
     noteIds: notes?.map(n => n.id) || [],
@@ -72,7 +72,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
       <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}>

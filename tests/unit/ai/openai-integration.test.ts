@@ -294,7 +294,7 @@ describe('OpenAI Integration Tests', () => {
         expect(['other', 'emergency_service']).toContain(category);
       });
     });
-  
+
     describe('AI Triage Analysis', () => {
       it('should analyze request and provide triage summary with scores', async () => {
         const mockResponse = {
@@ -310,26 +310,26 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
-  
+
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockCreate).toHaveBeenCalledWith({
           model: 'gpt-4-1106-preview',
           messages: [{ role: 'user', content: expect.stringContaining('leak_repair') }],
           response_format: { type: 'json_object' }
         });
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Triage complete.',
@@ -340,26 +340,26 @@ describe('OpenAI Integration Tests', () => {
           profitability_explanation: "Standard repair with good profit margin"
         });
       });
-  
+
       it('should handle OpenAI API errors during triage', async () => {
         mockCreate.mockRejectedValueOnce(new Error('OpenAI API error'));
-  
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'
         });
       });
-  
+
       it('should handle malformed JSON responses from triage AI', async () => {
         const mockResponse = {
           choices: [{
@@ -368,25 +368,25 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'
         });
       });
-  
+
       it('should handle database errors during triage update', async () => {
         const mockResponse = {
           choices: [{
@@ -401,20 +401,20 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
+
 
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'

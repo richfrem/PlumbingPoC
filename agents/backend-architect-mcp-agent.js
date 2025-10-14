@@ -53,19 +53,19 @@ async function reviewBackend() {
     }
 
     const dbSchemaContent = fs.readFileSync(dbSchemaPath, 'utf8');
-    
+
     const routeFiles = fs.readdirSync(apiRoutesDir).filter(f => f.endsWith('.js'));
     let apiRoutesContent = '';
     for (const file of routeFiles) {
       const content = fs.readFileSync(path.join(apiRoutesDir, file), 'utf8');
       apiRoutesContent += `\n\n--- START OF FILE ${file} ---\n\n${content}\n\n--- END OF FILE ${file} ---`;
     }
-    
+
     console.log('✅ Successfully loaded database schema and API routes.');
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     console.log('Successfully initialized Gemini 2.5 Pro model.');
-    
+
     const personaFilePath = path.join(__dirname, 'backend-architect-mcp.md');
     const personaContent = fs.readFileSync(personaFilePath, 'utf8');
     console.log('Successfully loaded Backend Architect persona.');
@@ -124,7 +124,7 @@ async function reviewBackend() {
 
     const feedbackFilePath = path.join(feedbackDir, 'backend-feedback.json');
     fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
-    
+
     console.log(`\n✅ Backend feedback file generated at ${feedbackFilePath} with status 'pending'.`);
     console.log('============================================');
     console.log('🎉 BACKEND REVIEW COMPLETE');

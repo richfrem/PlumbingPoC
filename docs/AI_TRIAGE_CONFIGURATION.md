@@ -185,7 +185,7 @@ output:
         reasoning:
           type: string
       required: [skill_level, specialized_skills, reasoning]
-  required: [triage_summary, priority_score, priority_explanation, 
+  required: [triage_summary, priority_score, priority_explanation,
              profitability_score, profitability_explanation, required_expertise]
 ```
 
@@ -234,10 +234,10 @@ The agent can assign one of three skill levels:
 
 - **`apprentice`** - Basic plumbing tasks, minimal experience required
   - Examples: Toilet repair, faucet replacement, drain cleaning
-  
+
 - **`journeyman`** - Intermediate complexity, licensed plumber
   - Examples: Water heater installation, bathroom renovations, standard pipe repairs
-  
+
 - **`master`** - Complex work requiring certifications or extensive experience
   - Examples: Gas line work, main line repairs, code-critical installations
 
@@ -260,13 +260,13 @@ To change how expertise is assessed, edit the `prompt` section:
 ```yaml
 prompt: >
   ...
-  
+
   Expertise Assessment Guidelines:
   - Apprentice: Routine repairs, basic installations, no certifications needed
   - Journeyman: Most service work, requires Red Seal or equivalent license
-  - Master: Gas work (requires gas fitter ticket), complex diagnostics, 
+  - Master: Gas work (requires gas fitter ticket), complex diagnostics,
     multi-system coordination
-  
+
   Specialized Skills to flag:
   - Gas fitting certification (MANDATORY for gas lines)
   - Backflow prevention certification
@@ -361,7 +361,7 @@ prompt: >
   Provide:
   6. Scheduling difficulty score (1-10)
   7. Scheduling difficulty explanation
-  
+
   Consider:
   - Job duration estimate
   - Required team size
@@ -372,7 +372,7 @@ prompt: >
 ### Step 3: Add Database Column
 
 ```sql
-ALTER TABLE public.requests 
+ALTER TABLE public.requests
 ADD COLUMN scheduling_difficulty INTEGER,
 ADD COLUMN scheduling_explanation TEXT;
 ```

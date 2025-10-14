@@ -106,10 +106,10 @@ BEGIN
   IF array_length(quote_ids, 1) IS NOT NULL THEN
     DELETE FROM public.invoices WHERE quote_id = ANY(quote_ids);
   END IF;
-  
+
   DELETE FROM public.quote_attachments WHERE request_id = ANY(request_ids);
   DELETE FROM public.request_notes WHERE request_id = ANY(request_ids);
-  
+
   IF array_length(quote_ids, 1) IS NOT NULL THEN
     DELETE FROM public.quotes WHERE id = ANY(quote_ids);
   END IF;
@@ -195,7 +195,7 @@ CREATE OR REPLACE FUNCTION "public"."sync_invoice_status_to_request"() RETURNS "
 BEGIN
   -- Only update request status if invoice status changed
   IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
-    
+
     -- Update the associated request's status based on invoice status
     UPDATE public.requests
     SET status = CASE NEW.status
@@ -209,9 +209,9 @@ BEGIN
     WHERE id = (
       SELECT id FROM public.requests WHERE invoice_id = NEW.id
     );
-    
+
   END IF;
-  
+
   RETURN NEW;
 END;
 $$;

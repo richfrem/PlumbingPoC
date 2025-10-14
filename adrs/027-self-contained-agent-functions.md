@@ -32,7 +32,7 @@ The agents are YAML-driven workflows that need to work in two environments:
 2. **Environment Detection**
    ```javascript
    const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
-   
+
    // Conditional YAML path resolution
    let YAML_PATH;
    if (isNetlify) {
@@ -60,17 +60,17 @@ router.post('/quote/run', async (req, res) => {
   try {
     // Dynamically import the Netlify function handler
     const { handler } = await import('../../netlify/functions/quote-agent.mjs');
-    
+
     // Transform Express request to Netlify event format
     const event = {
       httpMethod: 'POST',
       body: JSON.stringify(req.body),
       headers: req.headers
     };
-    
+
     // Call the handler
     const result = await handler(event, {});
-    
+
     // Send response
     res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {

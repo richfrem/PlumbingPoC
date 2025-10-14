@@ -1,7 +1,7 @@
 -- Check RLS status and policies for invoices table
 
 -- 1. Check if RLS is enabled on invoices table
-SELECT 
+SELECT
     schemaname,
     tablename,
     rowsecurity as rls_enabled
@@ -9,7 +9,7 @@ FROM pg_tables
 WHERE tablename = 'invoices';
 
 -- 2. List all RLS policies on invoices table
-SELECT 
+SELECT
     schemaname,
     tablename,
     policyname,
@@ -23,7 +23,7 @@ WHERE tablename = 'invoices'
 ORDER BY policyname;
 
 -- 3. Check table owner and grants
-SELECT 
+SELECT
     grantee,
     privilege_type,
     is_grantable
@@ -45,11 +45,11 @@ JOIN information_schema.key_column_usage AS kcu
 JOIN information_schema.constraint_column_usage AS ccu
     ON ccu.constraint_name = tc.constraint_name
     AND ccu.table_schema = tc.table_schema
-WHERE tc.constraint_type = 'FOREIGN KEY' 
+WHERE tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_name = 'invoices';
 
 -- 5. Check if request_id column exists and its properties
-SELECT 
+SELECT
     column_name,
     data_type,
     is_nullable,

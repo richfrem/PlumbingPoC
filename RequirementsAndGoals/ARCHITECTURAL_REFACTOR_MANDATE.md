@@ -50,7 +50,7 @@ packages/frontend/src/
 │       │   └── useRequests.ts  // To be created in Mandate 2
 │       └── types/
 │           └── index.ts        // To be created in Mandate 3
-├── hooks/ 
+├── hooks/
 │   └── (empty for now, will contain useRequests.ts)
 ├── lib/
 │   ├── apiClient.ts
@@ -148,19 +148,19 @@ Create a new file at `packages/frontend/src/features/requests/types/index.ts`. M
 ```typescript
 // packages/frontend/src/features/requests/types/index.ts
 
-export interface Quote { 
-  id: string; 
-  quote_amount: number; 
-  details: string; 
-  status: string; 
-  created_at: string; 
+export interface Quote {
+  id: string;
+  quote_amount: number;
+  details: string;
+  status: string;
+  created_at: string;
 }
 
-export interface RequestNote { 
-  id: string; 
-  note: string; 
-  author_role: 'admin' | 'customer'; 
-  created_at: string; 
+export interface RequestNote {
+  id: string;
+  note: string;
+  author_role: 'admin' | 'customer';
+  created_at: string;
 }
 
 export interface QuoteAttachment {

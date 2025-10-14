@@ -23,8 +23,8 @@ test.describe('Admin deep-link -> dashboard modal', () => {
     let authToken: string | null = null;
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
-      const creds = { email: process.env.TEST_USER_EMAIL || '', password: process.env.TEST_USER_PASSWORD || '' };
+      const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY);
+      const creds = { email: process.env.TEST_USER_EMAIL || '', password: process.env.TEST_USER_PASSWORD};
       if (creds.email && creds.password) {
         const { data, error } = await supabase.auth.signInWithPassword(creds as any);
         if (error) {

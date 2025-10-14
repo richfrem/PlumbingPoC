@@ -30,7 +30,7 @@ import {
 const AppContent: React.FC = () => {
   console.log('🔥 AppContent component RENDERED - Testing webhook after reconnection');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
-  
+
   // THE FIX: This logic is now robust.
   // 1. We check if a profile exists and if the role is 'admin'.
   // 2. If it's an admin, userIdForQuery is `undefined` (fetch all).
@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
 
   // Select the appropriate hook result
   const { data: requests, loading, error, refetch } = isAdmin ? allRequestsHook : userRequestsHook;
-  
+
   console.log('🔍 useUserRequests/useAllRequests result:', {
     requestsLength: requests?.length,
     loading,
@@ -74,7 +74,7 @@ const AppContent: React.FC = () => {
 
   // Real-time sync is now handled by individual hooks (useTableQuery, etc.)
 
-  
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -506,7 +506,7 @@ const AppContent: React.FC = () => {
             preselectedService={preselectedService}
           />
         )}
-        
+
         <footer className="bg-black text-white py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
@@ -519,7 +519,7 @@ const AppContent: React.FC = () => {
             </div>
           </div>
         </footer>
-        
+
         {route !== '#/dashboard' && (
             <a
                 href="tel:555-123-4567"
@@ -543,7 +543,7 @@ const AppContent: React.FC = () => {
           }}
         />
       )}
-      
+
     </React.Fragment>
   );
 };

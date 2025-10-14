@@ -60,7 +60,7 @@ The functions use Netlify's esbuild bundler with special configuration in `netli
       "yaml"
     ]
   }
-  
+
   "triage-agent-mjs" = {
     external_node_modules = [
       "openai",

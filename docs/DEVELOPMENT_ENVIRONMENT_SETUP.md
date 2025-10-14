@@ -208,7 +208,7 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
        .from('invoices')
        .select('*')
        .eq('id', id);
-     
+
      // Then fetch related request separately
      if (invoices[0].request_id) {
        const { data: request } = await supabase
@@ -216,7 +216,7 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
          .select('customer_name, service_address, user_id')
          .eq('id', invoices[0].request_id)
          .single();
-       
+
        invoices[0].requests = request;
      }
      ```
@@ -229,9 +229,9 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
      ```sql
      SELECT constraint_name, column_name, foreign_table_name
      FROM information_schema.table_constraints tc
-     JOIN information_schema.key_column_usage kcu 
+     JOIN information_schema.key_column_usage kcu
        ON tc.constraint_name = kcu.constraint_name
-     WHERE tc.constraint_type = 'FOREIGN KEY' 
+     WHERE tc.constraint_type = 'FOREIGN KEY'
        AND tc.table_name = 'invoices';
      ```
 

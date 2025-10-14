@@ -162,7 +162,7 @@ const prompt = `
       const additionalQuestions = (parsedJson.requiresFollowUp && Array.isArray(parsedJson.questions))
         ? parsedJson.questions
         : [];
-        
+
       res.json({ additionalQuestions }); // The frontend expects `additionalQuestions` key
 
     } catch (parseError) {
@@ -286,7 +286,7 @@ const uploadAttachment = async (req, res, next) => {
       .select('user_id')
       .eq('id', request_id)
       .single();
-      
+
     if (ownerError) {
         return res.status(404).json({ error: 'Request not found.' });
     }
@@ -305,22 +305,22 @@ const uploadAttachment = async (req, res, next) => {
       }
       pathSegments.push(sanitizedFileName);
       const filePath = pathSegments.join('/');
-      
+
       const { error: uploadError } = await supabase.storage
         .from('PlumbingPoCBucket')
         .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: true });
-      
+
       if (uploadError) {
         console.error('Supabase upload error:', uploadError);
         throw uploadError;
       }
 
-      return { 
+      return {
         request_id,
         quote_id: quote_id || null,
-        file_name: file.originalname, 
+        file_name: file.originalname,
         mime_type: file.mimetype,
-        file_url: filePath 
+        file_url: filePath
       };
     });
 
@@ -334,7 +334,7 @@ const uploadAttachment = async (req, res, next) => {
     if (insertError) throw insertError;
 
     res.status(200).json({ message: 'Attachments uploaded successfully.', attachments: insertedAttachments });
-  
+
   } catch (err) {
     next(err);
   }
@@ -347,12 +347,12 @@ const getStorageObject = async (req, res, next) => {
   try {
     const objectPath = req.params[0];
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
-    
+
     if (error) {
       console.error('Supabase storage download error:', error.message);
       return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
-    
+
     const fileName = path.basename(objectPath);
     res.setHeader('Content-Type', data.type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
@@ -389,7 +389,7 @@ const addRequestNote = async (req, res, next) => {
 
     const { data, error } = await supabase.from('request_notes').insert(noteData).select().single();
     if (error) throw error;
-    
+
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -403,7 +403,7 @@ const createQuoteForRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { quote_amount, details } = req.body;
-    
+
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
       // Fetch the request including the user profile so we can email the customer
@@ -422,7 +422,7 @@ const createQuoteForRequest = async (req, res, next) => {
 
     const { data: newQuote, error } = await supabase.from('quotes').insert(quoteData).select().single();
     if (error) throw error;
-    
+
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     // Ensure requestData includes user_profiles (some queries returned a slim object)

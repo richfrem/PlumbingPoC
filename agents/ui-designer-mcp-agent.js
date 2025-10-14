@@ -106,13 +106,13 @@ async function analyzeUI(email, password, target) {
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
     console.log('Connected to Playwright MCP server');
-    
+
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
 
     if (loginSuccess) {
       console.log(`Login successful. Analyzing target: '${target}'`);
-      
+
       let screenshotPath = path.join(__dirname, `screenshots/${target}-analysis.png`);
 
       // --- NEW: Mission Script Logic ---
@@ -125,7 +125,7 @@ async function analyzeUI(email, password, target) {
           await page.waitForSelector('h5:has-text("Job Docket")');
           console.log('Request Detail Modal is open.');
           break;
-        
+
         case 'quote-agent-modal':
           console.log('Navigating to open the quote agent modal...');
           await page.click('role=button[name="Request a Quote"]');
@@ -143,7 +143,7 @@ async function analyzeUI(email, password, target) {
 
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`Screenshot for '${target}' saved to ${screenshotPath}`);
-      
+
       await generateFeedback(screenshotPath);
 
     } else {

@@ -21,22 +21,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ success: false, error: 'Method not allowed' }),
-        { 
-          status: 405, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 405,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     // Parse request body
     const { requestId }: GeocodeRequest = await req.json();
-    
+
     if (!requestId) {
       return new Response(
         JSON.stringify({ success: false, error: 'requestId is required' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -49,9 +49,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!googleMapsApiKey) {
       return new Response(
         JSON.stringify({ success: false, error: 'Google Maps API key not configured' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -69,33 +69,33 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!fetchRequestResponse.ok) {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to fetch request' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     const requests = await fetchRequestResponse.json();
-    
+
     if (!requests || requests.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'Request not found' }),
-        { 
-          status: 404, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     const serviceAddress = requests[0].service_address;
-    
+
     if (!serviceAddress) {
       return new Response(
         JSON.stringify({ success: false, error: 'No service address found' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -107,13 +107,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Geocoding failed: ${geocodeData.status}` 
+        JSON.stringify({
+          success: false,
+          error: `Geocoding failed: ${geocodeData.status}`
         }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -140,9 +140,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!updateResponse.ok) {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to update request' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -156,22 +156,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
       }
     );
 
   } catch (error) {
     console.error('Geocoding error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
+      JSON.stringify({
+        success: false,
+        error: error.message || 'Internal server error'
       }),
-      { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       }
     );
   }

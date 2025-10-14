@@ -374,7 +374,7 @@ STAGED=()
 while IFS= read -r -d '' f
 do
     STAGED+=("$f")
-done < <(git diff --cached --name-only -z)  
+done < <(git diff --cached --name-only -z)
 #gets list of staged files, separated by null bytes. names only -z stands for null byte
 
 # If no staged files, exit early (nothing to check)
@@ -411,8 +411,8 @@ for FILE in "${STAGED[@]}"; do
 
   # Rule 2: scan staged content for key assignments
   # Read each input line: lineno gets the line number, rest gets the line content (split on ':' from nl command)
-  # For each line in the staged file that contains a secret key, extract the assigned 
-  #value and check if it's allowed.  
+  # For each line in the staged file that contains a secret key, extract the assigned
+  #value and check if it's allowed.
   # Plain language: For each staged file, process lines with secret keys; if RHS value isn't whitelisted, record violation
   while IFS=: read -r lineno rest; do
     line="$rest"
@@ -422,20 +422,20 @@ for FILE in "${STAGED[@]}"; do
     if [[ "$WHITELIST" == *"$rhs"* ]]; then continue; fi  # Whitelisted value
     VIOLATIONS+=("VIOLATION: $FILE:$lineno -> $line")
     EXIT_CODE=1
-  # Process substitution: feed the output of the pipeline (numbered lines containing key matches) 
+  # Process substitution: feed the output of the pipeline (numbered lines containing key matches)
   # into the while loop's stdin, where 'read -r lineno rest' splits each line on ':' into lineno and rest variables
   # < <(pipeline): process substitution - executes the pipeline in a subshell and redirects its stdout as input to the while loop
-  # nl = numbered lines -ba = number all lines (including blank) 
-  # -w1 = width 1 (min digits) 
+  # nl = numbered lines -ba = number all lines (including blank)
+  # -w1 = width 1 (min digits)
   # -s: = separate number and line with colon
-  # grep -Eni = grep with -E extended regex, -n show line numbers 
+  # grep -Eni = grep with -E extended regex, -n show line numbers
   done < <(git show :"$FILE" 2>/dev/null | nl -ba -w1 -s: | grep -Eni "$KEYS" || true) # while loop for each line with a key match
 done #for loop over files
 
 # Rule 3: summarize and exit
 if [ $EXIT_CODE -ne 0 ]; then
   echo "COMMIT BLOCKED: Violations found."
-  for v in "${VIOLATIONS[@]}"; 
+  for v in "${VIOLATIONS[@]}";
   do
     echo "$v"
   done
@@ -552,7 +552,7 @@ It takes the empathetic, problem-finding power of **Service Design** and **Tripl
 
 It supercharges discovery and validation with AI-powered **"Vibe Coding"**—not as a reckless shortcut, but as a sanctioned, high-speed prototyping tool.
 
-It channels the resulting validated vision into the unyielding discipline of 
+It channels the resulting validated vision into the unyielding discipline of
 
 **Architecture-First Development** and the rigorous safety net of **Test-Driven Design**.
 The result is a framework that allows teams to be both radically creative and impeccably engineered. It provides a shared language for designers, architects, and product leaders to navigate the quantum possibilities of AI, collapsing them into classical, reliable, and valuable software.
@@ -601,7 +601,7 @@ graph TD
         A -- Curates & Refines Outputs --> D
         D -- Tests with Stakeholders --> A
     end
-    
+
     subgraph " "
         direction LR
         ValidatedVision([Validated Vision Prototype])
@@ -615,7 +615,7 @@ graph TD
         S3[<b>Stage 3: Validation</b>]
         S4[<b>Stage 4: Deployment</b>]
         S5[<b>Stage 5: Monitoring</b>]
-        
+
         S0 --> S1
         S1 --> S2
         S2 --> S3
@@ -1579,11 +1579,11 @@ Each agent follows a consistent pattern:
 
 ### Benefits of YAML-Driven Agents
 
-✅ **Maintainability** - Workflow changes don't require code modifications  
-✅ **Testability** - Agents can be tested independently with mock data  
-✅ **Scalability** - New agents can be added following the same pattern  
-✅ **Transparency** - Business logic is visible in human-readable YAML  
-✅ **Version Control** - Workflow changes are tracked in git  
+✅ **Maintainability** - Workflow changes don't require code modifications
+✅ **Testability** - Agents can be tested independently with mock data
+✅ **Scalability** - New agents can be added following the same pattern
+✅ **Transparency** - Business logic is visible in human-readable YAML
+✅ **Version Control** - Workflow changes are tracked in git
 
 ---
 
@@ -1605,7 +1605,7 @@ sequenceDiagram
     Supabase-->>Frontend (ChatKit UI): Returns user session & profile
 
     User->>Frontend (ChatKit UI): Clicks "Request a Quote"
-    
+
     Note over Frontend (ChatKit UI),Quote Agent Runner: Agent initialization with YAML config
     Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (initialize session)
     activate Quote Agent Runner
@@ -1614,10 +1614,10 @@ sequenceDiagram
     OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns structured question with options
     Quote Agent Runner-->>Frontend (ChatKit UI): First question (emergency check)
     deactivate Quote Agent Runner
-    
+
     Frontend (ChatKit UI)->>User: Displays question with interactive pill buttons
     User-->>Frontend (ChatKit UI): Clicks response button
-    
+
     loop Dynamic Conversation Flow (controlled by YAML nodes)
         Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (with conversation history)
         activate Quote Agent Runner
@@ -1628,11 +1628,11 @@ sequenceDiagram
         deactivate OpenAI API (GPT-4o)
         Quote Agent Runner-->>Frontend (ChatKit UI): Next question with contextual icon
         deactivate Quote Agent Runner
-        
+
         Frontend (ChatKit UI)->>User: Displays question with contextual UI (🚨/🏠/📅)
         User-->>Frontend (ChatKit UI): Provides answer
     end
-    
+
     Note over Quote Agent Runner: Agent reaches review_summary stage
     Quote Agent Runner->>Frontend (ChatKit UI): Returns summary payload with all answers
     Frontend (ChatKit UI)->>User: Displays comprehensive review summary
@@ -1641,7 +1641,7 @@ sequenceDiagram
     Frontend (ChatKit UI)->>Supabase: POST /api/requests/submit (with structured data)
     activate Supabase
     Supabase->>Supabase: Inserts request with answers array, service address, geocoding
-    
+
     opt User uploaded attachments
         Frontend (ChatKit UI)->>Supabase: Upload files to Storage bucket
         Supabase->>Supabase: Insert records into 'quote_attachments'
@@ -1704,35 +1704,35 @@ sequenceDiagram
     Admin->>Frontend: Clicks "AI Triage" button in Job Docket
     Frontend->>Triage Agent Runner: POST /triage/:requestId (triggers analysis)
     activate Triage Agent Runner
-    
+
     Triage Agent Runner->>Triage Agent Runner: Load triage-agent.yaml workflow
     Triage Agent Runner->>Supabase: Fetch complete request details
     activate Supabase
     Supabase-->>Triage Agent Runner: Returns request data with all Q&A answers
     deactivate Supabase
-    
+
     Note over Triage Agent Runner: Calculate preliminary scores
     Triage Agent Runner->>Triage Agent Runner: calculateJobComplexity(service, location)
     Triage Agent Runner->>Triage Agent Runner: assessCustomerUrgency(emergency, timeline)
     Triage Agent Runner->>Triage Agent Runner: formatAnswersForAnalysis(Q&A array)
-    
+
     Triage Agent Runner->>OpenAI API (GPT-4o): Send comprehensive prompt with:<br/>- Service category<br/>- Emergency status<br/>- Formatted Q&A summaries<br/>- Problem description<br/>- Preliminary scores
     activate OpenAI API (GPT-4o)
-    
+
     Note over OpenAI API (GPT-4o): Structured function calling
     OpenAI API (GPT-4o)->>OpenAI API (GPT-4o): Analyze all data points<br/>Call: provide_triage_assessment()
-    
+
     OpenAI API (GPT-4o)-->>Triage Agent Runner: Returns structured JSON:<br/>{<br/>  triage_summary,<br/>  priority_score (1-10),<br/>  priority_explanation,<br/>  profitability_score (1-10),<br/>  profitability_explanation<br/>}
     deactivate OpenAI API (GPT-4o)
-    
+
     Triage Agent Runner->>Supabase: UPDATE requests SET triage fields
     activate Supabase
     Supabase-->>Triage Agent Runner: Confirms update
     deactivate Supabase
-    
+
     Triage Agent Runner-->>Frontend: Returns complete analysis results
     deactivate Triage Agent Runner
-    
+
     Frontend->>Admin: Displays AI Triage Summary card with:<br/>- Priority badge (1-10)<br/>- Profitability indicator<br/>- Summary text<br/>- Explanations
 ```
 
@@ -1754,7 +1754,7 @@ sequenceDiagram
     Postgres Database-->>-Admin's Browser (Client A): API Response (OK)
 
     Postgres Database->>+Supabase Realtime Server: 2. [Publication] A change was detected in the `request_notes` table.
-    
+
     Note over Supabase Realtime Server: Routing Logic!
     Supabase Realtime Server->>Supabase Realtime Server: 3. Check subscribers for the relevant channel. Found: Client A, Client B.
 
@@ -1765,7 +1765,7 @@ sequenceDiagram
     Supabase Realtime Server->>+Customer's Browser (Client B): 4. [WebSocket Push] Broadcast new data payload
     Customer's Browser (Client B)->>Customer's Browser (Client B): 5. `useRequests` hook re-fetches data & UI refreshes
     deactivate Customer's Browser (Client B)
-    
+
     deactivate Supabase Realtime Server
 ```# Test commit to trigger Netlify deployment
 # Force deployment trigger - Thu Oct  9 07:47:11 PDT 2025
@@ -1826,7 +1826,7 @@ packages/frontend/src/
 │       │   └── useRequests.ts  // To be created in Mandate 2
 │       └── types/
 │           └── index.ts        // To be created in Mandate 3
-├── hooks/ 
+├── hooks/
 │   └── (empty for now, will contain useRequests.ts)
 ├── lib/
 │   ├── apiClient.ts
@@ -1924,19 +1924,19 @@ Create a new file at `packages/frontend/src/features/requests/types/index.ts`. M
 ```typescript
 // packages/frontend/src/features/requests/types/index.ts
 
-export interface Quote { 
-  id: string; 
-  quote_amount: number; 
-  details: string; 
-  status: string; 
-  created_at: string; 
+export interface Quote {
+  id: string;
+  quote_amount: number;
+  details: string;
+  status: string;
+  created_at: string;
 }
 
-export interface RequestNote { 
-  id: string; 
-  note: string; 
-  author_role: 'admin' | 'customer'; 
-  created_at: string; 
+export interface RequestNote {
+  id: string;
+  note: string;
+  author_role: 'admin' | 'customer';
+  created_at: string;
 }
 
 export interface QuoteAttachment {
@@ -5220,7 +5220,7 @@ The agents are YAML-driven workflows that need to work in two environments:
 2. **Environment Detection**
    ```javascript
    const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
-   
+
    // Conditional YAML path resolution
    let YAML_PATH;
    if (isNetlify) {
@@ -5248,17 +5248,17 @@ router.post('/quote/run', async (req, res) => {
   try {
     // Dynamically import the Netlify function handler
     const { handler } = await import('../../netlify/functions/quote-agent.mjs');
-    
+
     // Transform Express request to Netlify event format
     const event = {
       httpMethod: 'POST',
       body: JSON.stringify(req.body),
       headers: req.headers
     };
-    
+
     // Call the handler
     const result = await handler(event, {});
-    
+
     // Send response
     res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {
@@ -5371,9 +5371,9 @@ export async function handler(event, context) {
 
 # ADR-028: Choice of Custom YAML Workflow Engine Over OpenAI Agents SDK
 
-**Status**: Accepted  
-**Date**: 2025-06-XX  
-**Deciders**: Engineering Team  
+**Status**: Accepted
+**Date**: 2025-06-XX
+**Deciders**: Engineering Team
 **Related**: ADR-026 (Superseded), ADR-027
 
 ---
@@ -5464,7 +5464,7 @@ The OpenAI Agents SDK is not suitable for our use case.
    options:
      - text: "Residential"
        next: residential_questions
-     - text: "Commercial" 
+     - text: "Commercial"
        next: commercial_questions
    ```
    - Product managers can modify workflows
@@ -5686,7 +5686,7 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 
 ```typescript
 // QuoteFormModal - Unified customer info + address
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}
@@ -5695,7 +5695,7 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 />
 
 // RequestDetailModal - NOW USING UNIFIED COMPONENT
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}
@@ -5706,13 +5706,13 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 />
 
 // QuoteAgentModal - Create new request
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="create"
   onSave={handleAddressSet}
 />
 
 // InvoiceFormModal - Migrated to unified component
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}
@@ -6101,13 +6101,13 @@ sequenceDiagram
     User->>project-manager-mcp-agent.js: Run workflow command
     project-manager-mcp-agent.js->>ui-designer-mcp-agent.js: 1. Analyze UI
     ui-designer-mcp-agent.js->>"File System (feedback.json)": 2. Create feedback (status: pending)
-    
+
     project-manager-mcp-agent.js->>"File System (feedback.json)": 3. Read & verify status is 'pending'
     project-manager-mcp-agent.js->>frontend-developer-mcp-agent.js: 4. Implement feedback
-    
+
     frontend-developer-mcp-agent.js->>"File System (feedback.json)": 5. Read feedback & implement change
     frontend-developer-mcp-agent.js->>"File System (feedback.json)": 6. Update status to 'implemented'
-    
+
     project-manager-mcp-agent.js->>"File System (feedback.json)": 7. Verify status is 'implemented' & archive file
     project-manager-mcp-agent.js->>User: 8. Report completion```
 
@@ -6189,19 +6189,19 @@ async function reviewBackend() {
     }
 
     const dbSchemaContent = fs.readFileSync(dbSchemaPath, 'utf8');
-    
+
     const routeFiles = fs.readdirSync(apiRoutesDir).filter(f => f.endsWith('.js'));
     let apiRoutesContent = '';
     for (const file of routeFiles) {
       const content = fs.readFileSync(path.join(apiRoutesDir, file), 'utf8');
       apiRoutesContent += `\n\n--- START OF FILE ${file} ---\n\n${content}\n\n--- END OF FILE ${file} ---`;
     }
-    
+
     console.log('✅ Successfully loaded database schema and API routes.');
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     console.log('Successfully initialized Gemini 2.5 Pro model.');
-    
+
     const personaFilePath = path.join(__dirname, 'backend-architect-mcp.md');
     const personaContent = fs.readFileSync(personaFilePath, 'utf8');
     console.log('Successfully loaded Backend Architect persona.');
@@ -6260,7 +6260,7 @@ async function reviewBackend() {
 
     const feedbackFilePath = path.join(feedbackDir, 'backend-feedback.json');
     fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
-    
+
     console.log(`\n✅ Backend feedback file generated at ${feedbackFilePath} with status 'pending'.`);
     console.log('============================================');
     console.log('🎉 BACKEND REVIEW COMPLETE');
@@ -6354,7 +6354,7 @@ async function clickSignInButton(page) {
  * ======================================================
  * FUNCTION: signOut
  * PURPOSE:  Automate logout and report success.
- * PARAMETERS: 
+ * PARAMETERS:
  * @param {import('playwright').Browser} browser - Playwright browser instance
  * @param {string} baseUrl - Base URL of the frontend
  * @param {object} [options] - Optional selectors and paths
@@ -6367,7 +6367,7 @@ async function signOut(browser, baseUrl, options = {}) {
     console.error("signOut requires a page object in options.");
     return false;
   }
-  const loginSelector = 'role=button[name="Sign In"]'; 
+  const loginSelector = 'role=button[name="Sign In"]';
 
   let success = false;
   try {
@@ -6382,7 +6382,7 @@ async function signOut(browser, baseUrl, options = {}) {
 
     console.log('Attempting to click "Sign Out" button...');
     await page.click(signOutButtonSelector);
-    
+
     await page.waitForSelector(loginSelector, { timeout: 5000 });
     console.log('Logout successful');
     success = true;
@@ -6407,7 +6407,7 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
   const loginPath = options.loginPath || '/';
   const emailSelector = options.emailSelector || 'input[type="email"]';
   const passwordSelector = options.passwordSelector || 'input[type="password"]';
-  
+
   // --- THE FIX IS HERE ---
   // The new success selector is not role-specific. It looks for the user menu button
   // that appears for ANY successfully logged-in user.
@@ -6419,7 +6419,7 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
     // First, check if we are ALREADY logged in by looking for the universal success selector.
     console.log(`Checking for existing login session by looking for: "User Menu Button"`);
     await page.waitForSelector(successSelector, { timeout: 3000 }); // Short timeout
-    
+
     // If the selector is found, we're already logged in.
     console.log('✅ Already logged in. Skipping login flow.');
     return { success: true, page };
@@ -6430,20 +6430,20 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
     try {
       console.log('Attempting to click Sign In button...');
       await clickSignInButton(page);
-      
+
       console.log('Waiting for email input to appear...');
       await page.waitForSelector(emailSelector, { timeout: 10000 });
-      
+
       console.log('Filling email and password...');
       await page.fill(emailSelector, email);
       await page.fill(passwordSelector, password);
-      
+
       console.log('Clicking "Sign In with Email" button...');
       await page.getByRole('button', { name: /sign in with email/i }).click();
 
       console.log('Waiting for login success indicator (User Menu)...');
       await page.waitForSelector(successSelector, { timeout: 10000 });
-      
+
       console.log('Login successful for', email);
       return { success: true, page };
 
@@ -6642,7 +6642,7 @@ async function implementFeedback(feedbackFilePath) {
   if (!improvements || !Array.isArray(improvements)) {
     throw new Error("Feedback file is malformed: 'improvements' key is missing or not an array.");
   }
-  
+
   const projectRoot = path.resolve(__dirname, '..');
   // Store original content of all files to be modified for potential rollback
   const originalFiles = new Map();
@@ -6658,18 +6658,18 @@ async function implementFeedback(feedbackFilePath) {
       if (!fs.existsSync(absoluteTargetFilePath)) {
         throw new Error(`Target source code file not found at ${absoluteTargetFilePath}`);
       }
-      
+
       // Save original content if we haven't already
       if (!originalFiles.has(absoluteTargetFilePath)) {
         originalFiles.set(absoluteTargetFilePath, fs.readFileSync(absoluteTargetFilePath, 'utf-8'));
       }
-      
+
       // Read the most current content for this iteration
       let currentSourceCode = fs.readFileSync(absoluteTargetFilePath, 'utf-8');
 
       // Simple string replacement for this batch model
       const updatedSourceCode = currentSourceCode.replace(old_string, new_string);
-      
+
       fs.writeFileSync(absoluteTargetFilePath, updatedSourceCode);
       console.log(`Applied change to ${file_path}`);
     }
@@ -6691,13 +6691,13 @@ async function implementFeedback(feedbackFilePath) {
   } catch (error) {
     console.error(`\n--- An error occurred during implementation: ${error.message} ---`);
     console.log('--- ROLLING BACK all changes... ---');
-    
+
     // Rollback all modified files to their original state
     for (const [filePath, originalContent] of originalFiles.entries()) {
       fs.writeFileSync(filePath, originalContent);
       console.log(`✅ Reverted ${path.relative(projectRoot, filePath)}`);
     }
-    
+
     throw new Error("Implementation failed and all changes were rolled back.");
   }
 }
@@ -6714,10 +6714,10 @@ async function loginLogoutTest(email, password) {
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
     console.log('Connected to Playwright MCP server');
-    
+
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
-    
+
     if (loginSuccess) {
       console.log('Login test: SUCCESS');
       const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });
@@ -6899,7 +6899,7 @@ async function runWorkflow(email, password, target) {
       }
     }
     console.log(`✅ Validation successful: All ${feedback.improvements.length} proposed file paths are in the manifest.`);
-    
+
     if (feedback.status === 'implemented') {
       console.log("✅ Task has already been implemented. Archiving and completing workflow.");
       const archiveDir = path.join(__dirname, 'feedback', 'archive');
@@ -6920,13 +6920,13 @@ async function runWorkflow(email, password, target) {
       YOUR CURRENT TASK
       ---------------------------
       You have received and validated the following BATCH of UI/UX feedback for the '${target}' component. Your task is to create a brief summary and assign the entire batch to the 'frontend-developer-mcp' agent.
-      
+
       **Designer Feedback (Status: ${feedback.status}):**
       \`\`\`json
       ${JSON.stringify(feedback, null, 2)}
       \`\`\`
     `;
-    
+
     const result = await model.generateContent(prompt);
     const summary = await result.response.text();
     console.log('\n--- PROJECT MANAGER STATUS UPDATE ---');
@@ -6944,7 +6944,7 @@ async function runWorkflow(email, password, target) {
 
     if (updatedFeedback.status === 'implemented') {
         console.log('Verification successful. Status is "implemented".');
-        
+
         const archiveDir = path.join(__dirname, 'feedback', 'archive');
         if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
         const timestamp = new Date().toISOString().replace(/:/g, '-');
@@ -7111,8 +7111,8 @@ module.exports = {
 
 agent: QuoteAgent
 description: >
-  Collect quote information for plumbing services using generic and 
-  service-specific questions. If responses are incomplete, ask clarifiers 
+  Collect quote information for plumbing services using generic and
+  service-specific questions. If responses are incomplete, ask clarifiers
   with AI. Summarize results and allow final review before submission.
 
 # AI follow-up question configuration
@@ -7122,10 +7122,10 @@ ai_followup_config:
   temperature: 0.2
   system_prompt: "You craft follow-up questions for plumbing quotes."
   user_prompt: |
-    You are an AI assistant for a local plumbing company, 
-    acting as an expert plumber and gas fitter with 25 years of 
-    experience. Your primary goal is to gather the critical details 
-    needed to provide an accurate preliminary quote and ensure the 
+    You are an AI assistant for a local plumbing company,
+    acting as an expert plumber and gas fitter with 25 years of
+    experience. Your primary goal is to gather the critical details
+    needed to provide an accurate preliminary quote and ensure the
     technician arrives with the right parts and tools.
     You must determine if more information is required from the customer before submitting their request.
 
@@ -7150,7 +7150,7 @@ ai_followup_config:
       "requiresFollowUp": boolean,
       "questions": ["question 1", "question 2", ...]
     }
-    
+
     Where:
     - requiresFollowUp: true if asking questions, false otherwise
     - questions: array of strings, each a clear question for the customer
@@ -7589,13 +7589,13 @@ async function analyzeUI(email, password, target) {
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
     console.log('Connected to Playwright MCP server');
-    
+
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
 
     if (loginSuccess) {
       console.log(`Login successful. Analyzing target: '${target}'`);
-      
+
       let screenshotPath = path.join(__dirname, `screenshots/${target}-analysis.png`);
 
       // --- NEW: Mission Script Logic ---
@@ -7608,7 +7608,7 @@ async function analyzeUI(email, password, target) {
           await page.waitForSelector('h5:has-text("Job Docket")');
           console.log('Request Detail Modal is open.');
           break;
-        
+
         case 'quote-agent-modal':
           console.log('Navigating to open the quote agent modal...');
           await page.click('role=button[name="Request a Quote"]');
@@ -7626,7 +7626,7 @@ async function analyzeUI(email, password, target) {
 
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`Screenshot for '${target}' saved to ${screenshotPath}`);
-      
+
       await generateFeedback(screenshotPath);
 
     } else {
@@ -8056,7 +8056,7 @@ output:
         reasoning:
           type: string
       required: [skill_level, specialized_skills, reasoning]
-  required: [triage_summary, priority_score, priority_explanation, 
+  required: [triage_summary, priority_score, priority_explanation,
              profitability_score, profitability_explanation, required_expertise]
 ```
 
@@ -8105,10 +8105,10 @@ The agent can assign one of three skill levels:
 
 - **`apprentice`** - Basic plumbing tasks, minimal experience required
   - Examples: Toilet repair, faucet replacement, drain cleaning
-  
+
 - **`journeyman`** - Intermediate complexity, licensed plumber
   - Examples: Water heater installation, bathroom renovations, standard pipe repairs
-  
+
 - **`master`** - Complex work requiring certifications or extensive experience
   - Examples: Gas line work, main line repairs, code-critical installations
 
@@ -8131,13 +8131,13 @@ To change how expertise is assessed, edit the `prompt` section:
 ```yaml
 prompt: >
   ...
-  
+
   Expertise Assessment Guidelines:
   - Apprentice: Routine repairs, basic installations, no certifications needed
   - Journeyman: Most service work, requires Red Seal or equivalent license
-  - Master: Gas work (requires gas fitter ticket), complex diagnostics, 
+  - Master: Gas work (requires gas fitter ticket), complex diagnostics,
     multi-system coordination
-  
+
   Specialized Skills to flag:
   - Gas fitting certification (MANDATORY for gas lines)
   - Backflow prevention certification
@@ -8232,7 +8232,7 @@ prompt: >
   Provide:
   6. Scheduling difficulty score (1-10)
   7. Scheduling difficulty explanation
-  
+
   Consider:
   - Job duration estimate
   - Required team size
@@ -8243,7 +8243,7 @@ prompt: >
 ### Step 3: Add Database Column
 
 ```sql
-ALTER TABLE public.requests 
+ALTER TABLE public.requests
 ADD COLUMN scheduling_difficulty INTEGER,
 ADD COLUMN scheduling_explanation TEXT;
 ```
@@ -9336,7 +9336,7 @@ Your consulting documentation is organized into **4 main categories**:
 - Cost analysis and pricing
 - Strategic decision making
 
-### **📞 CLIENT-FACING MATERIALS** 
+### **📞 CLIENT-FACING MATERIALS**
 - Proposals and presentations
 - Cost estimates and timelines
 - Professional client communication
@@ -9359,7 +9359,7 @@ Your consulting documentation is organized into **4 main categories**:
 
 #### **[consulting_launch_blueprint.md](./RequirementsAndGoals/consulting_launch_blueprint.md)**
 **Purpose:** Your original 72-hour mission plan and email outreach strategy
-**When to use:** 
+**When to use:**
 - Planning initial client outreach
 - Crafting personalized emails to prospects
 - Understanding the overall business development approach
@@ -9538,12 +9538,12 @@ Scale to next client
 /packages/frontend/src/lib/servicesData.ts
 - Update with client's specific services
 
-/packages/frontend/src/main.tsx  
+/packages/frontend/src/main.tsx
 - Replace "AquaFlow Plumbing" (3 locations)
 
 /packages/frontend/src/features/landing/components/
 ├── AboutSection.tsx (company story)
-├── ContactSection.tsx (contact info)  
+├── ContactSection.tsx (contact info)
 └── ReviewsSection.tsx (testimonials)
 ```
 
@@ -9574,7 +9574,7 @@ Environment Variables (12 total):
 
 ### **⏰ Time Management:**
 - **Phase 1 (Setup):** 2-3 hours with client
-- **Phase 2 (Config):** 4-6 hours independent work  
+- **Phase 2 (Config):** 4-6 hours independent work
 - **Phase 3 (Customization):** 4-6 hours independent work
 - **Phase 4 (Testing/Handoff):** 2-3 hours total
 
@@ -9595,7 +9595,7 @@ Environment Variables (12 total):
 ### **"Which document do I use when?"**
 ```
 Prospect inquiry → CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md
-Signed client → CONSULTANT_03_DEPLOYMENT_CHECKLIST.md  
+Signed client → CONSULTANT_03_DEPLOYMENT_CHECKLIST.md
 Technical questions → CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md
 Billing questions → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
 ```
@@ -9644,7 +9644,7 @@ Billing questions → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
 4. **Build case studies** - Document successful client outcomes
 
 ### **After 10+ Clients:**
-1. **Consider team expansion** - Use documents to train additional consultants  
+1. **Consider team expansion** - Use documents to train additional consultants
 2. **Develop client tiers** - Bronze/Silver/Gold service levels
 3. **Create passive income streams** - Self-service options using your templates
 4. **Explore partnerships** - Work with trade organizations and referral networks
@@ -9727,7 +9727,7 @@ Billing questions → CONSULTANT_01_BILLING_AND_ACCOUNT_STRATEGIES.md
 ```
 Your Master Accounts:
 - Netlify Team account with multiple sites
-- Supabase Organization with multiple projects  
+- Supabase Organization with multiple projects
 - OpenAI Organization with API key management
 - Twilio parent account with sub-accounts
 - Google Cloud Organization
@@ -9740,7 +9740,7 @@ Monthly Service Package: $350-500 CAD
 Includes:
 - All infrastructure costs ($115-155)
 - Platform management and support
-- Updates and maintenance  
+- Updates and maintenance
 - Technical support
 - Markup/profit margin ($200-300)
 ```
@@ -9851,7 +9851,7 @@ Includes: Infrastructure + management + data portability
 ```
 Client Setup:
 1. Creates Netlify account with their business email
-2. Invites your email as "Team Member" or "Collaborator"  
+2. Invites your email as "Team Member" or "Collaborator"
 3. You get full deployment/configuration access
 
 Your Access:
@@ -9874,7 +9874,7 @@ Client Setup:
 Your Access:
 - Database schema and configuration
 - Authentication settings
-- Storage bucket management  
+- Storage bucket management
 - API access and monitoring
 - Cannot access billing or organization settings
 
@@ -9950,7 +9950,7 @@ Hour 1: Account Creation & Access Setup
 
 Modern Platform Accounts (Delegated Access):
 1. Client creates Netlify account → Invites your email as Team Member
-2. Client creates Supabase account → Invites your email as Administrator  
+2. Client creates Supabase account → Invites your email as Administrator
 3. Client creates Google Cloud project → Adds your email as Editor
 
 API Service Accounts (Credential Sharing):
@@ -10001,7 +10001,7 @@ Ongoing Management:
 
 #### **Client Retains Full Control:**
 - ✅ **Account ownership** - registered under their business
-- ✅ **Billing control** - payment methods and invoices  
+- ✅ **Billing control** - payment methods and invoices
 - ✅ **Data ownership** - all customer/business data
 - ✅ **Access revocation** - can remove you instantly
 - ✅ **Vendor independence** - not locked into your services
@@ -10067,7 +10067,7 @@ Option C: Modern DNS Providers
 - No password sharing required for these platforms
 - Client retains full ownership and billing control
 
-#### API Services (Secure Credential Sharing)  
+#### API Services (Secure Credential Sharing)
 - **OpenAI**: Secure API key sharing (no team features available)
 - **Resend**: Secure API key sharing (preferred over limited team features)
 - **Twilio**: Account SID and Auth Token sharing (preferred over complex subuser setup)
@@ -10560,7 +10560,7 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 - Domain registrar (Namecheap/Netlify)
 - Google Workspace/Microsoft 365 (email)
 - Netlify Pro (~$25 CAD/month)
-- Supabase Pro (~$35 CAD/month)  
+- Supabase Pro (~$35 CAD/month)
 - OpenAI API (~$10-30 CAD/month)
 - Google Cloud/Maps (~$10-20 CAD/month)
 - Resend Email (~$20 CAD/month)
@@ -10788,7 +10788,7 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 - [ ] Map view shows correct job locations
 - [ ] File uploads work (images, documents)
 
-### Business Validation  
+### Business Validation
 - [ ] Client can navigate admin dashboard independently
 - [ ] Quote creation process is understood
 - [ ] Customer journey feels professional
@@ -10830,7 +10830,7 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 | Professional Email | $8 | $96 |
 | **TOTAL** | **$115-155** | **$1,380-1,860** |
 
-**🎯 Client Value Proposition:** 
+**🎯 Client Value Proposition:**
 Complete AI-powered business management platform for the cost of 1-2 service calls per month.
 --- END OF FILE ---
 
@@ -11046,7 +11046,7 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
        .from('invoices')
        .select('*')
        .eq('id', id);
-     
+
      // Then fetch related request separately
      if (invoices[0].request_id) {
        const { data: request } = await supabase
@@ -11054,7 +11054,7 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
          .select('customer_name, service_address, user_id')
          .eq('id', invoices[0].request_id)
          .single();
-       
+
        invoices[0].requests = request;
      }
      ```
@@ -11067,9 +11067,9 @@ Error: Supabase URL or Service Role Key is missing. Check Netlify environment va
      ```sql
      SELECT constraint_name, column_name, foreign_table_name
      FROM information_schema.table_constraints tc
-     JOIN information_schema.key_column_usage kcu 
+     JOIN information_schema.key_column_usage kcu
        ON tc.constraint_name = kcu.constraint_name
-     WHERE tc.constraint_type = 'FOREIGN KEY' 
+     WHERE tc.constraint_type = 'FOREIGN KEY'
        AND tc.table_name = 'invoices';
      ```
 
@@ -11546,8 +11546,8 @@ Next steps for tomorrow's work (high priority):
      - ✅ Success: `4242 4242 4242 4242`
      - ❌ Decline: `4000 0000 0000 0002`
    - End-to-end test:
-     - Create invoice → Customer views in portal → Pays with test card → 
-     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' → 
+     - Create invoice → Customer views in portal → Pays with test card →
+     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' →
      - Owner receives SMS notification
    - Document test scenarios and results
 
@@ -11705,7 +11705,7 @@ nodes:
 **Proposed Enhanced Status Workflow:**
 
 ```
-new → quoted → accepted → scheduled → in_progress → 
+new → quoted → accepted → scheduled → in_progress →
 completed → invoiced → paid (OR overdue OR disputed)
 ```
 
@@ -11844,10 +11844,10 @@ completed → invoiced → paid (OR overdue OR disputed)
 
 ```sql
 -- Add new request statuses
-ALTER TABLE requests 
-  ADD CONSTRAINT valid_status 
-  CHECK (status IN ('new', 'quoted', 'accepted', 'scheduled', 
-                    'in_progress', 'completed', 'invoiced', 
+ALTER TABLE requests
+  ADD CONSTRAINT valid_status
+  CHECK (status IN ('new', 'quoted', 'accepted', 'scheduled',
+                    'in_progress', 'completed', 'invoiced',
                     'paid', 'overdue', 'disputed', 'cancelled'));
 
 -- Enhance invoices table
@@ -13145,7 +13145,7 @@ The SDK provides full control over agent logic, tools, guardrails, and handoffs 
 
 # Quote Agent Maintenance Guide
 
-**Audience:** Product Managers, Business Analysts, Developers  
+**Audience:** Product Managers, Business Analysts, Developers
 **Purpose:** Learn how to modify and maintain the quote intake conversation flow using the YAML configuration file.
 
 ---
@@ -13209,7 +13209,7 @@ Every question or decision point in the conversation is a "node":
 The conversation follows a directed graph:
 
 ```
-emergency_check 
+emergency_check
     ↓
 type_of_property
     ↓
@@ -13419,7 +13419,7 @@ The `service_questions` node uses a **switch statement** to ask different questi
   variable: selected_service
   cases:
     # ... existing services ...
-    
+
     "Sump Pump Installation":  # ← New case
       - type: choice
         prompt: "Do you have an existing sump pump?"
@@ -13810,9 +13810,9 @@ options: ["Phone Call", "Email", "Text"]
 ```mermaid
 stateDiagram-v2
     direction TB
-    
+
     [*] --> New: User Submits Request
-    
+
     state New {
         description status = 'new'
     }
@@ -13838,7 +13838,7 @@ stateDiagram-v2
     Viewed --> Quoted: Admin adds a NEW or UPDATED quote (restarts the cycle)
     Accepted --> Scheduled: Admin sets a schedule date
     Scheduled --> Completed: Admin marks the job as finished
-    
+
     Completed --> [*]
 
     note right of Viewed
@@ -13916,19 +13916,19 @@ const { data: allRequests } = useTableQuery<QuoteRequest>('requests', {
 Pre-configured hooks for all database tables with optimal real-time settings.
 
 ```typescript
-import { 
-  useUserRequests, 
-  useAllRequests, 
+import {
+  useUserRequests,
+  useAllRequests,
   useRequestQuotes,
   useUserProfile,
-  useAdminDashboard 
+  useAdminDashboard
 } from './hooks';
 
 // In a user component
 function UserDashboard({ userId }) {
   const { data: requests, loading } = useUserRequests(userId);
   const { data: profile } = useUserProfile(userId);
-  
+
   return (
     <div>
       <h1>Welcome {profile?.name}</h1>
@@ -13938,10 +13938,10 @@ function UserDashboard({ userId }) {
   );
 }
 
-// In an admin component  
+// In an admin component
 function AdminDashboard() {
   const { requests, users, quotes, loading } = useAdminDashboard();
-  
+
   return (
     <div>
       <h1>Admin Dashboard</h1>
@@ -13957,7 +13957,7 @@ function AdminDashboard() {
 
 ### User & Profile Hooks
 - `useUserProfile(userId)` - Get current user's profile with real-time updates
-- `useAllUsers()` - Get all users (admin only) with real-time updates  
+- `useAllUsers()` - Get all users (admin only) with real-time updates
 - `useAllUserProfiles()` - Get all user profiles (admin only) with real-time updates
 
 ### Request & Quote Hooks
@@ -13999,7 +13999,7 @@ import { useUserRequests, useAllRequests } from './hooks';
 // For users
 const { data: requests, loading, error } = useUserRequests(userId);
 
-// For admins  
+// For admins
 const { data: requests, loading, error } = useAllRequests();
 ```
 
@@ -14041,7 +14041,7 @@ function MyComponent() {
 The system automatically invalidates and refetches queries when:
 
 - **INSERT** - New records added to subscribed tables
-- **UPDATE** - Existing records modified in subscribed tables  
+- **UPDATE** - Existing records modified in subscribed tables
 - **DELETE** - Records removed from subscribed tables
 
 ### Smart Query Invalidation
@@ -14054,7 +14054,7 @@ The system uses intelligent query invalidation:
 ['requests'] // All requests queries
 ['requests', '123'] // User-specific requests queries
 
-// If listening to 'quotes' table for requestId='456'  
+// If listening to 'quotes' table for requestId='456'
 // These query keys get invalidated:
 ['quotes'] // All quotes queries
 ['quotes', '456'] // Request-specific quotes queries
@@ -14077,7 +14077,7 @@ The system includes comprehensive logging:
 ```javascript
 // Check browser console for these logs:
 🚀 Setting up real-time subscriptions for tables: ['requests', 'quotes']
-📡 Real-time subscription status: SUBSCRIBED  
+📡 Real-time subscription status: SUBSCRIBED
 🔄 Real-time event: INSERT on requests
 🔄 Invalidating query key: ['requests']
 ✅ Fetched 5 requests records
@@ -14103,7 +14103,7 @@ The system includes comprehensive logging:
 1. **Open two browser windows** - one as admin, one as user
 2. **Create a new request** as user
 3. **Verify admin dashboard updates** immediately
-4. **Add a quote** as admin  
+4. **Add a quote** as admin
 5. **Verify user sees the quote** immediately
 
 ## Best Practices
@@ -14130,10 +14130,10 @@ const { data: requests } = useTableQuery('requests', { userId, additionalTables:
 ```typescript
 function MyComponent() {
   const { data: requests, loading, error } = useUserRequests(userId);
-  
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage error={error} />;
-  
+
   return <RequestsList requests={requests} />;
 }
 ```
@@ -14143,7 +14143,7 @@ function MyComponent() {
 // In admin components
 const { data: allRequests } = useAllRequests(); // ✅ Sees all requests
 
-// Don't do this in admin components  
+// Don't do this in admin components
 const { data: requests } = useUserRequests(adminUserId); // ❌ Only sees admin's own requests
 ```
 
@@ -14158,7 +14158,7 @@ const { data: requests } = useUserRequests(adminUserId); // ❌ Only sees admin'
 
 Planned improvements:
 - **Optimistic updates** for instant UI feedback
-- **Offline support** with query synchronization  
+- **Offline support** with query synchronization
 - **Query retry strategies** for better error handling
 - **Real-time presence indicators** (who's online)
 - **Real-time notifications** system integration
@@ -14579,7 +14579,7 @@ This file documents a few practical steps and guidelines to protect secrets and 
 # Search for literal occurrences of common secret names
 git log -S 'OPENAI_API_KEY' --source --all
 git grep -n "OPENAI_API_KEY" $(git rev-list --all)
-``` 
+```
 
 If you find evidence of a leaked key in history, rotate the key before rewriting history. Rewriting history is disruptive; preferred flow is rotation + removal from tip (see above). If you must rewrite history, `git filter-repo` is recommended over `filter-branch`.
 
@@ -15190,11 +15190,11 @@ If you encounter "Unauthorized: Invalid token" errors, your JWT might be expired
 graph TD
     subgraph "API Server"
         A[server.js] --> B{/api/requests/*};
-        
+
         subgraph "Routes"
             B --> C[requestRoutes.js];
         end
-        
+
         subgraph "Middleware"
             D[authMiddleware.js];
             E[validationMiddleware.js];
@@ -15213,10 +15213,10 @@ graph TD
         E -- "Uses" --> F;
         C -- "Calls" --> G;
     end
-    
+
     H((Supabase));
     G -- "Interacts with (Model)" --> H;
-    
+
     I([Client]);
     I -- "HTTP Request" --> A;
     G -- "JSON Response (View)" --> I;
@@ -15243,24 +15243,24 @@ sequenceDiagram
 
     Client->>server.js: POST /api/requests/:id/quotes (with data & token)
     activate server.js
-    
+
     server.js->>requestRoutes.js: Route request
     activate requestRoutes.js
-    
+
     requestRoutes.js->>authMiddleware.js: 1. call authenticate()
     activate authMiddleware.js
     authMiddleware.js->>Supabase: supabase.auth.getUser(token)
     Supabase-->>authMiddleware.js: Returns user object
     authMiddleware.js-->>requestRoutes.js: next()
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>authMiddleware.js: 2. call isAdmin()
     activate authMiddleware.js
     authMiddleware.js->>Supabase: Check user_profiles.role
     Supabase-->>authMiddleware.js: Returns { role: 'admin' }
     authMiddleware.js-->>requestRoutes.js: next()
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>validationMiddleware.js: 3. call validate(schema)
     activate validationMiddleware.js
     validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
@@ -15268,21 +15268,21 @@ sequenceDiagram
 
     requestRoutes.js->>requestController.js: 4. call createQuoteForRequest()
     activate requestController.js
-    
+
     requestController.js->>Supabase: INSERT into quotes table
     activate Supabase
     Supabase-->>requestController.js: Confirms insert
     deactivate Supabase
-    
+
     requestController.js->>Supabase: UPDATE requests table status
     activate Supabase
     Supabase-->>requestController.js: Confirms update
     deactivate Supabase
-    
+
     requestController.js-->>server.js: Sends JSON response
     deactivate requestController.js
     deactivate requestRoutes.js
-    
+
     server.js-->>Client: 201 Created (with quote data)
     deactivate server.js
 ```
@@ -15299,15 +15299,15 @@ sequenceDiagram
 
     Client->>server.js: POST /api/requests/gpt-follow-up (with answers & token)
     activate server.js
-    
+
     server.js->>requestRoutes.js: Route request
     activate requestRoutes.js
-    
+
     requestRoutes.js->>authMiddleware.js: 1. call authenticate()
     activate authMiddleware.js
     authMiddleware.js-->>requestRoutes.js: next() (User is valid)
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>validationMiddleware.js: 2. call validate(schema)
     activate validationMiddleware.js
     validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
@@ -15315,16 +15315,16 @@ sequenceDiagram
 
     requestRoutes.js->>requestController.js: 3. call getGptFollowUp()
     activate requestController.js
-    
+
     requestController.js->>OpenAI_API: axios.post to /v1/chat/completions
     activate OpenAI_API
     OpenAI_API-->>requestController.js: Returns follow-up questions
     deactivate OpenAI_API
-    
+
     requestController.js-->>server.js: Sends JSON response { additionalQuestions: [...] }
     deactivate requestController.js
     deactivate requestRoutes.js
-    
+
     server.js-->>Client: 200 OK (with questions array)
     deactivate server.js
 ```
@@ -15488,7 +15488,7 @@ export async function createInvoice(req, res) {
     // Update request with invoice_id and change status to 'invoiced'
     const { error: updateError } = await supabase
       .from('requests')
-      .update({ 
+      .update({
         invoice_id: invoice.id,
         status: 'invoiced'
       })
@@ -15548,10 +15548,10 @@ export async function getInvoice(req, res) {
         .select('customer_name, service_address, user_id')
         .eq('id', invoice.request_id)
         .single();
-      
+
       if (request) {
         invoice.requests = request;
-        
+
         // Check permissions: admin or customer who owns the request
         if (!isAdmin && request.user_id !== userId) {
           return res.status(403).json({ error: 'Forbidden' });
@@ -15885,7 +15885,7 @@ const prompt = `
       const additionalQuestions = (parsedJson.requiresFollowUp && Array.isArray(parsedJson.questions))
         ? parsedJson.questions
         : [];
-        
+
       res.json({ additionalQuestions }); // The frontend expects `additionalQuestions` key
 
     } catch (parseError) {
@@ -16009,7 +16009,7 @@ const uploadAttachment = async (req, res, next) => {
       .select('user_id')
       .eq('id', request_id)
       .single();
-      
+
     if (ownerError) {
         return res.status(404).json({ error: 'Request not found.' });
     }
@@ -16028,22 +16028,22 @@ const uploadAttachment = async (req, res, next) => {
       }
       pathSegments.push(sanitizedFileName);
       const filePath = pathSegments.join('/');
-      
+
       const { error: uploadError } = await supabase.storage
         .from('PlumbingPoCBucket')
         .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: true });
-      
+
       if (uploadError) {
         console.error('Supabase upload error:', uploadError);
         throw uploadError;
       }
 
-      return { 
+      return {
         request_id,
         quote_id: quote_id || null,
-        file_name: file.originalname, 
+        file_name: file.originalname,
         mime_type: file.mimetype,
-        file_url: filePath 
+        file_url: filePath
       };
     });
 
@@ -16057,7 +16057,7 @@ const uploadAttachment = async (req, res, next) => {
     if (insertError) throw insertError;
 
     res.status(200).json({ message: 'Attachments uploaded successfully.', attachments: insertedAttachments });
-  
+
   } catch (err) {
     next(err);
   }
@@ -16070,12 +16070,12 @@ const getStorageObject = async (req, res, next) => {
   try {
     const objectPath = req.params[0];
     const { data, error } = await supabase.storage.from('PlumbingPoCBucket').download(objectPath);
-    
+
     if (error) {
       console.error('Supabase storage download error:', error.message);
       return res.status(403).json({ error: 'Forbidden: You do not have permission to access this file.' });
     }
-    
+
     const fileName = path.basename(objectPath);
     res.setHeader('Content-Type', data.type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
@@ -16112,7 +16112,7 @@ const addRequestNote = async (req, res, next) => {
 
     const { data, error } = await supabase.from('request_notes').insert(noteData).select().single();
     if (error) throw error;
-    
+
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -16126,7 +16126,7 @@ const createQuoteForRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { quote_amount, details } = req.body;
-    
+
     const { data: requestData, error: requestError } = await supabase
       .from('requests')
       // Fetch the request including the user profile so we can email the customer
@@ -16145,7 +16145,7 @@ const createQuoteForRequest = async (req, res, next) => {
 
     const { data: newQuote, error } = await supabase.from('quotes').insert(quoteData).select().single();
     if (error) throw error;
-    
+
     await supabase.from('requests').update({ status: 'quoted' }).eq('id', id);
 
     // Ensure requestData includes user_profiles (some queries returned a slim object)
@@ -16661,20 +16661,20 @@ import { database as supabase } from '../config/supabase/index.js';
 async function runTriageAnalysis(requestData) {
   // Dynamically import to avoid circular dependencies
   const { handler } = await import('../../netlify/functions/triage-agent.mjs');
-  
+
   // Create a mock Netlify event
   const event = {
     httpMethod: 'POST',
     body: JSON.stringify(requestData)
   };
-  
+
   const result = await handler(event, {});
   const analysis = JSON.parse(result.body);
-  
+
   if (result.statusCode !== 200) {
     throw new Error(analysis.error || 'Triage analysis failed');
   }
-  
+
   return analysis;
 }
 
@@ -16693,7 +16693,7 @@ const triageRequest = async (req, res) => {
 
     console.log('[TriageController] Running AI triage analysis for request:', requestId);
 
-    // 2. Use the intelligent triage agent 
+    // 2. Use the intelligent triage agent
     const analysis = await runTriageAnalysis(request);
 
     // 3. Update the request in the database
@@ -16880,7 +16880,7 @@ const authenticate = async (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized: Missing JWT token.' });
   }
   const token = authHeader.split(' ')[1];
-  
+
   try {
     // This function uses the supabaseAuth client (initialized with SUPABASE_ANON_KEY)
     // for token validation. This is the correct and secure way to validate user tokens.
@@ -16925,7 +16925,7 @@ const isAdmin = async (req, res, next) => {
     if (!profile || profile.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden: Admin access required.' });
     }
-    
+
     // User is an admin, proceed to the next handler
     next();
   } catch (error) {
@@ -16943,10 +16943,10 @@ export {
 
 // /middleware/validationMiddleware.js
 /*
-This file creates a generic, reusable middleware function. 
-Instead of writing validation logic inside every controller, 
-we use this function to check an incoming request against a 
-zod schema. If the data is bad, it stops the request and sends 
+This file creates a generic, reusable middleware function.
+Instead of writing validation logic inside every controller,
+we use this function to check an incoming request against a
+zod schema. If the data is bad, it stops the request and sends
 a helpful error. If the data is good, it passes the request on to the controller.
 */
 /**
@@ -16993,17 +16993,17 @@ router.post('/quote/run', async (req, res) => {
   try {
     // Dynamically import the Netlify function handler
     const { handler } = await import('../../netlify/functions/quote-agent.mjs');
-    
+
     // Transform Express request to Netlify function event format
     const event = {
       httpMethod: 'POST',
       body: JSON.stringify(req.body),
       headers: req.headers
     };
-    
+
     // Call the handler
     const result = await handler(event, {});
-    
+
     // Send response
     res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {
@@ -17536,7 +17536,7 @@ import { database as supabase } from '../../../config/supabase/index.js';
 // Load environment variables correctly.
 const resend = new Resend(process.env.RESEND_API_KEY);
 // This should be the URL of your FRONTEND application.
-const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173'; 
+const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true';
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <noreply@copilotfortrades.com>';
 
@@ -18076,18 +18076,18 @@ const submitQuoteSchema = z.object({
 
 // Schema for adding a new note to a request
 const addNoteSchema = z.object({
-  params: z.object({ 
-    id: z.string().uuid("Invalid request ID format.") 
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format.")
   }),
-  body: z.object({ 
-    note: z.string().min(1, "Note cannot be empty.") 
+  body: z.object({
+    note: z.string().min(1, "Note cannot be empty.")
   }),
 });
 
 // Schema for an admin creating a quote for a request
 const createQuoteSchema = z.object({
-  params: z.object({ 
-    id: z.string().uuid("Invalid request ID format.") 
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format.")
   }),
   body: z.object({
     quote_amount: z.number().positive("Quote amount must be a positive number."),
@@ -18199,7 +18199,7 @@ The functions use Netlify's esbuild bundler with special configuration in `netli
       "yaml"
     ]
   }
-  
+
   "triage-agent-mjs" = {
     external_node_modules = [
       "openai",
@@ -18533,7 +18533,7 @@ async function moveToNextNode(session, currentNode) {
 
 async function checkForAiFollowUps(session) {
   console.log('[QuoteAgent] checkForAiFollowUps called');
-  
+
   if (session.nodeData.followUpsGenerated) {
     console.log('[QuoteAgent] Follow-ups already generated, building summary');
     buildSummary(session);
@@ -19003,7 +19003,7 @@ function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) 
  */
 function formatAnswersForAnalysis(answers) {
   if (!Array.isArray(answers)) return 'No answers provided';
-  
+
   return answers
     .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
     .join('\n\n');
@@ -19156,7 +19156,7 @@ export async function handler(event, context) {
 
   try {
     const requestData = JSON.parse(event.body);
-    
+
     console.log('[TriageAgent] Received triage request for:', requestData.id);
 
     // Run the AI analysis
@@ -19173,7 +19173,7 @@ export async function handler(event, context) {
 
   } catch (error) {
     console.error('[TriageAgent] Error:', error);
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -19264,11 +19264,11 @@ export default defineConfig(({ mode }) => {
 // packages/frontend/src/components/examples/RealtimeDemo.tsx
 
 import React from 'react';
-import { 
-  useUserRequests, 
-  useAllRequests, 
+import {
+  useUserRequests,
+  useAllRequests,
   useAdminDashboard,
-  useStatistics 
+  useStatistics
 } from '../../hooks';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -19287,9 +19287,9 @@ export const RealtimeDemo: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Real-Time System Demo</h1>
-      
+
       {isAdmin ? <AdminDemo /> : <UserDemo userId={user.id} />}
-      
+
       <div className="mt-8 p-4 bg-gray-100 rounded">
         <h3 className="font-semibold mb-2">🔄 Real-Time Features:</h3>
         <ul className="text-sm space-y-1">
@@ -19305,14 +19305,14 @@ export const RealtimeDemo: React.FC = () => {
 
 const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
   const { data: requests, loading, error } = useUserRequests(userId);
-  
+
   if (loading) return <div>Loading your requests...</div>;
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Your Requests (Real-Time)</h2>
-      
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-2">📊 Quick Stats</h3>
@@ -19329,7 +19329,7 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
             </span></div>
           </div>
         </div>
-        
+
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-2">📝 Recent Requests</h3>
           <div className="space-y-2">
@@ -19347,9 +19347,9 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="text-sm text-gray-600 mt-4">
-        💡 <strong>Try this:</strong> Open another browser window as admin, add a quote to one of your requests, 
+        💡 <strong>Try this:</strong> Open another browser window as admin, add a quote to one of your requests,
         and watch this page update automatically!
       </div>
     </div>
@@ -19359,13 +19359,13 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
 const AdminDemo: React.FC = () => {
   const { requests, users, quotes, loading } = useAdminDashboard();
   const { stats } = useStatistics();
-  
+
   if (loading) return <div>Loading admin dashboard...</div>;
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Admin Dashboard (Real-Time)</h2>
-      
+
       {/* Real-time Statistics */}
       <div className="grid gap-4 md:grid-cols-4">
         <div className="p-4 border rounded bg-blue-50">
@@ -19385,7 +19385,7 @@ const AdminDemo: React.FC = () => {
           <div className="text-sm text-gray-600">Emergency</div>
         </div>
       </div>
-      
+
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="p-4 border rounded">
@@ -19402,7 +19402,7 @@ const AdminDemo: React.FC = () => {
             ))}
           </div>
         </div>
-        
+
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-3">👥 User Overview</h3>
           <div className="space-y-2">
@@ -19418,9 +19418,9 @@ const AdminDemo: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="text-sm text-gray-600 mt-4">
-        💡 <strong>Try this:</strong> Open another browser window as a user, create a new request, 
+        💡 <strong>Try this:</strong> Open another browser window as a user, create a new request,
         and watch the statistics above update in real-time!
       </div>
     </div>
@@ -19449,7 +19449,7 @@ const MapView: React.FC<MapViewProps> = ({ requests, onRequestSelect }) => {
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_ID;
 
   if (!apiKey) {
-    return ( 
+    return (
       <Paper sx={{ height: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="error">
@@ -19659,7 +19659,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('user_id', currentUser.id)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('Error fetching profile:', error);
       }
@@ -20182,8 +20182,8 @@ const ContactSection: React.FC = () => (
       <div className="bg-gray-800 p-6 rounded-xl">
         <h3 className="text-xl font-semibold mb-4">Emergency Service</h3>
         <p className="text-gray-300 mb-6">Plumbing emergencies don't wait for business hours. We're available 24/7 for urgent repairs.</p>
-        <a 
-          href="tel:555-123-4567" 
+        <a
+          href="tel:555-123-4567"
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors inline-flex items-center space-x-2 w-full justify-center"
         >
           <Phone className="w-5 h-5" />
@@ -20392,7 +20392,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       </div>
     </div>
   );
-  
+
   const { user, profile: contextProfile } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState(contextProfile?.name || '');
@@ -20514,7 +20514,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       return;
     }
 
-    // 2. NAME VALIDATION  
+    // 2. NAME VALIDATION
     if (!name || !name.trim()) {
       setSaveError('Name is required');
       setLoading(false);
@@ -20652,7 +20652,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       setLoading(false);
       return;
     }
-    
+
     const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
 
     // Geocode the address if it's complete
@@ -21168,25 +21168,25 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
   // Determine background and border color based on priority
   const getBackgroundColors = () => {
     const score = request.priority_score;
-    if (score === null) return { 
-      headerBg: 'grey.100', 
-      contentBg: 'grey.50', 
-      borderColor: 'grey.400' 
+    if (score === null) return {
+      headerBg: 'grey.100',
+      contentBg: 'grey.50',
+      borderColor: 'grey.400'
     };
-    if (score >= 8) return { 
-      headerBg: 'error.100', 
-      contentBg: 'error.50', 
-      borderColor: 'error.400' 
+    if (score >= 8) return {
+      headerBg: 'error.100',
+      contentBg: 'error.50',
+      borderColor: 'error.400'
     };
-    if (score >= 5) return { 
-      headerBg: 'warning.100', 
-      contentBg: 'warning.50', 
-      borderColor: 'warning.400' 
+    if (score >= 5) return {
+      headerBg: 'warning.100',
+      contentBg: 'warning.50',
+      borderColor: 'warning.400'
     };
-    return { 
-      headerBg: 'success.100', 
-      contentBg: 'success.50', 
-      borderColor: 'success.400' 
+    return {
+      headerBg: 'success.100',
+      contentBg: 'success.50',
+      borderColor: 'success.400'
     };
   };
 
@@ -21195,10 +21195,10 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
   return (
     <Paper variant="outlined">
       {/* Header Section - Darker background */}
-      <Box sx={{ 
-        p: 2, 
-        borderLeft: 4, 
-        borderColor, 
+      <Box sx={{
+        p: 2,
+        borderLeft: 4,
+        borderColor,
         bgcolor: headerBg,
         borderBottom: 1,
         borderBottomColor: 'divider'
@@ -21220,16 +21220,16 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               Priority Score:
             </Typography>
-            <Chip 
+            <Chip
               label={`${request.priority_score}/10`}
               color={getPriorityColorChip(request.priority_score)}
               size="small"
               sx={{ fontWeight: 'bold' }}
             />
           </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={(request.priority_score || 0) * 10} 
+          <LinearProgress
+            variant="determinate"
+            value={(request.priority_score || 0) * 10}
             color={getPriorityColorProgress(request.priority_score)}
             sx={{ height: 8, borderRadius: 1 }}
           />
@@ -21248,16 +21248,16 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 Profitability Score:
               </Typography>
-              <Chip 
+              <Chip
                 label={`${request.profitability_score}/10`}
                 color={getProfitabilityColorChip(request.profitability_score)}
                 size="small"
                 sx={{ fontWeight: 'bold' }}
               />
             </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={(request.profitability_score || 0) * 10} 
+            <LinearProgress
+              variant="determinate"
+              value={(request.profitability_score || 0) * 10}
               color={getProfitabilityColorProgress(request.profitability_score)}
               sx={{ height: 8, borderRadius: 1 }}
             />
@@ -21277,7 +21277,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 Required Expertise:
               </Typography>
-              <Chip 
+              <Chip
                 label={request.required_expertise.skill_level?.charAt(0).toUpperCase() + request.required_expertise.skill_level?.slice(1)}
                 color={getExpertiseColor(request.required_expertise.skill_level)}
                 size="small"
@@ -21287,7 +21287,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
             {request.required_expertise.specialized_skills && request.required_expertise.specialized_skills.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                 {request.required_expertise.specialized_skills.map((skill, idx) => (
-                  <Chip 
+                  <Chip
                     key={idx}
                     label={skill}
                     size="small"
@@ -21339,7 +21339,7 @@ interface AttachmentSectionProps {
 
 const AttachmentGroup: React.FC<{ title: string; attachments: (QuoteAttachment | File)[]; imageUrls: { [key: string]: string }; onRemove?: ((index: number) => void) | undefined; editable?: boolean }> = ({ title, attachments, imageUrls, onRemove, editable }) => {
   if (attachments.length === 0) return null;
-  
+
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold' }}>{title}</Typography>
@@ -21415,7 +21415,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       }
     });
   }, [requestId]);
-  
+
   console.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
     attachmentsLength: attachments?.length,
@@ -21438,7 +21438,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         requestId,
         editable
       });
-      
+
       if (onNewFiles) {
         onNewFiles(acceptedFiles);
       } else {
@@ -21543,10 +21543,10 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       const response = await apiClient.post('/requests/attachments', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       console.log('✅ Attachment uploaded successfully:', response.data);
       console.log('✅ Attachment upload complete, real-time system will handle updates automatically');
-      
+
       // Call onUpdate callback if parent component needs additional side effects
       onUpdate?.();
     } catch (err: any) {
@@ -21588,7 +21588,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       acc[qId].push(att);
       return acc;
     }, {} as { [key: string]: QuoteAttachment[] });
-  
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -21663,7 +21663,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
   });
   const request = requestArray?.[0]; // Extract single request from array
   const notes = request?.request_notes || [];
-  
+
   console.log('🔍 CommunicationLog render:', {
     notesLength: notes?.length,
     noteIds: notes?.map(n => n.id) || [],
@@ -21712,7 +21712,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
       <Typography variant="overline" sx={{ p: 2, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -22138,7 +22138,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   // Render view mode
   if (mode === 'view' && !isEditing) {
     const customerProfile = request?.user_profiles;
-    
+
     if (showCustomerInfo) {
       // Render as a Paper component with customer info AND service address
       return (
@@ -22188,7 +22188,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
         </Paper>
       );
     }
-    
+
     // Original Grid item rendering (for RequestDetailModal compatibility)
     return (
       <Grid item xs={12} sm={6}>
@@ -22496,7 +22496,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
     // Apply pipeline stage filter if active (takes precedence)
     if (pipelineFilterStatuses.length > 0) {
-      requests = requests.filter(request => 
+      requests = requests.filter(request =>
         pipelineFilterStatuses.includes(request.status)
       );
     }
@@ -22628,18 +22628,18 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [activePipelineStage]);
 
   const allStatuses = [
-    'all', 
-    'new', 
-    'viewed', 
-    'quoted', 
-    'accepted', 
-    'scheduled', 
-    'in_progress', 
-    'completed', 
-    'invoiced', 
-    'paid', 
-    'overdue', 
-    'disputed', 
+    'all',
+    'new',
+    'viewed',
+    'quoted',
+    'accepted',
+    'scheduled',
+    'in_progress',
+    'completed',
+    'invoiced',
+    'paid',
+    'overdue',
+    'disputed',
     'cancelled'
   ];
 
@@ -22799,7 +22799,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                   </Box>
                 }
               />
-              
+
               <ButtonGroup variant="outlined" size="small">
                 <Button
                   startIcon={<Table size={16} />}
@@ -22831,7 +22831,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                 setPipelineFilterStatuses([status]);
               }}
             />
-            
+
             {/* Clear Filters Button - Only show when filters are active */}
             {(activePipelineStage || activeFilterStatus !== 'all' || dateFilter !== 'all' || isEmergencyFilter) && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
@@ -22899,13 +22899,13 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
           )}
         </Box>
       </Box>
-      {selectedRequest && ( 
-        <RequestDetailModal 
-          isOpen={isModalOpen} 
-          onClose={handleCloseModal} 
-          request={selectedRequest} 
+      {selectedRequest && (
+        <RequestDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          request={selectedRequest}
           onUpdateRequest={handleModalUpdate}
-        /> 
+        />
       )}
     </>
   );
@@ -22945,17 +22945,17 @@ interface LineItem {
   total: number;
 }
 
-const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  invoice, 
-  mode, 
-  request, 
-  requestId 
+const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
+  isOpen,
+  onClose,
+  invoice,
+  mode,
+  request,
+  requestId
 }) => {
   const { profile } = useAuth();
   const firstFieldRef = useRef<HTMLInputElement>(null);
-  
+
   const [laborItems, setLaborItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
   const [materialItems, setMaterialItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
   const [dueDate, setDueDate] = useState('');
@@ -22974,7 +22974,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         const lineItems = invoice.line_items || [];
         const labor = lineItems.filter((item: any) => item.type === 'labor');
         const materials = lineItems.filter((item: any) => item.type === 'material');
-        
+
         setLaborItems(labor.length > 0 ? labor : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setMaterialItems(materials.length > 0 ? materials : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setNotes(invoice.notes || '');
@@ -22989,7 +22989,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         setMaterialItems([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setNotes('');
         setPaymentMethod('');
-        
+
         // Default due date to 30 days from now
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
@@ -23010,10 +23010,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
       // Fetch the accepted quote to pre-populate invoice
       const response = await apiClient.get(`/quotes/${quoteId}`);
       const quote = response.data;
-      
+
       if (quote.details) {
         const details = typeof quote.details === 'string' ? JSON.parse(quote.details) : quote.details;
-        
+
         // Convert quote items to invoice line items
         const laborLineItems = (details.labor_items || []).map((item: any) => ({
           description: item.description,
@@ -23022,7 +23022,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           total: parseFloat(item.price) || 0,
           type: 'labor'
         }));
-        
+
         const materialLineItems = (details.material_items || []).map((item: any) => ({
           description: item.description,
           quantity: '1',
@@ -23030,10 +23030,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           total: parseFloat(item.price) || 0,
           type: 'material'
         }));
-        
+
         setLaborItems(laborLineItems.length > 0 ? laborLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setMaterialItems(materialLineItems.length > 0 ? materialLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
-        
+
         if (details.notes) {
           setNotes(`Based on Quote #${quoteId.slice(0, 8)}\n\n${details.notes}`);
         }
@@ -23044,22 +23044,22 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
   };
 
   const handleLineItemChange = (
-    items: LineItem[], 
-    setItems: React.Dispatch<React.SetStateAction<LineItem[]>>, 
-    index: number, 
-    field: keyof LineItem, 
+    items: LineItem[],
+    setItems: React.Dispatch<React.SetStateAction<LineItem[]>>,
+    index: number,
+    field: keyof LineItem,
     value: string
   ) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     // Recalculate total for this line
     if (field === 'quantity' || field === 'unit_price') {
       const qty = parseFloat(newItems[index].quantity) || 0;
       const price = parseFloat(newItems[index].unit_price) || 0;
       newItems[index].total = qty * price;
     }
-    
+
     setItems(newItems);
   };
 
@@ -23077,7 +23077,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
     const laborTotal = laborItems.reduce((sum, item) => sum + (item.total || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (item.total || 0), 0);
     const subtotal = laborTotal + materialTotal;
-    
+
     // BC Tax Rules:
     // GST (5%): Applied to ALL labor + materials
     // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
@@ -23085,7 +23085,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
     const pst = materialTotal * 0.07;
     const totalTax = gst + pst;
     const total = subtotal + totalTax;
-    
+
     return {
       laborTotal,
       materialTotal,
@@ -23099,7 +23099,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
 
   const handleSaveInvoice = async () => {
     const totals = calculateTotals();
-    
+
     // Validation
     if (totals.subtotal === 0) {
       window.dispatchEvent(new CustomEvent('show-snackbar', {
@@ -23137,9 +23137,9 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
       }
 
       window.dispatchEvent(new CustomEvent('show-snackbar', {
-        detail: { 
-          message: mode === 'create' ? 'Invoice created successfully!' : 'Invoice updated successfully!', 
-          severity: 'success' 
+        detail: {
+          message: mode === 'create' ? 'Invoice created successfully!' : 'Invoice updated successfully!',
+          severity: 'success'
         }
       }));
 
@@ -23188,10 +23188,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
 
   const totals = calculateTotals();
   const invoiceNumber = invoice?.id ? `INV-${invoice.id.slice(0, 8).toUpperCase()}` : 'New Invoice';
-  
+
   // Chip color for status badge
   const chipColor = invoice?.status === 'paid' ? 'success' : invoice?.status === 'overdue' ? 'error' : 'warning';
-  
+
   // Header background color - always use default grey for consistency
   const headerBgColor = undefined; // Let ModalHeader use its default
 
@@ -23240,7 +23240,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         />
 
         <Box sx={{ p: 3, maxHeight: 'calc(90vh - 180px)', overflowY: 'auto' }}>
-          <CustomerInfoSection 
+          <CustomerInfoSection
             mode="view"
             showCustomerInfo={true}
             request={request}
@@ -23482,7 +23482,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           <Button onClick={() => onClose(false)}>
             {isReadOnly ? 'Close' : 'Cancel'}
           </Button>
-          
+
           {!isReadOnly && (
             <Button
               variant="contained"
@@ -23492,7 +23492,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
               {isSaving ? 'Saving...' : mode === 'create' ? 'Create Invoice' : 'Save Changes'}
             </Button>
           )}
-          
+
           {isAdmin && invoice?.status === 'sent' && (
             <Button
               variant="contained"
@@ -23567,17 +23567,17 @@ interface ModalHeaderProps {
 const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions, statusColor }) => {
   // Use status color if provided, otherwise default to grey
   const bgColor = statusColor || 'grey.800';
-  
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'space-between', 
-      bgcolor: bgColor, 
-      color: '#fff', 
-      px: 3, 
-      py: 2, 
-      flexShrink: 0 
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      bgcolor: bgColor,
+      color: '#fff',
+      px: 3,
+      py: 2,
+      flexShrink: 0
     }}>
       <Box>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
@@ -23653,7 +23653,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
     setSelectedRequest(req);
     setIsModalOpen(true);
   };
-  
+
   const handleModalUpdate = useCallback(() => {
     refreshRequests();
   }, [refreshRequests]);
@@ -23762,9 +23762,9 @@ interface PipelineViewProps {
   onStatusClick?: (status: string) => void;
 }
 
-const PipelineView: React.FC<PipelineViewProps> = ({ 
-  requests, 
-  activeStage, 
+const PipelineView: React.FC<PipelineViewProps> = ({
+  requests,
+  activeStage,
   onStageClick,
   activeFilterStatus = 'all',
   onStatusClick
@@ -23903,11 +23903,11 @@ const PipelineView: React.FC<PipelineViewProps> = ({
                   {stage.label}
                 </Typography>
               </Box>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  textAlign: 'center', 
-                  fontWeight: 'bold', 
+              <Typography
+                variant="h5"
+                sx={{
+                  textAlign: 'center',
+                  fontWeight: 'bold',
                   mt: 0.5,
                   opacity: isInactive ? 0.5 : 1
                 }}
@@ -23922,9 +23922,9 @@ const PipelineView: React.FC<PipelineViewProps> = ({
       {/* Expandable Status Chips for Active Stage */}
       {activeStage && onStatusClick && (
         <Collapse in={!!activeStage}>
-          <Box sx={{ 
-            p: 2, 
-            bgcolor: 'grey.50', 
+          <Box sx={{
+            p: 2,
+            bgcolor: 'grey.50',
             borderTop: '1px solid',
             borderColor: 'divider',
             display: 'flex',
@@ -23993,13 +23993,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { 
-  Send, 
-  X as CloseIcon, 
-  Wrench, 
-  AlertCircle, 
-  Home, 
-  Calendar, 
+import {
+  Send,
+  X as CloseIcon,
+  Wrench,
+  AlertCircle,
+  Home,
+  Calendar,
   ClipboardList,
   MessageCircle,
   User
@@ -24087,7 +24087,7 @@ const sanitizeText = (value: unknown): string => {
 // Helper function to determine contextual icon based on message content
 const getContextualIcon = (text: string) => {
   const lowerText = text.toLowerCase();
-  
+
   if (lowerText.includes('emergency')) {
     return <AlertCircle size={18} style={{ color: '#dc2626' }} />;
   }
@@ -24100,7 +24100,7 @@ const getContextualIcon = (text: string) => {
   if (lowerText.includes('review') || lowerText.includes('confirm') || lowerText.includes('summary')) {
     return <ClipboardList size={18} style={{ color: '#3182CE' }} />;
   }
-  
+
   // Default wrench icon for service-related questions
   return <Wrench size={18} style={{ color: '#3182CE' }} />;
 };
@@ -24408,7 +24408,7 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
       // Calculate next messages BEFORE updating state
       const nextMessages = [...conversation, userMessage];
       console.log('[QuoteAgentModal] Calculated nextMessages, length:', nextMessages.length);
-      
+
       // Update conversation state
       setConversation(nextMessages);
       console.log('[QuoteAgentModal] setConversation called, new length:', nextMessages.length);
@@ -25310,7 +25310,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const subtotal = laborTotal + materialTotal;
-    
+
     // BC Tax Rules:
     // GST (5%): Applied to ALL labor + materials
     // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
@@ -25444,12 +25444,12 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-            <CustomerInfoSection 
-              mode="view" 
-              initialAddress={request.service_address} 
-              isAdmin={isAdmin} 
-              onSave={handleAddressUpdate} 
-              onModeChange={() => {}} 
+            <CustomerInfoSection
+              mode="view"
+              initialAddress={request.service_address}
+              isAdmin={isAdmin}
+              onSave={handleAddressUpdate}
+              onModeChange={() => {}}
               isUpdating={false}
               request={request}
               showCustomerInfo={true}
@@ -25867,7 +25867,7 @@ interface RequestDetailModalProps {
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request: initialRequest, onUpdateRequest }) => {
   const { profile } = useAuth();
-  
+
   const requestId = initialRequest?.id;
   const { data: requestArray, loading, error, refetch } = useRequestById(requestId || '', {
     enabled: !!requestId && isOpen
@@ -25943,12 +25943,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     await updateStatusMutation.mutateAsync({ requestId: request.id, status: newStatus, scheduledStartDate: date ?? null });
   };
-  
+
   const handleAcceptQuote = (quoteId: string) => {
     if (!request) return;
     acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
   };
-  
+
   const handleTriageRequest = async () => {
     if (!request) return;
     triageMutation.mutate({ requestId: request.id }, {
@@ -25957,7 +25957,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       }
     });
   };
-  
+
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
     const utcDate = new Date(scheduledStartDate);
@@ -26077,45 +26077,45 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
-  
+
   const headerActions = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {loading && <RefreshCw size={14} className="animate-spin" />}
-      
+
       {/* Invoice Button Logic */}
       {isAdmin && request.status === 'completed' && !request.invoice_id && (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
           onClick={handleCreateInvoice}
         >
           Create Invoice
         </Button>
       )}
-      
+
       {isAdmin && request.status === 'invoiced' && request.invoice_id && (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
           onClick={handleEditInvoice}
         >
           Edit Invoice
         </Button>
       )}
-      
+
       {(['invoiced', 'paid', 'overdue', 'disputed'].includes(request.status) && request.invoice_id) && (
-        <Button 
-          variant="outlined" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="outlined"
+          color="primary"
+          size="small"
           onClick={handleViewInvoice}
         >
           View Invoice
         </Button>
       )}
-      
+
       {isAdmin && !request.triage_summary && (
         <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} startIcon={<Zap />}>
           {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
@@ -26127,18 +26127,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '800px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
-        
-        <ModalHeader 
-          title={headerTitle} 
-          subtitle={headerSubtitle} 
-          onClose={onClose} 
+
+        <ModalHeader
+          title={headerTitle}
+          subtitle={headerSubtitle}
+          onClose={onClose}
           actions={headerActions}
           statusColor={statusColors[request.status as keyof typeof statusColors] || statusColors.default}
         />
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection 
+            <CustomerInfoSection
               mode="view"
               showCustomerInfo={true}
               request={request}
@@ -26149,7 +26149,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               onModeChange={() => {}}
               isUpdating={updateAddressMutation.isPending}
             />
-            
+
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -26196,16 +26196,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       </Paper>
 
       <CompleteJobModal isOpen={isCompleteModalOpen} onClose={() => setCompleteModalOpen(false)} onConfirm={handleConfirmCompletion} isSubmitting={completeJobMutation.isPending} jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} />
-      
-      <InvoiceFormModal 
-        isOpen={isInvoiceModalOpen} 
-        onClose={handleInvoiceModalClose} 
+
+      <InvoiceFormModal
+        isOpen={isInvoiceModalOpen}
+        onClose={handleInvoiceModalClose}
         invoice={invoiceData}
         mode={invoiceMode}
         request={request}
         requestId={request.id}
       />
-      
+
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
       </Snackbar>
@@ -26246,13 +26246,13 @@ const RequestProblemDetails: React.FC<RequestProblemDetailsProps> = ({ request }
   // Logic to separate the main description from other Q&A
   // Look for various description questions (most workflows have one)
   const answers = request.answers || [];
-  
+
   const problemDescriptionAnswer = answers.find((a: { question: string; answer: string }) => {
     const q = a.question.toLowerCase();
     return q.includes('describe') || q.includes('detail') || q.includes('issue') || q.includes('problem');
   });
-  
-  const otherAnswers = answers.filter((a: { question: string; answer: string }) => 
+
+  const otherAnswers = answers.filter((a: { question: string; answer: string }) =>
     a !== problemDescriptionAnswer
   );
 
@@ -26403,9 +26403,9 @@ const RequestView: React.FC<RequestViewProps> = ({ requestId }) => {
   return (
     <Box sx={{ px: 2, py: 4 }}>
       <Paper sx={{ maxWidth: 1024, mx: 'auto', bgcolor: '#f9fafb', borderRadius: 2, boxShadow: 3, overflow: 'hidden' }}>
-        <ModalHeader 
-          title={`Job Docket: ${request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Request'}`} 
-          subtitle={`ID: ${request.id}`} 
+        <ModalHeader
+          title={`Job Docket: ${request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Request'}`}
+          subtitle={`ID: ${request.id}`}
           onClose={() => { window.history.back(); }}
           actions={<RequestActions request={request} isAdmin={isAdmin} currentStatus={request.status} isUpdating={false} onStatusChange={() => {}} />}
           statusColor={undefined}
@@ -26452,7 +26452,7 @@ export default RequestView;
 
 export interface Quote {
   id: string;
-  quote_number: number; 
+  quote_number: number;
   quote_amount: number;
   details: string;
   status: string;
@@ -26460,11 +26460,11 @@ export interface Quote {
 }
 
 
-export interface RequestNote { 
-  id: string; 
-  note: string; 
-  author_role: 'admin' | 'customer'; 
-  created_at: string; 
+export interface RequestNote {
+  id: string;
+  note: string;
+  author_role: 'admin' | 'customer';
+  created_at: string;
 }
 
 export interface QuoteAttachment {
@@ -27162,7 +27162,7 @@ export function useMarkRequestAsViewed() {
       console.error('❌ Mark as viewed error:', _err);
       console.error('Request ID:', requestId);
       console.error('Error details:', JSON.stringify(_err, null, 2));
-      
+
       if (context?.previousAll) queryClient.setQueryData(['requests'], context.previousAll);
       if (context?.previousUser && user) queryClient.setQueryData(['requests', user.id], context.previousUser);
       if (context?.previousDetail) queryClient.setQueryData(['request', requestId], context.previousDetail);
@@ -27504,7 +27504,7 @@ export function useInvoiceById(invoiceId: string, options?: { enabled?: boolean 
  */
 export function useStatistics() {
   const requests = useAllRequests();
-  
+
   const stats = {
     totalRequests: requests.data.length,
     newRequests: requests.data.filter(r => r.status === 'new').length,
@@ -27733,7 +27733,7 @@ export function useSupabaseRealtimeV3(
       // Suppress noisy "mismatch between server and client bindings" errors
       // These are harmless WebSocket protocol warnings that don't affect functionality
       const isBindingMismatch = err?.message?.includes('mismatch between server and client bindings');
-      
+
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime v3 channel subscribed successfully');
         console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
@@ -27902,7 +27902,7 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
   enableRealtime?: boolean;
   additionalTables?: string[]; // Additional tables to subscribe to for updates
   userId?: string; // For user-specific queries
-  
+
   // Query customization
   endpoint?: string; // Custom API endpoint (defaults to table name)
   queryKey?: (string | undefined)[]; // Custom query key parts
@@ -27910,14 +27910,14 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
 
 /**
  * Generic hook for querying database tables with automatic real-time updates
- * 
+ *
  * @param table - Primary table name
  * @param options - Configuration options
- * 
+ *
  * @example
  * // Basic usage for requests
  * const { data: requests, loading, error } = useTableQuery<QuoteRequest>('requests');
- * 
+ *
  * @example
  * // User-specific requests with real-time updates
  * const { data: requests, loading, error } = useTableQuery<QuoteRequest>('requests', {
@@ -27925,7 +27925,7 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
  *   enableRealtime: true,
  *   additionalTables: ['quotes', 'request_notes'] // Also listen for quote/note changes
  * });
- * 
+ *
  * @example
  * // Admin view with custom endpoint
  * const { data: allRequests } = useTableQuery<QuoteRequest>('requests', {
@@ -27951,18 +27951,18 @@ export function useTableQuery<T = any>(
 
   // Build query key
   const queryKey = customQueryKey || [table, userId].filter(Boolean);
-  
+
   // Build API endpoint
   const apiEndpoint = endpoint || `/${table}`;
 
   // Query function
   const queryFn = async (): Promise<T[]> => {
     console.log(`🔍 Fetching ${table} data from ${apiEndpoint}`);
-    
+
     try {
       const response = await apiClient.get<T | T[]>(apiEndpoint);
       const responseData = response.data;
-      
+
       // Handle both single object and array responses
       const data = Array.isArray(responseData) ? responseData : [responseData];
       console.log(`✅ Fetched ${data.length} ${table} records`);
@@ -28641,7 +28641,7 @@ import {
 const AppContent: React.FC = () => {
   console.log('🔥 AppContent component RENDERED - Testing webhook after reconnection');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
-  
+
   // THE FIX: This logic is now robust.
   // 1. We check if a profile exists and if the role is 'admin'.
   // 2. If it's an admin, userIdForQuery is `undefined` (fetch all).
@@ -28665,7 +28665,7 @@ const AppContent: React.FC = () => {
 
   // Select the appropriate hook result
   const { data: requests, loading, error, refetch } = isAdmin ? allRequestsHook : userRequestsHook;
-  
+
   console.log('🔍 useUserRequests/useAllRequests result:', {
     requestsLength: requests?.length,
     loading,
@@ -28685,7 +28685,7 @@ const AppContent: React.FC = () => {
 
   // Real-time sync is now handled by individual hooks (useTableQuery, etc.)
 
-  
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -29117,7 +29117,7 @@ const AppContent: React.FC = () => {
             preselectedService={preselectedService}
           />
         )}
-        
+
         <footer className="bg-black text-white py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
@@ -29130,7 +29130,7 @@ const AppContent: React.FC = () => {
             </div>
           </div>
         </footer>
-        
+
         {route !== '#/dashboard' && (
             <a
                 href="tel:555-123-4567"
@@ -29154,7 +29154,7 @@ const AppContent: React.FC = () => {
           }}
         />
       )}
-      
+
     </React.Fragment>
   );
 };
@@ -29607,7 +29607,7 @@ Add a new secret:
 Name: GOOGLE_MAPS_API_KEY
 Value: Your Google Maps API key
 
-5. create the external function in supabase.  
+5. create the external function in supabase.
 code for function see supabase/supabase/functions/index.ts
 call function "geocode"
 note can delete with "supabase functions delete geocode" in cli
@@ -29630,11 +29630,11 @@ curl -X POST 'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode' \
 
 verify was updated coordinates in supabase from the function call
 
-SELECT id, service_address, latitude, longitude, geocoded_address 
-FROM requests 
+SELECT id, service_address, latitude, longitude, geocoded_address
+FROM requests
 WHERE id = '0c4714f8-df2e-41f1-9f60-615b78613cb6';
 
-should give something like 
+should give something like
 
 [
   {
@@ -30204,20 +30204,20 @@ export PGPASSWORD='<REDACTED>'
 pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
 
 #### Query 1: Table & Column Schema
-SELECT 
+SELECT
     c.table_schema,
     c.table_name,
     c.column_name,
     c.data_type,
     c.is_nullable,
     c.column_default
-FROM 
+FROM
     information_schema.columns c
-WHERE 
+WHERE
     c.table_schema = 'public'
     AND c.table_name IN ('invoices', 'quote_attachments', 'quotes', 'request_notes', 'requests', 'user_profiles')
-ORDER BY 
-    c.table_name, 
+ORDER BY
+    c.table_name,
     c.ordinal_position;
 
 ### Query 2: Row Level Security (RLS) Policies
@@ -30238,14 +30238,14 @@ ORDER BY
     p.policyname;
 
 #### Query 3: Storage Buckets & Policies
-SELECT 
+SELECT
     id,
     name,
     public,
     avif_autodetection,
     file_size_limit,
     allowed_mime_types
-FROM 
+FROM
     storage.buckets;
 
 #### Query 4: Indexes
@@ -30263,18 +30263,18 @@ ORDER BY
     indexname;
 
 #### Query 5: Functions
-SELECT 
+SELECT
   p.proname AS function_name,
   pg_get_function_identity_arguments(p.oid) AS function_arguments,
   pg_get_functiondef(p.oid) AS function_definition
-FROM 
+FROM
   pg_proc p
-JOIN 
+JOIN
   pg_namespace n ON n.oid = p.pronamespace
-WHERE 
+WHERE
   n.nspname = 'public' -- Filters for your main schema
   AND p.prokind = 'f'   -- Ensures we only get functions, not procedures or aggregates
-ORDER BY 
+ORDER BY
   p.proname;
 
 #### Query 6: Publications
@@ -30313,7 +30313,7 @@ const subscriptions = [
 ];
 ```
 
-##### How process works public subscribe pattern with supabase. 
+##### How process works public subscribe pattern with supabase.
 
 ```mermaid
 sequenceDiagram
@@ -30336,7 +30336,7 @@ sequenceDiagram
     Postgres Database (request_notes table)-->>-Admin's Browser (Client A): API Response (OK)
 
     Postgres Database (request_notes table)->>+Supabase Realtime Server: 4. [Publication] A new row was inserted into request_notes for request_id = 'XYZ'
-    
+
     Note over Supabase Realtime Server: The Routing Logic!
     Supabase Realtime Server->>Supabase Realtime Server: 5. Check subscribers for channel "request-notes-XYZ". Found: Client A, Client B.
 
@@ -30347,11 +30347,11 @@ sequenceDiagram
     Supabase Realtime Server->>+Customer's Browser (Client B): 7. [WebSocket Push] Broadcast new note payload
     Customer's Browser (Client B)->>Customer's Browser (Client B): 9. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
     deactivate Customer's Browser (Client B)
-    
+
     deactivate Supabase Realtime Server
 ```
 
-#### Calling key functions 
+#### Calling key functions
 -- Replace with the actual user_id you want to clear.
 SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 
@@ -30363,7 +30363,7 @@ _Last updated: August 21, 2025_
 -- Check RLS status and policies for invoices table
 
 -- 1. Check if RLS is enabled on invoices table
-SELECT 
+SELECT
     schemaname,
     tablename,
     rowsecurity as rls_enabled
@@ -30371,7 +30371,7 @@ FROM pg_tables
 WHERE tablename = 'invoices';
 
 -- 2. List all RLS policies on invoices table
-SELECT 
+SELECT
     schemaname,
     tablename,
     policyname,
@@ -30385,7 +30385,7 @@ WHERE tablename = 'invoices'
 ORDER BY policyname;
 
 -- 3. Check table owner and grants
-SELECT 
+SELECT
     grantee,
     privilege_type,
     is_grantable
@@ -30407,11 +30407,11 @@ JOIN information_schema.key_column_usage AS kcu
 JOIN information_schema.constraint_column_usage AS ccu
     ON ccu.constraint_name = tc.constraint_name
     AND ccu.table_schema = tc.table_schema
-WHERE tc.constraint_type = 'FOREIGN KEY' 
+WHERE tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_name = 'invoices';
 
 -- 5. Check if request_id column exists and its properties
-SELECT 
+SELECT
     column_name,
     data_type,
     is_nullable,
@@ -30436,7 +30436,7 @@ JOIN information_schema.key_column_usage AS kcu
     ON tc.constraint_name = kcu.constraint_name
 JOIN information_schema.constraint_column_usage AS ccu
     ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY' 
+WHERE tc.constraint_type = 'FOREIGN KEY'
     AND tc.table_name = 'invoices'
     AND kcu.column_name = 'request_id';
 
@@ -30709,7 +30709,7 @@ CREATE POLICY allow_admin_select_on_email_audit
 ALTER TABLE public.invoices
   ADD COLUMN line_items JSONB;
 
-COMMENT ON COLUMN public.invoices.line_items IS 
+COMMENT ON COLUMN public.invoices.line_items IS
   'Array of line items: [{description, quantity, unit_price, total}, ...]';
 
 -- Add financial calculation fields
@@ -30749,10 +30749,10 @@ ALTER TABLE public.invoices
   DROP CONSTRAINT IF EXISTS invoices_status_check;
 
 ALTER TABLE public.invoices
-  ADD CONSTRAINT invoices_status_check 
+  ADD CONSTRAINT invoices_status_check
   CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled', 'disputed', 'partially_paid'));
 
-COMMENT ON COLUMN public.invoices.status IS 
+COMMENT ON COLUMN public.invoices.status IS
   'Invoice status: draft, sent, paid, overdue, cancelled, disputed, partially_paid';
 
 -- ============================================================================
@@ -30804,7 +30804,7 @@ ALTER TABLE public.requests
     'cancelled'     -- Request cancelled
   ));
 
-COMMENT ON COLUMN public.requests.status IS 
+COMMENT ON COLUMN public.requests.status IS
   'Request lifecycle status: new → viewed → quoted → accepted → scheduled → in_progress → completed → invoiced → paid/overdue/disputed';
 
 -- ============================================================================
@@ -30836,7 +30836,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Only update request status if invoice status changed
   IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
-    
+
     -- Update the associated request's status based on invoice status
     UPDATE public.requests
     SET status = CASE NEW.status
@@ -30850,14 +30850,14 @@ BEGIN
     WHERE id = (
       SELECT id FROM public.requests WHERE invoice_id = NEW.id
     );
-    
+
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION sync_invoice_status_to_request IS 
+COMMENT ON FUNCTION sync_invoice_status_to_request IS
   'Automatically updates request.status when invoice.status changes';
 
 -- ============================================================================
@@ -30873,7 +30873,7 @@ CREATE TRIGGER trigger_sync_invoice_status
   FOR EACH ROW
   EXECUTE FUNCTION sync_invoice_status_to_request();
 
-COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS 
+COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS
   'Syncs invoice status changes to associated request status';
 
 -- ============================================================================
@@ -30881,7 +30881,7 @@ COMMENT ON TRIGGER trigger_sync_invoice_status ON public.invoices IS
 -- ============================================================================
 
 -- Rename amount_due to be clearer (optional - keeps backward compatibility)
-COMMENT ON COLUMN public.invoices.amount_due IS 
+COMMENT ON COLUMN public.invoices.amount_due IS
   'DEPRECATED: Use total instead. Kept for backward compatibility.';
 
 -- ============================================================================
@@ -30889,22 +30889,22 @@ COMMENT ON COLUMN public.invoices.amount_due IS
 -- ============================================================================
 
 -- Verify the migration
-SELECT 
+SELECT
   'Invoices table columns' as check_type,
   COUNT(*) as column_count
-FROM information_schema.columns 
-WHERE table_name = 'invoices' 
+FROM information_schema.columns
+WHERE table_name = 'invoices'
   AND table_schema = 'public';
 
-SELECT 
+SELECT
   'Requests invoice_id column' as check_type,
   COUNT(*) as exists
-FROM information_schema.columns 
-WHERE table_name = 'requests' 
+FROM information_schema.columns
+WHERE table_name = 'requests'
   AND table_schema = 'public'
   AND column_name = 'invoice_id';
 
-SELECT 
+SELECT
   'Invoice status trigger' as check_type,
   COUNT(*) as exists
 FROM information_schema.triggers
@@ -30913,9 +30913,9 @@ WHERE trigger_name = 'trigger_sync_invoice_status';
 -- ============================================================================
 -- OPTIONAL: Enable Realtime on invoices table (run if needed)
 -- ============================================================================
--- 
+--
 -- If you want real-time updates for invoices (recommended for live invoice status):
--- 
+--
 -- ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.invoices;
 --
 -- Note: This is commented out by default. Uncomment and run separately if needed.
@@ -30930,7 +30930,7 @@ WHERE trigger_name = 'trigger_sync_invoice_status';
 -- Run this if you get errors when trying to set status to 'in_progress'
 
 -- Drop the old constraint (suppress error if it doesn't exist)
-DO $$ 
+DO $$
 BEGIN
   ALTER TABLE requests DROP CONSTRAINT requests_status_check;
 EXCEPTION
@@ -30938,7 +30938,7 @@ EXCEPTION
 END $$;
 
 -- Add the updated constraint with all 12 statuses
-ALTER TABLE requests ADD CONSTRAINT requests_status_check 
+ALTER TABLE requests ADD CONSTRAINT requests_status_check
   CHECK (status IN (
     'new',
     'viewed',
@@ -30955,9 +30955,9 @@ ALTER TABLE requests ADD CONSTRAINT requests_status_check
   ));
 
 -- Verify the constraint was added
-SELECT conname, pg_get_constraintdef(oid) 
-FROM pg_constraint 
-WHERE conrelid = 'requests'::regclass 
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'requests'::regclass
 AND conname = 'requests_status_check';
 
 --- END OF FILE ---
@@ -31094,10 +31094,10 @@ BEGIN
   IF array_length(quote_ids, 1) IS NOT NULL THEN
     DELETE FROM public.invoices WHERE quote_id = ANY(quote_ids);
   END IF;
-  
+
   DELETE FROM public.quote_attachments WHERE request_id = ANY(request_ids);
   DELETE FROM public.request_notes WHERE request_id = ANY(request_ids);
-  
+
   IF array_length(quote_ids, 1) IS NOT NULL THEN
     DELETE FROM public.quotes WHERE id = ANY(quote_ids);
   END IF;
@@ -31183,7 +31183,7 @@ CREATE OR REPLACE FUNCTION "public"."sync_invoice_status_to_request"() RETURNS "
 BEGIN
   -- Only update request status if invoice status changed
   IF (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status) OR TG_OP = 'INSERT' THEN
-    
+
     -- Update the associated request's status based on invoice status
     UPDATE public.requests
     SET status = CASE NEW.status
@@ -31197,9 +31197,9 @@ BEGIN
     WHERE id = (
       SELECT id FROM public.requests WHERE invoice_id = NEW.id
     );
-    
+
   END IF;
-  
+
   RETURN NEW;
 END;
 $$;
@@ -32283,22 +32283,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ success: false, error: 'Method not allowed' }),
-        { 
-          status: 405, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 405,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     // Parse request body
     const { requestId }: GeocodeRequest = await req.json();
-    
+
     if (!requestId) {
       return new Response(
         JSON.stringify({ success: false, error: 'requestId is required' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -32311,9 +32311,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!googleMapsApiKey) {
       return new Response(
         JSON.stringify({ success: false, error: 'Google Maps API key not configured' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -32331,33 +32331,33 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!fetchRequestResponse.ok) {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to fetch request' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     const requests = await fetchRequestResponse.json();
-    
+
     if (!requests || requests.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'Request not found' }),
-        { 
-          status: 404, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
 
     const serviceAddress = requests[0].service_address;
-    
+
     if (!serviceAddress) {
       return new Response(
         JSON.stringify({ success: false, error: 'No service address found' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -32369,13 +32369,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Geocoding failed: ${geocodeData.status}` 
+        JSON.stringify({
+          success: false,
+          error: `Geocoding failed: ${geocodeData.status}`
         }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -32402,9 +32402,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!updateResponse.ok) {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to update request' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -32418,22 +32418,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
       }
     );
 
   } catch (error) {
     console.error('Geocoding error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
+      JSON.stringify({
+        success: false,
+        error: error.message || 'Internal server error'
       }),
-      { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       }
     );
   }
@@ -32443,16 +32443,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
 --- START OF FILE ./supabase/verify_invoice_join.sql ---
 
 -- Check if the specific invoice exists and has proper request_id
-SELECT 
+SELECT
     id,
     request_id,
     status,
     created_at
-FROM invoices 
+FROM invoices
 WHERE id = '04de192f-4f01-4d4f-9c75-e051a2bc2c9d';
 
 -- Check if the request_id is valid (has matching request)
-SELECT 
+SELECT
     i.id as invoice_id,
     i.request_id,
     r.id as request_id_check,
@@ -35911,28 +35911,28 @@ export class QuoteRequestPage extends BasePage {
     }
     console.log(`Selecting service category: ${category.label}`);
     const modalLocator = this.page.locator(this.modalDialog);
-    
+
     // Use getByRole for a more semantic and user-facing selector
     const categoryButton = modalLocator.getByRole('button', { name: category.label, exact: true });
-    
+
     // Wait for the button to be ready and visible
     await categoryButton.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Use dispatchEvent to ensure the React event handler fires reliably.
     console.log(`   Dispatching click event on button: "${category.label}" to ensure React handler fires.`);
     await categoryButton.dispatchEvent('click');
-    
+
     // VERIFY THE RESULT: After a successful click, the UI must change.
     // We will wait for the first generic question to appear, confirming the state transition.
     const firstGenericQuestion = GENERIC_QUESTIONS[0].question;
     console.log(`   Waiting for first question to appear: "${firstGenericQuestion.substring(0, 30)}..."`);
-    
+
     const questionBubble = modalLocator.locator('div[class*="MuiBox-root"]').filter({ hasText: firstGenericQuestion }).last();
     await questionBubble.waitFor({ timeout: 15000 });
 
     console.log('   ✅ Category selection successful. Next question is visible.');
   }
-  
+
 
   /**
    * Fill out the basic quote request form
@@ -36200,12 +36200,12 @@ Examples based on your situation:
       // Wait for the question text to be visible
       await modalLocator.getByText(questionText).waitFor();
       console.log('   ✅ Found emergency question text.');
-      
+
       // Click the "No" button
       const answerButton = modalLocator.getByRole('button', { name: 'No', exact: true });
       await answerButton.click();
       console.log(`   💡 Clicked answer: "No"`);
-      
+
       // IMPORTANT: Wait for the category selection UI to appear. This is the key to fixing the race condition.
       await modalLocator.getByText('Select a service type:').waitFor();
       console.log('   ✅ Category selection UI is now visible.');
@@ -36216,7 +36216,7 @@ Examples based on your situation:
     }
   }
 
-  
+
   /**
    * Answers questions sequentially as they appear in the chat interface.
    * This version is simplified for maximum robustness.
@@ -36591,8 +36591,8 @@ Examples based on your situation:
 
     return requestId;
   }
-  
-  
+
+
 }
 --- END OF FILE ---
 
@@ -36897,7 +36897,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
   done
-  
+
   # Show help
   if [[ "$HELP" == true ]]; then
     echo "E2E Test Runner Script"
@@ -38899,7 +38899,7 @@ test.describe('Real-time Synchronization', () => {
  * - user-login.spec.ts tests have run first and user authentication works
  * - This spec focuses on end-to-end quote creation workflows using AI-enhanced conversations
  * - FRONTEND AND BACKEND SERVERS MUST BE RUNNING FIRST (run ./startup.sh)
- * 
+ *
  * Tests Performed:
  * 1. should create quote requests for all service categories using Page Objects - Complete quote creation workflow for all categories
  */
@@ -41782,7 +41782,7 @@ describe('OpenAI Integration Tests', () => {
         expect(['other', 'emergency_service']).toContain(category);
       });
     });
-  
+
     describe('AI Triage Analysis', () => {
       it('should analyze request and provide triage summary with scores', async () => {
         const mockResponse = {
@@ -41798,26 +41798,26 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
-  
+
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockCreate).toHaveBeenCalledWith({
           model: 'gpt-4-1106-preview',
           messages: [{ role: 'user', content: expect.stringContaining('leak_repair') }],
           response_format: { type: 'json_object' }
         });
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Triage complete.',
@@ -41828,26 +41828,26 @@ describe('OpenAI Integration Tests', () => {
           profitability_explanation: "Standard repair with good profit margin"
         });
       });
-  
+
       it('should handle OpenAI API errors during triage', async () => {
         mockCreate.mockRejectedValueOnce(new Error('OpenAI API error'));
-  
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'
         });
       });
-  
+
       it('should handle malformed JSON responses from triage AI', async () => {
         const mockResponse = {
           choices: [{
@@ -41856,25 +41856,25 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
+
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'
         });
       });
-  
+
       it('should handle database errors during triage update', async () => {
         const mockResponse = {
           choices: [{
@@ -41889,20 +41889,20 @@ describe('OpenAI Integration Tests', () => {
             }
           }]
         };
-  
+
         mockCreate.mockResolvedValueOnce(mockResponse);
-  
+
 
         const { triageRequest } = await import('../../../packages/backend/api/controllers/triageController.js');
-  
+
         const mockReq = { params: { requestId: 'test-request-id' } };
         const mockRes = {
           status: vi.fn().mockReturnThis(),
           json: vi.fn()
         };
-  
+
         await triageRequest(mockReq as any, mockRes as any);
-  
+
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: 'Internal Server Error'
@@ -42436,4 +42436,3 @@ export default defineConfig({
   },
 });
 --- END OF FILE ---
-

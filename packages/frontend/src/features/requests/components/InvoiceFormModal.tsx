@@ -27,17 +27,17 @@ interface LineItem {
   total: number;
 }
 
-const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  invoice, 
-  mode, 
-  request, 
-  requestId 
+const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
+  isOpen,
+  onClose,
+  invoice,
+  mode,
+  request,
+  requestId
 }) => {
   const { profile } = useAuth();
   const firstFieldRef = useRef<HTMLInputElement>(null);
-  
+
   const [laborItems, setLaborItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
   const [materialItems, setMaterialItems] = useState<LineItem[]>([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
   const [dueDate, setDueDate] = useState('');
@@ -56,7 +56,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         const lineItems = invoice.line_items || [];
         const labor = lineItems.filter((item: any) => item.type === 'labor');
         const materials = lineItems.filter((item: any) => item.type === 'material');
-        
+
         setLaborItems(labor.length > 0 ? labor : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setMaterialItems(materials.length > 0 ? materials : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setNotes(invoice.notes || '');
@@ -71,7 +71,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         setMaterialItems([{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setNotes('');
         setPaymentMethod('');
-        
+
         // Default due date to 30 days from now
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
@@ -92,10 +92,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
       // Fetch the accepted quote to pre-populate invoice
       const response = await apiClient.get(`/quotes/${quoteId}`);
       const quote = response.data;
-      
+
       if (quote.details) {
         const details = typeof quote.details === 'string' ? JSON.parse(quote.details) : quote.details;
-        
+
         // Convert quote items to invoice line items
         const laborLineItems = (details.labor_items || []).map((item: any) => ({
           description: item.description,
@@ -104,7 +104,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           total: parseFloat(item.price) || 0,
           type: 'labor'
         }));
-        
+
         const materialLineItems = (details.material_items || []).map((item: any) => ({
           description: item.description,
           quantity: '1',
@@ -112,10 +112,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           total: parseFloat(item.price) || 0,
           type: 'material'
         }));
-        
+
         setLaborItems(laborLineItems.length > 0 ? laborLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
         setMaterialItems(materialLineItems.length > 0 ? materialLineItems : [{ description: '', quantity: '1', unit_price: '', total: 0 }]);
-        
+
         if (details.notes) {
           setNotes(`Based on Quote #${quoteId.slice(0, 8)}\n\n${details.notes}`);
         }
@@ -126,22 +126,22 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
   };
 
   const handleLineItemChange = (
-    items: LineItem[], 
-    setItems: React.Dispatch<React.SetStateAction<LineItem[]>>, 
-    index: number, 
-    field: keyof LineItem, 
+    items: LineItem[],
+    setItems: React.Dispatch<React.SetStateAction<LineItem[]>>,
+    index: number,
+    field: keyof LineItem,
     value: string
   ) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     // Recalculate total for this line
     if (field === 'quantity' || field === 'unit_price') {
       const qty = parseFloat(newItems[index].quantity) || 0;
       const price = parseFloat(newItems[index].unit_price) || 0;
       newItems[index].total = qty * price;
     }
-    
+
     setItems(newItems);
   };
 
@@ -159,7 +159,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
     const laborTotal = laborItems.reduce((sum, item) => sum + (item.total || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (item.total || 0), 0);
     const subtotal = laborTotal + materialTotal;
-    
+
     // BC Tax Rules:
     // GST (5%): Applied to ALL labor + materials
     // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
@@ -167,7 +167,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
     const pst = materialTotal * 0.07;
     const totalTax = gst + pst;
     const total = subtotal + totalTax;
-    
+
     return {
       laborTotal,
       materialTotal,
@@ -181,7 +181,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
 
   const handleSaveInvoice = async () => {
     const totals = calculateTotals();
-    
+
     // Validation
     if (totals.subtotal === 0) {
       window.dispatchEvent(new CustomEvent('show-snackbar', {
@@ -219,9 +219,9 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
       }
 
       window.dispatchEvent(new CustomEvent('show-snackbar', {
-        detail: { 
-          message: mode === 'create' ? 'Invoice created successfully!' : 'Invoice updated successfully!', 
-          severity: 'success' 
+        detail: {
+          message: mode === 'create' ? 'Invoice created successfully!' : 'Invoice updated successfully!',
+          severity: 'success'
         }
       }));
 
@@ -270,10 +270,10 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
 
   const totals = calculateTotals();
   const invoiceNumber = invoice?.id ? `INV-${invoice.id.slice(0, 8).toUpperCase()}` : 'New Invoice';
-  
+
   // Chip color for status badge
   const chipColor = invoice?.status === 'paid' ? 'success' : invoice?.status === 'overdue' ? 'error' : 'warning';
-  
+
   // Header background color - always use default grey for consistency
   const headerBgColor = undefined; // Let ModalHeader use its default
 
@@ -322,7 +322,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
         />
 
         <Box sx={{ p: 3, maxHeight: 'calc(90vh - 180px)', overflowY: 'auto' }}>
-          <CustomerInfoSection 
+          <CustomerInfoSection
             mode="view"
             showCustomerInfo={true}
             request={request}
@@ -564,7 +564,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
           <Button onClick={() => onClose(false)}>
             {isReadOnly ? 'Close' : 'Cancel'}
           </Button>
-          
+
           {!isReadOnly && (
             <Button
               variant="contained"
@@ -574,7 +574,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
               {isSaving ? 'Saving...' : mode === 'create' ? 'Create Invoice' : 'Save Changes'}
             </Button>
           )}
-          
+
           {isAdmin && invoice?.status === 'sent' && (
             <Button
               variant="contained"

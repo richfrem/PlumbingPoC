@@ -51,7 +51,7 @@ async function implementFeedback(feedbackFilePath) {
   if (!improvements || !Array.isArray(improvements)) {
     throw new Error("Feedback file is malformed: 'improvements' key is missing or not an array.");
   }
-  
+
   const projectRoot = path.resolve(__dirname, '..');
   // Store original content of all files to be modified for potential rollback
   const originalFiles = new Map();
@@ -67,18 +67,18 @@ async function implementFeedback(feedbackFilePath) {
       if (!fs.existsSync(absoluteTargetFilePath)) {
         throw new Error(`Target source code file not found at ${absoluteTargetFilePath}`);
       }
-      
+
       // Save original content if we haven't already
       if (!originalFiles.has(absoluteTargetFilePath)) {
         originalFiles.set(absoluteTargetFilePath, fs.readFileSync(absoluteTargetFilePath, 'utf-8'));
       }
-      
+
       // Read the most current content for this iteration
       let currentSourceCode = fs.readFileSync(absoluteTargetFilePath, 'utf-8');
 
       // Simple string replacement for this batch model
       const updatedSourceCode = currentSourceCode.replace(old_string, new_string);
-      
+
       fs.writeFileSync(absoluteTargetFilePath, updatedSourceCode);
       console.log(`Applied change to ${file_path}`);
     }
@@ -100,13 +100,13 @@ async function implementFeedback(feedbackFilePath) {
   } catch (error) {
     console.error(`\n--- An error occurred during implementation: ${error.message} ---`);
     console.log('--- ROLLING BACK all changes... ---');
-    
+
     // Rollback all modified files to their original state
     for (const [filePath, originalContent] of originalFiles.entries()) {
       fs.writeFileSync(filePath, originalContent);
       console.log(`✅ Reverted ${path.relative(projectRoot, filePath)}`);
     }
-    
+
     throw new Error("Implementation failed and all changes were rolled back.");
   }
 }
@@ -123,10 +123,10 @@ async function loginLogoutTest(email, password) {
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
     console.log('Connected to Playwright MCP server');
-    
+
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
-    
+
     if (loginSuccess) {
       console.log('Login test: SUCCESS');
       const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });

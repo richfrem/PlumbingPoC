@@ -90,28 +90,28 @@ export class QuoteRequestPage extends BasePage {
     }
     console.log(`Selecting service category: ${category.label}`);
     const modalLocator = this.page.locator(this.modalDialog);
-    
+
     // Use getByRole for a more semantic and user-facing selector
     const categoryButton = modalLocator.getByRole('button', { name: category.label, exact: true });
-    
+
     // Wait for the button to be ready and visible
     await categoryButton.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Use dispatchEvent to ensure the React event handler fires reliably.
     console.log(`   Dispatching click event on button: "${category.label}" to ensure React handler fires.`);
     await categoryButton.dispatchEvent('click');
-    
+
     // VERIFY THE RESULT: After a successful click, the UI must change.
     // We will wait for the first generic question to appear, confirming the state transition.
     const firstGenericQuestion = GENERIC_QUESTIONS[0].question;
     console.log(`   Waiting for first question to appear: "${firstGenericQuestion.substring(0, 30)}..."`);
-    
+
     const questionBubble = modalLocator.locator('div[class*="MuiBox-root"]').filter({ hasText: firstGenericQuestion }).last();
     await questionBubble.waitFor({ timeout: 15000 });
 
     console.log('   ✅ Category selection successful. Next question is visible.');
   }
-  
+
 
   /**
    * Fill out the basic quote request form
@@ -379,12 +379,12 @@ Examples based on your situation:
       // Wait for the question text to be visible
       await modalLocator.getByText(questionText).waitFor();
       console.log('   ✅ Found emergency question text.');
-      
+
       // Click the "No" button
       const answerButton = modalLocator.getByRole('button', { name: 'No', exact: true });
       await answerButton.click();
       console.log(`   💡 Clicked answer: "No"`);
-      
+
       // IMPORTANT: Wait for the category selection UI to appear. This is the key to fixing the race condition.
       await modalLocator.getByText('Select a service type:').waitFor();
       console.log('   ✅ Category selection UI is now visible.');
@@ -395,7 +395,7 @@ Examples based on your situation:
     }
   }
 
-  
+
   /**
    * Answers questions sequentially as they appear in the chat interface.
    * This version is simplified for maximum robustness.
@@ -770,6 +770,6 @@ Examples based on your situation:
 
     return requestId;
   }
-  
-  
+
+
 }

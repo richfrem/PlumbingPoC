@@ -74,7 +74,7 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
   enableRealtime?: boolean;
   additionalTables?: string[]; // Additional tables to subscribe to for updates
   userId?: string; // For user-specific queries
-  
+
   // Query customization
   endpoint?: string; // Custom API endpoint (defaults to table name)
   queryKey?: (string | undefined)[]; // Custom query key parts
@@ -82,14 +82,14 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
 
 /**
  * Generic hook for querying database tables with automatic real-time updates
- * 
+ *
  * @param table - Primary table name
  * @param options - Configuration options
- * 
+ *
  * @example
  * // Basic usage for requests
  * const { data: requests, loading, error } = useTableQuery<QuoteRequest>('requests');
- * 
+ *
  * @example
  * // User-specific requests with real-time updates
  * const { data: requests, loading, error } = useTableQuery<QuoteRequest>('requests', {
@@ -97,7 +97,7 @@ interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryK
  *   enableRealtime: true,
  *   additionalTables: ['quotes', 'request_notes'] // Also listen for quote/note changes
  * });
- * 
+ *
  * @example
  * // Admin view with custom endpoint
  * const { data: allRequests } = useTableQuery<QuoteRequest>('requests', {
@@ -123,18 +123,18 @@ export function useTableQuery<T = any>(
 
   // Build query key
   const queryKey = customQueryKey || [table, userId].filter(Boolean);
-  
+
   // Build API endpoint
   const apiEndpoint = endpoint || `/${table}`;
 
   // Query function
   const queryFn = async (): Promise<T[]> => {
     console.log(`🔍 Fetching ${table} data from ${apiEndpoint}`);
-    
+
     try {
       const response = await apiClient.get<T | T[]>(apiEndpoint);
       const responseData = response.data;
-      
+
       // Handle both single object and array responses
       const data = Array.isArray(responseData) ? responseData : [responseData];
       console.log(`✅ Fetched ${data.length} ${table} records`);

@@ -193,11 +193,11 @@ Each agent follows a consistent pattern:
 
 ### Benefits of YAML-Driven Agents
 
-✅ **Maintainability** - Workflow changes don't require code modifications  
-✅ **Testability** - Agents can be tested independently with mock data  
-✅ **Scalability** - New agents can be added following the same pattern  
-✅ **Transparency** - Business logic is visible in human-readable YAML  
-✅ **Version Control** - Workflow changes are tracked in git  
+✅ **Maintainability** - Workflow changes don't require code modifications
+✅ **Testability** - Agents can be tested independently with mock data
+✅ **Scalability** - New agents can be added following the same pattern
+✅ **Transparency** - Business logic is visible in human-readable YAML
+✅ **Version Control** - Workflow changes are tracked in git
 
 ---
 
@@ -219,7 +219,7 @@ sequenceDiagram
     Supabase-->>Frontend (ChatKit UI): Returns user session & profile
 
     User->>Frontend (ChatKit UI): Clicks "Request a Quote"
-    
+
     Note over Frontend (ChatKit UI),Quote Agent Runner: Agent initialization with YAML config
     Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (initialize session)
     activate Quote Agent Runner
@@ -228,10 +228,10 @@ sequenceDiagram
     OpenAI API (GPT-4o)-->>Quote Agent Runner: Returns structured question with options
     Quote Agent Runner-->>Frontend (ChatKit UI): First question (emergency check)
     deactivate Quote Agent Runner
-    
+
     Frontend (ChatKit UI)->>User: Displays question with interactive pill buttons
     User-->>Frontend (ChatKit UI): Clicks response button
-    
+
     loop Dynamic Conversation Flow (controlled by YAML nodes)
         Frontend (ChatKit UI)->>Quote Agent Runner: POST /quote-agent (with conversation history)
         activate Quote Agent Runner
@@ -242,11 +242,11 @@ sequenceDiagram
         deactivate OpenAI API (GPT-4o)
         Quote Agent Runner-->>Frontend (ChatKit UI): Next question with contextual icon
         deactivate Quote Agent Runner
-        
+
         Frontend (ChatKit UI)->>User: Displays question with contextual UI (🚨/🏠/📅)
         User-->>Frontend (ChatKit UI): Provides answer
     end
-    
+
     Note over Quote Agent Runner: Agent reaches review_summary stage
     Quote Agent Runner->>Frontend (ChatKit UI): Returns summary payload with all answers
     Frontend (ChatKit UI)->>User: Displays comprehensive review summary
@@ -255,7 +255,7 @@ sequenceDiagram
     Frontend (ChatKit UI)->>Supabase: POST /api/requests/submit (with structured data)
     activate Supabase
     Supabase->>Supabase: Inserts request with answers array, service address, geocoding
-    
+
     opt User uploaded attachments
         Frontend (ChatKit UI)->>Supabase: Upload files to Storage bucket
         Supabase->>Supabase: Insert records into 'quote_attachments'
@@ -318,35 +318,35 @@ sequenceDiagram
     Admin->>Frontend: Clicks "AI Triage" button in Job Docket
     Frontend->>Triage Agent Runner: POST /triage/:requestId (triggers analysis)
     activate Triage Agent Runner
-    
+
     Triage Agent Runner->>Triage Agent Runner: Load triage-agent.yaml workflow
     Triage Agent Runner->>Supabase: Fetch complete request details
     activate Supabase
     Supabase-->>Triage Agent Runner: Returns request data with all Q&A answers
     deactivate Supabase
-    
+
     Note over Triage Agent Runner: Calculate preliminary scores
     Triage Agent Runner->>Triage Agent Runner: calculateJobComplexity(service, location)
     Triage Agent Runner->>Triage Agent Runner: assessCustomerUrgency(emergency, timeline)
     Triage Agent Runner->>Triage Agent Runner: formatAnswersForAnalysis(Q&A array)
-    
+
     Triage Agent Runner->>OpenAI API (GPT-4o): Send comprehensive prompt with:<br/>- Service category<br/>- Emergency status<br/>- Formatted Q&A summaries<br/>- Problem description<br/>- Preliminary scores
     activate OpenAI API (GPT-4o)
-    
+
     Note over OpenAI API (GPT-4o): Structured function calling
     OpenAI API (GPT-4o)->>OpenAI API (GPT-4o): Analyze all data points<br/>Call: provide_triage_assessment()
-    
+
     OpenAI API (GPT-4o)-->>Triage Agent Runner: Returns structured JSON:<br/>{<br/>  triage_summary,<br/>  priority_score (1-10),<br/>  priority_explanation,<br/>  profitability_score (1-10),<br/>  profitability_explanation<br/>}
     deactivate OpenAI API (GPT-4o)
-    
+
     Triage Agent Runner->>Supabase: UPDATE requests SET triage fields
     activate Supabase
     Supabase-->>Triage Agent Runner: Confirms update
     deactivate Supabase
-    
+
     Triage Agent Runner-->>Frontend: Returns complete analysis results
     deactivate Triage Agent Runner
-    
+
     Frontend->>Admin: Displays AI Triage Summary card with:<br/>- Priority badge (1-10)<br/>- Profitability indicator<br/>- Summary text<br/>- Explanations
 ```
 
@@ -368,7 +368,7 @@ sequenceDiagram
     Postgres Database-->>-Admin's Browser (Client A): API Response (OK)
 
     Postgres Database->>+Supabase Realtime Server: 2. [Publication] A change was detected in the `request_notes` table.
-    
+
     Note over Supabase Realtime Server: Routing Logic!
     Supabase Realtime Server->>Supabase Realtime Server: 3. Check subscribers for the relevant channel. Found: Client A, Client B.
 
@@ -379,7 +379,7 @@ sequenceDiagram
     Supabase Realtime Server->>+Customer's Browser (Client B): 4. [WebSocket Push] Broadcast new data payload
     Customer's Browser (Client B)->>Customer's Browser (Client B): 5. `useRequests` hook re-fetches data & UI refreshes
     deactivate Customer's Browser (Client B)
-    
+
     deactivate Supabase Realtime Server
 ```# Test commit to trigger Netlify deployment
 # Force deployment trigger - Thu Oct  9 07:47:11 PDT 2025

@@ -86,7 +86,7 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 
 ```typescript
 // QuoteFormModal - Unified customer info + address
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}
@@ -95,7 +95,7 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 />
 
 // RequestDetailModal - NOW USING UNIFIED COMPONENT
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}
@@ -106,13 +106,13 @@ We will **merge CustomerInfoSection and ServiceLocationManager into a single uni
 />
 
 // QuoteAgentModal - Create new request
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="create"
   onSave={handleAddressSet}
 />
 
 // InvoiceFormModal - Migrated to unified component
-<CustomerInfoSection 
+<CustomerInfoSection
   mode="view"
   showCustomerInfo={true}
   request={request}

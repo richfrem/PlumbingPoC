@@ -22,7 +22,10 @@ EXCLUDED_PATTERNS = [
 ]
 
 # Keys to scan for in assignments (case-insensitive regex with word boundaries)
-KEYS = r"\b(?:GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY|API_KEY|SECRET|TOKEN|PASSWORD)\b"
+# Split into specific API keys (strict checking) and generic terms (allow variables)
+SPECIFIC_API_KEYS = r"\b(?:GEMINI_API_KEY|OPENAI_API_KEY|RESEND_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|VITE_GOOGLE_MAPS_API_KEY|VITE_SUPABASE_ANON_KEY)\b"
+GENERIC_KEYS = r"\b(?:API_KEY|SECRET|TOKEN|PASSWORD)\b"
+KEYS = f"(?:{SPECIFIC_API_KEYS}|{GENERIC_KEYS})"
 
 # Whitelisted RHS patterns that indicate legitimate references (not secret exposure)
 WHITELIST_EXACT = ["<REDACTED>", "'<REDACTED>'"]
@@ -37,6 +40,7 @@ WHITELIST_CONTAINS = [
     "`",                                              # Template literals
     "import.meta", "process.env",                     # Module references
     "[", "]", "(", ")", ";", "args[", "params.",      # Variable access, function calls
+    "<", ">",                                         # Placeholder brackets
 ]
 
 def is_variable_name(value):
@@ -110,7 +114,13 @@ def scan_file_for_secrets(filepath):
             rhs = extract_rhs_value(line)
 
             # Skip if no assignment found or RHS is whitelisted
-            if not rhs or rhs in WHITELIST_EXACT or any(rhs.startswith(prefix) for prefix in WHITELIST_PREFIXES) or any(pattern in rhs for pattern in WHITELIST_CONTAINS) or is_variable_name(rhs):
+            if not rhs or rhs in WHITELIST_EXACT or any(rhs.startswith(prefix) for prefix in WHITELIST_PREFIXES) or any(pattern in rhs for pattern in WHITELIST_CONTAINS):
+                continue
+
+            # For specific API keys, don't allow variable names (too risky)
+            # For generic keys like PASSWORD, allow variable names but not hardcoded values
+            is_specific_api_key = bool(re.search(SPECIFIC_API_KEYS, line, re.IGNORECASE))
+            if not is_specific_api_key and is_variable_name(rhs):
                 continue
 
             # Record violation

@@ -129,11 +129,11 @@ If you encounter "Unauthorized: Invalid token" errors, your JWT might be expired
 graph TD
     subgraph "API Server"
         A[server.js] --> B{/api/requests/*};
-        
+
         subgraph "Routes"
             B --> C[requestRoutes.js];
         end
-        
+
         subgraph "Middleware"
             D[authMiddleware.js];
             E[validationMiddleware.js];
@@ -152,10 +152,10 @@ graph TD
         E -- "Uses" --> F;
         C -- "Calls" --> G;
     end
-    
+
     H((Supabase));
     G -- "Interacts with (Model)" --> H;
-    
+
     I([Client]);
     I -- "HTTP Request" --> A;
     G -- "JSON Response (View)" --> I;
@@ -182,24 +182,24 @@ sequenceDiagram
 
     Client->>server.js: POST /api/requests/:id/quotes (with data & token)
     activate server.js
-    
+
     server.js->>requestRoutes.js: Route request
     activate requestRoutes.js
-    
+
     requestRoutes.js->>authMiddleware.js: 1. call authenticate()
     activate authMiddleware.js
     authMiddleware.js->>Supabase: supabase.auth.getUser(token)
     Supabase-->>authMiddleware.js: Returns user object
     authMiddleware.js-->>requestRoutes.js: next()
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>authMiddleware.js: 2. call isAdmin()
     activate authMiddleware.js
     authMiddleware.js->>Supabase: Check user_profiles.role
     Supabase-->>authMiddleware.js: Returns { role: 'admin' }
     authMiddleware.js-->>requestRoutes.js: next()
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>validationMiddleware.js: 3. call validate(schema)
     activate validationMiddleware.js
     validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
@@ -207,21 +207,21 @@ sequenceDiagram
 
     requestRoutes.js->>requestController.js: 4. call createQuoteForRequest()
     activate requestController.js
-    
+
     requestController.js->>Supabase: INSERT into quotes table
     activate Supabase
     Supabase-->>requestController.js: Confirms insert
     deactivate Supabase
-    
+
     requestController.js->>Supabase: UPDATE requests table status
     activate Supabase
     Supabase-->>requestController.js: Confirms update
     deactivate Supabase
-    
+
     requestController.js-->>server.js: Sends JSON response
     deactivate requestController.js
     deactivate requestRoutes.js
-    
+
     server.js-->>Client: 201 Created (with quote data)
     deactivate server.js
 ```
@@ -238,15 +238,15 @@ sequenceDiagram
 
     Client->>server.js: POST /api/requests/gpt-follow-up (with answers & token)
     activate server.js
-    
+
     server.js->>requestRoutes.js: Route request
     activate requestRoutes.js
-    
+
     requestRoutes.js->>authMiddleware.js: 1. call authenticate()
     activate authMiddleware.js
     authMiddleware.js-->>requestRoutes.js: next() (User is valid)
     deactivate authMiddleware.js
-    
+
     requestRoutes.js->>validationMiddleware.js: 2. call validate(schema)
     activate validationMiddleware.js
     validationMiddleware.js-->>requestRoutes.js: next() (Data is valid)
@@ -254,16 +254,16 @@ sequenceDiagram
 
     requestRoutes.js->>requestController.js: 3. call getGptFollowUp()
     activate requestController.js
-    
+
     requestController.js->>OpenAI_API: axios.post to /v1/chat/completions
     activate OpenAI_API
     OpenAI_API-->>requestController.js: Returns follow-up questions
     deactivate OpenAI_API
-    
+
     requestController.js-->>server.js: Sends JSON response { additionalQuestions: [...] }
     deactivate requestController.js
     deactivate requestRoutes.js
-    
+
     server.js-->>Client: 200 OK (with questions array)
     deactivate server.js
 ```

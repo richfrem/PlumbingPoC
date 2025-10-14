@@ -27,7 +27,7 @@ This file documents a few practical steps and guidelines to protect secrets and 
 # Search for literal occurrences of common secret names
 git log -S 'OPENAI_API_KEY' --source --all
 git grep -n "OPENAI_API_KEY" $(git rev-list --all)
-``` 
+```
 
 If you find evidence of a leaked key in history, rotate the key before rewriting history. Rewriting history is disruptive; preferred flow is rotation + removal from tip (see above). If you must rewrite history, `git filter-repo` is recommended over `filter-branch`.
 

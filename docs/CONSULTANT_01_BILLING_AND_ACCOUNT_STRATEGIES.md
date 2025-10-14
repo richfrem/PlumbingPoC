@@ -57,7 +57,7 @@
 ```
 Your Master Accounts:
 - Netlify Team account with multiple sites
-- Supabase Organization with multiple projects  
+- Supabase Organization with multiple projects
 - OpenAI Organization with API key management
 - Twilio parent account with sub-accounts
 - Google Cloud Organization
@@ -70,7 +70,7 @@ Monthly Service Package: $350-500 CAD
 Includes:
 - All infrastructure costs ($115-155)
 - Platform management and support
-- Updates and maintenance  
+- Updates and maintenance
 - Technical support
 - Markup/profit margin ($200-300)
 ```
@@ -181,7 +181,7 @@ Includes: Infrastructure + management + data portability
 ```
 Client Setup:
 1. Creates Netlify account with their business email
-2. Invites your email as "Team Member" or "Collaborator"  
+2. Invites your email as "Team Member" or "Collaborator"
 3. You get full deployment/configuration access
 
 Your Access:
@@ -204,7 +204,7 @@ Client Setup:
 Your Access:
 - Database schema and configuration
 - Authentication settings
-- Storage bucket management  
+- Storage bucket management
 - API access and monitoring
 - Cannot access billing or organization settings
 
@@ -280,7 +280,7 @@ Hour 1: Account Creation & Access Setup
 
 Modern Platform Accounts (Delegated Access):
 1. Client creates Netlify account → Invites your email as Team Member
-2. Client creates Supabase account → Invites your email as Administrator  
+2. Client creates Supabase account → Invites your email as Administrator
 3. Client creates Google Cloud project → Adds your email as Editor
 
 API Service Accounts (Credential Sharing):
@@ -331,7 +331,7 @@ Ongoing Management:
 
 #### **Client Retains Full Control:**
 - ✅ **Account ownership** - registered under their business
-- ✅ **Billing control** - payment methods and invoices  
+- ✅ **Billing control** - payment methods and invoices
 - ✅ **Data ownership** - all customer/business data
 - ✅ **Access revocation** - can remove you instantly
 - ✅ **Vendor independence** - not locked into your services
@@ -397,7 +397,7 @@ Option C: Modern DNS Providers
 - No password sharing required for these platforms
 - Client retains full ownership and billing control
 
-#### API Services (Secure Credential Sharing)  
+#### API Services (Secure Credential Sharing)
 - **OpenAI**: Secure API key sharing (no team features available)
 - **Resend**: Secure API key sharing (preferred over limited team features)
 - **Twilio**: Account SID and Auth Token sharing (preferred over complex subuser setup)

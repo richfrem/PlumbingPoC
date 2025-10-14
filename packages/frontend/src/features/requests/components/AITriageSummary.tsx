@@ -60,25 +60,25 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
   // Determine background and border color based on priority
   const getBackgroundColors = () => {
     const score = request.priority_score;
-    if (score === null) return { 
-      headerBg: 'grey.100', 
-      contentBg: 'grey.50', 
-      borderColor: 'grey.400' 
+    if (score === null) return {
+      headerBg: 'grey.100',
+      contentBg: 'grey.50',
+      borderColor: 'grey.400'
     };
-    if (score >= 8) return { 
-      headerBg: 'error.100', 
-      contentBg: 'error.50', 
-      borderColor: 'error.400' 
+    if (score >= 8) return {
+      headerBg: 'error.100',
+      contentBg: 'error.50',
+      borderColor: 'error.400'
     };
-    if (score >= 5) return { 
-      headerBg: 'warning.100', 
-      contentBg: 'warning.50', 
-      borderColor: 'warning.400' 
+    if (score >= 5) return {
+      headerBg: 'warning.100',
+      contentBg: 'warning.50',
+      borderColor: 'warning.400'
     };
-    return { 
-      headerBg: 'success.100', 
-      contentBg: 'success.50', 
-      borderColor: 'success.400' 
+    return {
+      headerBg: 'success.100',
+      contentBg: 'success.50',
+      borderColor: 'success.400'
     };
   };
 
@@ -87,10 +87,10 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
   return (
     <Paper variant="outlined">
       {/* Header Section - Darker background */}
-      <Box sx={{ 
-        p: 2, 
-        borderLeft: 4, 
-        borderColor, 
+      <Box sx={{
+        p: 2,
+        borderLeft: 4,
+        borderColor,
         bgcolor: headerBg,
         borderBottom: 1,
         borderBottomColor: 'divider'
@@ -112,16 +112,16 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               Priority Score:
             </Typography>
-            <Chip 
+            <Chip
               label={`${request.priority_score}/10`}
               color={getPriorityColorChip(request.priority_score)}
               size="small"
               sx={{ fontWeight: 'bold' }}
             />
           </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={(request.priority_score || 0) * 10} 
+          <LinearProgress
+            variant="determinate"
+            value={(request.priority_score || 0) * 10}
             color={getPriorityColorProgress(request.priority_score)}
             sx={{ height: 8, borderRadius: 1 }}
           />
@@ -140,16 +140,16 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 Profitability Score:
               </Typography>
-              <Chip 
+              <Chip
                 label={`${request.profitability_score}/10`}
                 color={getProfitabilityColorChip(request.profitability_score)}
                 size="small"
                 sx={{ fontWeight: 'bold' }}
               />
             </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={(request.profitability_score || 0) * 10} 
+            <LinearProgress
+              variant="determinate"
+              value={(request.profitability_score || 0) * 10}
               color={getProfitabilityColorProgress(request.profitability_score)}
               sx={{ height: 8, borderRadius: 1 }}
             />
@@ -169,7 +169,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 Required Expertise:
               </Typography>
-              <Chip 
+              <Chip
                 label={request.required_expertise.skill_level?.charAt(0).toUpperCase() + request.required_expertise.skill_level?.slice(1)}
                 color={getExpertiseColor(request.required_expertise.skill_level)}
                 size="small"
@@ -179,7 +179,7 @@ const AITriageSummary: React.FC<AITriageSummaryProps> = ({ request }) => {
             {request.required_expertise.specialized_skills && request.required_expertise.specialized_skills.length > 0 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                 {request.required_expertise.specialized_skills.map((skill, idx) => (
-                  <Chip 
+                  <Chip
                     key={idx}
                     label={skill}
                     size="small"

@@ -323,20 +323,20 @@ export PGPASSWORD='<REDACTED>'
 pg_dump 'postgresql://PlumbingPoC@oxoiwzijacglgueemlva.supabase.co:5432/postgres' --schema-only --file="supabase_schema_audit.sql"
 
 #### Query 1: Table & Column Schema
-SELECT 
+SELECT
     c.table_schema,
     c.table_name,
     c.column_name,
     c.data_type,
     c.is_nullable,
     c.column_default
-FROM 
+FROM
     information_schema.columns c
-WHERE 
+WHERE
     c.table_schema = 'public'
     AND c.table_name IN ('invoices', 'quote_attachments', 'quotes', 'request_notes', 'requests', 'user_profiles')
-ORDER BY 
-    c.table_name, 
+ORDER BY
+    c.table_name,
     c.ordinal_position;
 
 ### Query 2: Row Level Security (RLS) Policies
@@ -357,14 +357,14 @@ ORDER BY
     p.policyname;
 
 #### Query 3: Storage Buckets & Policies
-SELECT 
+SELECT
     id,
     name,
     public,
     avif_autodetection,
     file_size_limit,
     allowed_mime_types
-FROM 
+FROM
     storage.buckets;
 
 #### Query 4: Indexes
@@ -382,18 +382,18 @@ ORDER BY
     indexname;
 
 #### Query 5: Functions
-SELECT 
+SELECT
   p.proname AS function_name,
   pg_get_function_identity_arguments(p.oid) AS function_arguments,
   pg_get_functiondef(p.oid) AS function_definition
-FROM 
+FROM
   pg_proc p
-JOIN 
+JOIN
   pg_namespace n ON n.oid = p.pronamespace
-WHERE 
+WHERE
   n.nspname = 'public' -- Filters for your main schema
   AND p.prokind = 'f'   -- Ensures we only get functions, not procedures or aggregates
-ORDER BY 
+ORDER BY
   p.proname;
 
 #### Query 6: Publications
@@ -432,7 +432,7 @@ const subscriptions = [
 ];
 ```
 
-##### How process works public subscribe pattern with supabase. 
+##### How process works public subscribe pattern with supabase.
 
 ```mermaid
 sequenceDiagram
@@ -455,7 +455,7 @@ sequenceDiagram
     Postgres Database (request_notes table)-->>-Admin's Browser (Client A): API Response (OK)
 
     Postgres Database (request_notes table)->>+Supabase Realtime Server: 4. [Publication] A new row was inserted into request_notes for request_id = 'XYZ'
-    
+
     Note over Supabase Realtime Server: The Routing Logic!
     Supabase Realtime Server->>Supabase Realtime Server: 5. Check subscribers for channel "request-notes-XYZ". Found: Client A, Client B.
 
@@ -466,11 +466,11 @@ sequenceDiagram
     Supabase Realtime Server->>+Customer's Browser (Client B): 7. [WebSocket Push] Broadcast new note payload
     Customer's Browser (Client B)->>Customer's Browser (Client B): 9. Listener fires -> onNoteAdded() -> Re-fetch & UI Refresh
     deactivate Customer's Browser (Client B)
-    
+
     deactivate Supabase Realtime Server
 ```
 
-#### Calling key functions 
+#### Calling key functions
 -- Replace with the actual user_id you want to clear.
 SELECT delete_user_data('3efcf1bf-978f-4376-af87-8245c664c7ca');
 

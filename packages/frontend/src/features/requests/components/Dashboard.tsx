@@ -61,7 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
     // Apply pipeline stage filter if active (takes precedence)
     if (pipelineFilterStatuses.length > 0) {
-      requests = requests.filter(request => 
+      requests = requests.filter(request =>
         pipelineFilterStatuses.includes(request.status)
       );
     }
@@ -193,18 +193,18 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   }, [activePipelineStage]);
 
   const allStatuses = [
-    'all', 
-    'new', 
-    'viewed', 
-    'quoted', 
-    'accepted', 
-    'scheduled', 
-    'in_progress', 
-    'completed', 
-    'invoiced', 
-    'paid', 
-    'overdue', 
-    'disputed', 
+    'all',
+    'new',
+    'viewed',
+    'quoted',
+    'accepted',
+    'scheduled',
+    'in_progress',
+    'completed',
+    'invoiced',
+    'paid',
+    'overdue',
+    'disputed',
     'cancelled'
   ];
 
@@ -364,7 +364,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                   </Box>
                 }
               />
-              
+
               <ButtonGroup variant="outlined" size="small">
                 <Button
                   startIcon={<Table size={16} />}
@@ -396,7 +396,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
                 setPipelineFilterStatuses([status]);
               }}
             />
-            
+
             {/* Clear Filters Button - Only show when filters are active */}
             {(activePipelineStage || activeFilterStatus !== 'all' || dateFilter !== 'all' || isEmergencyFilter) && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
@@ -464,13 +464,13 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
           )}
         </Box>
       </Box>
-      {selectedRequest && ( 
-        <RequestDetailModal 
-          isOpen={isModalOpen} 
-          onClose={handleCloseModal} 
-          request={selectedRequest} 
+      {selectedRequest && (
+        <RequestDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          request={selectedRequest}
           onUpdateRequest={handleModalUpdate}
-        /> 
+        />
       )}
     </>
   );

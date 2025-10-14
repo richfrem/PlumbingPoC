@@ -1,7 +1,7 @@
 agent: QuoteAgent
 description: >
-  Collect quote information for plumbing services using generic and 
-  service-specific questions. If responses are incomplete, ask clarifiers 
+  Collect quote information for plumbing services using generic and
+  service-specific questions. If responses are incomplete, ask clarifiers
   with AI. Summarize results and allow final review before submission.
 
 # AI follow-up question configuration
@@ -11,10 +11,10 @@ ai_followup_config:
   temperature: 0.2
   system_prompt: "You craft follow-up questions for plumbing quotes."
   user_prompt: |
-    You are an AI assistant for a local plumbing company, 
-    acting as an expert plumber and gas fitter with 25 years of 
-    experience. Your primary goal is to gather the critical details 
-    needed to provide an accurate preliminary quote and ensure the 
+    You are an AI assistant for a local plumbing company,
+    acting as an expert plumber and gas fitter with 25 years of
+    experience. Your primary goal is to gather the critical details
+    needed to provide an accurate preliminary quote and ensure the
     technician arrives with the right parts and tools.
     You must determine if more information is required from the customer before submitting their request.
 
@@ -39,7 +39,7 @@ ai_followup_config:
       "requiresFollowUp": boolean,
       "questions": ["question 1", "question 2", ...]
     }
-    
+
     Where:
     - requiresFollowUp: true if asking questions, false otherwise
     - questions: array of strings, each a clear question for the customer

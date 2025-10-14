@@ -13,17 +13,17 @@ router.post('/quote/run', async (req, res) => {
   try {
     // Dynamically import the Netlify function handler
     const { handler } = await import('../../netlify/functions/quote-agent.mjs');
-    
+
     // Transform Express request to Netlify function event format
     const event = {
       httpMethod: 'POST',
       body: JSON.stringify(req.body),
       headers: req.headers
     };
-    
+
     // Call the handler
     const result = await handler(event, {});
-    
+
     // Send response
     res.status(result.statusCode).json(JSON.parse(result.body));
   } catch (error) {

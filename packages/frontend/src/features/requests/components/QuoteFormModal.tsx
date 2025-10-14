@@ -111,7 +111,7 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
     const laborTotal = laborItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const materialTotal = materialItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
     const subtotal = laborTotal + materialTotal;
-    
+
     // BC Tax Rules:
     // GST (5%): Applied to ALL labor + materials
     // PST (7%): Applied to materials ONLY (labor is PST exempt in BC)
@@ -245,12 +245,12 @@ const QuoteFormModal: React.FC<QuoteFormModalProps> = ({ isOpen, onClose, quote,
         <Box sx={{ flex: '1 1 auto', overflowY: 'auto', p: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-            <CustomerInfoSection 
-              mode="view" 
-              initialAddress={request.service_address} 
-              isAdmin={isAdmin} 
-              onSave={handleAddressUpdate} 
-              onModeChange={() => {}} 
+            <CustomerInfoSection
+              mode="view"
+              initialAddress={request.service_address}
+              isAdmin={isAdmin}
+              onSave={handleAddressUpdate}
+              onModeChange={() => {}}
               isUpdating={false}
               request={request}
               showCustomerInfo={true}

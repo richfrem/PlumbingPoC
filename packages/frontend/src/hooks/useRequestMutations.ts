@@ -445,7 +445,7 @@ export function useMarkRequestAsViewed() {
       console.error('❌ Mark as viewed error:', _err);
       console.error('Request ID:', requestId);
       console.error('Error details:', JSON.stringify(_err, null, 2));
-      
+
       if (context?.previousAll) queryClient.setQueryData(['requests'], context.previousAll);
       if (context?.previousUser && user) queryClient.setQueryData(['requests', user.id], context.previousUser);
       if (context?.previousDetail) queryClient.setQueryData(['request', requestId], context.previousDetail);

@@ -35,7 +35,7 @@ The agents require API keys and URLs to function.
 
     ```
     # Your Gemini API Key from Google AI Studio
-    GEMINI_API_KEY=<REDACTED>
+    GEMINI_API_KEY=<your_gemini_api_key_here>
 
     # The full URL where your local Vite/React app is running
     VITE_FRONTEND_BASE_URL=http://localhost:5173
@@ -130,13 +130,13 @@ sequenceDiagram
     User->>project-manager-mcp-agent.js: Run workflow command
     project-manager-mcp-agent.js->>ui-designer-mcp-agent.js: 1. Analyze UI
     ui-designer-mcp-agent.js->>"File System (feedback.json)": 2. Create feedback (status: pending)
-    
+
     project-manager-mcp-agent.js->>"File System (feedback.json)": 3. Read & verify status is 'pending'
     project-manager-mcp-agent.js->>frontend-developer-mcp-agent.js: 4. Implement feedback
-    
+
     frontend-developer-mcp-agent.js->>"File System (feedback.json)": 5. Read feedback & implement change
     frontend-developer-mcp-agent.js->>"File System (feedback.json)": 6. Update status to 'implemented'
-    
+
     project-manager-mcp-agent.js->>"File System (feedback.json)": 7. Verify status is 'implemented' & archive file
     project-manager-mcp-agent.js->>User: 8. Report completion```
 

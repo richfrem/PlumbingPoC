@@ -235,7 +235,7 @@ export function useInvoiceById(invoiceId: string, options?: { enabled?: boolean 
  */
 export function useStatistics() {
   const requests = useAllRequests();
-  
+
   const stats = {
     totalRequests: requests.data.length,
     newRequests: requests.data.filter(r => r.status === 'new').length,

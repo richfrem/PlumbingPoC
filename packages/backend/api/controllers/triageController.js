@@ -6,20 +6,20 @@ import { database as supabase } from '../config/supabase/index.js';
 async function runTriageAnalysis(requestData) {
   // Dynamically import to avoid circular dependencies
   const { handler } = await import('../../netlify/functions/triage-agent.mjs');
-  
+
   // Create a mock Netlify event
   const event = {
     httpMethod: 'POST',
     body: JSON.stringify(requestData)
   };
-  
+
   const result = await handler(event, {});
   const analysis = JSON.parse(result.body);
-  
+
   if (result.statusCode !== 200) {
     throw new Error(analysis.error || 'Triage analysis failed');
   }
-  
+
   return analysis;
 }
 
@@ -38,7 +38,7 @@ const triageRequest = async (req, res) => {
 
     console.log('[TriageController] Running AI triage analysis for request:', requestId);
 
-    // 2. Use the intelligent triage agent 
+    // 2. Use the intelligent triage agent
     const analysis = await runTriageAnalysis(request);
 
     // 3. Update the request in the database

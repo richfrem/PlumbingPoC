@@ -6,7 +6,7 @@ import { database as supabase } from '../../../config/supabase/index.js';
 // Load environment variables correctly.
 const resend = new Resend(process.env.RESEND_API_KEY);
 // This should be the URL of your FRONTEND application.
-const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173'; 
+const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const RESEND_ENABLED = process.env.RESEND_ENABLED === 'true';
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <noreply@copilotfortrades.com>';
 

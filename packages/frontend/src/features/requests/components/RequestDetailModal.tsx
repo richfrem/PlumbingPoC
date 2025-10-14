@@ -32,7 +32,7 @@ interface RequestDetailModalProps {
 
 const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose, request: initialRequest, onUpdateRequest }) => {
   const { profile } = useAuth();
-  
+
   const requestId = initialRequest?.id;
   const { data: requestArray, loading, error, refetch } = useRequestById(requestId || '', {
     enabled: !!requestId && isOpen
@@ -108,12 +108,12 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
     await updateStatusMutation.mutateAsync({ requestId: request.id, status: newStatus, scheduledStartDate: date ?? null });
   };
-  
+
   const handleAcceptQuote = (quoteId: string) => {
     if (!request) return;
     acceptQuoteMutation.mutate({ requestId: request.id, quoteId });
   };
-  
+
   const handleTriageRequest = async () => {
     if (!request) return;
     triageMutation.mutate({ requestId: request.id }, {
@@ -122,7 +122,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       }
     });
   };
-  
+
   const handleSaveScheduledDate = async () => {
     if (!request || !scheduledStartDate) return;
     const utcDate = new Date(scheduledStartDate);
@@ -242,45 +242,45 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const headerTitle = `Job Docket: ${request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
   const headerSubtitle = `ID: ${request.id} | Received: ${new Date(request.created_at).toLocaleString()}`;
-  
+
   const headerActions = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {loading && <RefreshCw size={14} className="animate-spin" />}
-      
+
       {/* Invoice Button Logic */}
       {isAdmin && request.status === 'completed' && !request.invoice_id && (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
           onClick={handleCreateInvoice}
         >
           Create Invoice
         </Button>
       )}
-      
+
       {isAdmin && request.status === 'invoiced' && request.invoice_id && (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
           onClick={handleEditInvoice}
         >
           Edit Invoice
         </Button>
       )}
-      
+
       {(['invoiced', 'paid', 'overdue', 'disputed'].includes(request.status) && request.invoice_id) && (
-        <Button 
-          variant="outlined" 
-          color="primary" 
-          size="small" 
+        <Button
+          variant="outlined"
+          color="primary"
+          size="small"
           onClick={handleViewInvoice}
         >
           View Invoice
         </Button>
       )}
-      
+
       {isAdmin && !request.triage_summary && (
         <Button variant="contained" color="secondary" size="small" onClick={handleTriageRequest} disabled={triageMutation.isPending} startIcon={<Zap />}>
           {triageMutation.isPending ? 'Triaging...' : 'AI Triage'}
@@ -292,18 +292,18 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Paper elevation={24} sx={{ width: '95%', maxWidth: '800px', height: '90vh', p: 0, position: 'relative', display: 'flex', flexDirection: 'column', bgcolor: '#f4f6f8', overflow: 'hidden' }}>
-        
-        <ModalHeader 
-          title={headerTitle} 
-          subtitle={headerSubtitle} 
-          onClose={onClose} 
+
+        <ModalHeader
+          title={headerTitle}
+          subtitle={headerSubtitle}
+          onClose={onClose}
           actions={headerActions}
           statusColor={statusColors[request.status as keyof typeof statusColors] || statusColors.default}
         />
 
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <CustomerInfoSection 
+            <CustomerInfoSection
               mode="view"
               showCustomerInfo={true}
               request={request}
@@ -314,7 +314,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
               onModeChange={() => {}}
               isUpdating={updateAddressMutation.isPending}
             />
-            
+
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -361,16 +361,16 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
       </Paper>
 
       <CompleteJobModal isOpen={isCompleteModalOpen} onClose={() => setCompleteModalOpen(false)} onConfirm={handleConfirmCompletion} isSubmitting={completeJobMutation.isPending} jobTitle={request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} />
-      
-      <InvoiceFormModal 
-        isOpen={isInvoiceModalOpen} 
-        onClose={handleInvoiceModalClose} 
+
+      <InvoiceFormModal
+        isOpen={isInvoiceModalOpen}
+        onClose={handleInvoiceModalClose}
         invoice={invoiceData}
         mode={invoiceMode}
         request={request}
         requestId={request.id}
       />
-      
+
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
       </Snackbar>

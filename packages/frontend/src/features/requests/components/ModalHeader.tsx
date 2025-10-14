@@ -17,17 +17,17 @@ interface ModalHeaderProps {
 const ModalHeader: React.FC<ModalHeaderProps> = ({ title, subtitle, onClose, actions, statusColor }) => {
   // Use status color if provided, otherwise default to grey
   const bgColor = statusColor || 'grey.800';
-  
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'space-between', 
-      bgcolor: bgColor, 
-      color: '#fff', 
-      px: 3, 
-      py: 2, 
-      flexShrink: 0 
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      bgcolor: bgColor,
+      color: '#fff',
+      px: 3,
+      py: 2,
+      flexShrink: 0
     }}>
       <Box>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>

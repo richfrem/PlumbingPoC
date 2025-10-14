@@ -247,7 +247,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
   // Render view mode
   if (mode === 'view' && !isEditing) {
     const customerProfile = request?.user_profiles;
-    
+
     if (showCustomerInfo) {
       // Render as a Paper component with customer info AND service address
       return (
@@ -297,7 +297,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
         </Paper>
       );
     }
-    
+
     // Original Grid item rendering (for RequestDetailModal compatibility)
     return (
       <Grid item xs={12} sm={6}>

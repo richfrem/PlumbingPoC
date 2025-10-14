@@ -23,7 +23,7 @@ interface AttachmentSectionProps {
 
 const AttachmentGroup: React.FC<{ title: string; attachments: (QuoteAttachment | File)[]; imageUrls: { [key: string]: string }; onRemove?: ((index: number) => void) | undefined; editable?: boolean }> = ({ title, attachments, imageUrls, onRemove, editable }) => {
   if (attachments.length === 0) return null;
-  
+
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold' }}>{title}</Typography>
@@ -99,7 +99,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       }
     });
   }, [requestId]);
-  
+
   console.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
     attachmentsLength: attachments?.length,
@@ -122,7 +122,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         requestId,
         editable
       });
-      
+
       if (onNewFiles) {
         onNewFiles(acceptedFiles);
       } else {
@@ -227,10 +227,10 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       const response = await apiClient.post('/requests/attachments', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       console.log('✅ Attachment uploaded successfully:', response.data);
       console.log('✅ Attachment upload complete, real-time system will handle updates automatically');
-      
+
       // Call onUpdate callback if parent component needs additional side effects
       onUpdate?.();
     } catch (err: any) {
@@ -272,7 +272,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
       acc[qId].push(att);
       return acc;
     }, {} as { [key: string]: QuoteAttachment[] });
-  
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

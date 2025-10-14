@@ -1,6 +1,6 @@
 # Quote Agent Maintenance Guide
 
-**Audience:** Product Managers, Business Analysts, Developers  
+**Audience:** Product Managers, Business Analysts, Developers
 **Purpose:** Learn how to modify and maintain the quote intake conversation flow using the YAML configuration file.
 
 ---
@@ -64,7 +64,7 @@ Every question or decision point in the conversation is a "node":
 The conversation follows a directed graph:
 
 ```
-emergency_check 
+emergency_check
     ↓
 type_of_property
     ↓
@@ -274,7 +274,7 @@ The `service_questions` node uses a **switch statement** to ask different questi
   variable: selected_service
   cases:
     # ... existing services ...
-    
+
     "Sump Pump Installation":  # ← New case
       - type: choice
         prompt: "Do you have an existing sump pump?"

@@ -2,7 +2,7 @@
 
 export interface Quote {
   id: string;
-  quote_number: number; 
+  quote_number: number;
   quote_amount: number;
   details: string;
   status: string;
@@ -10,11 +10,11 @@ export interface Quote {
 }
 
 
-export interface RequestNote { 
-  id: string; 
-  note: string; 
-  author_role: 'admin' | 'customer'; 
-  created_at: string; 
+export interface RequestNote {
+  id: string;
+  note: string;
+  author_role: 'admin' | 'customer';
+  created_at: string;
 }
 
 export interface QuoteAttachment {

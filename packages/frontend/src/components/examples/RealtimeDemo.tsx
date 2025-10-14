@@ -1,11 +1,11 @@
 // packages/frontend/src/components/examples/RealtimeDemo.tsx
 
 import React from 'react';
-import { 
-  useUserRequests, 
-  useAllRequests, 
+import {
+  useUserRequests,
+  useAllRequests,
   useAdminDashboard,
-  useStatistics 
+  useStatistics
 } from '../../hooks';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -24,9 +24,9 @@ export const RealtimeDemo: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Real-Time System Demo</h1>
-      
+
       {isAdmin ? <AdminDemo /> : <UserDemo userId={user.id} />}
-      
+
       <div className="mt-8 p-4 bg-gray-100 rounded">
         <h3 className="font-semibold mb-2">🔄 Real-Time Features:</h3>
         <ul className="text-sm space-y-1">
@@ -42,14 +42,14 @@ export const RealtimeDemo: React.FC = () => {
 
 const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
   const { data: requests, loading, error } = useUserRequests(userId);
-  
+
   if (loading) return <div>Loading your requests...</div>;
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Your Requests (Real-Time)</h2>
-      
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-2">📊 Quick Stats</h3>
@@ -66,7 +66,7 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
             </span></div>
           </div>
         </div>
-        
+
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-2">📝 Recent Requests</h3>
           <div className="space-y-2">
@@ -84,9 +84,9 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="text-sm text-gray-600 mt-4">
-        💡 <strong>Try this:</strong> Open another browser window as admin, add a quote to one of your requests, 
+        💡 <strong>Try this:</strong> Open another browser window as admin, add a quote to one of your requests,
         and watch this page update automatically!
       </div>
     </div>
@@ -96,13 +96,13 @@ const UserDemo: React.FC<{ userId: string }> = ({ userId }) => {
 const AdminDemo: React.FC = () => {
   const { requests, users, quotes, loading } = useAdminDashboard();
   const { stats } = useStatistics();
-  
+
   if (loading) return <div>Loading admin dashboard...</div>;
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Admin Dashboard (Real-Time)</h2>
-      
+
       {/* Real-time Statistics */}
       <div className="grid gap-4 md:grid-cols-4">
         <div className="p-4 border rounded bg-blue-50">
@@ -122,7 +122,7 @@ const AdminDemo: React.FC = () => {
           <div className="text-sm text-gray-600">Emergency</div>
         </div>
       </div>
-      
+
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="p-4 border rounded">
@@ -139,7 +139,7 @@ const AdminDemo: React.FC = () => {
             ))}
           </div>
         </div>
-        
+
         <div className="p-4 border rounded">
           <h3 className="font-medium mb-3">👥 User Overview</h3>
           <div className="space-y-2">
@@ -155,9 +155,9 @@ const AdminDemo: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="text-sm text-gray-600 mt-4">
-        💡 <strong>Try this:</strong> Open another browser window as a user, create a new request, 
+        💡 <strong>Try this:</strong> Open another browser window as a user, create a new request,
         and watch the statistics above update in real-time!
       </div>
     </div>

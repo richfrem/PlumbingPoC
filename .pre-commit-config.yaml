@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(package-lock\.json|\.secrets\.baseline)$
+
+  - repo: local
+    hooks:
+      - id: block-env-files
+        name: Block .env files (except .env.example)
+        entry: python3
+        language: system
+        files: ^\.env$
+        exclude: ^\.env\.example$
+        args:
+          - -c
+          - |
+            import sys
+            filename = sys.argv[1]
+            if filename != '.env.example':
+                print(f"ERROR: Attempting to commit {filename} file!")
+                print("Use .env.example for templates and keep secrets in .env.local")
+                sys.exit(1)
+
+      - id: custom-secrets-scan
+        name: Custom secrets scanner (legacy Python hook)
+        entry: python3
+        language: system
+        files: .*
+        pass_filenames: false
+        args:
+          - .githooks/pre-commit

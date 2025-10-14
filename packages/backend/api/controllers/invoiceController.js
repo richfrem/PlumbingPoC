@@ -57,7 +57,7 @@ export async function createInvoice(req, res) {
     // Update request with invoice_id and change status to 'invoiced'
     const { error: updateError } = await supabase
       .from('requests')
-      .update({ 
+      .update({
         invoice_id: invoice.id,
         status: 'invoiced'
       })
@@ -117,10 +117,10 @@ export async function getInvoice(req, res) {
         .select('customer_name, service_address, user_id')
         .eq('id', invoice.request_id)
         .single();
-      
+
       if (request) {
         invoice.requests = request;
-        
+
         // Check permissions: admin or customer who owns the request
         if (!isAdmin && request.user_id !== userId) {
           return res.status(403).json({ error: 'Forbidden' });

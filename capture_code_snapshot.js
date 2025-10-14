@@ -121,7 +121,7 @@ try {
                 return;
             }
         }
-        
+
         // If this is a directory, add it to the tree and recurse
         if (fs.statSync(currentPath).isDirectory()) {
             if (relativePath) { // Don't add the root itself to the tree list
@@ -162,7 +162,7 @@ try {
     }
 
     traverseAndCapture(projectRoot);
-    
+
     // The file tree already includes './' from the traverseAndCapture function
     const fileTreeContent = '# Directory Structure (relative to project root)\n' + fileTreeLines.map(line => '  ' + line).join('\n') + '\n\n';
 
@@ -171,9 +171,9 @@ try {
     const finalContent = header + fileTreeContent + distilledContent;
     const tokenCount = encode(finalContent).length;
     const finalContentWithToken = finalContent.replace('{TOKEN_COUNT_PLACEHOLDER}', `# Mnemonic Weight (Token Count): ~${tokenCount.toLocaleString()} tokens`);
-    
+
     fs.writeFileSync(distilledOutputFile, finalContentWithToken, 'utf8');
-    
+
     console.log(`\n[SUCCESS] Snapshot successfully generated: ${distilledOutputFile}`);
     console.log(`[METRIC] Total Token Count: ~${tokenCount.toLocaleString()} tokens`);
     console.log(`[STATS] Files Captured: ${filesCaptured} | Directories/Files Skipped: ${itemsSkipped}`);

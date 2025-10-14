@@ -103,8 +103,8 @@ const ContactSection: React.FC = () => (
       <div className="bg-gray-800 p-6 rounded-xl">
         <h3 className="text-xl font-semibold mb-4">Emergency Service</h3>
         <p className="text-gray-300 mb-6">Plumbing emergencies don't wait for business hours. We're available 24/7 for urgent repairs.</p>
-        <a 
-          href="tel:555-123-4567" 
+        <a
+          href="tel:555-123-4567"
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors inline-flex items-center space-x-2 w-full justify-center"
         >
           <Phone className="w-5 h-5" />

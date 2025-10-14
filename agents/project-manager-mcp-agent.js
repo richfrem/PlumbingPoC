@@ -83,7 +83,7 @@ async function runWorkflow(email, password, target) {
       }
     }
     console.log(`✅ Validation successful: All ${feedback.improvements.length} proposed file paths are in the manifest.`);
-    
+
     if (feedback.status === 'implemented') {
       console.log("✅ Task has already been implemented. Archiving and completing workflow.");
       const archiveDir = path.join(__dirname, 'feedback', 'archive');
@@ -104,13 +104,13 @@ async function runWorkflow(email, password, target) {
       YOUR CURRENT TASK
       ---------------------------
       You have received and validated the following BATCH of UI/UX feedback for the '${target}' component. Your task is to create a brief summary and assign the entire batch to the 'frontend-developer-mcp' agent.
-      
+
       **Designer Feedback (Status: ${feedback.status}):**
       \`\`\`json
       ${JSON.stringify(feedback, null, 2)}
       \`\`\`
     `;
-    
+
     const result = await model.generateContent(prompt);
     const summary = await result.response.text();
     console.log('\n--- PROJECT MANAGER STATUS UPDATE ---');
@@ -128,7 +128,7 @@ async function runWorkflow(email, password, target) {
 
     if (updatedFeedback.status === 'implemented') {
         console.log('Verification successful. Status is "implemented".');
-        
+
         const archiveDir = path.join(__dirname, 'feedback', 'archive');
         if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
         const timestamp = new Date().toISOString().replace(/:/g, '-');

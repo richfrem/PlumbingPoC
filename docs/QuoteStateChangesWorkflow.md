@@ -3,9 +3,9 @@
 ```mermaid
 stateDiagram-v2
     direction TB
-    
+
     [*] --> New: User Submits Request
-    
+
     state New {
         description status = 'new'
     }
@@ -31,7 +31,7 @@ stateDiagram-v2
     Viewed --> Quoted: Admin adds a NEW or UPDATED quote (restarts the cycle)
     Accepted --> Scheduled: Admin sets a schedule date
     Scheduled --> Completed: Admin marks the job as finished
-    
+
     Completed --> [*]
 
     note right of Viewed

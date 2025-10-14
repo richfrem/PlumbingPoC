@@ -62,19 +62,19 @@ const { data: allRequests } = useTableQuery<QuoteRequest>('requests', {
 Pre-configured hooks for all database tables with optimal real-time settings.
 
 ```typescript
-import { 
-  useUserRequests, 
-  useAllRequests, 
+import {
+  useUserRequests,
+  useAllRequests,
   useRequestQuotes,
   useUserProfile,
-  useAdminDashboard 
+  useAdminDashboard
 } from './hooks';
 
 // In a user component
 function UserDashboard({ userId }) {
   const { data: requests, loading } = useUserRequests(userId);
   const { data: profile } = useUserProfile(userId);
-  
+
   return (
     <div>
       <h1>Welcome {profile?.name}</h1>
@@ -84,10 +84,10 @@ function UserDashboard({ userId }) {
   );
 }
 
-// In an admin component  
+// In an admin component
 function AdminDashboard() {
   const { requests, users, quotes, loading } = useAdminDashboard();
-  
+
   return (
     <div>
       <h1>Admin Dashboard</h1>
@@ -103,7 +103,7 @@ function AdminDashboard() {
 
 ### User & Profile Hooks
 - `useUserProfile(userId)` - Get current user's profile with real-time updates
-- `useAllUsers()` - Get all users (admin only) with real-time updates  
+- `useAllUsers()` - Get all users (admin only) with real-time updates
 - `useAllUserProfiles()` - Get all user profiles (admin only) with real-time updates
 
 ### Request & Quote Hooks
@@ -145,7 +145,7 @@ import { useUserRequests, useAllRequests } from './hooks';
 // For users
 const { data: requests, loading, error } = useUserRequests(userId);
 
-// For admins  
+// For admins
 const { data: requests, loading, error } = useAllRequests();
 ```
 
@@ -187,7 +187,7 @@ function MyComponent() {
 The system automatically invalidates and refetches queries when:
 
 - **INSERT** - New records added to subscribed tables
-- **UPDATE** - Existing records modified in subscribed tables  
+- **UPDATE** - Existing records modified in subscribed tables
 - **DELETE** - Records removed from subscribed tables
 
 ### Smart Query Invalidation
@@ -200,7 +200,7 @@ The system uses intelligent query invalidation:
 ['requests'] // All requests queries
 ['requests', '123'] // User-specific requests queries
 
-// If listening to 'quotes' table for requestId='456'  
+// If listening to 'quotes' table for requestId='456'
 // These query keys get invalidated:
 ['quotes'] // All quotes queries
 ['quotes', '456'] // Request-specific quotes queries
@@ -223,7 +223,7 @@ The system includes comprehensive logging:
 ```javascript
 // Check browser console for these logs:
 🚀 Setting up real-time subscriptions for tables: ['requests', 'quotes']
-📡 Real-time subscription status: SUBSCRIBED  
+📡 Real-time subscription status: SUBSCRIBED
 🔄 Real-time event: INSERT on requests
 🔄 Invalidating query key: ['requests']
 ✅ Fetched 5 requests records
@@ -249,7 +249,7 @@ The system includes comprehensive logging:
 1. **Open two browser windows** - one as admin, one as user
 2. **Create a new request** as user
 3. **Verify admin dashboard updates** immediately
-4. **Add a quote** as admin  
+4. **Add a quote** as admin
 5. **Verify user sees the quote** immediately
 
 ## Best Practices
@@ -276,10 +276,10 @@ const { data: requests } = useTableQuery('requests', { userId, additionalTables:
 ```typescript
 function MyComponent() {
   const { data: requests, loading, error } = useUserRequests(userId);
-  
+
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage error={error} />;
-  
+
   return <RequestsList requests={requests} />;
 }
 ```
@@ -289,7 +289,7 @@ function MyComponent() {
 // In admin components
 const { data: allRequests } = useAllRequests(); // ✅ Sees all requests
 
-// Don't do this in admin components  
+// Don't do this in admin components
 const { data: requests } = useUserRequests(adminUserId); // ❌ Only sees admin's own requests
 ```
 
@@ -304,7 +304,7 @@ const { data: requests } = useUserRequests(adminUserId); // ❌ Only sees admin'
 
 Planned improvements:
 - **Optimistic updates** for instant UI feedback
-- **Offline support** with query synchronization  
+- **Offline support** with query synchronization
 - **Query retry strategies** for better error handling
 - **Real-time presence indicators** (who's online)
 - **Real-time notifications** system integration

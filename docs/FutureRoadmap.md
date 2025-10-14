@@ -173,8 +173,8 @@ Next steps for tomorrow's work (high priority):
      - ✅ Success: `4242 4242 4242 4242`
      - ❌ Decline: `4000 0000 0000 0002`
    - End-to-end test:
-     - Create invoice → Customer views in portal → Pays with test card → 
-     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' → 
+     - Create invoice → Customer views in portal → Pays with test card →
+     - Webhook fires → `invoice.status` = 'paid' → `request.status` = 'paid' →
      - Owner receives SMS notification
    - Document test scenarios and results
 
@@ -332,7 +332,7 @@ nodes:
 **Proposed Enhanced Status Workflow:**
 
 ```
-new → quoted → accepted → scheduled → in_progress → 
+new → quoted → accepted → scheduled → in_progress →
 completed → invoiced → paid (OR overdue OR disputed)
 ```
 
@@ -471,10 +471,10 @@ completed → invoiced → paid (OR overdue OR disputed)
 
 ```sql
 -- Add new request statuses
-ALTER TABLE requests 
-  ADD CONSTRAINT valid_status 
-  CHECK (status IN ('new', 'quoted', 'accepted', 'scheduled', 
-                    'in_progress', 'completed', 'invoiced', 
+ALTER TABLE requests
+  ADD CONSTRAINT valid_status
+  CHECK (status IN ('new', 'quoted', 'accepted', 'scheduled',
+                    'in_progress', 'completed', 'invoiced',
                     'paid', 'overdue', 'disputed', 'cancelled'));
 
 -- Enhance invoices table

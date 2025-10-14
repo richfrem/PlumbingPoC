@@ -39,7 +39,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
   done
-  
+
   # Show help
   if [[ "$HELP" == true ]]; then
     echo "E2E Test Runner Script"

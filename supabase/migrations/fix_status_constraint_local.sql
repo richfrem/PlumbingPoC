@@ -2,7 +2,7 @@
 -- Run this if you get errors when trying to set status to 'in_progress'
 
 -- Drop the old constraint (suppress error if it doesn't exist)
-DO $$ 
+DO $$
 BEGIN
   ALTER TABLE requests DROP CONSTRAINT requests_status_check;
 EXCEPTION
@@ -10,7 +10,7 @@ EXCEPTION
 END $$;
 
 -- Add the updated constraint with all 12 statuses
-ALTER TABLE requests ADD CONSTRAINT requests_status_check 
+ALTER TABLE requests ADD CONSTRAINT requests_status_check
   CHECK (status IN (
     'new',
     'viewed',
@@ -27,7 +27,7 @@ ALTER TABLE requests ADD CONSTRAINT requests_status_check
   ));
 
 -- Verify the constraint was added
-SELECT conname, pg_get_constraintdef(oid) 
-FROM pg_constraint 
-WHERE conrelid = 'requests'::regclass 
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'requests'::regclass
 AND conname = 'requests_status_check';

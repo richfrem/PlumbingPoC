@@ -36,18 +36,18 @@ const submitQuoteSchema = z.object({
 
 // Schema for adding a new note to a request
 const addNoteSchema = z.object({
-  params: z.object({ 
-    id: z.string().uuid("Invalid request ID format.") 
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format.")
   }),
-  body: z.object({ 
-    note: z.string().min(1, "Note cannot be empty.") 
+  body: z.object({
+    note: z.string().min(1, "Note cannot be empty.")
   }),
 });
 
 // Schema for an admin creating a quote for a request
 const createQuoteSchema = z.object({
-  params: z.object({ 
-    id: z.string().uuid("Invalid request ID format.") 
+  params: z.object({
+    id: z.string().uuid("Invalid request ID format.")
   }),
   body: z.object({
     quote_amount: z.number().positive("Quote amount must be a positive number."),

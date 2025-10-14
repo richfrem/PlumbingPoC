@@ -22,13 +22,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { 
-  Send, 
-  X as CloseIcon, 
-  Wrench, 
-  AlertCircle, 
-  Home, 
-  Calendar, 
+import {
+  Send,
+  X as CloseIcon,
+  Wrench,
+  AlertCircle,
+  Home,
+  Calendar,
   ClipboardList,
   MessageCircle,
   User
@@ -116,7 +116,7 @@ const sanitizeText = (value: unknown): string => {
 // Helper function to determine contextual icon based on message content
 const getContextualIcon = (text: string) => {
   const lowerText = text.toLowerCase();
-  
+
   if (lowerText.includes('emergency')) {
     return <AlertCircle size={18} style={{ color: '#dc2626' }} />;
   }
@@ -129,7 +129,7 @@ const getContextualIcon = (text: string) => {
   if (lowerText.includes('review') || lowerText.includes('confirm') || lowerText.includes('summary')) {
     return <ClipboardList size={18} style={{ color: '#3182CE' }} />;
   }
-  
+
   // Default wrench icon for service-related questions
   return <Wrench size={18} style={{ color: '#3182CE' }} />;
 };
@@ -437,7 +437,7 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
       // Calculate next messages BEFORE updating state
       const nextMessages = [...conversation, userMessage];
       console.log('[QuoteAgentModal] Calculated nextMessages, length:', nextMessages.length);
-      
+
       // Update conversation state
       setConversation(nextMessages);
       console.log('[QuoteAgentModal] setConversation called, new length:', nextMessages.length);

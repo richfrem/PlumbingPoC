@@ -45,7 +45,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       </div>
     </div>
   );
-  
+
   const { user, profile: contextProfile } = useAuth();
   const [email, setEmail] = useState(user?.email || '');
   const [name, setName] = useState(contextProfile?.name || '');
@@ -167,7 +167,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       return;
     }
 
-    // 2. NAME VALIDATION  
+    // 2. NAME VALIDATION
     if (!name || !name.trim()) {
       setSaveError('Name is required');
       setLoading(false);
@@ -305,7 +305,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
       setLoading(false);
       return;
     }
-    
+
     const formattedPostalCode = postalCode.toUpperCase().replace(/\s/g, '').replace(/([A-Z0-9]{3})([A-Z0-9]{3})/, '$1-$2');
 
     // Geocode the address if it's complete

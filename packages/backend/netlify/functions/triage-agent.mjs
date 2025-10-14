@@ -110,7 +110,7 @@ function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) 
  */
 function formatAnswersForAnalysis(answers) {
   if (!Array.isArray(answers)) return 'No answers provided';
-  
+
   return answers
     .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
     .join('\n\n');
@@ -263,7 +263,7 @@ export async function handler(event, context) {
 
   try {
     const requestData = JSON.parse(event.body);
-    
+
     console.log('[TriageAgent] Received triage request for:', requestData.id);
 
     // Run the AI analysis
@@ -280,7 +280,7 @@ export async function handler(event, context) {
 
   } catch (error) {
     console.error('[TriageAgent] Error:', error);
-    
+
     return {
       statusCode: 500,
       headers: {

@@ -47,7 +47,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
     setSelectedRequest(req);
     setIsModalOpen(true);
   };
-  
+
   const handleModalUpdate = useCallback(() => {
     refreshRequests();
   }, [refreshRequests]);

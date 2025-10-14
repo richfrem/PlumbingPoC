@@ -23,9 +23,9 @@ interface PipelineViewProps {
   onStatusClick?: (status: string) => void;
 }
 
-const PipelineView: React.FC<PipelineViewProps> = ({ 
-  requests, 
-  activeStage, 
+const PipelineView: React.FC<PipelineViewProps> = ({
+  requests,
+  activeStage,
   onStageClick,
   activeFilterStatus = 'all',
   onStatusClick
@@ -164,11 +164,11 @@ const PipelineView: React.FC<PipelineViewProps> = ({
                   {stage.label}
                 </Typography>
               </Box>
-              <Typography 
-                variant="h5" 
-                sx={{ 
-                  textAlign: 'center', 
-                  fontWeight: 'bold', 
+              <Typography
+                variant="h5"
+                sx={{
+                  textAlign: 'center',
+                  fontWeight: 'bold',
                   mt: 0.5,
                   opacity: isInactive ? 0.5 : 1
                 }}
@@ -183,9 +183,9 @@ const PipelineView: React.FC<PipelineViewProps> = ({
       {/* Expandable Status Chips for Active Stage */}
       {activeStage && onStatusClick && (
         <Collapse in={!!activeStage}>
-          <Box sx={{ 
-            p: 2, 
-            bgcolor: 'grey.50', 
+          <Box sx={{
+            p: 2,
+            bgcolor: 'grey.50',
             borderTop: '1px solid',
             borderColor: 'divider',
             display: 'flex',

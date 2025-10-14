@@ -232,7 +232,7 @@ async function moveToNextNode(session, currentNode) {
 
 async function checkForAiFollowUps(session) {
   console.log('[QuoteAgent] checkForAiFollowUps called');
-  
+
   if (session.nodeData.followUpsGenerated) {
     console.log('[QuoteAgent] Follow-ups already generated, building summary');
     buildSummary(session);

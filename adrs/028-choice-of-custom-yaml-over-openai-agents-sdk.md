@@ -1,8 +1,8 @@
 # ADR-028: Choice of Custom YAML Workflow Engine Over OpenAI Agents SDK
 
-**Status**: Accepted  
-**Date**: 2025-06-XX  
-**Deciders**: Engineering Team  
+**Status**: Accepted
+**Date**: 2025-06-XX
+**Deciders**: Engineering Team
 **Related**: ADR-026 (Superseded), ADR-027
 
 ---
@@ -93,7 +93,7 @@ The OpenAI Agents SDK is not suitable for our use case.
    options:
      - text: "Residential"
        next: residential_questions
-     - text: "Commercial" 
+     - text: "Commercial"
        next: commercial_questions
    ```
    - Product managers can modify workflows

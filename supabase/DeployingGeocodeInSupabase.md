@@ -17,7 +17,7 @@ Add a new secret:
 Name: GOOGLE_MAPS_API_KEY
 Value: Your Google Maps API key
 
-5. create the external function in supabase.  
+5. create the external function in supabase.
 code for function see supabase/supabase/functions/index.ts
 call function "geocode"
 note can delete with "supabase functions delete geocode" in cli
@@ -40,11 +40,11 @@ curl -X POST 'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode' \
 
 verify was updated coordinates in supabase from the function call
 
-SELECT id, service_address, latitude, longitude, geocoded_address 
-FROM requests 
+SELECT id, service_address, latitude, longitude, geocoded_address
+FROM requests
 WHERE id = '0c4714f8-df2e-41f1-9f60-615b78613cb6';
 
-should give something like 
+should give something like
 
 [
   {

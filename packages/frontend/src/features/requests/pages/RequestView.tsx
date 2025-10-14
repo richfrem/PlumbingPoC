@@ -42,9 +42,9 @@ const RequestView: React.FC<RequestViewProps> = ({ requestId }) => {
   return (
     <Box sx={{ px: 2, py: 4 }}>
       <Paper sx={{ maxWidth: 1024, mx: 'auto', bgcolor: '#f9fafb', borderRadius: 2, boxShadow: 3, overflow: 'hidden' }}>
-        <ModalHeader 
-          title={`Job Docket: ${request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Request'}`} 
-          subtitle={`ID: ${request.id}`} 
+        <ModalHeader
+          title={`Job Docket: ${request.problem_category ? request.problem_category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Request'}`}
+          subtitle={`ID: ${request.id}`}
           onClose={() => { window.history.back(); }}
           actions={<RequestActions request={request} isAdmin={isAdmin} currentStatus={request.status} isUpdating={false} onStatusChange={() => {}} />}
           statusColor={undefined}

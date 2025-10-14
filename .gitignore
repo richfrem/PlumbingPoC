@@ -31,3 +31,4 @@ agents/screenshots/
 tests/e2e/debug/
 # Local Netlify folder
 .netlify
+.secrets.baseline

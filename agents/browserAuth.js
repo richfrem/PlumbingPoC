@@ -20,7 +20,7 @@ async function clickSignInButton(page) {
  * ======================================================
  * FUNCTION: signOut
  * PURPOSE:  Automate logout and report success.
- * PARAMETERS: 
+ * PARAMETERS:
  * @param {import('playwright').Browser} browser - Playwright browser instance
  * @param {string} baseUrl - Base URL of the frontend
  * @param {object} [options] - Optional selectors and paths
@@ -33,7 +33,7 @@ async function signOut(browser, baseUrl, options = {}) {
     console.error("signOut requires a page object in options.");
     return false;
   }
-  const loginSelector = 'role=button[name="Sign In"]'; 
+  const loginSelector = 'role=button[name="Sign In"]';
 
   let success = false;
   try {
@@ -48,7 +48,7 @@ async function signOut(browser, baseUrl, options = {}) {
 
     console.log('Attempting to click "Sign Out" button...');
     await page.click(signOutButtonSelector);
-    
+
     await page.waitForSelector(loginSelector, { timeout: 5000 });
     console.log('Logout successful');
     success = true;
@@ -73,7 +73,7 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
   const loginPath = options.loginPath || '/';
   const emailSelector = options.emailSelector || 'input[type="email"]';
   const passwordSelector = options.passwordSelector || 'input[type="password"]';
-  
+
   // --- THE FIX IS HERE ---
   // The new success selector is not role-specific. It looks for the user menu button
   // that appears for ANY successfully logged-in user.
@@ -85,7 +85,7 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
     // First, check if we are ALREADY logged in by looking for the universal success selector.
     console.log(`Checking for existing login session by looking for: "User Menu Button"`);
     await page.waitForSelector(successSelector, { timeout: 3000 }); // Short timeout
-    
+
     // If the selector is found, we're already logged in.
     console.log('✅ Already logged in. Skipping login flow.');
     return { success: true, page };
@@ -96,20 +96,20 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
     try {
       console.log('Attempting to click Sign In button...');
       await clickSignInButton(page);
-      
+
       console.log('Waiting for email input to appear...');
       await page.waitForSelector(emailSelector, { timeout: 10000 });
-      
+
       console.log('Filling email and password...');
       await page.fill(emailSelector, email);
       await page.fill(passwordSelector, password);
-      
+
       console.log('Clicking "Sign In with Email" button...');
       await page.getByRole('button', { name: /sign in with email/i }).click();
 
       console.log('Waiting for login success indicator (User Menu)...');
       await page.waitForSelector(successSelector, { timeout: 10000 });
-      
+
       console.log('Login successful for', email);
       return { success: true, page };
 

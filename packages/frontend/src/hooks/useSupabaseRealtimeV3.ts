@@ -207,7 +207,7 @@ export function useSupabaseRealtimeV3(
       // Suppress noisy "mismatch between server and client bindings" errors
       // These are harmless WebSocket protocol warnings that don't affect functionality
       const isBindingMismatch = err?.message?.includes('mismatch between server and client bindings');
-      
+
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime v3 channel subscribed successfully');
         console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
