@@ -3,25 +3,45 @@
 import { database as supabase } from '../config/supabase/index.js';
 import { logger } from '../../src/lib/logger.js';
 
-// Import the Netlify function handler to reuse the logic
+// Call the triage-agent as a separate Netlify function for proper logging
 async function runTriageAnalysis(requestData) {
-  // Dynamically import to avoid circular dependencies
-  const { handler } = await import('../../netlify/functions/triage-agent.mjs');
+  const isNetlify = process.env.NETLIFY === 'true';
 
-  // Create a mock Netlify event
-  const event = {
-    httpMethod: 'POST',
-    body: JSON.stringify(requestData)
-  };
+  if (isNetlify) {
+    // In production, call the triage-agent as a separate function
+    const response = await fetch('/.netlify/functions/triage-agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
 
-  const result = await handler(event, {});
-  const analysis = JSON.parse(result.body);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Triage analysis failed');
+    }
 
-  if (result.statusCode !== 200) {
-    throw new Error(analysis.error || 'Triage analysis failed');
+    return await response.json();
+  } else {
+    // In local development, import and call directly
+    const { handler } = await import('../../netlify/functions/triage-agent.mjs');
+
+    // Create a mock Netlify event
+    const event = {
+      httpMethod: 'POST',
+      body: JSON.stringify(requestData)
+    };
+
+    const result = await handler(event, {});
+    const analysis = JSON.parse(result.body);
+
+    if (result.statusCode !== 200) {
+      throw new Error(analysis.error || 'Triage analysis failed');
+    }
+
+    return analysis;
   }
-
-  return analysis;
 }
 
 const triageRequest = async (req, res) => {
