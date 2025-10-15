@@ -352,14 +352,14 @@ Examples based on your situation:
         model: model,
         messages: [{ role: 'user', content: context }],
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         apiParams.max_completion_tokens = 60;
       } else {
         apiParams.max_tokens = 60;
       }
-      
+
       // Add temperature for all current models
       apiParams.temperature = 0.1; // Very low temperature for focused, consistent answers
 

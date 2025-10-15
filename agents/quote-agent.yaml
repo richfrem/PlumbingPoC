@@ -38,7 +38,7 @@ ai_followup_config:
       "requiresFollowUp": true,
       "questions": [
         "First question about the plumbing issue",
-        "Second question about accessibility or materials", 
+        "Second question about accessibility or materials",
         "Third question about scope or complications"
       ]
     }

@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-15T04:23:02.195Z
+Generated On: 2025-10-15T04:45:20.956Z
 
-# Mnemonic Weight (Token Count): ~373,188 tokens
+# Mnemonic Weight (Token Count): ~373,706 tokens
 
 # Directory Structure (relative to project root)
   ./.githooks/
@@ -6150,6 +6150,7 @@ We will implement a centralized logging utility (`packages/frontend/src/lib/logg
     *   **Conditional logger.log:** Wrapping individual `logger.log` calls with environment checks - rejected due to code duplication and maintenance overhead
     *   **Third-party Logging Libraries:** Libraries like Winston or Pino - rejected due to added complexity and dependencies for a frontend application
     *   **Build-time Logging Removal:** Using build tools to strip logging in production - rejected due to need for runtime logging control and debugging capabilities
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/AGENT_REPOS.md ---
@@ -7446,7 +7447,7 @@ ai_followup_config:
       "requiresFollowUp": true,
       "questions": [
         "First question about the plumbing issue",
-        "Second question about accessibility or materials", 
+        "Second question about accessibility or materials",
         "Third question about scope or complications"
       ]
     }
@@ -13761,6 +13762,7 @@ npx vitest run -t "parses|fallback"
 - Always reset modules to avoid stale mocks
 
 ✅ With this playbook, future developers can set up GPT-5 agent integration tests correctly on the first attempt.
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/QUOTE_AGENT_MAINTENANCE.md ---
@@ -16497,9 +16499,9 @@ const prompt = `
     const model = process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL; // A model that reliably supports JSON mode
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let apiUrl, requestData;
-    
+
     if (isGpt5Model) {
       // Use Responses API for GPT-5 models
       apiUrl = 'https://api.openai.com/v1/responses';
@@ -16519,18 +16521,18 @@ const prompt = `
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         requestData.max_completion_tokens = 250;
       } else {
         requestData.max_tokens = 250;
       }
-      
+
       // Add temperature for non-GPT-5 models
       requestData.temperature = 0.2;
     }
-    
+
     const gptResponse = await axios.post(apiUrl,
       requestData,
       {
@@ -16542,8 +16544,8 @@ const prompt = `
     );
 
     // Extract content based on API type
-    const replyContent = isGpt5Model 
-      ? gptResponse.data.output_text 
+    const replyContent = isGpt5Model
+      ? gptResponse.data.output_text
       : gptResponse.data.choices[0].message.content;    // The parsing logic is now simple, safe, and reliable.
     try {
       const parsedJson = JSON.parse(replyContent);
@@ -19309,7 +19311,7 @@ async function generateFollowUpQuestions(session) {
     const model = config.model || process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL;
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let completion;
     if (isGpt5Model) {
       // Use new Responses API for GPT-5 models
@@ -19320,7 +19322,7 @@ async function generateFollowUpQuestions(session) {
         text: { verbosity: "low" }, // Concise responses
         max_output_tokens: config.max_completion_tokens || config.max_tokens || 250,
       };
-      
+
       completion = await openAiClient.responses.create(responseParams);
     } else {
       // Use Chat Completions API for older models
@@ -19331,23 +19333,23 @@ async function generateFollowUpQuestions(session) {
           { role: 'user', content: prompt },
         ],
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         apiParams.max_completion_tokens = config.max_completion_tokens || config.max_tokens || 250;
       } else {
         apiParams.max_tokens = config.max_completion_tokens || config.max_tokens || 250;
       }
-      
+
       // Add temperature for non-GPT-5 models
       apiParams.temperature = config.temperature ?? 0.2;
-      
+
       completion = await openAiClient.chat.completions.create(apiParams);
     }
 
     // Extract content based on API type
-    const content = isGpt5Model 
-      ? completion.output_text 
+    const content = isGpt5Model
+      ? completion.output_text
       : completion.choices?.[0]?.message?.content;
     if (!content) return [];
 
@@ -19840,51 +19842,67 @@ Return your analysis as a JSON object matching the specified output schema.`;
 
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let response;
-    if (isGpt5Model) {
-      const responseParams = {
-        model: model,
-        input: `${systemPrompt}\n\nPlease analyze this plumbing service request and provide the triage assessment.`,
-        reasoning: { effort: "medium" },
-        text: { verbosity: "medium" },
-        max_output_tokens: 2000,
-        tools: [{
-          type: "function",
-          name: "provide_triage_assessment",
-          description: "Provide a structured triage assessment for a plumbing service request",
-          parameters: analyzeNode.output
-        }],
-        tool_choice: { type: "function", name: "provide_triage_assessment" }
-      };
-      
-      response = await openAiClient.responses.create(responseParams);
-    } else {
-      const apiParams = {
-        model: model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Please analyze this plumbing service request and provide the triage assessment.' }
-        ],
-        response_format: { type: 'json_object' },
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'provide_triage_assessment',
-            description: 'Provide a structured triage assessment for a plumbing service request',
+    let maxTokens = 2000;
+    let retryCount = 0;
+    const maxRetries = 1;
+
+    while (retryCount <= maxRetries) {
+      if (isGpt5Model) {
+        const responseParams = {
+          model: model,
+          input: `${systemPrompt}\n\nPlease analyze this plumbing service request and provide the triage assessment.`,
+          reasoning: { effort: "medium" },
+          text: { verbosity: "medium" },
+          max_output_tokens: maxTokens,
+          tools: [{
+            type: "function",
+            name: "provide_triage_assessment",
+            description: "Provide a structured triage assessment for a plumbing service request",
             parameters: analyzeNode.output
-          }
-        }],
-        tool_choice: { type: 'function', function: { name: 'provide_triage_assessment' } }
-      };
-      
-      if (isGpt4oModel) {
-        apiParams.max_completion_tokens = 2000;
+          }],
+          tool_choice: { type: "function", name: "provide_triage_assessment" }
+        };
+
+        response = await openAiClient.responses.create(responseParams);
       } else {
-        apiParams.max_tokens = 2000;
+        const apiParams = {
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Please analyze this plumbing service request and provide the triage assessment.' }
+          ],
+          response_format: { type: 'json_object' },
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'provide_triage_assessment',
+              description: 'Provide a structured triage assessment for a plumbing service request',
+              parameters: analyzeNode.output
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'provide_triage_assessment' } }
+        };
+
+        if (isGpt4oModel) {
+          apiParams.max_completion_tokens = maxTokens;
+        } else {
+          apiParams.max_tokens = maxTokens;
+        }
+
+        response = await openAiClient.chat.completions.create(apiParams);
       }
-      
-      response = await openAiClient.chat.completions.create(apiParams);
+
+      // Check if response is complete for GPT-5 models
+      if (isGpt5Model && response.status === 'incomplete' && response.incomplete_details?.reason === 'max_output_tokens' && retryCount < maxRetries) {
+        logger.log(`[TriageAgent] Response incomplete due to max_output_tokens, retrying with higher limit. Attempt ${retryCount + 1}/${maxRetries}`);
+        maxTokens = Math.min(maxTokens * 2, 8000); // Double tokens, max 8000
+        retryCount++;
+        continue;
+      }
+
+      break; // Exit loop if response is complete or not retrying
     }
 
     // 🔹 NEW: Hardened parsing logic
@@ -19921,7 +19939,20 @@ Return your analysis as a JSON object matching the specified output schema.`;
     logger.log("[DEBUG] OpenAI raw response:", JSON.stringify(response, null, 2));
 
     if (!analysis) {
-      throw new Error('No parsable triage analysis in OpenAI response');
+      // Fallback: generate basic analysis from preliminary scores
+      logger.log("[TriageAgent] No parsable analysis from AI, using fallback based on preliminary scores");
+      analysis = {
+        triage_summary: `Basic triage assessment based on preliminary analysis. Service category: ${problem_category}. Emergency: ${is_emergency ? 'Yes' : 'No'}.`,
+        priority_score: Math.min(10, Math.max(1, Math.round((complexityScore + urgencyScore) / 2))),
+        priority_explanation: `Priority based on complexity (${complexityScore}/10) and urgency (${urgencyScore}/10) scores.`,
+        profitability_score: Math.min(10, Math.max(1, Math.round(complexityScore * 0.8))), // Assume profitability correlates with complexity
+        profitability_explanation: `Profitability estimated based on job complexity (${complexityScore}/10).`,
+        required_expertise: {
+          skill_level: complexityScore >= 8 ? 'master' : complexityScore >= 6 ? 'journeyman' : 'apprentice',
+          specialized_skills: [problem_category.replace('_', ' ')],
+          reasoning: `Skill level determined by job complexity score of ${complexityScore}/10.`
+        }
+      };
     }
 
     logger.log('[TriageAgent] Analysis completed:', {
@@ -20032,6 +20063,7 @@ const logger = {
 };
 
 export { logger };
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/backend/start.js ---
@@ -26818,7 +26850,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
   const viewedMarker = useRef<string | null>(null);
 
   useEffect(() => {
@@ -26850,9 +26882,23 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleTriageRequest = async () => {
     if (!request) return;
+
+    // Show notification that triage is starting and will take time
+    setSnackbarMessage('AI triage analysis in progress... This may take 20-30 seconds. Please don\'t refresh the page.');
+    setSnackbarSeverity('info');
+    setSnackbarOpen(true);
+
     triageMutation.mutate({ requestId: request.id }, {
       onSuccess: () => {
         refreshRequestData();
+        setSnackbarMessage('AI triage analysis completed successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      },
+      onError: (error) => {
+        setSnackbarMessage('AI triage analysis failed. Please try again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     });
   };
@@ -29128,6 +29174,7 @@ export const error = logger.error;
 export const warn = logger.warn;
 export const info = logger.info;
 export const debug = logger.debug;
+
 --- END OF FILE ---
 
 --- START OF FILE ./packages/frontend/src/lib/serviceDefinitions.ts ---
@@ -37193,14 +37240,14 @@ Examples based on your situation:
         model: model,
         messages: [{ role: 'user', content: context }],
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         apiParams.max_completion_tokens = 60;
       } else {
         apiParams.max_tokens = 60;
       }
-      
+
       // Add temperature for all current models
       apiParams.temperature = 0.1; // Very low temperature for focused, consistent answers
 
@@ -42625,7 +42672,7 @@ vi.mock("openai", async () => {
     default: class MockOpenAI {
       constructor() {
         this.responses = {
-          create: vi.fn().mockImplementation(() => 
+          create: vi.fn().mockImplementation(() =>
             shouldReject ? Promise.reject(new Error("API failure")) : Promise.resolve(mockResponse)
           ),
         };
@@ -43004,7 +43051,7 @@ describe("OpenAI Integration Agents", () => {
       await quoteAgentHandler(eventQuote, {});
       const eventTriage = { httpMethod: "POST", body: JSON.stringify({ id: "req-log" }) };
       await triageAgentHandler(eventTriage, {});
-      
+
       expect(logger.log).toHaveBeenCalledWith("[DEBUG] OpenAI raw response:", expect.any(String));
     });
 
@@ -43586,5 +43633,6 @@ export default defineConfig({
     },
   },
 });
+
 --- END OF FILE ---
 

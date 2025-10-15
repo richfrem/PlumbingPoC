@@ -142,9 +142,9 @@ const prompt = `
     const model = process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL; // A model that reliably supports JSON mode
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let apiUrl, requestData;
-    
+
     if (isGpt5Model) {
       // Use Responses API for GPT-5 models
       apiUrl = 'https://api.openai.com/v1/responses';
@@ -164,18 +164,18 @@ const prompt = `
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' }
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         requestData.max_completion_tokens = 250;
       } else {
         requestData.max_tokens = 250;
       }
-      
+
       // Add temperature for non-GPT-5 models
       requestData.temperature = 0.2;
     }
-    
+
     const gptResponse = await axios.post(apiUrl,
       requestData,
       {
@@ -187,8 +187,8 @@ const prompt = `
     );
 
     // Extract content based on API type
-    const replyContent = isGpt5Model 
-      ? gptResponse.data.output_text 
+    const replyContent = isGpt5Model
+      ? gptResponse.data.output_text
       : gptResponse.data.choices[0].message.content;    // The parsing logic is now simple, safe, and reliable.
     try {
       const parsedJson = JSON.parse(replyContent);

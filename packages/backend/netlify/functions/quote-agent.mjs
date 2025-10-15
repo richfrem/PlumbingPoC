@@ -328,7 +328,7 @@ async function generateFollowUpQuestions(session) {
     const model = config.model || process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL;
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let completion;
     if (isGpt5Model) {
       // Use new Responses API for GPT-5 models
@@ -339,7 +339,7 @@ async function generateFollowUpQuestions(session) {
         text: { verbosity: "low" }, // Concise responses
         max_output_tokens: config.max_completion_tokens || config.max_tokens || 250,
       };
-      
+
       completion = await openAiClient.responses.create(responseParams);
     } else {
       // Use Chat Completions API for older models
@@ -350,23 +350,23 @@ async function generateFollowUpQuestions(session) {
           { role: 'user', content: prompt },
         ],
       };
-      
+
       // Set max tokens parameter based on model type
       if (isGpt4oModel) {
         apiParams.max_completion_tokens = config.max_completion_tokens || config.max_tokens || 250;
       } else {
         apiParams.max_tokens = config.max_completion_tokens || config.max_tokens || 250;
       }
-      
+
       // Add temperature for non-GPT-5 models
       apiParams.temperature = config.temperature ?? 0.2;
-      
+
       completion = await openAiClient.chat.completions.create(apiParams);
     }
 
     // Extract content based on API type
-    const content = isGpt5Model 
-      ? completion.output_text 
+    const content = isGpt5Model
+      ? completion.output_text
       : completion.choices?.[0]?.message?.content;
     if (!content) return [];
 

@@ -52,7 +52,7 @@ vi.mock("openai", async () => {
     default: class MockOpenAI {
       constructor() {
         this.responses = {
-          create: vi.fn().mockImplementation(() => 
+          create: vi.fn().mockImplementation(() =>
             shouldReject ? Promise.reject(new Error("API failure")) : Promise.resolve(mockResponse)
           ),
         };
@@ -431,7 +431,7 @@ describe("OpenAI Integration Agents", () => {
       await quoteAgentHandler(eventQuote, {});
       const eventTriage = { httpMethod: "POST", body: JSON.stringify({ id: "req-log" }) };
       await triageAgentHandler(eventTriage, {});
-      
+
       expect(logger.log).toHaveBeenCalledWith("[DEBUG] OpenAI raw response:", expect.any(String));
     });
 

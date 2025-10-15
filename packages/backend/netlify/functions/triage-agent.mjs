@@ -206,7 +206,7 @@ Return your analysis as a JSON object matching the specified output schema.`;
 
     const isGpt5Model = model?.startsWith('gpt-5');
     const isGpt4oModel = model?.startsWith('gpt-4o');
-    
+
     let response;
     let maxTokens = 2000;
     let retryCount = 0;
@@ -228,7 +228,7 @@ Return your analysis as a JSON object matching the specified output schema.`;
           }],
           tool_choice: { type: "function", name: "provide_triage_assessment" }
         };
-        
+
         response = await openAiClient.responses.create(responseParams);
       } else {
         const apiParams = {
@@ -248,13 +248,13 @@ Return your analysis as a JSON object matching the specified output schema.`;
           }],
           tool_choice: { type: 'function', function: { name: 'provide_triage_assessment' } }
         };
-        
+
         if (isGpt4oModel) {
           apiParams.max_completion_tokens = maxTokens;
         } else {
           apiParams.max_tokens = maxTokens;
         }
-        
+
         response = await openAiClient.chat.completions.create(apiParams);
       }
 
