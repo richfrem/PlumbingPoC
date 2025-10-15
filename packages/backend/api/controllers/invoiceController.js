@@ -1,6 +1,7 @@
 // packages/backend/api/controllers/invoiceController.js
 
 import { database as supabase } from '../config/supabase/index.js';
+import { logger } from '../../src/lib/logger.js';
 
 /**
  * Create a new invoice for a completed request
@@ -10,7 +11,7 @@ export async function createInvoice(req, res) {
     const { requestId } = req.params;
     const { line_items, subtotal, tax_amount, total, due_date, notes, payment_method } = req.body;
 
-    console.log('📄 Creating invoice for request:', requestId);
+    logger.log('📄 Creating invoice for request:', requestId);
 
     // Verify request exists and is completed
     const { data: request, error: requestError } = await supabase
@@ -70,7 +71,7 @@ export async function createInvoice(req, res) {
       return res.status(500).json({ error: 'Failed to link invoice to request' });
     }
 
-    console.log('✅ Invoice created successfully:', invoice.id);
+    logger.log('✅ Invoice created successfully:', invoice.id);
     res.status(201).json(invoice);
 
   } catch (error) {
@@ -181,7 +182,7 @@ export async function updateInvoice(req, res) {
       return res.status(500).json({ error: 'Failed to update invoice' });
     }
 
-    console.log('✅ Invoice updated successfully:', id);
+    logger.log('✅ Invoice updated successfully:', id);
     res.json(invoice);
 
   } catch (error) {
@@ -245,7 +246,7 @@ export async function markInvoiceAsPaid(req, res) {
       console.error('❌ Error updating request status to paid:', requestUpdateError);
     }
 
-    console.log('✅ Invoice marked as paid:', id);
+    logger.log('✅ Invoice marked as paid:', id);
     res.json(updatedInvoice);
 
   } catch (error) {

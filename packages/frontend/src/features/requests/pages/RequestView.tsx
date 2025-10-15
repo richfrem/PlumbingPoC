@@ -7,6 +7,7 @@ import RequestProblemDetails from '../components/RequestProblemDetails';
 import QuoteList from '../components/QuoteList';
 import ModalHeader from '../components/ModalHeader';
 import RequestActions from '../components/RequestActions';
+import { logger } from '../../../lib/logger';
 
 interface RequestViewProps {
   requestId: string;
@@ -70,7 +71,7 @@ const RequestView: React.FC<RequestViewProps> = ({ requestId }) => {
                 request={request}
                 isReadOnly={!isAdmin}
                 isUpdating={false}
-                onAcceptQuote={() => { console.log('Accept quote called from RequestView (noop)'); }}
+                onAcceptQuote={() => { logger.log('Accept quote called from RequestView (noop)'); }}
                 onUpdateRequest={() => { /* noop for read-only view */ }}
               />
             </Grid>

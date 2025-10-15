@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Page object for user "My Requests" functionality
@@ -15,7 +17,7 @@ export class MyRequestsPage extends BasePage {
    * @param requestId The ID of the request to find.
    */
   async navigateToUserRequestInList(requestId: string): Promise<void> {
-    console.log(`Navigating to user request ${requestId} in My Requests list...`);
+    logger.log(`Navigating to user request ${requestId} in My Requests list...`);
 
     // User requests are typically buttons with data-request-id attributes
     const requestButton = this.page.locator(`button[data-request-id="${requestId}"]`);
@@ -24,7 +26,7 @@ export class MyRequestsPage extends BasePage {
     // Scroll the element into view if needed
     await requestButton.scrollIntoViewIfNeeded();
 
-    console.log(`✅ Found user request ${requestId} in My Requests list.`);
+    logger.log(`✅ Found user request ${requestId} in My Requests list.`);
   }
 
   /**
@@ -33,7 +35,7 @@ export class MyRequestsPage extends BasePage {
    * @param requestId The ID of the request to open.
    */
   async openUserRequestById(requestId: string): Promise<void> {
-    console.log(`Opening user request ${requestId} from My Requests...`);
+    logger.log(`Opening user request ${requestId} from My Requests...`);
 
     // First navigate to the request in the list
     await this.navigateToUserRequestInList(requestId);
@@ -45,7 +47,7 @@ export class MyRequestsPage extends BasePage {
     // Wait for the request details modal to open
     await expect(this.page.getByText(/Job Docket:/)).toBeVisible();
 
-    console.log(`✅ Successfully opened user request ${requestId}.`);
+    logger.log(`✅ Successfully opened user request ${requestId}.`);
   }
 
   /**
@@ -60,7 +62,7 @@ export class MyRequestsPage extends BasePage {
     hasAttachments?: boolean;
     hasQuotes?: boolean;
   }): Promise<void> {
-    console.log(`Viewing detailed information for user request ${requestId}...`);
+    logger.log(`Viewing detailed information for user request ${requestId}...`);
 
     // Open the request first
     await this.openUserRequestById(requestId);
@@ -78,10 +80,10 @@ export class MyRequestsPage extends BasePage {
     const hasCommunicationLog = await communicationLogSection.count() > 0;
     const hasAttachments = await attachmentsSection.count() > 0;
 
-    console.log(`📋 Request details sections available:`);
-    console.log(`   - Problem Details: ${hasProblemDetails}`);
-    console.log(`   - Communication Log: ${hasCommunicationLog}`);
-    console.log(`   - Attachments: ${hasAttachments}`);
+    logger.log(`📋 Request details sections available:`);
+    logger.log(`   - Problem Details: ${hasProblemDetails}`);
+    logger.log(`   - Communication Log: ${hasCommunicationLog}`);
+    logger.log(`   - Attachments: ${hasAttachments}`);
 
     // Verify expected details if provided
     if (expectedDetails) {
@@ -103,6 +105,6 @@ export class MyRequestsPage extends BasePage {
       }
     }
 
-    console.log(`✅ Successfully viewed details for user request ${requestId}.`);
+    logger.log(`✅ Successfully viewed details for user request ${requestId}.`);
   }
 }

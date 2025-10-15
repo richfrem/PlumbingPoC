@@ -14,6 +14,8 @@
 
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Admin Authentication', () => {
   let authPage: AuthPage;
@@ -24,7 +26,7 @@ test.describe('Admin Authentication', () => {
   });
 
   test('should sign in admin user successfully', async ({ page }) => {
-    console.log('🧪 Testing admin user sign in...');
+    logger.log('🧪 Testing admin user sign in...');
 
     await authPage.signInAsUserType('admin');
 
@@ -35,11 +37,11 @@ test.describe('Admin Authentication', () => {
     // Verify admin has access to user menu (indicating successful login)
     await expect(page.locator('button:has(svg.lucide-chevron-down)')).toBeVisible();
 
-    console.log('✅ Admin user sign in test passed');
+    logger.log('✅ Admin user sign in test passed');
   });
 
   test('should handle admin already logged in state', async ({ page }) => {
-    console.log('🧪 Testing admin already logged in handling...');
+    logger.log('🧪 Testing admin already logged in handling...');
 
     // Sign in first
     await authPage.signInAsUserType('admin');
@@ -52,6 +54,6 @@ test.describe('Admin Authentication', () => {
     expect(isLoggedIn).toBe(true);
     await expect(page.locator('button:has(svg.lucide-chevron-down)')).toBeVisible();
 
-    console.log('✅ Admin already logged in handling test passed');
+    logger.log('✅ Admin already logged in handling test passed');
   });
 });

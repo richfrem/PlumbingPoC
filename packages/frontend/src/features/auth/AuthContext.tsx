@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { logger } from '../../lib/logger';
 import { Session, User } from '@supabase/supabase-js';
 
 // Define a more specific type for your profile data
@@ -34,13 +35,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const getInitialSession = async () => {
-      console.log('🔐 AuthContext: Getting initial session...');
+      logger.log('🔐 AuthContext: Getting initial session...');
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
-        console.error('❌ AuthContext: Session error:', error);
+        logger.error('❌ AuthContext: Session error:', error);
       } else {
-        console.log('✅ AuthContext: Session retrieved:', !!session, 'User:', !!session?.user);
+        logger.log('✅ AuthContext: Session retrieved:', !!session, 'User:', !!session?.user);
       }
 
       setUser(session?.user ?? null);
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔄 AuthContext: Auth state changed:', event, 'User:', !!session?.user);
+      logger.log('🔄 AuthContext: Auth state changed:', event, 'User ID:', session?.user?.id || 'null', 'Email:', session?.user?.email || 'null');
       setUser(session?.user ?? null);
     });
 
@@ -61,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (currentUser: User | null) => {
     if (currentUser) {
+      logger.log('👤 AuthContext: Fetching profile for user:', currentUser.id);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -68,13 +70,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching profile:', error);
+        logger.error('❌ AuthContext: Error fetching profile:', error);
+      } else if (error && error.code === 'PGRST116') {
+        logger.log('ℹ️ AuthContext: No profile found for user (this is normal for new users)');
+      } else {
+        logger.log('✅ AuthContext: Profile loaded:', data ? 'complete' : 'null');
       }
 
       setProfile(data);
       // A profile is incomplete if it doesn't exist, or if the required 'name' field is missing.
-      setProfileIncomplete(!data || !data.name);
+      const incomplete = !data || !data.name;
+      setProfileIncomplete(incomplete);
+      logger.log('📊 AuthContext: Profile status - Complete:', !incomplete, 'Incomplete:', incomplete);
     } else {
+      logger.log('👤 AuthContext: No user, clearing profile');
       setProfile(null);
       setProfileIncomplete(false);
     }
@@ -85,7 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const signOut = async () => {
+    logger.log('🚪 AuthContext: Signing out user...');
     await supabase.auth.signOut();
+    logger.log('✅ AuthContext: Sign out complete');
     setUser(null);
     setProfile(null);
     // Redirect to home page after sign out

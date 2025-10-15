@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { config } from 'dotenv';
+import { logger } from '../../../packages/frontend/src/lib/logger';
+
 
 // Load environment variables
 config();
@@ -125,7 +127,7 @@ describe('API Integration Tests', () => {
     beforeAll(async () => {
       // This test requires a real user in your Supabase database
       // The test user credentials are loaded from .env file
-      console.log('🔐 Attempting to authenticate with Supabase for quote creation test...');
+      logger.log('🔐 Attempting to authenticate with Supabase for quote creation test...');
 
       if (!TEST_USER.email || !TEST_USER.password) {
         console.warn('⚠️ Test user credentials not found in environment variables');
@@ -153,7 +155,7 @@ describe('API Integration Tests', () => {
           authToken = '';
         } else if (data.session?.access_token) {
           authToken = data.session.access_token;
-          console.log('✅ Supabase authentication successful');
+          logger.log('✅ Supabase authentication successful');
         } else {
           console.warn('⚠️ No access token received from Supabase');
           authToken = '';
@@ -166,7 +168,7 @@ describe('API Integration Tests', () => {
 
     it('should create a quote request with authentication', async () => {
       if (!authToken) {
-        console.log('⏭️ Skipping test - no authentication token available');
+        logger.log('⏭️ Skipping test - no authentication token available');
         return;
       }
 
@@ -194,7 +196,7 @@ describe('API Integration Tests', () => {
         additional_notes: 'Test request from integration test'
       };
 
-      console.log('📝 Creating quote request...');
+      logger.log('📝 Creating quote request...');
 
       const response = await fetch(`${API_BASE_URL}/api/requests/submit`, {
         method: 'POST',
@@ -205,12 +207,12 @@ describe('API Integration Tests', () => {
         body: JSON.stringify(quoteRequest),
       });
 
-      console.log(`📊 Response status: ${response.status}`);
+      logger.log(`📊 Response status: ${response.status}`);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Quote request created successfully');
-        console.log(`🆔 Request ID: ${result.request?.id}`);
+        logger.log('✅ Quote request created successfully');
+        logger.log(`🆔 Request ID: ${result.request?.id}`);
 
         // Validate response structure
         expect(result.message).toContain('Quote request submitted successfully');
@@ -231,18 +233,18 @@ describe('API Integration Tests', () => {
 
             if (getResponse.ok) {
               const requestData = await getResponse.json();
-              console.log('✅ Request details retrieved successfully');
+              logger.log('✅ Request details retrieved successfully');
               expect(requestData.problem_category).toBe('leak_repair');
             } else {
-              console.log('⚠️ Could not retrieve request details (endpoint may require different auth)');
+              logger.log('⚠️ Could not retrieve request details (endpoint may require different auth)');
             }
           } catch (error) {
-            console.log('⚠️ Request retrieval failed:', error.message);
+            logger.log('⚠️ Request retrieval failed:', error.message);
           }
         }
       } else {
         const errorText = await response.text();
-        console.log('❌ Quote creation failed:', errorText);
+        logger.log('❌ Quote creation failed:', errorText);
 
         // This might be expected if the user doesn't exist or auth is misconfigured
         // In a real scenario, you'd want to set up test users properly
@@ -273,7 +275,7 @@ describe('API Integration Tests', () => {
         additional_notes: 'Should fail without authentication'
       };
 
-      console.log('🔒 Testing quote creation without authentication...');
+      logger.log('🔒 Testing quote creation without authentication...');
 
       const response = await fetch(`${API_BASE_URL}/api/requests/submit`, {
         method: 'POST',
@@ -283,15 +285,15 @@ describe('API Integration Tests', () => {
         body: JSON.stringify(quoteRequest),
       });
 
-      console.log(`📊 Response status: ${response.status}`);
+      logger.log(`📊 Response status: ${response.status}`);
 
       // Should fail with authentication error
       expect([401, 403]).toContain(response.status);
-      console.log('✅ Authentication properly required for quote creation');
+      logger.log('✅ Authentication properly required for quote creation');
     });
 
     it('should allow admin to access created request', async () => {
-      console.log('🔐 Testing admin access to created request...');
+      logger.log('🔐 Testing admin access to created request...');
 
       // First authenticate as admin
       const { createClient } = await import('@supabase/supabase-js');
@@ -315,11 +317,11 @@ describe('API Integration Tests', () => {
 
       const adminToken = adminData.session?.access_token;
       expect(adminToken).toBeDefined();
-      console.log('✅ Admin authentication successful');
+      logger.log('✅ Admin authentication successful');
 
       // Create a test request first with regular user
       if (!authToken) {
-        console.log('⏭️ Skipping admin test - no regular user token available');
+        logger.log('⏭️ Skipping admin test - no regular user token available');
         return;
       }
 
@@ -356,7 +358,7 @@ describe('API Integration Tests', () => {
       });
 
       if (!createResponse.ok) {
-        console.log('⚠️ Could not create test request for admin access test');
+        logger.log('⚠️ Could not create test request for admin access test');
         return;
       }
 
@@ -364,11 +366,11 @@ describe('API Integration Tests', () => {
       const requestId = createResult.request?.id;
 
       if (!requestId) {
-        console.log('⚠️ No request ID returned from creation');
+        logger.log('⚠️ No request ID returned from creation');
         return;
       }
 
-      console.log(`📝 Created test request with ID: ${requestId}`);
+      logger.log(`📝 Created test request with ID: ${requestId}`);
 
       // Now try to access the request as admin
       const getResponse = await fetch(`${API_BASE_URL}/api/requests/${requestId}`, {
@@ -379,18 +381,18 @@ describe('API Integration Tests', () => {
         },
       });
 
-      console.log(`📊 Admin GET response status: ${getResponse.status}`);
+      logger.log(`📊 Admin GET response status: ${getResponse.status}`);
 
       if (getResponse.ok) {
         const requestData = await getResponse.json();
-        console.log('✅ Admin successfully accessed request');
+        logger.log('✅ Admin successfully accessed request');
         expect(requestData.id).toBe(requestId);
         expect(requestData.problem_category).toBe('leak_repair');
         expect(requestData.problem_description).toBe('Admin access test request');
       } else {
         const errorText = await getResponse.text();
-        console.log('ℹ️ Admin access failed:', errorText);
-        console.log('💡 This may be expected based on RLS policies or user permissions');
+        logger.log('ℹ️ Admin access failed:', errorText);
+        logger.log('💡 This may be expected based on RLS policies or user permissions');
       }
     });
   });

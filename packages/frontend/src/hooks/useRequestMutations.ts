@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../lib/apiClient';
 import { QuoteRequest } from '../features/requests/types';
 import { useAuth } from '../features/auth/AuthContext';
+import { logger } from '../lib/logger';
 
 export function useUpdateRequestStatus() {
   const queryClient = useQueryClient();
@@ -24,7 +25,7 @@ export function useUpdateRequestStatus() {
       };
       if (scheduledStartDate !== undefined)
         payload.scheduled_start_date = scheduledStartDate;
-      console.log('useUpdateRequestStatus: Calling API', {
+      logger.log('useUpdateRequestStatus: Calling API', {
         requestId,
         status,
         scheduledStartDate,
@@ -34,7 +35,7 @@ export function useUpdateRequestStatus() {
     },
     onMutate: async (variables) => {
       const { requestId, status, scheduledStartDate } = variables;
-      console.log('useUpdateRequestStatus: Optimistic update', { requestId, status, scheduledStartDate });
+      logger.log('useUpdateRequestStatus: Optimistic update', { requestId, status, scheduledStartDate });
 
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['requests'] });
@@ -89,7 +90,7 @@ export function useUpdateRequestStatus() {
       return { previousRequests, previousUserRequests, previousRequestDetail };
     },
     onError: (err, variables, context) => {
-      console.error('useUpdateRequestStatus: Error, rolling back', { err, variables });
+      logger.error('useUpdateRequestStatus: Error, rolling back', { err, variables });
       // Rollback optimistic updates
       if (context?.previousRequests) {
         queryClient.setQueryData(['requests'], context.previousRequests);
@@ -109,7 +110,7 @@ export function useUpdateRequestStatus() {
       window.dispatchEvent(event);
     },
     onSuccess: async (data, variables) => {
-      console.log('useUpdateRequestStatus: Success', { data, variables });
+      logger.log('useUpdateRequestStatus: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -144,7 +145,7 @@ export function useAcceptQuote() {
     },
     onMutate: async (variables) => {
       const { requestId, quoteId } = variables;
-      console.log('⚡ Optimistic Update: Starting for acceptQuote', {
+      logger.log('⚡ Optimistic Update: Starting for acceptQuote', {
         requestId,
         quoteId,
       });
@@ -154,7 +155,7 @@ export function useAcceptQuote() {
       const previousRequests = queryClient.getQueryData<QuoteRequest[]>(['requests']);
       const previousUserRequests = user ? queryClient.getQueryData<QuoteRequest[]>(['requests', user.id]) : null;
       const previousRequestDetail = queryClient.getQueryData<QuoteRequest[]>(['request', requestId]);
-      console.log('📸 Snapshot created:', { hasAllRequests: !!previousRequests, hasUserRequests: !!previousUserRequests, hasDetail: !!previousRequestDetail });
+      logger.log('📸 Snapshot created:', { hasAllRequests: !!previousRequests, hasUserRequests: !!previousUserRequests, hasDetail: !!previousRequestDetail });
 
       // Update admin's all requests query
       queryClient.setQueryData<QuoteRequest[]>(['requests'], (oldData = []) =>
@@ -201,11 +202,11 @@ export function useAcceptQuote() {
         });
       }
 
-      console.log('✅ UI updated optimistically to "accepted" state.');
+      logger.log('✅ UI updated optimistically to "accepted" state.');
       return { previousRequests, previousUserRequests, previousRequestDetail };
     },
     onError: (err, variables, context) => {
-      console.error('❌ Optimistic Update Failed. Rolling back.', { err });
+      logger.error('❌ Optimistic Update Failed. Rolling back.', { err });
       if (context?.previousRequests) {
         queryClient.setQueryData(['requests'], context.previousRequests);
       }
@@ -224,7 +225,7 @@ export function useAcceptQuote() {
       window.dispatchEvent(event);
     },
     onSuccess: async (data, variables) => {
-      console.log('useAcceptQuote: Success', { data, variables });
+      logger.log('useAcceptQuote: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -255,7 +256,7 @@ export function useCreateQuote() {
       return response.data;
     },
     onSuccess: async (data, variables) => {
-      console.log('useCreateQuote: Success', { data, variables });
+      logger.log('useCreateQuote: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -266,7 +267,7 @@ export function useCreateQuote() {
       window.dispatchEvent(event);
     },
     onError: (error, variables) => {
-      console.error('useCreateQuote: Error', error);
+      logger.error('useCreateQuote: Error', error);
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to create quote. Please try again.',
@@ -298,7 +299,7 @@ export function useUpdateQuote() {
       return response.data;
     },
     onSuccess: async (data, variables) => {
-      console.log('useUpdateQuote: Success', { data, variables });
+      logger.log('useUpdateQuote: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -309,7 +310,7 @@ export function useUpdateQuote() {
       window.dispatchEvent(event);
     },
     onError: (error, variables) => {
-      console.error('useUpdateQuote: Error', error, variables);
+      logger.error('useUpdateQuote: Error', error, variables);
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to update quote. Please try again.',
@@ -337,7 +338,7 @@ export function useSubmitQuoteRequest() {
       window.dispatchEvent(event);
     },
     onError: (error) => {
-      console.error('useSubmitQuoteRequest: Error', error);
+      logger.error('useSubmitQuoteRequest: Error', error);
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to submit request. Please try again.',
@@ -358,7 +359,7 @@ export function useTriageRequest() {
       return response.data;
     },
     onSuccess: async (data, variables) => {
-      console.log('useTriageRequest: Success', { data, variables });
+      logger.log('useTriageRequest: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -369,7 +370,7 @@ export function useTriageRequest() {
       window.dispatchEvent(event);
     },
     onError: (error, variables) => {
-      console.error('useTriageRequest: Error', { error, variables });
+      logger.error('useTriageRequest: Error', { error, variables });
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to triage request. Please try again.',
@@ -442,9 +443,9 @@ export function useMarkRequestAsViewed() {
       return { previousAll, previousUser, previousDetail };
     },
     onError: (_err, requestId, context) => {
-      console.error('❌ Mark as viewed error:', _err);
-      console.error('Request ID:', requestId);
-      console.error('Error details:', JSON.stringify(_err, null, 2));
+      logger.error('❌ Mark as viewed error:', _err);
+      logger.error('Request ID:', requestId);
+      logger.error('Error details:', JSON.stringify(_err, null, 2));
 
       if (context?.previousAll) queryClient.setQueryData(['requests'], context.previousAll);
       if (context?.previousUser && user) queryClient.setQueryData(['requests', user.id], context.previousUser);
@@ -483,7 +484,7 @@ export function useDeleteQuote() {
       return response.data;
     },
     onSuccess: async (data, variables) => {
-      console.log('useDeleteQuote: Success', { data, variables });
+      logger.log('useDeleteQuote: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -494,7 +495,7 @@ export function useDeleteQuote() {
       window.dispatchEvent(event);
     },
     onError: (error, variables) => {
-      console.error('useDeleteQuote: Error', { error, variables });
+      logger.error('useDeleteQuote: Error', { error, variables });
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to delete quote. Please try again.',
@@ -524,7 +525,7 @@ export function useUpdateAddressMutation() {
       return response.data;
     },
     onSuccess: async (data, variables) => {
-      console.log('useUpdateAddressMutation: Success', { data, variables });
+      logger.log('useUpdateAddressMutation: Success', { data, variables });
       await queryClient.invalidateQueries({ queryKey: ['requests'], exact: false });
       await queryClient.invalidateQueries({
         queryKey: ['request', variables.requestId],
@@ -535,7 +536,7 @@ export function useUpdateAddressMutation() {
       window.dispatchEvent(event);
     },
     onError: (error, variables) => {
-      console.error('useUpdateAddressMutation: Error', { error, variables });
+      logger.error('useUpdateAddressMutation: Error', { error, variables });
       const event = new CustomEvent('show-snackbar', {
         detail: {
           message: '❌ Failed to update address. Please try again.',

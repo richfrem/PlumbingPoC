@@ -20,11 +20,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function debugAdminAuth() {
-  console.log('🔍 Debugging Admin Authentication Setup...\n');
+  logger.log('🔍 Debugging Admin Authentication Setup...\n');
 
   try {
     // 1. Check if admin user exists
-    console.log('1. Checking for admin user...');
+    logger.log('1. Checking for admin user...');
     const adminEmail = 'kassandrajo@outlook.com'; // From test data
 
     const { data: users, error: userError } = await supabase.auth.admin.listUsers();
@@ -38,14 +38,14 @@ async function debugAdminAuth() {
 
     if (!adminUser) {
       console.error(`❌ Admin user with email ${adminEmail} not found in auth.users`);
-      console.log('Available users:', users.users.map(u => ({ email: u.email, id: u.id })));
+      logger.log('Available users:', users.users.map(u => ({ email: u.email, id: u.id })));
       return;
     }
 
-    console.log(`✅ Found admin user: ${adminUser.email} (ID: ${adminUser.id})`);
+    logger.log(`✅ Found admin user: ${adminUser.email} (ID: ${adminUser.id})`);
 
     // 2. Check if admin profile exists
-    console.log('\n2. Checking admin user profile...');
+    logger.log('\n2. Checking admin user profile...');
 
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
@@ -55,13 +55,13 @@ async function debugAdminAuth() {
 
     if (profileError) {
       console.error('❌ Failed to fetch admin profile:', profileError.message);
-      console.log('This is likely the cause of the 401 errors!');
-      console.log('\n🔧 SOLUTION: Create admin profile with:');
-      console.log(`INSERT INTO user_profiles (user_id, email, name, role) VALUES ('${adminUser.id}', '${adminUser.email}', 'Admin User', 'admin');`);
+      logger.log('This is likely the cause of the 401 errors!');
+      logger.log('\n🔧 SOLUTION: Create admin profile with:');
+      logger.log(`INSERT INTO user_profiles (user_id, email, name, role) VALUES ('${adminUser.id}', '${adminUser.email}', 'Admin User', 'admin');`);
       return;
     }
 
-    console.log('✅ Admin profile found:', {
+    logger.log('✅ Admin profile found:', {
       id: profile.id,
       user_id: profile.user_id,
       email: profile.email,
@@ -71,15 +71,15 @@ async function debugAdminAuth() {
 
     if (profile.role !== 'admin') {
       console.error(`❌ Admin user has role '${profile.role}' instead of 'admin'`);
-      console.log('\n🔧 SOLUTION: Update role to admin with:');
-      console.log(`UPDATE user_profiles SET role = 'admin' WHERE user_id = '${adminUser.id}';`);
+      logger.log('\n🔧 SOLUTION: Update role to admin with:');
+      logger.log(`UPDATE user_profiles SET role = 'admin' WHERE user_id = '${adminUser.id}';`);
       return;
     }
 
-    console.log('\n✅ Admin authentication setup looks correct!');
+    logger.log('\n✅ Admin authentication setup looks correct!');
 
     // 3. Test a simple authenticated request simulation
-    console.log('\n3. Testing authentication flow...');
+    logger.log('\n3. Testing authentication flow...');
 
     // This simulates what the frontend does
     const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
@@ -88,9 +88,9 @@ async function debugAdminAuth() {
     });
 
     if (sessionError) {
-      console.log('⚠️ Could not generate test session, but profile setup looks correct');
+      logger.log('⚠️ Could not generate test session, but profile setup looks correct');
     } else {
-      console.log('✅ Authentication flow test passed');
+      logger.log('✅ Authentication flow test passed');
     }
 
   } catch (error) {

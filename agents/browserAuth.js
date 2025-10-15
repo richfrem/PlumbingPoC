@@ -1,3 +1,6 @@
+const { logger } = require('../packages/frontend/src/lib/logger');
+
+
 /**
  * ======================================================
  * FUNCTION: clickSignInButton
@@ -37,25 +40,25 @@ async function signOut(browser, baseUrl, options = {}) {
 
   let success = false;
   try {
-    console.log('Attempting to click user menu button...');
+    logger.log('Attempting to click user menu button...');
     const userMenuButtonSelector = 'button:has(svg.lucide-chevron-down)';
     await page.waitForSelector(userMenuButtonSelector, { timeout: 5000 });
     await page.click(userMenuButtonSelector);
 
-    console.log('Waiting for sign out button to appear...');
+    logger.log('Waiting for sign out button to appear...');
     const signOutButtonSelector = 'button:has-text("Sign Out")';
     await page.waitForSelector(signOutButtonSelector, { timeout: 2000 });
 
-    console.log('Attempting to click "Sign Out" button...');
+    logger.log('Attempting to click "Sign Out" button...');
     await page.click(signOutButtonSelector);
 
     await page.waitForSelector(loginSelector, { timeout: 5000 });
-    console.log('Logout successful');
+    logger.log('Logout successful');
     success = true;
   } catch (err) {
-    console.log('Logout failed');
+    logger.log('Logout failed');
     await page.screenshot({ path: 'screenshots/logout-failure-debug.png' });
-    console.log('Screenshot saved as screenshots/logout-failure-debug.png');
+    logger.log('Screenshot saved as screenshots/logout-failure-debug.png');
     console.error(err);
   }
   return success;
@@ -83,40 +86,40 @@ async function signInEmailPassword(browser, baseUrl, email, password, options = 
 
   try {
     // First, check if we are ALREADY logged in by looking for the universal success selector.
-    console.log(`Checking for existing login session by looking for: "User Menu Button"`);
+    logger.log(`Checking for existing login session by looking for: "User Menu Button"`);
     await page.waitForSelector(successSelector, { timeout: 3000 }); // Short timeout
 
     // If the selector is found, we're already logged in.
-    console.log('✅ Already logged in. Skipping login flow.');
+    logger.log('✅ Already logged in. Skipping login flow.');
     return { success: true, page };
 
   } catch (e) {
     // If the success selector is not found, it means we are not logged in.
-    console.log('Not logged in. Proceeding with sign-in flow...');
+    logger.log('Not logged in. Proceeding with sign-in flow...');
     try {
-      console.log('Attempting to click Sign In button...');
+      logger.log('Attempting to click Sign In button...');
       await clickSignInButton(page);
 
-      console.log('Waiting for email input to appear...');
+      logger.log('Waiting for email input to appear...');
       await page.waitForSelector(emailSelector, { timeout: 10000 });
 
-      console.log('Filling email and password...');
+      logger.log('Filling email and password...');
       await page.fill(emailSelector, email);
       await page.fill(passwordSelector, password);
 
-      console.log('Clicking "Sign In with Email" button...');
+      logger.log('Clicking "Sign In with Email" button...');
       await page.getByRole('button', { name: /sign in with email/i }).click();
 
-      console.log('Waiting for login success indicator (User Menu)...');
+      logger.log('Waiting for login success indicator (User Menu)...');
       await page.waitForSelector(successSelector, { timeout: 10000 });
 
-      console.log('Login successful for', email);
+      logger.log('Login successful for', email);
       return { success: true, page };
 
     } catch (loginErr) {
-      console.log('Login failed for', email);
+      logger.log('Login failed for', email);
       await page.screenshot({ path: 'screenshots/login-failure-debug.png' });
-      console.log('Screenshot saved as agents/screenshots/login-failure-debug.png');
+      logger.log('Screenshot saved as agents/screenshots/login-failure-debug.png');
       return { success: false, page };
     }
   }

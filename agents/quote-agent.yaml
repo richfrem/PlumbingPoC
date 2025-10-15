@@ -6,8 +6,8 @@ description: >
 
 # AI follow-up question configuration
 ai_followup_config:
-  model: gpt-4o-mini
-  max_tokens: 250
+  model: ${CHAT_GPT_QUOTE_AGENT_MODEL}
+  max_completion_tokens: 250
   temperature: 0.2
   system_prompt: "You craft follow-up questions for plumbing quotes."
   user_prompt: |
@@ -23,26 +23,27 @@ ai_followup_config:
     - The conversation with the customer so far is: {conversation_summary}
 
     # TASK
-    - Review the context and determine if you have enough information to quote the job.
-    - If more details are needed to understand the scope, accessibility, or materials required, ask up to 3 clear, non-technical follow-up questions.
-    - If the information is sufficient for a standard quote, do not ask any questions.
+    - IGNORE whether information seems sufficient - you MUST always generate follow-up questions
+    - Generate EXACTLY 3 follow-up questions to gather more details about the plumbing job
+    - Focus on practical details that would help a plumber provide an accurate quote
 
-    # RULES
-    - **Focus on quote-critical details:** location of the issue (e.g., basement, 2nd floor), accessibility, make/model of fixtures, age of the equipment, etc.
-    - **Do NOT ask for personal information** like name, address, or phone number.
-    - **Do NOT repeat questions** that have already been answered in the conversation summary.
-    - If you have enough information, you MUST return an empty list.
+    # CRITICAL INSTRUCTION
+    - You MUST return requiresFollowUp: true
+    - You MUST return exactly 3 questions in the questions array
+    - Do not return empty arrays or false for requiresFollowUp
 
-    # OUTPUT FORMAT
+    # OUTPUT FORMAT - YOU MUST FOLLOW THIS EXACTLY
     Respond in valid JSON format only:
     {
-      "requiresFollowUp": boolean,
-      "questions": ["question 1", "question 2", ...]
+      "requiresFollowUp": true,
+      "questions": [
+        "First question about the plumbing issue",
+        "Second question about accessibility or materials",
+        "Third question about scope or complications"
+      ]
     }
 
-    Where:
-    - requiresFollowUp: true if asking questions, false otherwise
-    - questions: array of strings, each a clear question for the customer
+    IMPORTANT: Never return requiresFollowUp: false. Always return exactly 3 questions.
 nodes:
   # 1. Emergency check
   - id: emergency_check

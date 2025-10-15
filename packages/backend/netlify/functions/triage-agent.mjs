@@ -6,6 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import YAML from 'yaml';
 import OpenAI from 'openai';
+import { logger } from '../../src/lib/logger.js';
+import dotenv from "dotenv";
+dotenv.config();
 
 // Environment detection
 const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -34,11 +37,31 @@ if (!fs.existsSync(YAML_PATH)) {
 let yamlConfig;
 try {
   yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
-  console.log('[TriageAgent] Loaded YAML from:', YAML_PATH);
+  logger.log('[TriageAgent] Loaded YAML from:', YAML_PATH);
 } catch (error) {
   console.error('[TriageAgent] Failed to load YAML:', error.message);
   throw new Error(`Failed to load triage-agent.yaml: ${error.message}`);
 }
+
+// Substitute environment variables in YAML config
+function substituteEnvVars(obj) {
+  if (typeof obj === 'string') {
+    return obj.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+      return process.env[varName] || match;
+    });
+  } else if (Array.isArray(obj)) {
+    return obj.map(substituteEnvVars);
+  } else if (obj && typeof obj === 'object') {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = substituteEnvVars(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
+yamlConfig = substituteEnvVars(yamlConfig);
 
 const openAiClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -49,22 +72,21 @@ const openAiClient = process.env.OPENAI_API_KEY
  */
 function calculateJobComplexity(serviceCategory, problemDescription, locationDetails) {
   const complexityMap = {
-    'leak_repair': 5,          // Often straightforward diagnostics
-    'water_heater': 7,         // Electrical/gas connections, permits
-    'pipe_installation': 7,    // Depends heavily on access
-    'drain_cleaning': 3,       // Usually routine with proper tools
-    'fixture_install': 3,      // Basic plumbing work
-    'gas_line_services': 10,   // HIGHEST: permits, certifications, safety-critical
-    'perimeter_drains': 8,     // Excavation, grading, drainage expertise
-    'main_line_repair': 10,    // Major disruption, permits, property restoration
-    'emergency_service': 8,    // Unknown factors, time pressure
-    'bathroom_reno': 9,        // Multi-trade coordination, permits, layout changes
-    'other': 5                 // Safe middle ground for uncategorized work
+    'leak_repair': 5,
+    'water_heater': 7,
+    'pipe_installation': 7,
+    'drain_cleaning': 3,
+    'fixture_install': 3,
+    'gas_line_services': 10,
+    'perimeter_drains': 8,
+    'main_line_repair': 10,
+    'emergency_service': 8,
+    'bathroom_reno': 9,
+    'other': 5
   };
 
   const baseComplexity = complexityMap[serviceCategory] || 5;
 
-  // Adjust based on location difficulty
   let locationMultiplier = 1;
   const location = (locationDetails || '').toLowerCase();
   if (location.includes('basement') || location.includes('crawlspace')) {
@@ -95,7 +117,6 @@ function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) 
   const timeline = (timelineRequested || '').toLowerCase();
   const timelineUrgency = urgencyMap[timeline] || 4;
 
-  // Boost urgency for severe problems
   let severityBoost = 0;
   const severity = (problemSeverity || '').toLowerCase();
   if (severity.includes('flooding') || severity.includes('no water') || severity.includes('burst')) {
@@ -110,7 +131,6 @@ function assessCustomerUrgency(isEmergency, timelineRequested, problemSeverity) 
  */
 function formatAnswersForAnalysis(answers) {
   if (!Array.isArray(answers)) return 'No answers provided';
-
   return answers
     .map((qa, index) => `Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.answer}`)
     .join('\n\n');
@@ -124,9 +144,8 @@ async function runTriageAnalysis(requestData) {
     throw new Error('OpenAI API key not configured');
   }
 
-  console.log('[TriageAgent] Starting triage analysis for request:', requestData.id);
+  logger.log('[TriageAgent] Starting triage analysis for request:', requestData.id);
 
-  // Extract key information from request
   const {
     problem_category,
     is_emergency,
@@ -138,7 +157,6 @@ async function runTriageAnalysis(requestData) {
     additional_notes
   } = requestData;
 
-  // Calculate preliminary scores using tools
   const complexityScore = calculateJobComplexity(
     problem_category,
     problem_description,
@@ -151,16 +169,13 @@ async function runTriageAnalysis(requestData) {
     problem_description
   );
 
-  // Format answers for AI analysis
   const formattedAnswers = formatAnswersForAnalysis(answers);
 
-  // Find the analyze_request node from YAML config
   const analyzeNode = yamlConfig.nodes.find(node => node.id === 'analyze_request');
   if (!analyzeNode) {
     throw new Error('analyze_request node not found in triage-agent.yaml');
   }
 
-  // Build the system prompt from YAML with data substitution
   const systemPrompt = `${analyzeNode.prompt}
 
 **Request Details:**
@@ -186,35 +201,125 @@ ${additional_notes || 'None'}
 Return your analysis as a JSON object matching the specified output schema.`;
 
   try {
-    const response = await openAiClient.chat.completions.create({
-      model: analyzeNode.model || 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: 'Please analyze this plumbing service request and provide the triage assessment.'
-        }
-      ],
-      response_format: { type: 'json_object' },
-      functions: [{
-        name: 'provide_triage_assessment',
-        description: 'Provide a structured triage assessment for a plumbing service request',
-        parameters: analyzeNode.output // Use schema from YAML
-      }],
-      function_call: { name: 'provide_triage_assessment' }
-    });
+    const model = analyzeNode.model;
+    console.log('[LOG] [TriageAgent] Using AI model:', model);
 
-    const functionCall = response.choices[0]?.message?.function_call;
-    if (!functionCall || !functionCall.arguments) {
-      throw new Error('No function call response from OpenAI');
+    const isGpt5Model = model?.startsWith('gpt-5');
+    const isGpt4oModel = model?.startsWith('gpt-4o');
+
+    let response;
+    let maxTokens = 2000;
+    let retryCount = 0;
+    const maxRetries = 1;
+
+    while (retryCount <= maxRetries) {
+      if (isGpt5Model) {
+        const responseParams = {
+          model: model,
+          input: `${systemPrompt}\n\nPlease analyze this plumbing service request and provide the triage assessment.`,
+          reasoning: { effort: "medium" },
+          text: { verbosity: "medium" },
+          max_output_tokens: maxTokens,
+          tools: [{
+            type: "function",
+            name: "provide_triage_assessment",
+            description: "Provide a structured triage assessment for a plumbing service request",
+            parameters: analyzeNode.output
+          }],
+          tool_choice: { type: "function", name: "provide_triage_assessment" }
+        };
+
+        response = await openAiClient.responses.create(responseParams);
+      } else {
+        const apiParams = {
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Please analyze this plumbing service request and provide the triage assessment.' }
+          ],
+          response_format: { type: 'json_object' },
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'provide_triage_assessment',
+              description: 'Provide a structured triage assessment for a plumbing service request',
+              parameters: analyzeNode.output
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'provide_triage_assessment' } }
+        };
+
+        if (isGpt4oModel) {
+          apiParams.max_completion_tokens = maxTokens;
+        } else {
+          apiParams.max_tokens = maxTokens;
+        }
+
+        response = await openAiClient.chat.completions.create(apiParams);
+      }
+
+      // Check if response is complete for GPT-5 models
+      if (isGpt5Model && response.status === 'incomplete' && response.incomplete_details?.reason === 'max_output_tokens' && retryCount < maxRetries) {
+        logger.log(`[TriageAgent] Response incomplete due to max_output_tokens, retrying with higher limit. Attempt ${retryCount + 1}/${maxRetries}`);
+        maxTokens = Math.min(maxTokens * 2, 8000); // Double tokens, max 8000
+        retryCount++;
+        continue;
+      }
+
+      break; // Exit loop if response is complete or not retrying
     }
 
-    const analysis = JSON.parse(functionCall.arguments);
+    // 🔹 NEW: Hardened parsing logic
+    let analysis;
+    if (isGpt5Model) {
+      const toolCall = response.output?.find(o => o.type === "function_call");
+      if (toolCall?.arguments) {
+        try {
+          analysis = JSON.parse(toolCall.arguments);
+        } catch (err) {
+          logger.error("[TriageAgent] Failed to parse function_call arguments JSON:", err.message);
+        }
+      }
 
-    console.log('[TriageAgent] Analysis completed:', {
+      if (!analysis && response.output_text) {
+        try {
+          analysis = JSON.parse(response.output_text);
+          logger.log("[TriageAgent] Fallback: parsed JSON from output_text");
+        } catch (err) {
+          logger.error("[TriageAgent] Failed to parse output_text JSON:", err.message);
+        }
+      }
+    } else {
+      const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+      if (toolCall?.function?.arguments) {
+        try {
+          analysis = JSON.parse(toolCall.function.arguments);
+        } catch (err) {
+          logger.error("[TriageAgent] Failed to parse tool_call arguments JSON:", err.message);
+        }
+      }
+    }
+
+    logger.log("[DEBUG] OpenAI raw response:", JSON.stringify(response, null, 2));
+
+    if (!analysis) {
+      // Fallback: generate basic analysis from preliminary scores
+      logger.log("[TriageAgent] No parsable analysis from AI, using fallback based on preliminary scores");
+      analysis = {
+        triage_summary: `Basic triage assessment based on preliminary analysis. Service category: ${problem_category}. Emergency: ${is_emergency ? 'Yes' : 'No'}.`,
+        priority_score: Math.min(10, Math.max(1, Math.round((complexityScore + urgencyScore) / 2))),
+        priority_explanation: `Priority based on complexity (${complexityScore}/10) and urgency (${urgencyScore}/10) scores.`,
+        profitability_score: Math.min(10, Math.max(1, Math.round(complexityScore * 0.8))), // Assume profitability correlates with complexity
+        profitability_explanation: `Profitability estimated based on job complexity (${complexityScore}/10).`,
+        required_expertise: {
+          skill_level: complexityScore >= 8 ? 'master' : complexityScore >= 6 ? 'journeyman' : 'apprentice',
+          specialized_skills: [problem_category.replace('_', ' ')],
+          reasoning: `Skill level determined by job complexity score of ${complexityScore}/10.`
+        }
+      };
+    }
+
+    logger.log('[TriageAgent] Analysis completed:', {
       priority: analysis.priority_score,
       profitability: analysis.profitability_score,
       expertise: analysis.required_expertise?.skill_level
@@ -239,7 +344,6 @@ Return your analysis as a JSON object matching the specified output schema.`;
 
 // Netlify function handler
 export async function handler(event, context) {
-  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -252,7 +356,6 @@ export async function handler(event, context) {
     };
   }
 
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -263,10 +366,8 @@ export async function handler(event, context) {
 
   try {
     const requestData = JSON.parse(event.body);
+    logger.log('[TriageAgent] Received triage request for:', requestData.id);
 
-    console.log('[TriageAgent] Received triage request for:', requestData.id);
-
-    // Run the AI analysis
     const analysis = await runTriageAnalysis(requestData);
 
     return {

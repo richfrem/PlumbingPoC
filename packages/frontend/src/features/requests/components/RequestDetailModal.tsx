@@ -84,7 +84,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
   const [invoiceMode, setInvoiceMode] = useState<'create' | 'edit' | 'view'>('create');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
   const viewedMarker = useRef<string | null>(null);
 
   useEffect(() => {
@@ -116,9 +116,23 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
 
   const handleTriageRequest = async () => {
     if (!request) return;
+
+    // Show notification that triage is starting and will take time
+    setSnackbarMessage('AI triage analysis in progress... This may take 20-30 seconds. Please don\'t refresh the page.');
+    setSnackbarSeverity('info');
+    setSnackbarOpen(true);
+
     triageMutation.mutate({ requestId: request.id }, {
       onSuccess: () => {
         refreshRequestData();
+        setSnackbarMessage('AI triage analysis completed successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      },
+      onError: (error) => {
+        setSnackbarMessage('AI triage analysis failed. Please try again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     });
   };

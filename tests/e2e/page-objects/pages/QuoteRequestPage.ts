@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { SERVICE_QUOTE_CATEGORIES, GENERIC_QUESTIONS } from '../../../../packages/frontend/src/lib/serviceQuoteQuestions';
 import { AttachmentSection } from '../components/AttachmentSection';
 import { ServiceLocationManager } from '../components/ServiceLocationManager';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Options for creating a quote request
@@ -44,33 +46,33 @@ export class QuoteRequestPage extends BasePage {
    * Open the quote request modal. This version is strict and reliable.
    */
   async openQuoteRequestModal(): Promise<void> {
-    console.log('Attempting to open the quote request modal...');
+    logger.log('Attempting to open the quote request modal...');
 
     const quoteButton = this.page.locator(this.requestQuoteButton).first();
 
     // 1. Wait for the button to be available before clicking
     await quoteButton.waitFor({ state: 'visible', timeout: 10000 });
-    console.log('Found "Request a Quote" button.');
+    logger.log('Found "Request a Quote" button.');
 
     // 2. Click the button. The `force: true` helps if other elements are in the way.
-    console.log('Clicking the "Request a Quote" button...');
+    logger.log('Clicking the "Request a Quote" button...');
     await quoteButton.click({ force: true });
 
     // Wait for network activity to settle down after the click,
     // in case the modal component is being loaded on demand.
-    console.log('Waiting for network activity to be idle...');
+    logger.log('Waiting for network activity to be idle...');
     await this.page.waitForLoadState('networkidle');
 
     // 3. THE CRITICAL FIX:
     // This part is strict. It will wait for the modal to appear and will
     // throw a clear error right here if it doesn't.
-    console.log('Waiting for the quote modal to become visible...');
+    logger.log('Waiting for the quote modal to become visible...');
     const modalLocator = this.page.locator(this.modalDialog);
 
     try {
       // Use a generous timeout because modals can have entry animations.
       await modalLocator.waitFor({ state: 'visible', timeout: 15000 });
-      console.log('✅ Modal is visible. Proceeding...');
+      logger.log('✅ Modal is visible. Proceeding...');
     } catch (error) {
       console.error('❌ FAILED: Modal did not appear after clicking the "Request a Quote" button.');
       // Take a screenshot at the moment of failure for easy debugging.
@@ -88,7 +90,7 @@ export class QuoteRequestPage extends BasePage {
     if (!category) {
       throw new Error(`Service category with key '${categoryKey}' not found.`);
     }
-    console.log(`Selecting service category: ${category.label}`);
+    logger.log(`Selecting service category: ${category.label}`);
     const modalLocator = this.page.locator(this.modalDialog);
 
     // Use getByRole for a more semantic and user-facing selector
@@ -98,18 +100,18 @@ export class QuoteRequestPage extends BasePage {
     await categoryButton.waitFor({ state: 'visible', timeout: 10000 });
 
     // Use dispatchEvent to ensure the React event handler fires reliably.
-    console.log(`   Dispatching click event on button: "${category.label}" to ensure React handler fires.`);
+    logger.log(`   Dispatching click event on button: "${category.label}" to ensure React handler fires.`);
     await categoryButton.dispatchEvent('click');
 
     // VERIFY THE RESULT: After a successful click, the UI must change.
     // We will wait for the first generic question to appear, confirming the state transition.
     const firstGenericQuestion = GENERIC_QUESTIONS[0].question;
-    console.log(`   Waiting for first question to appear: "${firstGenericQuestion.substring(0, 30)}..."`);
+    logger.log(`   Waiting for first question to appear: "${firstGenericQuestion.substring(0, 30)}..."`);
 
     const questionBubble = modalLocator.locator('div[class*="MuiBox-root"]').filter({ hasText: firstGenericQuestion }).last();
     await questionBubble.waitFor({ timeout: 15000 });
 
-    console.log('   ✅ Category selection successful. Next question is visible.');
+    logger.log('   ✅ Category selection successful. Next question is visible.');
   }
 
 
@@ -123,7 +125,7 @@ export class QuoteRequestPage extends BasePage {
     preferredTiming: string;
     additionalNotes: string;
   }): Promise<void> {
-    console.log('Filling out basic quote form...');
+    logger.log('Filling out basic quote form...');
 
     // Property type
     await this.page.getByText('What is the property type?').waitFor();
@@ -153,19 +155,19 @@ export class QuoteRequestPage extends BasePage {
     await this.page.getByPlaceholder('Type your answer...').fill(data.additionalNotes);
     await this.page.getByRole('button', { name: 'Send' }).click();
 
-    console.log('✅ Basic form filled successfully');
+    logger.log('✅ Basic form filled successfully');
   }
 
   /**
    * Submit the quote request and return the request ID
    */
   async submitQuoteRequest(): Promise<string> {
-    console.log('📤 Looking for submit button...');
+    logger.log('📤 Looking for submit button...');
 
     // Find the submit button with the exact text "Confirm & Submit Request"
     const submitButtons = this.page.locator('button').filter({ hasText: 'Confirm & Submit Request' });
     const submitButtonCount = await submitButtons.count();
-    console.log(`📤 Found ${submitButtonCount} submit buttons`);
+    logger.log(`📤 Found ${submitButtonCount} submit buttons`);
 
     // Start waiting for the API call *before* clicking
     const apiCallPromise = this.page.waitForResponse(response =>
@@ -177,27 +179,27 @@ export class QuoteRequestPage extends BasePage {
       // Try other possible submit button texts
       const altSubmitButtons = this.page.locator('button').filter({ hasText: /^Submit|Send|Complete|Finish$/ });
       const altCount = await altSubmitButtons.count();
-      console.log(`📤 Found ${altCount} alternative submit buttons`);
+      logger.log(`📤 Found ${altCount} alternative submit buttons`);
 
       if (altCount > 0) {
-        console.log('📤 Using alternative submit button...');
+        logger.log('📤 Using alternative submit button...');
         await altSubmitButtons.first().waitFor({ timeout: 30000, state: 'visible' });
-        console.log('✅ Found alternative submit button, clicking...');
+        logger.log('✅ Found alternative submit button, clicking...');
         await altSubmitButtons.first().click({ force: true });
       } else {
         throw new Error('No submit button found');
       }
     } else {
-      console.log(`📤 Using first of ${submitButtonCount} submit button(s)...`);
+      logger.log(`📤 Using first of ${submitButtonCount} submit button(s)...`);
       await submitButtons.first().waitFor({ timeout: 30000, state: 'visible' });
-      console.log('✅ Found submit button, clicking...');
+      logger.log('✅ Found submit button, clicking...');
       await submitButtons.first().click({ force: true });
     }
 
     // Wait for the API call to complete successfully
-    console.log('Waiting for API submission response...');
+    logger.log('Waiting for API submission response...');
     const apiResponse = await apiCallPromise;
-    console.log('✅ API submission successful!');
+    logger.log('✅ API submission successful!');
 
     // Parse the response to get the new request ID
     const responseData = await apiResponse.json();
@@ -207,11 +209,11 @@ export class QuoteRequestPage extends BasePage {
       throw new Error('Failed to extract request ID from API response.');
     }
 
-    console.log(`✅ Captured new request ID: ${newRequestId}`);
+    logger.log(`✅ Captured new request ID: ${newRequestId}`);
 
     // Wait for the modal to close to ensure the UI is ready for the next step
     await expect(this.page.locator('[role="dialog"]')).toHaveCount(0, { timeout: 10000 });
-    console.log('✅ Modal closed after submission.');
+    logger.log('✅ Modal closed after submission.');
 
     return newRequestId; // <-- THE CRITICAL FIX
   }
@@ -220,12 +222,12 @@ export class QuoteRequestPage extends BasePage {
    * Wait for API submission response
    */
   async waitForSubmissionResponse(): Promise<any> {
-    console.log('Waiting for API submission response...');
+    logger.log('Waiting for API submission response...');
 
     const response = await this.waitForApiResponse('/api/requests/submit', 201, 30000);
     const responseData = await response.json();
 
-    console.log('✅ API submission successful!');
+    logger.log('✅ API submission successful!');
     expect(responseData.message).toContain('Quote request submitted successfully');
     expect(responseData.request).toBeDefined();
     expect(responseData.request.id).toBeDefined();
@@ -237,7 +239,7 @@ export class QuoteRequestPage extends BasePage {
    * Verify modal closes after submission
    */
   async verifyModalClosed(): Promise<void> {
-    console.log('Verifying modal closes...');
+    logger.log('Verifying modal closes...');
 
     await this.page.waitForTimeout(2000); // Give time for modal to close
     await expect(this.page.locator(this.modalDialog)).toHaveCount(0);
@@ -247,7 +249,7 @@ export class QuoteRequestPage extends BasePage {
    * Verify we're back on the main page
    */
   async verifyOnMainPage(): Promise<void> {
-    console.log('Verifying on main page...');
+    logger.log('Verifying on main page...');
 
     await expect(this.page.locator(this.myQuoteRequestsSection)).toBeVisible();
   }
@@ -266,7 +268,7 @@ export class QuoteRequestPage extends BasePage {
       additionalNotes: string;
     };
   }): Promise<any> {
-    console.log('🚀 Starting quote request creation workflow...');
+    logger.log('🚀 Starting quote request creation workflow...');
 
     // Open modal
     await this.openQuoteRequestModal();
@@ -285,7 +287,7 @@ export class QuoteRequestPage extends BasePage {
     await this.verifyModalClosed();
     await this.verifyOnMainPage();
 
-    console.log('✅ Quote request creation completed successfully!');
+    logger.log('✅ Quote request creation completed successfully!');
     return responseData;
   }
 
@@ -343,18 +345,31 @@ Examples based on your situation:
 - If asked about materials: "Food-grade stainless steel lines and brass fittings"
 - If asked about existing plumbing: "There's a water line and floor drain nearby that can be utilized"`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const model = process.env.CHAT_GPT_INTEGRATION_TEST_MODEL || 'gpt-3.5-turbo';
+      const isGpt4oModel = model?.startsWith('gpt-4o');
+
+      const apiParams: any = {
+        model: model,
         messages: [{ role: 'user', content: context }],
-        max_tokens: 60,
-        temperature: 0.1, // Very low temperature for focused, consistent answers
-      });
+      };
+
+      // Set max tokens parameter based on model type
+      if (isGpt4oModel) {
+        apiParams.max_completion_tokens = 60;
+      } else {
+        apiParams.max_tokens = 60;
+      }
+
+      // Add temperature for all current models
+      apiParams.temperature = 0.1; // Very low temperature for focused, consistent answers
+
+      const response = await openai.chat.completions.create(apiParams);
 
       const aiAnswer = response.choices[0]?.message?.content?.trim() || 'Please provide details for this installation.';
-      console.log(`🤖 AI Context: Homeowner with brewery setup, previous answers provided`);
+      logger.log(`🤖 AI Context: Homeowner with brewery setup, previous answers provided`);
       return aiAnswer;
     } catch (error) {
-      console.log('OpenAI API error, using fallback answer:', error);
+      logger.log('OpenAI API error, using fallback answer:', error);
       // Fallback answers based on question type
       if (question.toLowerCase().includes('size') || question.toLowerCase().includes('space')) {
         return 'The installation area is 15 feet by 12 feet with standard ceilings.';
@@ -373,21 +388,21 @@ Examples based on your situation:
    */
   async answerEmergencyQuestion(): Promise<void> {
     const modalLocator = this.page.locator(this.modalDialog);
-    console.log('❓ Answering emergency question...');
+    logger.log('❓ Answering emergency question...');
     try {
       const questionText = 'Is this an emergency?';
       // Wait for the question text to be visible
       await modalLocator.getByText(questionText).waitFor();
-      console.log('   ✅ Found emergency question text.');
+      logger.log('   ✅ Found emergency question text.');
 
       // Click the "No" button
       const answerButton = modalLocator.getByRole('button', { name: 'No', exact: true });
       await answerButton.click();
-      console.log(`   💡 Clicked answer: "No"`);
+      logger.log(`   💡 Clicked answer: "No"`);
 
       // IMPORTANT: Wait for the category selection UI to appear. This is the key to fixing the race condition.
       await modalLocator.getByText('Select a service type:').waitFor();
-      console.log('   ✅ Category selection UI is now visible.');
+      logger.log('   ✅ Category selection UI is now visible.');
     } catch (error) {
       console.error(`❌ FAILED to answer the emergency question.`);
       await this.page.screenshot({ path: `tests/e2e/debug/debug-emergency-question-failure-${Date.now()}.png`, fullPage: true });
@@ -407,11 +422,11 @@ Examples based on your situation:
     const categoryQA = this.getCategoryQuestionsAndAnswers(category);
     const allQuestionsToAnswer = [...genericQA, ...categoryQA];
 
-    console.log(`📝 Will answer ${allQuestionsToAnswer.length} questions sequentially.`);
+    logger.log(`📝 Will answer ${allQuestionsToAnswer.length} questions sequentially.`);
 
     for (let i = 0; i < allQuestionsToAnswer.length; i++) {
       const qa = allQuestionsToAnswer[i];
-      console.log(`❓ [${i + 1}/${allQuestionsToAnswer.length}] Answering: "${qa.question.substring(0, 50)}..."`);
+      logger.log(`❓ [${i + 1}/${allQuestionsToAnswer.length}] Answering: "${qa.question.substring(0, 50)}..."`);
 
       try {
         // --- THE SIMPLIFIED LOGIC ---
@@ -419,7 +434,7 @@ Examples based on your situation:
         //    to distinguish it from previous questions in the chat history.
         const questionLocator = modalLocator.getByText(qa.question, { exact: false }).last();
         await questionLocator.waitFor({ timeout: 20000 });
-        console.log(`   ✅ Question is visible.`);
+        logger.log(`   ✅ Question is visible.`);
 
         // 2. Find the correct interactive element and use it.
         const questionData = GENERIC_QUESTIONS.find(gq => gq.question === qa.question);
@@ -428,10 +443,10 @@ Examples based on your situation:
         if (isButtonChoice && qa.answer) {
           const answerButton = modalLocator.getByRole('button', { name: qa.answer, exact: true });
           await answerButton.waitFor({ state: 'visible', timeout: 5000 });
-          console.log(`   💡 Clicking button choice: "${qa.answer}"`);
+          logger.log(`   💡 Clicking button choice: "${qa.answer}"`);
           await answerButton.click();
         } else if (qa.answer) {
-          console.log(`   💡 Filling text input with: "${qa.answer}"`);
+          logger.log(`   💡 Filling text input with: "${qa.answer}"`);
           const inputField = modalLocator.getByPlaceholder('Type your answer...');
           await inputField.waitFor({ state: 'visible', timeout: 5000 });
           await inputField.fill(qa.answer);
@@ -441,14 +456,14 @@ Examples based on your situation:
         // 3. Wait intelligently for the next state.
         if (i < allQuestionsToAnswer.length - 1) {
             const nextQuestion = allQuestionsToAnswer[i + 1];
-            console.log(`   ⏳ Waiting for next question: "${nextQuestion.question.substring(0, 30)}..."`);
+            logger.log(`   ⏳ Waiting for next question: "${nextQuestion.question.substring(0, 30)}..."`);
             // The next question MUST appear after the current one is answered.
             await modalLocator.getByText(nextQuestion.question, { exact: false }).last().waitFor({ timeout: 15000 });
         } else if (waitForSummary) {
-            console.log('   ⏳ All questions answered. Waiting for summary screen...');
+            logger.log('   ⏳ All questions answered. Waiting for summary screen...');
             await modalLocator.getByText('Please review your request').waitFor({ timeout: 15000 });
         } else {
-            console.log('   ⏳ All predefined questions answered. AI follow-ups may follow...');
+            logger.log('   ⏳ All predefined questions answered. AI follow-ups may follow...');
             // Give a moment for AI processing to start
             await this.page.waitForTimeout(2000);
         }
@@ -459,7 +474,7 @@ Examples based on your situation:
         throw error;
       }
     }
-    console.log('✅ All conversational questions answered');
+    logger.log('✅ All conversational questions answered');
   }
 
   /**
@@ -470,8 +485,8 @@ Examples based on your situation:
     const modalLocator = this.page.locator(this.modalDialog);
 
     for (const qa of categoryQA) {
-      console.log(`❓ Answering category question: "${qa.question.substring(0, 50)}..."`);
-      console.log(`💡 Answer: "${qa.answer}"`);
+      logger.log(`❓ Answering category question: "${qa.question.substring(0, 50)}..."`);
+      logger.log(`💡 Answer: "${qa.answer}"`);
 
       try {
         const questionLocator = modalLocator.getByText(qa.question, { exact: false });
@@ -480,10 +495,10 @@ Examples based on your situation:
         const answerButton = modalLocator.getByRole('button', { name: qa.answer, exact: true });
 
         if (qa.answer && await answerButton.isVisible()) {
-          console.log('🎯 Clicking button choice...');
+          logger.log('🎯 Clicking button choice...');
           await answerButton.click();
         } else if (qa.answer) {
-          console.log('✍️ Filling text input...');
+          logger.log('✍️ Filling text input...');
           await modalLocator.getByPlaceholder('Type your answer...').fill(qa.answer);
           await modalLocator.getByRole('button', { name: 'Send' }).click();
         }
@@ -501,8 +516,8 @@ Examples based on your situation:
    * Handle AI-generated follow-up questions that occur after category questions
    */
   async handleAIFollowUpQuestions(category: any): Promise<void> {
-    console.log('🤖 Checking for AI-generated follow-up questions...');
-    console.log('📝 AI Agent Phases: 1) Generic → 2) Category-Specific → 3) AI-Generated Clarifying Questions');
+    logger.log('🤖 Checking for AI-generated follow-up questions...');
+    logger.log('📝 AI Agent Phases: 1) Generic → 2) Category-Specific → 3) AI-Generated Clarifying Questions');
 
     await this.page.waitForTimeout(3000); // Give AI time to process and potentially generate follow-ups
 
@@ -525,7 +540,7 @@ Examples based on your situation:
       // Check if submit button is now available (conversation complete)
       const submitButton = this.page.locator('button').filter({ hasText: 'Confirm & Submit Request' });
       if (await submitButton.count() > 0 && await submitButton.isVisible()) {
-        console.log('✅ Submit button found - AI conversation complete');
+        logger.log('✅ Submit button found - AI conversation complete');
         break;
       }
 
@@ -534,7 +549,7 @@ Examples based on your situation:
 
       if (await inputField.count() > 0 && await inputField.isVisible()) {
         // Found a text input follow-up question (AI-generated)
-        console.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (text input)`);
+        logger.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (text input)`);
 
         // Extract the question text from the page to send to OpenAI
         const questionElements = this.page.locator('p').filter({ hasText: /.+/ });
@@ -555,12 +570,12 @@ Examples based on your situation:
         }
 
         if (questionText) {
-          console.log(`🤖 Agent asked: "${questionText}"`);
-          console.log('🧠 Calling OpenAI helper to generate a realistic homeowner answer...');
+          logger.log(`🤖 Agent asked: "${questionText}"`);
+          logger.log('🧠 Calling OpenAI helper to generate a realistic homeowner answer...');
 
           // Call the AI helper function to get a dynamic, context-aware answer
           const aiAnswer = await this.generateAIAnswer(questionText, category, conversationHistory);
-          console.log(`💡 My (homeowner) answer: "${aiAnswer}"`);
+          logger.log(`💡 My (homeowner) answer: "${aiAnswer}"`);
 
           // Add the current Q&A to conversation history for the next potential follow-up
           conversationHistory.push(`Agent Question: ${questionText}`);
@@ -581,25 +596,25 @@ Examples based on your situation:
         const modalNoButton = this.page.locator('[role="dialog"]').locator('button').filter({ hasText: /^No$/ }).first();
 
         if (await modalYesButton.count() > 0 && await modalYesButton.isVisible()) {
-          console.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (choosing Yes)`);
+          logger.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (choosing Yes)`);
           await modalYesButton.click();
           followUpQuestionsAnswered++;
           await this.page.waitForTimeout(2000);
         } else if (await modalNoButton.count() > 0 && await modalNoButton.isVisible()) {
-          console.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (choosing No)`);
+          logger.log(`🤖 Answering AI-generated follow-up question ${followUpQuestionsAnswered + 1} (choosing No)`);
           await modalNoButton.click();
           followUpQuestionsAnswered++;
           await this.page.waitForTimeout(2000);
         } else {
           // No questions found, wait a bit
-          console.log('⏳ No AI-generated follow-up questions detected, waiting...');
+          logger.log('⏳ No AI-generated follow-up questions detected, waiting...');
           await this.page.waitForTimeout(2000);
         }
       }
     }
 
     if (followUpQuestionsAnswered > 0) {
-      console.log(`🤖 Successfully answered ${followUpQuestionsAnswered} AI-generated follow-up questions`);
+      logger.log(`🤖 Successfully answered ${followUpQuestionsAnswered} AI-generated follow-up questions`);
     }
   }
 
@@ -610,17 +625,17 @@ Examples based on your situation:
   async confirmAndSubmitRequest(): Promise<string> {
     const modalLocator = this.page.locator(this.modalDialog);
 
-    console.log('⏳ Waiting for the summary screen to appear...');
+    logger.log('⏳ Waiting for the summary screen to appear...');
     const summaryTitle = modalLocator.getByText('Please review your request');
     await summaryTitle.waitFor({ timeout: 20000 }); // Wait for summary to render
-    console.log('✅ Summary screen is visible.');
+    logger.log('✅ Summary screen is visible.');
 
     // Debug: Check what buttons are available on the summary screen
     const allButtons = await modalLocator.locator('button').all();
-    console.log(`📋 Found ${allButtons.length} buttons on summary screen:`);
+    logger.log(`📋 Found ${allButtons.length} buttons on summary screen:`);
     for (let i = 0; i < Math.min(allButtons.length, 10); i++) {
       const buttonText = await allButtons[i].textContent();
-      console.log(`  Button ${i}: "${buttonText}"`);
+      logger.log(`  Button ${i}: "${buttonText}"`);
     }
 
     // Try multiple selectors for the submit button
@@ -629,11 +644,11 @@ Examples based on your situation:
     // First try data-testid
     submitButton = modalLocator.getByTestId('submit-quote-request');
     if (await submitButton.count() === 0) {
-      console.log('📋 data-testid not found, trying text selector...');
+      logger.log('📋 data-testid not found, trying text selector...');
       // Try text selector
       submitButton = modalLocator.getByRole('button', { name: 'Confirm & Submit Request' });
       if (await submitButton.count() === 0) {
-        console.log('📋 Text selector not found, trying alternative text...');
+        logger.log('📋 Text selector not found, trying alternative text...');
         // Try alternative text
         submitButton = modalLocator.locator('button').filter({ hasText: /^Submit|Send|Complete|Finish$/ }).first();
         if (await submitButton.count() === 0) {
@@ -643,31 +658,31 @@ Examples based on your situation:
       }
     }
 
-    console.log('📤 Clicking the final submit button...');
+    logger.log('📤 Clicking the final submit button...');
 
     await submitButton.click();
 
     // Try to wait for the API call, but don't fail if it doesn't happen
     try {
-      console.log('⏳ Waiting for API submission response...');
+      logger.log('⏳ Waiting for API submission response...');
       const apiResponse = await this.page.waitForResponse(response =>
         response.url().includes('/api/requests/submit'),
         { timeout: 10000 }
       );
-      console.log(`✅ API response received with status: ${apiResponse.status()}`);
+      logger.log(`✅ API response received with status: ${apiResponse.status()}`);
 
       if (apiResponse.status() === 201) {
         const responseData = await apiResponse.json();
         const newRequestId = responseData.request?.id;
         if (newRequestId) {
-          console.log(`✅ Captured new request ID: ${newRequestId}`);
+          logger.log(`✅ Captured new request ID: ${newRequestId}`);
           return newRequestId;
         }
       } else {
-        console.log(`⚠️ API returned status ${apiResponse.status()}, not 201`);
+        logger.log(`⚠️ API returned status ${apiResponse.status()}, not 201`);
       }
     } catch (apiError) {
-      console.log('⚠️ API response not detected, but button was clicked. Checking for other success indicators...');
+      logger.log('⚠️ API response not detected, but button was clicked. Checking for other success indicators...');
     }
 
     // Fallback: Try to extract request ID from page content or generate a placeholder
@@ -678,17 +693,17 @@ Examples based on your situation:
       // Check if modal closed (success indicator)
       const modalStillVisible = await modalLocator.isVisible();
       if (!modalStillVisible) {
-        console.log('✅ Modal closed - likely successful submission');
+        logger.log('✅ Modal closed - likely successful submission');
         // Generate a placeholder ID for tracking
         const placeholderId = `placeholder-${Date.now()}`;
-        console.log(`🔍 Placeholder ID (check database for actual request): ${placeholderId}`);
+        logger.log(`🔍 Placeholder ID (check database for actual request): ${placeholderId}`);
         return placeholderId;
       } else {
-        console.log('❌ Modal still visible - submission may have failed');
+        logger.log('❌ Modal still visible - submission may have failed');
         await this.page.screenshot({ path: 'tests/e2e/debug/debug-submission-failed-modal-still-open.png', fullPage: true });
       }
     } catch (fallbackError) {
-      console.log('⚠️ Could not determine submission success');
+      logger.log('⚠️ Could not determine submission success');
     }
 
     // If we get here, we don't know the result
@@ -703,7 +718,7 @@ Examples based on your situation:
   async createQuoteRequest(categoryKey: string, options?: QuoteRequestOptions): Promise<string> {
     const hasAttachment = !!options?.attachmentPath;
     const hasLocation = !!options?.serviceLocation;
-    console.log(`🚀 Starting new quote request for category: ${categoryKey}${hasAttachment ? ' (with attachment)' : ''}${hasLocation ? ' (with location)' : ''}...`);
+    logger.log(`🚀 Starting new quote request for category: ${categoryKey}${hasAttachment ? ' (with attachment)' : ''}${hasLocation ? ' (with location)' : ''}...`);
 
     // 1. Open the modal
     await this.openQuoteRequestModal();
@@ -715,7 +730,7 @@ Examples based on your situation:
     const category = SERVICE_QUOTE_CATEGORIES.find((cat: any) => cat.key === categoryKey);
     if (!category) throw new Error(`Category ${categoryKey} not found.`);
     await this.selectServiceCategory(categoryKey);
-    console.log(`✅ Selected category: ${category.label}`);
+    logger.log(`✅ Selected category: ${category.label}`);
 
     // 4. Answer all remaining conversational questions
     const hasAIFollowUps = category.key === 'other';
@@ -723,34 +738,34 @@ Examples based on your situation:
 
     // 5. Handle AI follow-up questions for 'other' category
     if (hasAIFollowUps) {
-      console.log('🤖 Handling AI follow-up questions for "other" category...');
+      logger.log('🤖 Handling AI follow-up questions for "other" category...');
       await this.handleAIFollowUpQuestions(category);
     }
 
     // 6. Wait for summary screen
     const modalLocator = this.page.locator(this.modalDialog);
-    console.log('⏳ Waiting for the summary screen to appear...');
+    logger.log('⏳ Waiting for the summary screen to appear...');
     const summaryTitle = modalLocator.getByText('Please review your request');
     await summaryTitle.waitFor({ timeout: 20000 });
-    console.log('✅ Summary screen is visible.');
+    logger.log('✅ Summary screen is visible.');
 
     // 6. Conditional branch: Upload attachment if provided (during summary screen)
     if (options?.attachmentPath) {
-      console.log('📎 Uploading attachment using reusable AttachmentSection...');
+      logger.log('📎 Uploading attachment using reusable AttachmentSection...');
       const attachmentSection = new AttachmentSection(this.page);
       await attachmentSection.uploadFile(options.attachmentPath);
-      console.log('✅ Attachment uploaded');
+      logger.log('✅ Attachment uploaded');
 
       // TODO: Verify attachment was uploaded (selector needs to be fixed)
       // await this.page.waitForTimeout(1000);
       // const filename = options.attachmentPath.split('/').pop() || '';
       // await attachmentSection.verifyAttachmentExists(filename);
-      console.log('✅ Attachment uploaded (verification skipped for now)');
+      logger.log('✅ Attachment uploaded (verification skipped for now)');
     }
 
     // 7. Conditional branch: Configure service location if provided
     if (options?.serviceLocation) {
-      console.log('📍 Configuring service location using ServiceLocationManager...');
+      logger.log('📍 Configuring service location using ServiceLocationManager...');
       const locationManager = new ServiceLocationManager(this.page);
       await locationManager.fillAddressForm({
         useProfileAddress: false,
@@ -759,10 +774,10 @@ Examples based on your situation:
       await locationManager.verifyAddressGeocoding();
 
       // Wait for the address data to be processed by the React component
-      console.log('⏳ Waiting for address data to be processed...');
+      logger.log('⏳ Waiting for address data to be processed...');
       await this.page.waitForTimeout(3000); // Give time for React state updates
 
-      console.log('✅ Service location configured and geocoded');
+      logger.log('✅ Service location configured and geocoded');
     }
 
     // 8. Confirm and submit (one method for all cases)

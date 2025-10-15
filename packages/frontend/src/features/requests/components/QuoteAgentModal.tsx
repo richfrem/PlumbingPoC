@@ -39,6 +39,7 @@ import AttachmentSection from "./AttachmentSection";
 import { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
 import { services as SERVICE_DEFINITIONS } from "../../../lib/serviceDefinitions";
+import { logger } from '../../../lib/logger';
 
 interface QuoteAgentModalProps {
   isOpen: boolean;
@@ -343,19 +344,19 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
   }, [conversation, stage]);
 
   const handleAgentResponse = (data: any) => {
-    console.log('[QuoteAgentModal] handleAgentResponse called', { data });
+    logger.log('[QuoteAgentModal] handleAgentResponse called', { data });
     const returnedMessages = Array.isArray(data?.messages)
       ? (data.messages as AgentMessage[])
       : [];
-    console.log('[QuoteAgentModal] Setting conversation to:', returnedMessages.length, 'messages');
+    logger.log('[QuoteAgentModal] Setting conversation to:', returnedMessages.length, 'messages');
     setConversation(returnedMessages);
 
     if (data?.stage === REVIEW_STAGE && data?.summary) {
-      console.log('[QuoteAgentModal] Setting stage to summary');
+      logger.log('[QuoteAgentModal] Setting stage to summary');
       setSummary(data.summary as SummaryPayload);
       setStage("summary");
     } else {
-      console.log('[QuoteAgentModal] Setting stage to chat');
+      logger.log('[QuoteAgentModal] Setting stage to chat');
       setStage("chat");
       setSummary(null);
     }
@@ -406,9 +407,9 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
 
   const submitReply = useCallback(
     async (reply?: string | AgentMessage) => {
-      console.log('[QuoteAgentModal] submitReply called', { reply, isLoading, stage });
+      logger.log('[QuoteAgentModal] submitReply called', { reply, isLoading, stage });
       if (isLoading || stage !== "chat") {
-        console.log('[QuoteAgentModal] submitReply blocked', { isLoading, stage });
+        logger.log('[QuoteAgentModal] submitReply blocked', { isLoading, stage });
         return;
       }
 
@@ -416,17 +417,17 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
       if (typeof reply === "object" && reply !== null) {
         // reply is already an AgentMessage
         userMessage = reply;
-        console.log('[QuoteAgentModal] Using provided AgentMessage');
+        logger.log('[QuoteAgentModal] Using provided AgentMessage');
       } else {
         // reply is a string, create AgentMessage
         const candidate = typeof reply === "string" ? reply : inputValue;
         const trimmed = candidate?.trim();
         if (!trimmed) {
-          console.log('[QuoteAgentModal] submitReply blocked - empty trimmed');
+          logger.log('[QuoteAgentModal] submitReply blocked - empty trimmed');
           return;
         }
 
-        console.log('[QuoteAgentModal] submitReply proceeding', { reply: trimmed });
+        logger.log('[QuoteAgentModal] submitReply proceeding', { reply: trimmed });
         userMessage = {
           role: "user",
           content: trimmed,
@@ -436,15 +437,15 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
 
       // Calculate next messages BEFORE updating state
       const nextMessages = [...conversation, userMessage];
-      console.log('[QuoteAgentModal] Calculated nextMessages, length:', nextMessages.length);
+      logger.log('[QuoteAgentModal] Calculated nextMessages, length:', nextMessages.length);
 
       // Update conversation state
       setConversation(nextMessages);
-      console.log('[QuoteAgentModal] setConversation called, new length:', nextMessages.length);
+      logger.log('[QuoteAgentModal] setConversation called, new length:', nextMessages.length);
 
-      console.log('[QuoteAgentModal] About to call callAgent with messages:', nextMessages.length);
+      logger.log('[QuoteAgentModal] About to call callAgent with messages:', nextMessages.length);
       await callAgent(nextMessages);
-      console.log('[QuoteAgentModal] callAgent completed');
+      logger.log('[QuoteAgentModal] callAgent completed');
 
       // Clear input after successful send
       setInputValue('');
@@ -453,7 +454,7 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
   );
 
   const handleSendMessage = async (value?: string | AgentMessage) => {
-    console.log('[QuoteAgentModal] handleSendMessage called with:', value);
+    logger.log('[QuoteAgentModal] handleSendMessage called with:', value);
     await submitReply(value);
   };
 
@@ -541,9 +542,9 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
           !(message.role === "assistant" && message.type === "summary")
       );
 
-    console.log('[QuoteAgentModal] visibleMessages:', messages.length, 'messages');
+    logger.log('[QuoteAgentModal] visibleMessages:', messages.length, 'messages');
     messages.forEach((msg, i) => {
-      console.log(`  Message ${i}: role=${msg.role}, type=${msg.type}, hasOptions=${!!(msg as any).options}`);
+      logger.log(`  Message ${i}: role=${msg.role}, type=${msg.type}, hasOptions=${!!(msg as any).options}`);
     });
 
     return messages;
@@ -738,7 +739,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         }}
       >
         {messages.map((message, index) => {
-          console.log(`[ChatPanel] Processing message ${index}:`, {
+          logger.log(`[ChatPanel] Processing message ${index}:`, {
             role: message.role,
             type: message.type,
             hasOptions: !!(message as any).options,
@@ -785,7 +786,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 )
             : [];
 
-          console.log('[ChatPanel] Message options:', {
+          logger.log('[ChatPanel] Message options:', {
             messageRole: message.role,
             hasOptions: normalizedOptions.length > 0,
             optionCount: normalizedOptions.length,
@@ -803,7 +804,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           const shouldShowChoiceButtons = message.type === 'choice' && normalizedOptions.length > 0;
           const shouldShowTextInput = message.type === 'input' || (!shouldShowChoiceButtons && !isUser);
 
-          console.log('[ChatPanel] Message rendering decision:', {
+          logger.log('[ChatPanel] Message rendering decision:', {
             messageRole: message.role,
             messageType: message.type,
             hasOptions: normalizedOptions.length > 0,
@@ -889,7 +890,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   }}
                 >
                   {normalizedOptions.map((option, idx) => {
-                    console.log(`[ChatPanel] Rendering button ${idx}:`, option.label, option.value);
+                    logger.log(`[ChatPanel] Rendering button ${idx}:`, option.label, option.value);
                     return (
                       <Button
                         key={`${option.value}-${option.label}-${idx}`}
@@ -899,7 +900,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           e.preventDefault();
                           e.stopPropagation();
                           const value = option.value || option.label;
-                          console.log('[ChatPanel] Button clicked, sending option:', value);
+                          logger.log('[ChatPanel] Button clicked, sending option:', value);
 
                           const userMessage: AgentMessage = {
                             role: "user",
@@ -907,9 +908,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                             content: value,
                           };
 
-                          console.log('[ChatPanel] Created userMessage:', userMessage);
+                          logger.log('[ChatPanel] Created userMessage:', userMessage);
                           onSendMessage(userMessage);
-                          console.log('[ChatPanel] Called onSendMessage');
+                          logger.log('[ChatPanel] Called onSendMessage');
                         }}
                         sx={{
                           borderRadius: '24px',

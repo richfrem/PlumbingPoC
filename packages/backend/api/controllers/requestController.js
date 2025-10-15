@@ -4,6 +4,7 @@ import axios from 'axios';
 import { database as supabase } from '../config/supabase/index.js';
 import { sendRequestSubmittedEmail, sendStatusUpdateEmail, sendQuoteAddedEmail } from '../services/email/resend/index.js';
 import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../services/sms/twilio/index.js';
+import { logger } from '../../src/lib/logger.js';
 
 /**
  * Handles fetching all requests for admin dashboard or user's own requests.
@@ -11,7 +12,7 @@ import { sendNewRequestNotification, sendQuoteAcceptedNotification } from '../se
 const getAllRequests = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    console.log(`🔍 GetAllRequests: Processing request for user ${userId}`);
+    logger.log(`🔍 GetAllRequests: Processing request for user ${userId}`);
 
     // Check if user is admin
     const { data: userProfile, error: profileError } = await supabase
@@ -23,11 +24,11 @@ const getAllRequests = async (req, res, next) => {
     if (profileError) {
       console.warn(`⚠️ GetAllRequests: Profile lookup failed for user ${userId}:`, profileError.message);
       // If profile doesn't exist, treat as non-admin (only show own requests)
-      console.log(`ℹ️ GetAllRequests: Treating user ${userId} as non-admin due to missing profile`);
+      logger.log(`ℹ️ GetAllRequests: Treating user ${userId} as non-admin due to missing profile`);
     }
 
     const isAdmin = userProfile?.role === 'admin';
-    console.log(`🔍 GetAllRequests: User ${userId} is ${isAdmin ? 'admin' : 'non-admin'} (email: ${userProfile?.email || 'unknown'})`);
+    logger.log(`🔍 GetAllRequests: User ${userId} is ${isAdmin ? 'admin' : 'non-admin'} (email: ${userProfile?.email || 'unknown'})`);
 
     let query = supabase
       .from('requests')
@@ -36,10 +37,10 @@ const getAllRequests = async (req, res, next) => {
 
     // If not admin, only show their own requests
     if (!isAdmin) {
-      console.log(`🔍 GetAllRequests: Filtering to show only user ${userId}'s own requests`);
+      logger.log(`🔍 GetAllRequests: Filtering to show only user ${userId}'s own requests`);
       query = query.eq('user_id', userId);
     } else {
-      console.log(`🔍 GetAllRequests: Admin user - showing all requests`);
+      logger.log(`🔍 GetAllRequests: Admin user - showing all requests`);
     }
 
     const { data: requests, error } = await query;
@@ -49,7 +50,7 @@ const getAllRequests = async (req, res, next) => {
       return res.status(500).json({ error: 'Failed to fetch requests.' });
     }
 
-    console.log(`✅ Fetched ${requests?.length || 0} requests for ${isAdmin ? 'admin' : 'user'} ${userId}`);
+    logger.log(`✅ Fetched ${requests?.length || 0} requests for ${isAdmin ? 'admin' : 'user'} ${userId}`);
     res.json(requests || []);
   } catch (err) {
     console.error('❌ Get All Requests Exception:', err);
@@ -112,7 +113,7 @@ const getGptFollowUp = async (req, res, next) => {
     // Efficiency Check: If the request is for a standard category and lacks ambiguous keywords,
     // we can skip the AI call entirely, saving cost and latency.
     if (!isOtherCategory && !hasAmbiguousKeywords) {
-      console.log('[API EFFICIENCY] Skipping GPT-4 call for standard, clear request.');
+      logger.log('[API EFFICIENCY] Skipping GPT-4 call for standard, clear request.');
       // Adhere to the contract even when skipping the call.
       return res.json({ requiresFollowUp: false, questions: [] });
     }
@@ -138,14 +139,45 @@ const prompt = `
 `;
 
     // The API call is now more robust.
-    const gptResponse = await axios.post('https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-1106-preview', // A model that reliably supports JSON mode
+    const model = process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL; // A model that reliably supports JSON mode
+    const isGpt5Model = model?.startsWith('gpt-5');
+    const isGpt4oModel = model?.startsWith('gpt-4o');
+
+    let apiUrl, requestData;
+
+    if (isGpt5Model) {
+      // Use Responses API for GPT-5 models
+      apiUrl = 'https://api.openai.com/v1/responses';
+      requestData = {
+        model: model,
+        input: prompt,
+        reasoning: { effort: "minimal" },
+        text: { verbosity: "low" },
+        max_output_tokens: 250,
+        response_format: { type: 'json_object' }
+      };
+    } else {
+      // Use Chat Completions API for older models
+      apiUrl = 'https://api.openai.com/v1/chat/completions';
+      requestData = {
+        model: model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 250,
-        temperature: 0.2,
-        response_format: { type: 'json_object' } // This enforces the JSON output contract.
-      },
+        response_format: { type: 'json_object' }
+      };
+
+      // Set max tokens parameter based on model type
+      if (isGpt4oModel) {
+        requestData.max_completion_tokens = 250;
+      } else {
+        requestData.max_tokens = 250;
+      }
+
+      // Add temperature for non-GPT-5 models
+      requestData.temperature = 0.2;
+    }
+
+    const gptResponse = await axios.post(apiUrl,
+      requestData,
       {
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -154,9 +186,10 @@ const prompt = `
       }
     );
 
-    const replyContent = gptResponse.data.choices[0].message.content;
-
-    // The parsing logic is now simple, safe, and reliable.
+    // Extract content based on API type
+    const replyContent = isGpt5Model
+      ? gptResponse.data.output_text
+      : gptResponse.data.choices[0].message.content;    // The parsing logic is now simple, safe, and reliable.
     try {
       const parsedJson = JSON.parse(replyContent);
       const additionalQuestions = (parsedJson.requiresFollowUp && Array.isArray(parsedJson.questions))
@@ -232,7 +265,7 @@ const submitQuoteRequest = async (req, res, next) => {
 
     // Log that we're about to attempt sending the request-submitted email.
     // Include minimal identifying info so we can trace the flow in logs.
-    console.log('📧 EMAIL DEBUG: Attempting to call sendRequestSubmittedEmail', {
+    logger.log('📧 EMAIL DEBUG: Attempting to call sendRequestSubmittedEmail', {
       requestId: requestWithProfile.id,
       recipient: requestWithProfile.user_profiles?.email || null,
       userId: req.user.id
@@ -245,17 +278,17 @@ const submitQuoteRequest = async (req, res, next) => {
         if (result && result.error) {
           console.error('❌ EMAIL ERROR: sendRequestSubmittedEmail returned error for request', requestWithProfile.id, result.error);
         } else {
-          console.log('✅ EMAIL INFO: sendRequestSubmittedEmail completed for request', requestWithProfile.id);
+          logger.log('✅ EMAIL INFO: sendRequestSubmittedEmail completed for request', requestWithProfile.id);
         }
       })
       .catch((emailErr) => {
         console.error('❌ EMAIL EXCEPTION: sendRequestSubmittedEmail threw for request', requestWithProfile.id, emailErr);
       });
 
-    console.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
+    logger.log('📱 SMS DEBUG: About to call sendNewRequestNotification');
     try {
       sendNewRequestNotification(data);
-      console.log('📱 SMS DEBUG: sendNewRequestNotification called successfully');
+      logger.log('📱 SMS DEBUG: sendNewRequestNotification called successfully');
     } catch (smsError) {
       console.error('📱 SMS DEBUG: sendNewRequestNotification failed:', smsError);
     }
@@ -458,7 +491,7 @@ const updateQuote = async (req, res, next) => {
       .eq('id', quoteId)
       .single();
 
-    console.log('updateQuote: Updating quote', { quoteId, currentStatus: currentQuote?.status });
+    logger.log('updateQuote: Updating quote', { quoteId, currentStatus: currentQuote?.status });
 
     // Update quote details first
     const { data: updatedQuote, error } = await supabase
@@ -479,7 +512,7 @@ const updateQuote = async (req, res, next) => {
     if (!updatedQuote) return res.status(404).json({ error: 'Quote not found or does not belong to this request.' });
 
     // Then update the status separately
-    console.log('updateQuote: About to update quote status to sent');
+    logger.log('updateQuote: About to update quote status to sent');
     const { data: statusData, error: statusError } = await supabase
       .from('quotes')
       .update({ status: 'sent' })
@@ -492,10 +525,10 @@ const updateQuote = async (req, res, next) => {
       console.error('updateQuote: Status error details:', JSON.stringify(statusError, null, 2));
       // Don't throw here, the main update succeeded
     } else {
-      console.log('updateQuote: Quote status updated successfully', { newStatus: statusData?.status });
+      logger.log('updateQuote: Quote status updated successfully', { newStatus: statusData?.status });
     }
 
-    console.log('updateQuote: Quote updated successfully', { quoteId, amount: updatedQuote.quote_amount });
+    logger.log('updateQuote: Quote updated successfully', { quoteId, amount: updatedQuote.quote_amount });
 
     // Only revert status to 'quoted' if it was previously 'accepted'
     // This ensures that updating a quote reverts accepted quotes back to quoted status
@@ -528,7 +561,7 @@ const acceptQuote = async (req, res, next) => {
     const { id, quoteId } = req.params;
     const userId = req.user.id;
 
-    console.log('acceptQuote: Starting atomic quote acceptance', { requestId: id, quoteId, userId });
+    logger.log('acceptQuote: Starting atomic quote acceptance', { requestId: id, quoteId, userId });
 
     // 1. Verify user has permission (ownership check for non-admins)
     const { data: userProfile } = await supabase.from('user_profiles').select('role').eq('user_id', userId).single();
@@ -539,10 +572,10 @@ const acceptQuote = async (req, res, next) => {
       if (ownerError || !requestOwner) return res.status(404).json({ error: 'Request not found.' });
       if (requestOwner.user_id !== userId) return res.status(403).json({ error: 'Permission denied.' });
     }
-    console.log(`acceptQuote: Permission verified for user ${userId} (role: ${userProfile.role})`);
+    logger.log(`acceptQuote: Permission verified for user ${userId} (role: ${userProfile.role})`);
 
     // 2. Perform the atomic updates directly
-    console.log('acceptQuote: Performing atomic quote acceptance updates...');
+    logger.log('acceptQuote: Performing atomic quote acceptance updates...');
 
     // Update the selected quote to 'accepted'
     const { error: acceptError } = await supabase
@@ -579,7 +612,7 @@ const acceptQuote = async (req, res, next) => {
       throw requestError;
     }
 
-    console.log('acceptQuote: All updates completed successfully.');
+    logger.log('acceptQuote: All updates completed successfully.');
 
     // 3. Fetch data needed for notifications
     const { data: notificationRequestData, error: notificationRequestError } = await supabase
@@ -807,7 +840,7 @@ const cleanupTestData = async (req, res, next) => {
     }
 
     // AUDIT LOGGING: Log all cleanup operations
-    console.log(`🧹 TEST DATA CLEANUP ${isDryRun ? 'DRY RUN' : 'EXECUTED'}:`, {
+    logger.log(`🧹 TEST DATA CLEANUP ${isDryRun ? 'DRY RUN' : 'EXECUTED'}:`, {
       admin: userProfile.email,
       environment: process.env.NODE_ENV,
       identified: results.identified.length,
@@ -877,14 +910,14 @@ const updateRequestStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, scheduled_start_date } = req.body;
 
-    console.log('updateRequestStatus called:', { id, status, scheduled_start_date });
+    logger.log('updateRequestStatus called:', { id, status, scheduled_start_date });
 
     const updatePayload = { status };
     if (scheduled_start_date) {
         updatePayload.scheduled_start_date = new Date(scheduled_start_date).toISOString();
     }
 
-    console.log('updatePayload:', updatePayload);
+    logger.log('updatePayload:', updatePayload);
 
     // Return the updated request including user_profiles so notification helpers can find the recipient
     const { data, error } = await supabase

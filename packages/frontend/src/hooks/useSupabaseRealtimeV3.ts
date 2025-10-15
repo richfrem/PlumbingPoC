@@ -81,6 +81,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
+import { logger } from '../lib/logger';
 
 interface TableConfig {
   table: string;
@@ -143,7 +144,7 @@ export function useSupabaseRealtimeV3(
     // to prevent re-subscribing on every render. Example:
     // const tableConfigs = useMemo(() => [{ table: 'requests', ... }], [dependencies]);
 
-    console.log('🔌 Setting up Supabase Realtime v3 for tables:', tableConfigs.map(c => c.table));
+    logger.log('🔌 Setting up Supabase Realtime v3 for tables:', tableConfigs.map(c => c.table));
 
     // Create a descriptive channel name for better debugging
     const tables = tableConfigs.map(c => c.table).join('-');
@@ -165,7 +166,7 @@ export function useSupabaseRealtimeV3(
             ...(config.filter && { filter: config.filter })
           } as any,
           (payload: any) => {
-            console.log(`🔄 Realtime v3: ${event} on ${config.table}`, {
+            logger.log(`🔄 Realtime v3: ${event} on ${config.table}`, {
               recordId: payload.new?.id || payload.old?.id,
               event,
               table: config.table,
@@ -178,14 +179,14 @@ export function useSupabaseRealtimeV3(
             // Invalidate specified queries
             config.invalidateQueries.forEach(queryKey => {
               const key = Array.isArray(queryKey) ? queryKey.filter(Boolean) : [queryKey];
-              console.log(`🗑️ Invalidating queries with key:`, key);
+              logger.log(`🗑️ Invalidating queries with key:`, key);
               queryClient.invalidateQueries({ queryKey: key, exact: false });
             });
 
             // Special handling for request_notes - also invalidate the specific request query
             if (config.table === 'request_notes' && payload.new?.request_id) {
               const requestQueryKey = ['request', payload.new.request_id];
-              console.log(`🗑️ Special invalidation for request_notes:`, requestQueryKey);
+              logger.log(`🗑️ Special invalidation for request_notes:`, requestQueryKey);
               queryClient.invalidateQueries({ queryKey: requestQueryKey, exact: true });
             }
 
@@ -194,7 +195,7 @@ export function useSupabaseRealtimeV3(
             if (config.table === 'quotes' && (payload.new?.request_id || payload.old?.request_id)) {
               const requestId = payload.new?.request_id || payload.old?.request_id;
               const requestQueryKey = ['request', requestId];
-              console.log(`🗑️ Special invalidation for quotes affecting parent request:`, requestQueryKey);
+              logger.log(`🗑️ Special invalidation for quotes affecting parent request:`, requestQueryKey);
               queryClient.invalidateQueries({ queryKey: requestQueryKey, exact: true });
             }
           }
@@ -209,19 +210,19 @@ export function useSupabaseRealtimeV3(
       const isBindingMismatch = err?.message?.includes('mismatch between server and client bindings');
 
       if (status === 'SUBSCRIBED') {
-        console.log('✅ Realtime v3 channel subscribed successfully');
-        console.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
+        logger.log('✅ Realtime v3 channel subscribed successfully');
+        logger.log('🎧 Listening for changes on tables:', tableConfigs.map(c => c.table));
       } else if (status === 'CHANNEL_ERROR') {
         // Only log non-binding-mismatch errors
         if (!isBindingMismatch) {
-          console.error('❌ Realtime v3 channel error:', status, err);
-          console.warn('⚠️ Continuing without realtime due to channel error');
+          logger.error('❌ Realtime v3 channel error:', status, err);
+          logger.warn('⚠️ Continuing without realtime due to channel error');
         }
       } else if (status === 'TIMED_OUT') {
-        console.error('⏰ Realtime v3 channel timed out');
-        console.warn('⚠️ Continuing without realtime due to timeout');
+        logger.error('⏰ Realtime v3 channel timed out');
+        logger.warn('⚠️ Continuing without realtime due to timeout');
       } else if (status === 'CLOSED') {
-        console.log('🔌 Realtime v3 channel closed');
+        logger.log('🔌 Realtime v3 channel closed');
       }
     });
 
@@ -230,7 +231,7 @@ export function useSupabaseRealtimeV3(
 
     // Cleanup function
     return () => {
-      console.log('🧹 Cleaning up Realtime v3 channel');
+      logger.log('🧹 Cleaning up Realtime v3 channel');
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -247,7 +248,7 @@ export function useRealtimeInvalidation(userId?: string) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log('🔌 Setting up centralized realtime invalidation');
+    logger.log('🔌 Setting up centralized realtime invalidation');
 
     // Helper to invalidate all relevant query keys
     const invalidateAll = (requestId?: string) => {
@@ -267,7 +268,7 @@ export function useRealtimeInvalidation(userId?: string) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'requests' },
         (payload: any) => {
-          console.log('[realtime] requests payload', payload);
+          logger.log('[realtime] requests payload', payload);
           const newRow = payload.new ?? payload.record ?? null;
           const requestId = newRow?.id ?? null;
           invalidateAll(requestId);
@@ -282,7 +283,7 @@ export function useRealtimeInvalidation(userId?: string) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'quotes' },
         (payload: any) => {
-          console.log('[realtime] quotes payload', payload);
+          logger.log('[realtime] quotes payload', payload);
           const newRow = payload.new ?? payload.record ?? null;
           const requestId = newRow?.request_id ?? null;
           invalidateAll(requestId);

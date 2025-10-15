@@ -21,6 +21,8 @@ import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { DashboardPage } from '../../page-objects/pages/DashboardPage';
 import { TEST_USERS } from '../../fixtures/test-data';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Admin Request Management', () => {
   let authPage: AuthPage;
@@ -33,7 +35,7 @@ test.describe('Admin Request Management', () => {
   });
 
   test('should view requests in admin dashboard', async ({ page }) => {
-    console.log('🧪 Testing admin request viewing and counting...');
+    logger.log('🧪 Testing admin request viewing and counting...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -45,39 +47,39 @@ test.describe('Admin Request Management', () => {
     await commandCenterButton.click();
 
     await expect(page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
-    console.log('✅ Admin dashboard accessed');
+    logger.log('✅ Admin dashboard accessed');
 
     // Wait for requests to load (with timeout handling)
     try {
       await dashboardPage.waitForRequestsToLoad(5000); // Shorter timeout
-      console.log('✅ Requests loaded');
+      logger.log('✅ Requests loaded');
     } catch (error) {
-      console.log('⚠️ Requests did not load within timeout, proceeding anyway');
+      logger.log('⚠️ Requests did not load within timeout, proceeding anyway');
     }
 
     // Get request count
     const requestCount = await dashboardPage.getRequestCount();
-    console.log(`📊 Found ${requestCount} requests in dashboard`);
+    logger.log(`📊 Found ${requestCount} requests in dashboard`);
 
     // Get visible request details
     const visibleRequests = await dashboardPage.getVisibleRequests();
-    console.log('📋 Visible requests:');
+    logger.log('📋 Visible requests:');
     visibleRequests.forEach((req, index) => {
-      console.log(`   ${index + 1}. "${req.title}" - Status: ${req.status}`);
+      logger.log(`   ${index + 1}. "${req.title}" - Status: ${req.status}`);
     });
 
     // Verify we have at least some requests or handle empty state
     if (requestCount === 0) {
-      console.log('ℹ️ No requests visible - this may be expected for a fresh system');
+      logger.log('ℹ️ No requests visible - this may be expected for a fresh system');
     } else {
-      console.log('✅ Dashboard request viewing successful');
+      logger.log('✅ Dashboard request viewing successful');
     }
 
-    console.log('✅ Admin request viewing test passed');
+    logger.log('✅ Admin request viewing test passed');
   });
 
   test('should handle empty request states', async ({ page }) => {
-    console.log('🧪 Testing empty request state handling...');
+    logger.log('🧪 Testing empty request state handling...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -105,7 +107,7 @@ test.describe('Admin Request Management', () => {
     for (const element of emptyStateElements) {
       try {
         await element.waitFor({ timeout: 2000 });
-        console.log(`📭 Found empty state: ${await element.textContent()}`);
+        logger.log(`📭 Found empty state: ${await element.textContent()}`);
         foundEmptyState = true;
         break;
       } catch (e) {
@@ -114,22 +116,22 @@ test.describe('Admin Request Management', () => {
     }
 
     if (foundEmptyState) {
-      console.log('✅ Empty state properly displayed');
+      logger.log('✅ Empty state properly displayed');
     } else {
       // Check if there are actually requests
       const requestCount = await dashboardPage.getRequestCount();
       if (requestCount > 0) {
-        console.log(`✅ Dashboard has ${requestCount} requests (not empty)`);
+        logger.log(`✅ Dashboard has ${requestCount} requests (not empty)`);
       } else {
-        console.log('ℹ️ No empty state indicators found, but no requests either');
+        logger.log('ℹ️ No empty state indicators found, but no requests either');
       }
     }
 
-    console.log('✅ Empty request states test passed');
+    logger.log('✅ Empty request states test passed');
   });
 
   test('should open request details modal', async ({ page }) => {
-    console.log('🧪 Testing request details modal opening...');
+    logger.log('🧪 Testing request details modal opening...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -146,7 +148,7 @@ test.describe('Admin Request Management', () => {
     const requestRows = page.locator('div[data-request-id], button[data-request-id], tr[data-request-id]');
     const rowCount = await requestRows.count();
 
-    console.log(`📊 Found ${rowCount} request rows in admin dashboard`);
+    logger.log(`📊 Found ${rowCount} request rows in admin dashboard`);
 
     if (rowCount > 0) {
       // Test clicking on first available request
@@ -157,7 +159,7 @@ test.describe('Admin Request Management', () => {
       const hasModal = await modal.count() > 0;
 
       if (hasModal) {
-        console.log('✅ Request modal opened successfully');
+        logger.log('✅ Request modal opened successfully');
 
         // Check for modal content
         const modalContent = [
@@ -177,19 +179,19 @@ test.describe('Admin Request Management', () => {
           }
         }
 
-        console.log(`📋 Found ${foundContent} modal content elements`);
+        logger.log(`📋 Found ${foundContent} modal content elements`);
       } else {
-        console.log('ℹ️ No modal detected - request may open differently');
+        logger.log('ℹ️ No modal detected - request may open differently');
       }
     } else {
-      console.log('ℹ️ No requests available to test opening');
+      logger.log('ℹ️ No requests available to test opening');
     }
 
-    console.log('✅ Request details modal test passed');
+    logger.log('✅ Request details modal test passed');
   });
 
   test('should update request status', async ({ page }) => {
-    console.log('🧪 Testing request status updates...');
+    logger.log('🧪 Testing request status updates...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -224,33 +226,33 @@ test.describe('Admin Request Management', () => {
       let foundStatusControl = false;
       for (const selector of statusSelectors) {
         if (await selector.count() > 0) {
-          console.log('✅ Found status control');
+          logger.log('✅ Found status control');
 
           // Try to change status (if options available)
           try {
             await selector.selectOption('viewed');
-            console.log('✅ Status updated to "viewed"');
+            logger.log('✅ Status updated to "viewed"');
             foundStatusControl = true;
           } catch (e) {
-            console.log('ℹ️ Could not update status (may not have options or different UI)');
+            logger.log('ℹ️ Could not update status (may not have options or different UI)');
           }
           break;
         }
       }
 
       if (!foundStatusControl) {
-        console.log('ℹ️ No status controls found in request modal');
+        logger.log('ℹ️ No status controls found in request modal');
       }
     } else {
-      console.log('ℹ️ No requests available to test status updates');
+      logger.log('ℹ️ No requests available to test status updates');
     }
 
-    console.log('✅ Request status update test passed');
+    logger.log('✅ Request status update test passed');
   });
 
   // COMMENTED OUT - Will implement after basic request management works
   // test('should filter requests by criteria', async ({ page }) => {
-  //   console.log('🧪 Testing request filtering functionality...');
+  //   logger.log('🧪 Testing request filtering functionality...');
   //
   //   // Admin sign in and navigation
   //   const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -263,17 +265,17 @@ test.describe('Admin Request Management', () => {
   //   await dashboardPage.waitForRequestsToLoad();
   //
   //   // Test filtering by status
-  //   console.log('🔍 Testing status filtering...');
+  //   logger.log('🔍 Testing status filtering...');
   //   // TODO: Implement status filter UI interaction
   //
   //   // Test filtering by category
-  //   console.log('🔍 Testing category filtering...');
+  //   logger.log('🔍 Testing category filtering...');
   //   // TODO: Implement category filter UI interaction
   //
   //   // Test filtering by date range
-  //   console.log('🔍 Testing date filtering...');
+  //   logger.log('🔍 Testing date filtering...');
   //   // TODO: Implement date filter UI interaction
   //
-  //   console.log('✅ Request filtering test completed');
+  //   logger.log('✅ Request filtering test completed');
   // });
 });

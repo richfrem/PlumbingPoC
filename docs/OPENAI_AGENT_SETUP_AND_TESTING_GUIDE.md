@@ -1,12 +1,42 @@
 # OpenAI Agent Testing Guide
 
-This guide explains how to test the PlumbingPOC OpenAI agents locally and in the Agent Builder GUI.
+This guide explains how to test the PlumbingPOC OpenAI agents through manual end-to-end testing and Agent Builder GUI testing. For automated unit testing of GPT-5 integration logic, see the [OpenAI GPT-5 Integration Testing Guide](OPENAI_GPT5_INTEGRATION_TESTING.md).
 
 ## Overview
 
 The PlumbingPOC application includes two OpenAI Agent Toolkit agents:
 - **QuoteAgent**: Handles customer quote requests with static questions first, AI fallback
 - **TriageAgent**: Analyzes requests for priority scoring and profitability assessment
+
+## Testing Approaches
+
+This guide covers multiple testing approaches for OpenAI agents:
+
+### 1. Automated Unit Tests (Recommended for Development)
+For comprehensive, fast, and reliable testing of GPT-5 integration logic, see:
+**[OpenAI GPT-5 Integration Testing Guide](OPENAI_GPT5_INTEGRATION_TESTING.md)**
+
+This covers:
+- Vitest unit tests for agent parsing and error handling
+- GPT-5 vs GPT-4 API differences
+- Mocking strategies for `responses.create()` API
+- Running tests individually or in isolation
+- Debugging test failures
+
+**Quick Start:**
+```bash
+# Run all OpenAI integration tests
+npm test
+
+# Run specific agent tests
+npx vitest run -t "Quote Agent"
+```
+
+### 2. Manual End-to-End Testing (Integration Verification)
+Full application flow testing with real UI interactions and database persistence.
+
+### 3. Agent Builder GUI Testing (Rapid Prototyping)
+Visual agent flow testing and rapid iteration in the OpenAI platform.
 
 ## Local Testing
 
@@ -149,9 +179,17 @@ Then render them:
 
 ## Local CLI Testing
 
-### Method 2: Local Testing with OpenAI CLI
+### Current Status (October 2025)
 
-**Note:** The OpenAI CLI currently only supports migration commands. Local agent development may require the Agent Toolkit beta access or different tooling. The following represents the intended workflow once available:
+**Note:** The OpenAI CLI currently only supports migration commands. Local agent development and testing is primarily done through:
+
+1. **Automated Vitest Unit Tests** (Recommended) - See [OpenAI GPT-5 Integration Testing Guide](OPENAI_GPT5_INTEGRATION_TESTING.md)
+2. **Manual End-to-End Testing** - Full application flow testing
+3. **Agent Builder GUI** - Visual agent development and testing
+
+### Legacy CLI Approach (When Available)
+
+The following represents the intended workflow once OpenAI CLI supports local agent development:
 
 #### Prerequisites
 
@@ -274,7 +312,7 @@ If CLI commands are unavailable, use the OpenAI Agents SDK for programmatic test
      });
 
      const result = await run(agent, "Write me a haiku about code");
-     console.log(result.finalOutput);
+     logger.log(result.finalOutput);
    }
 
    main().catch(console.error);
@@ -328,6 +366,7 @@ The SDK provides full control over agent logic, tools, guardrails, and handoffs 
 
 ## Related Documentation
 
+- [OpenAI GPT-5 Integration Testing Guide](OPENAI_GPT5_INTEGRATION_TESTING.md) - Automated Vitest testing for GPT-5 integration
 - [ADR-025: OpenAI Agent Toolkit Implementation Pattern](adrs/025-choice-of-openai-agent-toolkit-implementation-pattern.md)
 - [Netlify Deployment Guide](NETLIFY_DEPLOYMENT.md)
 - [OpenAI Agent Toolkit Documentation](https://platform.openai.com/docs/agent-toolkit)

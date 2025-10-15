@@ -22,10 +22,12 @@
 import { test, expect } from '@playwright/test';
 import { QuoteRequestPage } from '../../page-objects/pages/QuoteRequestPage';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 // API verification helper - calls local development API to verify quote creation
 async function verifyQuoteCreated(page: any, expectedRequestId: string, description: string, expectedOptions?: any) {
-  console.log(`🔍 Verifying quote creation in database: ${description}`);
+  logger.log(`🔍 Verifying quote creation in database: ${description}`);
 
   // Use frontend base URL from environment (API is served through frontend in dev)
   const apiBaseUrl = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
@@ -46,23 +48,23 @@ async function verifyQuoteCreated(page: any, expectedRequestId: string, descript
   if (expectedOptions?.attachmentPath) {
     expect(createdRequest.attachments).toBeDefined();
     expect(createdRequest.attachments.length).toBeGreaterThan(0);
-    console.log('✅ Verified attachment was saved');
+    logger.log('✅ Verified attachment was saved');
   }
 
   if (expectedOptions?.serviceLocation) {
     expect(createdRequest.serviceLocation).toBeDefined();
     expect(createdRequest.serviceLocation.address).toBe(expectedOptions.serviceLocation.address);
-    console.log('✅ Verified service location was saved');
+    logger.log('✅ Verified service location was saved');
   }
 
-  console.log(`✅ Verified quote exists in database with correct data: ${expectedRequestId}`);
+  logger.log(`✅ Verified quote exists in database with correct data: ${expectedRequestId}`);
   return createdRequest;
 }
 
 test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
 
   test('should create basic perimeter drain quote (no attachments, no address changes)', async ({ page }) => {
-    console.log('🧪 Testing basic perimeter drain quote creation...');
+    logger.log('🧪 Testing basic perimeter drain quote creation...');
 
     // Initialize page objects
     const authPage = new AuthPage(page);
@@ -88,16 +90,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
 
     // TODO: API verification - disabled for now while debugging core functionality
     // await verifyQuoteCreated(page, requestId, 'basic perimeter drain quote');
-    console.log(`✅ Request ID validation confirms creation: ${requestId}`);
+    logger.log(`✅ Request ID validation confirms creation: ${requestId}`);
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created and verified basic perimeter drain quote with ID: ${requestId}`);
+    logger.log(`✅ Successfully created and verified basic perimeter drain quote with ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with file attachment only', async ({ page }) => {
-    console.log('🧪 Testing perimeter drain quote creation with attachment only...');
+    logger.log('🧪 Testing perimeter drain quote creation with attachment only...');
 
     // Initialize page objects
     const authPage = new AuthPage(page);
@@ -118,16 +120,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains', {
         attachmentPath: 'tests/e2e/fixtures/example-images/crawl-space-leak.jpg'
       });
-      console.log(`✅ Quote creation completed with ID: ${requestId}`);
+      logger.log(`✅ Quote creation completed with ID: ${requestId}`);
     } catch (error) {
-      console.log('❌ Quote creation failed, but let me check if we got a request ID...');
+      logger.log('❌ Quote creation failed, but let me check if we got a request ID...');
       // Try to extract request ID from error or logs if possible
       requestId = 'unknown-failed-to-get-id';
       throw error;
     }
 
     // Log the request ID for database verification
-    console.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
+    logger.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
 
     // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
@@ -137,16 +139,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
     }
 
-    console.log(`✅ Request ID validation confirms creation with attachment: ${requestId}`);
+    logger.log(`✅ Request ID validation confirms creation with attachment: ${requestId}`);
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created and verified perimeter drain quote with attachment, ID: ${requestId}`);
+    logger.log(`✅ Successfully created and verified perimeter drain quote with attachment, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with custom service address only', async ({ page }) => {
-    console.log('🧪 Testing perimeter drain quote creation with custom service address only...');
+    logger.log('🧪 Testing perimeter drain quote creation with custom service address only...');
 
     // Initialize page objects
     const authPage = new AuthPage(page);
@@ -172,16 +174,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
           postalCode: 'V9E 1J3'
         }
       });
-      console.log(`✅ Quote creation completed with ID: ${requestId}`);
+      logger.log(`✅ Quote creation completed with ID: ${requestId}`);
     } catch (error) {
-      console.log('❌ Quote creation failed, but let me check if we got a request ID...');
+      logger.log('❌ Quote creation failed, but let me check if we got a request ID...');
       // Try to extract request ID from error or logs if possible
       requestId = 'unknown-failed-to-get-id';
       throw error;
     }
 
     // Log the request ID for database verification
-    console.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
+    logger.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
 
     // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
@@ -191,16 +193,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
     }
 
-    console.log(`✅ Request ID validation confirms creation with service location: ${requestId}`);
+    logger.log(`✅ Request ID validation confirms creation with service location: ${requestId}`);
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created and verified perimeter drain quote with custom address, ID: ${requestId}`);
+    logger.log(`✅ Successfully created and verified perimeter drain quote with custom address, ID: ${requestId}`);
   });
 
   test('should create perimeter drain quote with attachment and custom service address', async ({ page }) => {
-    console.log('🧪 Testing perimeter drain quote creation with attachment and custom service address...');
+    logger.log('🧪 Testing perimeter drain quote creation with attachment and custom service address...');
 
     // Initialize page objects
     const authPage = new AuthPage(page);
@@ -227,16 +229,16 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
           postalCode: 'V8M 2J7'
         }
       });
-      console.log(`✅ Quote creation completed with ID: ${requestId}`);
+      logger.log(`✅ Quote creation completed with ID: ${requestId}`);
     } catch (error) {
-      console.log('❌ Quote creation failed, but let me check if we got a request ID...');
+      logger.log('❌ Quote creation failed, but let me check if we got a request ID...');
       // Try to extract request ID from error or logs if possible
       requestId = 'unknown-failed-to-get-id';
       throw error;
     }
 
     // Log the request ID for database verification
-    console.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
+    logger.log(`🔍 REQUEST ID FOR DATABASE CHECK: ${requestId}`);
 
     // Verify request creation with enhanced checks
     expect(requestId).toBeDefined();
@@ -246,12 +248,12 @@ test.describe('Perimeter Drain Quote Comprehensive Scenarios', () => {
       expect(requestId).toMatch(/^[a-f0-9\-]+$/); // UUID format
     }
 
-    console.log(`✅ Request ID validation confirms creation with attachment and service location: ${requestId}`);
+    logger.log(`✅ Request ID validation confirms creation with attachment and service location: ${requestId}`);
 
     // Sign out to clean up session state
     await authPage.signOut();
 
-    console.log(`✅ Successfully created and verified perimeter drain quote with attachment and custom address, ID: ${requestId}`);
+    logger.log(`✅ Successfully created and verified perimeter drain quote with attachment and custom address, ID: ${requestId}`);
   });
 
 });

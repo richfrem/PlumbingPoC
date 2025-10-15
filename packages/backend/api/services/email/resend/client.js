@@ -15,18 +15,18 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AquaFlow Plumbing <n
  */
 // requestId is optional but should be provided by callers so audit rows can link to a request
 const sendEmail = async ({ to, subject, html, text, requestId = null }) => {
-  console.log(`📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
-  console.log(`📧 EMAIL DEBUG: Attempting to send email from: ${RESEND_FROM_EMAIL}`);
-  console.log(`📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
-  console.log(`📧 EMAIL DEBUG: Subject: ${subject}`);
+  console.log(`[LOG] 📧 EMAIL DEBUG: RESEND_ENABLED = ${RESEND_ENABLED}`);
+  console.log(`[LOG] 📧 EMAIL DEBUG: Attempting to send email from: ${RESEND_FROM_EMAIL}`);
+  console.log(`[LOG] 📧 EMAIL DEBUG: Attempting to send email to: ${to}`);
+  console.log(`[LOG] 📧 EMAIL DEBUG: Subject: ${subject}`);
 
   if (!RESEND_ENABLED) {
-    console.log('❌ EMAIL DISABLED: Resend is disabled. Email not sent.');
-    return { data: { message: 'Resend disabled' } };
+    console.log('[LOG] ❌ EMAIL DISABLED: Resend is disabled. Email not sent.');
+    return { success: false, message: 'Email sending is disabled' };
   }
 
   try {
-    console.log('📤 EMAIL DEBUG: Calling Resend API...');
+    console.log('[LOG] 📤 EMAIL DEBUG: Calling Resend API...');
     const { data, error } = await resend.emails.send({
       from: RESEND_FROM_EMAIL,
       to,
@@ -53,7 +53,7 @@ const sendEmail = async ({ to, subject, html, text, requestId = null }) => {
       return { error };
     }
 
-    console.log('✅ EMAIL SUCCESS: Email sent successfully:', data);
+    console.log('[LOG] ✅ EMAIL SUCCESS: Email sent successfully:', data);
 
     // Persist send audit if supabase is available
     try {
@@ -103,17 +103,17 @@ const getRequestUrl = (requestId) => {
 const sendRequestSubmittedEmail = (request) => {
   const recipientEmail = getRecipientEmail(request);
   if (!recipientEmail) {
-    console.log('📧 EMAIL DEBUG: No recipient email found on request. Aborting sendRequestSubmittedEmail.');
-    console.log('📧 EMAIL DEBUG: request.user_profiles =', request?.user_profiles);
+    console.log('[LOG] 📧 EMAIL DEBUG: No recipient email found on request. Aborting sendRequestSubmittedEmail.');
+    console.log('[LOG] 📧 EMAIL DEBUG: request.user_profiles =', request?.user_profiles);
     return;
   }
 
   // Extra debug information to help trace any delivery issues
-  console.log('📧 EMAIL DEBUG: Preparing to send request-submitted email');
-  console.log('📧 EMAIL DEBUG: RESEND_ENABLED =', RESEND_ENABLED);
-  console.log('📧 EMAIL DEBUG: RESEND_FROM_EMAIL =', RESEND_FROM_EMAIL);
-  console.log('📧 EMAIL DEBUG: recipientEmail =', recipientEmail);
-  console.log('📧 EMAIL DEBUG: request.id =', request?.id);
+  console.log('[LOG] 📧 EMAIL DEBUG: Preparing to send request-submitted email');
+  console.log('[LOG] 📧 EMAIL DEBUG: RESEND_ENABLED =', RESEND_ENABLED);
+  console.log('[LOG] 📧 EMAIL DEBUG: RESEND_FROM_EMAIL =', RESEND_FROM_EMAIL);
+  console.log('[LOG] 📧 EMAIL DEBUG: recipientEmail =', recipientEmail);
+  console.log('[LOG] 📧 EMAIL DEBUG: request.id =', request?.id);
 
   const requestUrl = getRequestUrl(request.id);
   const subject = `Your request has been received!`;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, LogOut, Settings, ChevronDown, LayoutDashboard, ListChecks } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { logger } from '../../../lib/logger';
 
 interface UserMenuProps {
   onOpenProfile: () => void;
@@ -11,7 +12,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
 
-  console.log('👤 UserMenu Debug:', {
+  logger.log('👤 UserMenu Debug:', {
     userId: user?.id,
     userEmail: user?.email,
     profileRole: profile?.role,
@@ -50,7 +51,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
             </div>
             <div className="py-1">
               {(() => {
-                console.log('🔍 Command Center render check:', {
+                logger.log('🔍 Command Center render check:', {
                   hasProfile: !!profile,
                   profileRole: profile?.role,
                   isAdmin: profile?.role === 'admin',
@@ -59,13 +60,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenProfile, onNavigateToDashboar
                 return profile && profile.role === 'admin' && (
                   <button
                     onClick={() => {
-                      console.log('🚀 Command Center clicked!');
+                      logger.log('🚀 Command Center clicked!');
                       setIsOpen(false);
                       if (onNavigateToDashboard) {
-                        console.log('✅ Calling onNavigateToDashboard callback');
+                        logger.log('✅ Calling onNavigateToDashboard callback');
                         onNavigateToDashboard();
                       } else {
-                        console.log('❌ No onNavigateToDashboard callback provided');
+                        logger.log('❌ No onNavigateToDashboard callback provided');
                       }
                     }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"

@@ -32,6 +32,9 @@ const { editableFileManifest } = require('./projectFileManifest.js');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+const { logger } = require('../packages/frontend/src/lib/logger');
+
+
 const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -76,7 +79,7 @@ async function generateFeedback(screenshotPath) {
       Analyze the screenshot and provide your comprehensive feedback in the specified JSON format.
     `;
 
-    console.log('Analyzing screenshot for multiple improvements...');
+    logger.log('Analyzing screenshot for multiple improvements...');
     const result = await model.generateContent([prompt, ...imageParts]);
     const response = await result.response;
     const rawText = response.text();
@@ -88,7 +91,7 @@ async function generateFeedback(screenshotPath) {
 
     const feedbackFilePath = path.join(feedbackDir, 'ui-feedback.json');
     fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
-    console.log(`Feedback file generated at ${feedbackFilePath} with multiple suggestions.`);
+    logger.log(`Feedback file generated at ${feedbackFilePath} with multiple suggestions.`);
   } catch (error) {
     console.error('Error during feedback generation:', error);
   }
@@ -105,56 +108,56 @@ async function analyzeUI(email, password, target) {
   let page;
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
-    console.log('Connected to Playwright MCP server');
+    logger.log('Connected to Playwright MCP server');
 
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
 
     if (loginSuccess) {
-      console.log(`Login successful. Analyzing target: '${target}'`);
+      logger.log(`Login successful. Analyzing target: '${target}'`);
 
       let screenshotPath = path.join(__dirname, `screenshots/${target}-analysis.png`);
 
       // --- NEW: Mission Script Logic ---
       switch (target) {
         case 'request-detail-modal':
-          console.log('Navigating to open the first request detail modal...');
+          logger.log('Navigating to open the first request detail modal...');
           // This selector finds the first button-like element inside the "My Requests" section.
           await page.click('#my-requests [role="button"]:first-of-type');
           // Wait for a unique element inside the modal to ensure it's loaded.
           await page.waitForSelector('h5:has-text("Job Docket")');
-          console.log('Request Detail Modal is open.');
+          logger.log('Request Detail Modal is open.');
           break;
 
         case 'quote-agent-modal':
-          console.log('Navigating to open the quote agent modal...');
+          logger.log('Navigating to open the quote agent modal...');
           await page.click('role=button[name="Request a Quote"]');
           // Wait for a unique element inside this modal.
           await page.waitForSelector('h2:has-text("Request a Quote")');
-          console.log('Quote Agent Modal is open.');
+          logger.log('Quote Agent Modal is open.');
           break;
 
         case 'dashboard':
         default:
-          console.log('Analyzing main dashboard view.');
+          logger.log('Analyzing main dashboard view.');
           // No extra clicks needed for the dashboard.
           break;
       }
 
       await page.screenshot({ path: screenshotPath, fullPage: true });
-      console.log(`Screenshot for '${target}' saved to ${screenshotPath}`);
+      logger.log(`Screenshot for '${target}' saved to ${screenshotPath}`);
 
       await generateFeedback(screenshotPath);
 
     } else {
-      console.log('Login failed. Cannot analyze UI.');
+      logger.log('Login failed. Cannot analyze UI.');
     }
   } catch (error) {
     console.error(`An error occurred during analysis of target '${target}':`, error);
   } finally {
     if (page) await page.close();
     if (browser) await browser.close();
-    console.log('Browser session closed.');
+    logger.log('Browser session closed.');
   }
 }
 
@@ -183,5 +186,5 @@ if (targetIndex !== -1 && args[targetIndex + 1]) {
 if (command === 'analyze-ui' && email && password) {
   analyzeUI(email, password, target);
 } else {
-  console.log('Usage: node ui-designer-mcp-agent.js analyze-ui <email> <password> [--target <target_name>]');
+  logger.log('Usage: node ui-designer-mcp-agent.js analyze-ui <email> <password> [--target <target_name>]');
 }

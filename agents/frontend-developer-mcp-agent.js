@@ -23,6 +23,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { logger } = require('../packages/frontend/src/lib/logger');
+
+
 
 const FRONTEND_BASE_URL = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -43,7 +46,7 @@ async function implementFeedback(feedbackFilePath) {
   const feedback = JSON.parse(fs.readFileSync(absoluteFeedbackPath, 'utf-8'));
 
   if (feedback.status === 'implemented') {
-    console.log("✅ Feedback has already been implemented. No action taken.");
+    logger.log("✅ Feedback has already been implemented. No action taken.");
     return;
   }
 
@@ -57,7 +60,7 @@ async function implementFeedback(feedbackFilePath) {
   const originalFiles = new Map();
 
   try {
-    console.log(`Found ${improvements.length} improvements to implement. Proceeding...`);
+    logger.log(`Found ${improvements.length} improvements to implement. Proceeding...`);
 
     // --- BATCH IMPLEMENTATION LOOP ---
     for (const improvement of improvements) {
@@ -80,14 +83,14 @@ async function implementFeedback(feedbackFilePath) {
       const updatedSourceCode = currentSourceCode.replace(old_string, new_string);
 
       fs.writeFileSync(absoluteTargetFilePath, updatedSourceCode);
-      console.log(`Applied change to ${file_path}`);
+      logger.log(`Applied change to ${file_path}`);
     }
 
     // --- SINGLE VERIFICATION STEP ---
-    console.log('\n--- All changes applied. Verifying with a single build command... ---');
+    logger.log('\n--- All changes applied. Verifying with a single build command... ---');
     try {
       execSync('npm run build', { cwd: projectRoot, stdio: 'inherit' });
-      console.log('✅ Build successful! All changes are valid.');
+      logger.log('✅ Build successful! All changes are valid.');
     } catch (buildError) {
       throw new Error('Build verification failed after applying batch changes.');
     }
@@ -95,16 +98,16 @@ async function implementFeedback(feedbackFilePath) {
     // If build succeeds, update the feedback status
     feedback.status = 'implemented';
     fs.writeFileSync(absoluteFeedbackPath, JSON.stringify(feedback, null, 2));
-    console.log(`✅ Updated feedback file status to 'implemented'.`);
+    logger.log(`✅ Updated feedback file status to 'implemented'.`);
 
   } catch (error) {
     console.error(`\n--- An error occurred during implementation: ${error.message} ---`);
-    console.log('--- ROLLING BACK all changes... ---');
+    logger.log('--- ROLLING BACK all changes... ---');
 
     // Rollback all modified files to their original state
     for (const [filePath, originalContent] of originalFiles.entries()) {
       fs.writeFileSync(filePath, originalContent);
-      console.log(`✅ Reverted ${path.relative(projectRoot, filePath)}`);
+      logger.log(`✅ Reverted ${path.relative(projectRoot, filePath)}`);
     }
 
     throw new Error("Implementation failed and all changes were rolled back.");
@@ -122,25 +125,25 @@ async function loginLogoutTest(email, password) {
   let page;
   try {
     browser = await chromium.connectOverCDP(process.env.PLAYWRIGHT_SERVER_URL || 'http://localhost:49982/');
-    console.log('Connected to Playwright MCP server');
+    logger.log('Connected to Playwright MCP server');
 
     const { success: loginSuccess, page: newPage } = await signInEmailPassword(browser, FRONTEND_BASE_URL, email, password);
     page = newPage;
 
     if (loginSuccess) {
-      console.log('Login test: SUCCESS');
+      logger.log('Login test: SUCCESS');
       const logoutSuccess = await signOut(browser, FRONTEND_BASE_URL, { page });
-      if (logoutSuccess) console.log('Logout test: SUCCESS');
-      else console.log('Logout test: FAILED');
+      if (logoutSuccess) logger.log('Logout test: SUCCESS');
+      else logger.log('Logout test: FAILED');
     } else {
-      console.log('Login test: FAILED');
+      logger.log('Login test: FAILED');
     }
   } catch(error) {
     console.error('An error occurred during the login/logout test:', error);
   } finally {
     if (page) await page.close();
     if (browser) await browser.close();
-    console.log('Browser session closed.');
+    logger.log('Browser session closed.');
   }
 }
 
@@ -157,7 +160,7 @@ const [,, command, ...args] = process.argv;
     if (email && password) {
       await loginLogoutTest(email, password);
     } else {
-      console.log('Usage: node frontend-developer-mcp-agent.js login-logout-test <email> <password>');
+      logger.log('Usage: node frontend-developer-mcp-agent.js login-logout-test <email> <password>');
     }
   } else if (command === 'implement-feedback') {
     const feedbackFileIndex = args.indexOf('--feedback-file');
@@ -168,9 +171,9 @@ const [,, command, ...args] = process.argv;
         process.exit(1);
       }
     } else {
-      console.log('Usage: node frontend-developer-mcp-agent.js implement-feedback --feedback-file <path>');
+      logger.log('Usage: node frontend-developer-mcp-agent.js implement-feedback --feedback-file <path>');
     }
   } else {
-    console.log('Invalid command. Available commands: login-logout-test, implement-feedback');
+    logger.log('Invalid command. Available commands: login-logout-test, implement-feedback');
   }
 })();

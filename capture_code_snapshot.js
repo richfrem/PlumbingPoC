@@ -4,6 +4,9 @@
 // The primary change is to ensure all captured file paths in the headers
 // are consistently prefixed with './' for easier parsing and consistency.
 
+// Using console.log directly since this is a root-level utility script
+// const { logger } = require('./packages/frontend/src/lib/logger');
+
 const fs = require('fs');
 const path = require('path');
 const { encode } = require('gpt-tokenizer');

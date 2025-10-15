@@ -17,6 +17,8 @@ import { DashboardPage } from '../../page-objects/pages/DashboardPage';
 import { QuotePage } from '../../page-objects/pages/QuotePage';
 import { CommandMenu } from '../../page-objects/components/CommandMenu';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Complete User-to-Admin Workflow Integration', () => {
   test('Full Workflow: User creates request -> Admin quotes -> User views quote', async ({ page }) => {
@@ -63,7 +65,7 @@ test.describe('Complete User-to-Admin Workflow Integration', () => {
     // Assert that the status is "quoted" and the correct total price (with tax) is shown
     await expect(userRequestRow.getByText('quoted', { exact: false })).toBeVisible();
     await expect(userRequestRow.getByText('$504.00')).toBeVisible();
-    console.log('✅ User sees "quoted" status with correct price.');
+    logger.log('✅ User sees "quoted" status with correct price.');
 
     // --- Step 4: User Views Quote, Triggering "Viewed" Status Update ---
     await userRequestRow.click();
@@ -75,8 +77,8 @@ test.describe('Complete User-to-Admin Workflow Integration', () => {
 
     // Verify the status on the dashboard has changed to "viewed"
     await expect(userRequestRow.getByText('viewed', { exact: false })).toBeVisible({ timeout: 10000 });
-    console.log('✅ Request status successfully updated to "viewed" on dashboard.');
+    logger.log('✅ Request status successfully updated to "viewed" on dashboard.');
 
-    console.log('🎉 Complete user-to-admin workflow test finished successfully!');
+    logger.log('🎉 Complete user-to-admin workflow test finished successfully!');
   });
 });

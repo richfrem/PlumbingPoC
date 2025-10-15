@@ -20,6 +20,8 @@
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 // API verification helper - calls local development API to verify quote creation
 async function verifyQuoteCreated(page: any, requestId: string, expectedQuoteData: {
@@ -27,7 +29,7 @@ async function verifyQuoteCreated(page: any, requestId: string, expectedQuoteDat
   price: number;
   total: number;
 }) {
-  console.log(`🔍 Verifying quote creation in database for request: ${requestId}`);
+  logger.log(`🔍 Verifying quote creation in database for request: ${requestId}`);
 
   // Use frontend base URL from environment (API is served through frontend in dev)
   const apiBaseUrl = process.env.VITE_FRONTEND_BASE_URL || 'http://localhost:5173';
@@ -51,7 +53,7 @@ async function verifyQuoteCreated(page: any, requestId: string, expectedQuoteDat
   expect(latestQuote.price).toBe(expectedQuoteData.price);
   expect(latestQuote.total).toBe(expectedQuoteData.total);
 
-  console.log(`✅ Verified quote exists in database: $${expectedQuoteData.total} for "${expectedQuoteData.description}"`);
+  logger.log(`✅ Verified quote exists in database: $${expectedQuoteData.total} for "${expectedQuoteData.description}"`);
   return latestQuote;
 }
 
@@ -64,7 +66,7 @@ test.describe('Admin Quote Workflow', () => {
   });
 
   test('should create quote for existing request', async ({ page }) => {
-    console.log('🧪 Testing admin quote creation for existing request...');
+    logger.log('🧪 Testing admin quote creation for existing request...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -76,14 +78,14 @@ test.describe('Admin Quote Workflow', () => {
     await commandCenterButton.click();
 
     await expect(page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
-    console.log('✅ Admin dashboard accessed');
+    logger.log('✅ Admin dashboard accessed');
 
     // Find and open a request
     const requestRows = page.locator('div[data-request-id], button[data-request-id]');
     const rowCount = await requestRows.count();
 
     if (rowCount === 0) {
-      console.log('⚠️ No requests available - creating a test request first...');
+      logger.log('⚠️ No requests available - creating a test request first...');
       // Sign out admin and create a user request
       await authPage.signOut();
 
@@ -92,7 +94,7 @@ test.describe('Admin Quote Workflow', () => {
       const quoteRequestPage = new QuoteRequestPage(page);
       await authPage.signInAsUserType('user');
       const requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains');
-      console.log(`✅ Created test request: ${requestId}`);
+      logger.log(`✅ Created test request: ${requestId}`);
 
       // Sign back in as admin
       await authPage.signOut();
@@ -104,7 +106,7 @@ test.describe('Admin Quote Workflow', () => {
 
     // Open first available request
     await requestRows.first().click();
-    console.log('✅ Request opened for quote creation');
+    logger.log('✅ Request opened for quote creation');
 
     // Look for quote creation UI
     const quoteButtons = [
@@ -117,26 +119,26 @@ test.describe('Admin Quote Workflow', () => {
     for (const button of quoteButtons) {
       if (await button.count() > 0) {
         await button.click();
-        console.log('✅ Quote creation form opened');
+        logger.log('✅ Quote creation form opened');
         quoteButtonFound = true;
         break;
       }
     }
 
     if (!quoteButtonFound) {
-      console.log('ℹ️ No quote creation button found - checking if quotes already exist');
+      logger.log('ℹ️ No quote creation button found - checking if quotes already exist');
       // Check if quotes section exists
       const quotesSection = page.locator('[data-testid*="quote"], .quotes, .quote-section');
       if (await quotesSection.count() > 0) {
-        console.log('ℹ️ Quotes section exists - request may already have quotes');
+        logger.log('ℹ️ Quotes section exists - request may already have quotes');
       }
     }
 
-    console.log('✅ Quote creation test completed');
+    logger.log('✅ Quote creation test completed');
   });
 
   test('should validate quote pricing calculations', async ({ page }) => {
-    console.log('🧪 Testing quote pricing calculations...');
+    logger.log('🧪 Testing quote pricing calculations...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -163,36 +165,36 @@ test.describe('Admin Quote Workflow', () => {
       const priceCount = await priceElements.count();
       const dollarCount = await dollarElements.count();
 
-      console.log(`💰 Found ${priceCount} price elements and ${dollarCount} dollar amounts`);
+      logger.log(`💰 Found ${priceCount} price elements and ${dollarCount} dollar amounts`);
 
       if (priceCount > 0 || dollarCount > 0) {
-        console.log('✅ Pricing information is displayed');
+        logger.log('✅ Pricing information is displayed');
 
         // Try to extract and validate pricing (basic check)
         for (let i = 0; i < Math.min(dollarCount, 5); i++) {
           const dollarText = await dollarElements.nth(i).textContent();
-          console.log(`   Price found: ${dollarText}`);
+          logger.log(`   Price found: ${dollarText}`);
 
           // Basic validation - should be a valid dollar amount
           const priceMatch = dollarText?.match(/\$(\d+(?:\.\d{2})?)/);
           if (priceMatch) {
             const amount = parseFloat(priceMatch[1]);
             expect(amount).toBeGreaterThan(0);
-            console.log(`   ✅ Valid price: $${amount}`);
+            logger.log(`   ✅ Valid price: $${amount}`);
           }
         }
       } else {
-        console.log('ℹ️ No pricing information found in request');
+        logger.log('ℹ️ No pricing information found in request');
       }
     } else {
-      console.log('ℹ️ No requests available to test pricing');
+      logger.log('ℹ️ No requests available to test pricing');
     }
 
-    console.log('✅ Quote pricing validation test passed');
+    logger.log('✅ Quote pricing validation test passed');
   });
 
   test('should handle quote creation validation errors', async ({ page }) => {
-    console.log('🧪 Testing quote creation validation error handling...');
+    logger.log('🧪 Testing quote creation validation error handling...');
 
     // Admin sign in and navigation
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -230,10 +232,10 @@ test.describe('Admin Quote Workflow', () => {
           const requiredCount = await requiredFields.count();
           const validationCount = await validationMessages.count();
 
-          console.log(`📝 Found ${requiredCount} required fields and ${validationCount} validation messages`);
+          logger.log(`📝 Found ${requiredCount} required fields and ${validationCount} validation messages`);
 
           if (requiredCount > 0 || validationCount > 0) {
-            console.log('✅ Form validation elements present');
+            logger.log('✅ Form validation elements present');
             formFound = true;
           }
           break;
@@ -241,18 +243,18 @@ test.describe('Admin Quote Workflow', () => {
       }
 
       if (!formFound) {
-        console.log('ℹ️ No quote creation form found to test validation');
+        logger.log('ℹ️ No quote creation form found to test validation');
       }
     } else {
-      console.log('ℹ️ No requests available to test quote validation');
+      logger.log('ℹ️ No requests available to test quote validation');
     }
 
-    console.log('✅ Quote validation error handling test passed');
+    logger.log('✅ Quote validation error handling test passed');
   });
 
   // COMMENTED OUT - Will implement after basic quote creation works
   // test('should update existing quotes', async ({ page }) => {
-  //   console.log('🧪 Testing quote update functionality...');
+  //   logger.log('🧪 Testing quote update functionality...');
   //
   //   // Admin sign in and navigation
   //   const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -279,38 +281,38 @@ test.describe('Admin Quote Workflow', () => {
   //     );
   //
   //     const editButtonCount = await editButtons.count();
-  //     console.log(`📊 Found ${editButtonCount} edit buttons`);
+  //     logger.log(`📊 Found ${editButtonCount} edit buttons`);
   //
   //     if (editButtonCount > 0) {
   //       await editButtons.first().click();
-  //       console.log('✅ Quote edit form opened');
+  //       logger.log('✅ Quote edit form opened');
   //
   //       // Update quote details
   //       const descriptionField = page.locator('textarea[name="description"], input[name="description"]');
   //       if (await descriptionField.count() > 0) {
   //         await descriptionField.fill('Updated quote description');
-  //         console.log('✅ Quote description updated');
+  //         logger.log('✅ Quote description updated');
   //       }
   //
   //       // Save changes
   //       const saveButton = page.getByRole('button', { name: 'Save' });
   //       if (await saveButton.count() > 0) {
   //         await saveButton.click();
-  //         console.log('✅ Quote changes saved');
+  //         logger.log('✅ Quote changes saved');
   //       }
   //     } else {
-  //       console.log('ℹ️ No quotes available to edit');
+  //       logger.log('ℹ️ No quotes available to edit');
   //     }
   //   } else {
-  //     console.log('ℹ️ No requests available to test quote editing');
+  //     logger.log('ℹ️ No requests available to test quote editing');
   //   }
   //
-  //   console.log('✅ Quote update test completed');
+  //   logger.log('✅ Quote update test completed');
   // });
 
   // COMMENTED OUT - Will implement after quote updates work
   // test('should manage quote status changes', async ({ page }) => {
-  //   console.log('🧪 Testing quote status management...');
+  //   logger.log('🧪 Testing quote status management...');
   //
   //   // Admin sign in and navigation
   //   const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -339,27 +341,27 @@ test.describe('Admin Quote Workflow', () => {
   //     let statusControlFound = false;
   //     for (const selector of statusSelectors) {
   //       if (await selector.count() > 0) {
-  //         console.log('✅ Found quote status control');
+  //         logger.log('✅ Found quote status control');
   //
   //         // Try to change status
   //         try {
   //           await selector.selectOption('accepted');
-  //           console.log('✅ Quote status updated to "accepted"');
+  //           logger.log('✅ Quote status updated to "accepted"');
   //           statusControlFound = true;
   //         } catch (e) {
-  //           console.log('ℹ️ Could not update quote status');
+  //           logger.log('ℹ️ Could not update quote status');
   //         }
   //         break;
   //       }
   //     }
   //
   //     if (!statusControlFound) {
-  //       console.log('ℹ️ No quote status controls found');
+  //       logger.log('ℹ️ No quote status controls found');
   //     }
   //   } else {
-  //     console.log('ℹ️ No requests available to test quote status management');
+  //     logger.log('ℹ️ No requests available to test quote status management');
   //   }
   //
-  //   console.log('✅ Quote status management test completed');
+  //   logger.log('✅ Quote status management test completed');
   // });
 });

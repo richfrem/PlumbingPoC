@@ -6,6 +6,7 @@ import { Box, Typography, Paper, TextField, Button } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
 import { RequestNote } from '../types'; // Import the type from the central location
 import { useRequestById } from '../../../hooks';
+import { logger } from '../../../lib/logger';
 
 interface CommunicationLogProps {
   requestId: string;
@@ -24,7 +25,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
   const request = requestArray?.[0]; // Extract single request from array
   const notes = request?.request_notes || [];
 
-  console.log('🔍 CommunicationLog render:', {
+  logger.log('🔍 CommunicationLog render:', {
     notesLength: notes?.length,
     noteIds: notes?.map(n => n.id) || [],
     noteTexts: notes?.map(n => n.note.substring(0, 30) + '...') || [],
@@ -37,7 +38,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
 
   // Log when notes change to detect realtime updates
   React.useEffect(() => {
-    console.log('📝 CommunicationLog notes updated:', {
+    logger.log('📝 CommunicationLog notes updated:', {
       notesCount: notes?.length,
       latestNote: notes?.[notes.length - 1]?.note?.substring(0, 50) + '...',
       timestamp: new Date().toISOString()
@@ -47,7 +48,7 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
   const handleAddNote = async () => {
     if (!newNote.trim() || !requestId) return;
 
-    console.log('💬 BEFORE adding note:', {
+    logger.log('💬 BEFORE adding note:', {
       noteText: newNote,
       requestId,
       currentNotesCount: notes?.length,
@@ -58,14 +59,14 @@ const CommunicationLog: React.FC<CommunicationLogProps> = ({ requestId, onNoteAd
     try {
       // Add the note to the database
       const response = await apiClient.post(`/requests/${requestId}/notes`, { note: newNote });
-      console.log('🗄️ API response for adding note:', response.data);
+      logger.log('🗄️ API response for adding note:', response.data);
 
       setNewNote("");
 
       // Trigger refresh of the request data to show the new message
-      console.log('🔄 Refreshing request data to show new message...');
+      logger.log('🔄 Refreshing request data to show new message...');
       onNoteAdded?.();
-      console.log('✅ Note added successfully and UI updated');
+      logger.log('✅ Note added successfully and UI updated');
     } catch (error) {
       console.error("💥 Failed to add note:", error);
     } finally {

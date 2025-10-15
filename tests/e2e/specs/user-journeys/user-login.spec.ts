@@ -17,6 +17,8 @@
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('User Authentication', () => {
   let authPage: AuthPage;
@@ -29,7 +31,7 @@ test.describe('User Authentication', () => {
   test('should sign in regular user successfully', async ({ page }) => {
     // PRECONDITIONS: None - This is a foundational building block test
     // Tests the most basic authentication functionality
-    console.log('🧪 Testing regular user sign in...');
+    logger.log('🧪 Testing regular user sign in...');
 
     await authPage.signInAsUserType('user');
 
@@ -37,11 +39,11 @@ test.describe('User Authentication', () => {
     const isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(true);
 
-    console.log('✅ Regular user sign in test passed');
+    logger.log('✅ Regular user sign in test passed');
   });
 
   test('should sign out successfully', async ({ page }) => {
-    console.log('🧪 Testing sign out...');
+    logger.log('🧪 Testing sign out...');
 
     // First sign in
     await authPage.signInAsUserType('user');
@@ -54,13 +56,13 @@ test.describe('User Authentication', () => {
     const isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(false);
 
-    console.log('✅ Sign out test passed');
+    logger.log('✅ Sign out test passed');
   });
 
   test('should handle already logged in state', async ({ page }) => {
     // PRECONDITIONS: User login must work (test: "should sign in regular user successfully")
     // Tests edge case handling when user is already authenticated
-    console.log('🧪 Testing already logged in handling...');
+    logger.log('🧪 Testing already logged in handling...');
 
     // Sign in first
     await authPage.signInAsUserType('user');
@@ -68,13 +70,13 @@ test.describe('User Authentication', () => {
     // Try to sign in again (should detect already logged in)
     await authPage.signInAsUserType('user'); // Should detect already logged in and skip
 
-    console.log('✅ Already logged in handling test passed');
+    logger.log('✅ Already logged in handling test passed');
   });
 
   test('should fail with invalid credentials', async ({ page }) => {
     // PRECONDITIONS: None - Tests error handling for authentication failures
     // Tests the authentication system's error handling capabilities
-    console.log('🧪 Testing invalid credentials...');
+    logger.log('🧪 Testing invalid credentials...');
 
     const success = await authPage.signIn('invalid@example.com', 'wrongpassword');
     expect(success).toBe(false);
@@ -83,13 +85,13 @@ test.describe('User Authentication', () => {
     const isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(false);
 
-    console.log('✅ Invalid credentials test passed');
+    logger.log('✅ Invalid credentials test passed');
   });
 
   test('should sign out and redirect to login', async ({ page }) => {
     // PRECONDITIONS: User login must work (test: "should sign in regular user successfully")
     // Tests the logout functionality after successful authentication
-    console.log('🧪 Testing complete sign out flow...');
+    logger.log('🧪 Testing complete sign out flow...');
 
     // First sign in
     await authPage.signInAsUserType('user');
@@ -109,11 +111,11 @@ test.describe('User Authentication', () => {
     // Verify sign in button is visible (back to login state)
     await expect(page.locator('button:has-text("Sign In")')).toBeVisible();
 
-    console.log('✅ Complete sign out flow test passed');
+    logger.log('✅ Complete sign out flow test passed');
   });
 
   test('should handle sign out from different pages', async ({ page }) => {
-    console.log('🧪 Testing sign out from different application states...');
+    logger.log('🧪 Testing sign out from different application states...');
 
     // Sign in and navigate to different states
     await authPage.signInAsUserType('user');
@@ -130,11 +132,11 @@ test.describe('User Authentication', () => {
     isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(false);
 
-    console.log('✅ Sign out from different pages test passed');
+    logger.log('✅ Sign out from different pages test passed');
   });
 
   test('should get current user info', async ({ page }) => {
-    console.log('🧪 Testing current user info retrieval...');
+    logger.log('🧪 Testing current user info retrieval...');
 
     // Sign in first
     await authPage.signInAsUserType('user');
@@ -143,11 +145,11 @@ test.describe('User Authentication', () => {
     const currentUser = await authPage.getCurrentUser();
     expect(currentUser).toBeTruthy();
 
-    console.log('✅ Current user info test passed');
+    logger.log('✅ Current user info test passed');
   });
 
   test('should sign in, wait 10 seconds, then sign out', async ({ page }) => {
-    console.log('🧪 Testing sign in → 10 second wait → sign out flow...');
+    logger.log('🧪 Testing sign in → 10 second wait → sign out flow...');
 
     // Sign in
     await authPage.signInAsUserType('user');
@@ -155,12 +157,12 @@ test.describe('User Authentication', () => {
     // Verify we're logged in
     let isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(true);
-    console.log('✅ User signed in successfully');
+    logger.log('✅ User signed in successfully');
 
     // Wait 10 seconds as requested
-    console.log('⏰ Waiting 10 seconds...');
+    logger.log('⏰ Waiting 10 seconds...');
     await page.waitForTimeout(10000);
-    console.log('✅ 10 second wait completed');
+    logger.log('✅ 10 second wait completed');
 
     // Sign out
     const signOutSuccess = await authPage.signOut();
@@ -169,8 +171,8 @@ test.describe('User Authentication', () => {
     // Verify we're logged out
     isLoggedIn = await authPage.isLoggedIn();
     expect(isLoggedIn).toBe(false);
-    console.log('✅ User signed out successfully');
+    logger.log('✅ User signed out successfully');
 
-    console.log('✅ Sign in → wait → sign out test completed successfully!');
+    logger.log('✅ Sign in → wait → sign out test completed successfully!');
   });
 });
