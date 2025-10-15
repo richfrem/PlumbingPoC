@@ -6,7 +6,7 @@
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
-  SECRETS_SCAN_ENABLED = false
+  SECRETS_SCAN_ENABLED = false  # pragma: allowlist secret
   SECRETS_SCAN_OMIT_PATHS = [
     "README.md",
     "all_markdown_and_code_snapshot_llm_distilled.txt",
@@ -46,6 +46,7 @@
       "agents/quote-agent.yaml",
       "agents/triage-agent.yaml"
     ]
+    timeout = 60  # Increased timeout for AI operations like triage
 
   # Configuration for the SMS function
   [functions.send-sms]
