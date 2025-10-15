@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-15T05:38:30.021Z
+Generated On: 2025-10-15T05:54:29.240Z
 
-# Mnemonic Weight (Token Count): ~373,838 tokens
+# Mnemonic Weight (Token Count): ~373,879 tokens
 
 # Directory Structure (relative to project root)
   ./.githooks/
@@ -15552,7 +15552,7 @@ If you'd like, I can create a short script or a checklist to export Netlify DNS 
   publish = "packages/frontend/dist/"
   functions = "packages/backend/netlify/functions/" # Updated functions directory
   environment = { NPM_FLAGS = "--legacy-peer-deps" }
-  SECRETS_SCAN_ENABLED = false
+  SECRETS_SCAN_ENABLED = false  # pragma: allowlist secret
   SECRETS_SCAN_OMIT_PATHS = [
     "README.md",
     "all_markdown_and_code_snapshot_llm_distilled.txt",
@@ -15592,6 +15592,7 @@ If you'd like, I can create a short script or a checklist to export Netlify DNS 
       "agents/quote-agent.yaml",
       "agents/triage-agent.yaml"
     ]
+    timeout = 60  # Increased timeout for AI operations like triage
 
   # Configuration for the SMS function
   [functions.send-sms]
@@ -15616,6 +15617,7 @@ If you'd like, I can create a short script or a checklist to export Netlify DNS 
     included_files = [
       "agents/triage-agent.yaml"
     ]
+    timeout = 60  # Increased from default 10 seconds to 60 seconds
 
 # Removed [secrets] section and all secrets scanning related settings
 
@@ -26885,7 +26887,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
 
     // Show notification that triage is starting and will take time
-    setSnackbarMessage('AI triage analysis in progress... This may take 20-30 seconds. Please don\'t refresh the page.');
+    setSnackbarMessage('AI triage analysis in progress... This may take up to 60 seconds. Please don\'t refresh the page.');
     setSnackbarSeverity('info');
     setSnackbarOpen(true);
 
