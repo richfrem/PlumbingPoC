@@ -70,5 +70,6 @@
     included_files = [
       "agents/triage-agent.yaml"
     ]
+    timeout = 60  # Increased from default 10 seconds to 60 seconds
 
 # Removed [secrets] section and all secrets scanning related settings

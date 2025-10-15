@@ -118,7 +118,7 @@ const RequestDetailModal: React.FC<RequestDetailModalProps> = ({ isOpen, onClose
     if (!request) return;
 
     // Show notification that triage is starting and will take time
-    setSnackbarMessage('AI triage analysis in progress... This may take 20-30 seconds. Please don\'t refresh the page.');
+    setSnackbarMessage('AI triage analysis in progress... This may take up to 60 seconds. Please don\'t refresh the page.');
     setSnackbarSeverity('info');
     setSnackbarOpen(true);
 
