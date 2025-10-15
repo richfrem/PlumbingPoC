@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Component Page Object for Command Menu (User Dropdown) functionality
@@ -22,20 +24,20 @@ export class CommandMenu extends BasePage {
    * Open the user dashboard menu dropdown
    */
   async openMenu(): Promise<void> {
-    console.log('Opening dashboard user menu...');
+    logger.log('Opening dashboard user menu...');
 
     const menuButton = this.page.locator(this.userMenuButton);
     await menuButton.waitFor({ state: 'visible', timeout: 10000 });
     await menuButton.click();
 
-    console.log('✅ Dashboard menu opened successfully.');
+    logger.log('✅ Dashboard menu opened successfully.');
   }
 
   /**
    * Navigate to admin Command Center from dashboard
    */
   async navigateToCommandCenter(): Promise<void> {
-    console.log('Navigating to Command Center...');
+    logger.log('Navigating to Command Center...');
 
     await this.openMenu();
 
@@ -47,14 +49,14 @@ export class CommandMenu extends BasePage {
     await this.page.waitForURL('**/admin/dashboard');
     await expect(this.page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
 
-    console.log('✅ Successfully navigated to Command Center.');
+    logger.log('✅ Successfully navigated to Command Center.');
   }
 
   /**
    * Navigate to profile settings from dashboard menu
    */
   async navigateToProfileSettings(): Promise<void> {
-    console.log('Navigating to profile settings...');
+    logger.log('Navigating to profile settings...');
 
     await this.openMenu();
 
@@ -68,19 +70,19 @@ export class CommandMenu extends BasePage {
     for (const selector of profileSelectors) {
       if (await selector.count() > 0) {
         await selector.click();
-        console.log('✅ Successfully navigated to profile settings.');
+        logger.log('✅ Successfully navigated to profile settings.');
         return;
       }
     }
 
-    console.log('ℹ️ Profile/settings option not found in menu.');
+    logger.log('ℹ️ Profile/settings option not found in menu.');
   }
 
   /**
    * Sign out from any dashboard
    */
   async signOut(): Promise<void> {
-    console.log('Signing out from dashboard...');
+    logger.log('Signing out from dashboard...');
 
     await this.openMenu();
 
@@ -90,7 +92,7 @@ export class CommandMenu extends BasePage {
 
     // Confirm sign-out by waiting for the main "Sign In" button to reappear
     await expect(this.page.locator(this.signInButton)).toBeVisible({ timeout: 10000 });
-    console.log('✅ Successfully signed out.');
+    logger.log('✅ Successfully signed out.');
   }
 
   /**
@@ -114,7 +116,7 @@ export class CommandMenu extends BasePage {
    * Close the user menu if it's open
    */
   async closeMenu(): Promise<void> {
-    console.log('Closing user menu...');
+    logger.log('Closing user menu...');
 
     // Click outside the menu or press Escape
     await this.page.keyboard.press('Escape');
@@ -122,14 +124,14 @@ export class CommandMenu extends BasePage {
     // Wait a moment for menu to close
     await this.page.waitForTimeout(500);
 
-    console.log('✅ User menu closed.');
+    logger.log('✅ User menu closed.');
   }
 
   /**
    * Get available menu options
    */
   async getMenuOptions(): Promise<string[]> {
-    console.log('Getting available menu options...');
+    logger.log('Getting available menu options...');
 
     await this.openMenu();
 

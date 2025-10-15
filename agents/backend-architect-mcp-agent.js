@@ -23,6 +23,9 @@ const fs = require('fs');
 const path = require('path');
 const { editableFileManifest } = require('./projectFileManifest.js'); // <-- IMPORT THE MANIFEST
 
+const { logger } = require('../packages/frontend/src/lib/logger');
+
+
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -35,9 +38,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * ======================================================
  */
 async function reviewBackend() {
-  console.log('============================================');
-  console.log('🚀 STARTING BACKEND ARCHITECTURE REVIEW');
-  console.log('============================================');
+  logger.log('============================================');
+  logger.log('🚀 STARTING BACKEND ARCHITECTURE REVIEW');
+  logger.log('============================================');
 
   try {
     const projectRoot = path.resolve(__dirname, '..');
@@ -61,14 +64,14 @@ async function reviewBackend() {
       apiRoutesContent += `\n\n--- START OF FILE ${file} ---\n\n${content}\n\n--- END OF FILE ${file} ---`;
     }
 
-    console.log('✅ Successfully loaded database schema and API routes.');
+    logger.log('✅ Successfully loaded database schema and API routes.');
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-    console.log('Successfully initialized Gemini 2.5 Pro model.');
+    logger.log('Successfully initialized Gemini 2.5 Pro model.');
 
     const personaFilePath = path.join(__dirname, 'backend-architect-mcp.md');
     const personaContent = fs.readFileSync(personaFilePath, 'utf8');
-    console.log('Successfully loaded Backend Architect persona.');
+    logger.log('Successfully loaded Backend Architect persona.');
 
     const prompt = `
       ${personaContent}
@@ -111,7 +114,7 @@ async function reviewBackend() {
       Analyze the backend code and provide your feedback in the specified JSON format.
     `;
 
-    console.log('\nAsking Gemini for a backend architecture review...');
+    logger.log('\nAsking Gemini for a backend architecture review...');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const rawText = response.text();
@@ -125,10 +128,10 @@ async function reviewBackend() {
     const feedbackFilePath = path.join(feedbackDir, 'backend-feedback.json');
     fs.writeFileSync(feedbackFilePath, JSON.stringify(JSON.parse(text), null, 2));
 
-    console.log(`\n✅ Backend feedback file generated at ${feedbackFilePath} with status 'pending'.`);
-    console.log('============================================');
-    console.log('🎉 BACKEND REVIEW COMPLETE');
-    console.log('============================================');
+    logger.log(`\n✅ Backend feedback file generated at ${feedbackFilePath} with status 'pending'.`);
+    logger.log('============================================');
+    logger.log('🎉 BACKEND REVIEW COMPLETE');
+    logger.log('============================================');
 
   } catch (error) {
     console.error('\n============================================');
@@ -148,5 +151,5 @@ const [,, command] = process.argv;
 if (command === 'review-backend') {
   reviewBackend();
 } else {
-  console.log('Usage: node backend-architect-mcp-agent.js review-backend');
+  logger.log('Usage: node backend-architect-mcp-agent.js review-backend');
 }

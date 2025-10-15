@@ -275,7 +275,7 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 **Verification steps performed:**
 1. Locally imported the modified module to ensure it does not throw on startup:
-   - `node -e "(async()=>{ await import('./packages/backend/api/config/supabase/database.js'); console.log('ok'); })()"`
+   - `node -e "(async()=>{ await import('./packages/backend/api/config/supabase/database.js'); logger.log('ok'); })()"`
 2. Pushed the fix and monitored Netlify function logs for the `api` function.
 3. Confirmed Netlify no longer shows the `ERR_INVALID_ARG_TYPE` stack trace originating from `database.js`.
 4. Exercised the endpoint (`GET /api/requests`) in the deployed site; 502s stopped and the endpoint returned expected responses (after ensuring required env vars were present in Netlify).
@@ -431,7 +431,7 @@ Before deploying to Netlify:
 - **Environment Validation**: Verify .env file matches Netlify configuration
 
 ### Debug Techniques
-- **Verbose Logging**: Add console.log statements for debugging (appear in function logs)
+- **Verbose Logging**: Add logger.log statements for debugging (appear in function logs)
 - **Dependency Verification**: Check package count in build logs (should be ~578)
 - **Build Timing**: Monitor build phases to identify performance issues
 - **Cache Management**: Clear Netlify build cache if experiencing strange issues
@@ -591,7 +591,7 @@ try {
 } catch (error) {
   // Fallback for bundled/Netlify environment where import.meta.url might not work
   __dirname = process.cwd();
-  console.log('[QuoteAgent] Using process.cwd() as __dirname:', __dirname);
+  logger.log('[QuoteAgent] Using process.cwd() as __dirname:', __dirname);
 }
 ```
 

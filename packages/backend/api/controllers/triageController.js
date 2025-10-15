@@ -1,6 +1,7 @@
 // packages/backend/api/controllers/triageController.js
 
 import { database as supabase } from '../config/supabase/index.js';
+import { logger } from '../../src/lib/logger.js';
 
 // Import the Netlify function handler to reuse the logic
 async function runTriageAnalysis(requestData) {
@@ -36,7 +37,7 @@ const triageRequest = async (req, res) => {
 
     if (requestError) throw requestError;
 
-    console.log('[TriageController] Running AI triage analysis for request:', requestId);
+    logger.log('[TriageController] Running AI triage analysis for request:', requestId);
 
     // 2. Use the intelligent triage agent
     const analysis = await runTriageAnalysis(request);
@@ -56,7 +57,7 @@ const triageRequest = async (req, res) => {
 
     if (updateError) throw updateError;
 
-    console.log('[TriageController] Triage analysis completed:', {
+    logger.log('[TriageController] Triage analysis completed:', {
       requestId,
       priority: analysis.priority_score,
       profitability: analysis.profitability_score

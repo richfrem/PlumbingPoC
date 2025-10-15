@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Page object for user profile functionality
@@ -30,7 +32,7 @@ export class ProfilePage extends BasePage {
    * Open the profile modal
    */
   async openProfileModal(): Promise<void> {
-    console.log('Opening profile modal...');
+    logger.log('Opening profile modal...');
     await this.page.locator(this.profileButton).click();
     await this.waitForElement(this.profileModal);
   }
@@ -47,7 +49,7 @@ export class ProfilePage extends BasePage {
     province: string;
     postalCode: string;
   }): Promise<void> {
-    console.log('Filling profile form...');
+    logger.log('Filling profile form...');
 
     // Wait for modal to be ready
     await this.waitForElement(this.profileHeading);
@@ -70,14 +72,14 @@ export class ProfilePage extends BasePage {
     await provinceSelect.click();
     await this.page.locator(`[data-value="${profileData.province}"]`).click();
 
-    console.log('✅ Profile form filled successfully');
+    logger.log('✅ Profile form filled successfully');
   }
 
   /**
    * Save the profile
    */
   async saveProfile(): Promise<void> {
-    console.log('Saving profile...');
+    logger.log('Saving profile...');
     await this.page.locator(this.saveButton).click();
   }
 
@@ -85,7 +87,7 @@ export class ProfilePage extends BasePage {
    * Cancel profile changes
    */
   async cancelProfile(): Promise<void> {
-    console.log('Canceling profile changes...');
+    logger.log('Canceling profile changes...');
     await this.page.locator(this.cancelButton).click();
   }
 
@@ -93,7 +95,7 @@ export class ProfilePage extends BasePage {
    * Close the profile modal
    */
   async closeProfileModal(): Promise<void> {
-    console.log('Closing profile modal...');
+    logger.log('Closing profile modal...');
     await this.page.locator(this.closeButton).first().click();
   }
 
@@ -109,7 +111,7 @@ export class ProfilePage extends BasePage {
     province: string;
     postalCode: string;
   }> {
-    console.log('Getting profile form data...');
+    logger.log('Getting profile form data...');
 
     return {
       name: await this.page.locator(this.nameInput).inputValue() || '',
@@ -126,7 +128,7 @@ export class ProfilePage extends BasePage {
    * Verify profile modal is open
    */
   async verifyProfileModalOpen(): Promise<void> {
-    console.log('Verifying profile modal is open...');
+    logger.log('Verifying profile modal is open...');
     await expect(this.page.locator(this.profileModal)).toBeVisible();
   }
 
@@ -134,7 +136,7 @@ export class ProfilePage extends BasePage {
    * Verify profile modal is closed
    */
   async verifyProfileModalClosed(): Promise<void> {
-    console.log('Verifying profile modal is closed...');
+    logger.log('Verifying profile modal is closed...');
     await expect(this.page.locator(this.profileModal)).not.toBeVisible();
   }
 
@@ -150,7 +152,7 @@ export class ProfilePage extends BasePage {
     province: string;
     postalCode: string;
   }): Promise<void> {
-    console.log('🚀 Starting profile creation/update workflow...');
+    logger.log('🚀 Starting profile creation/update workflow...');
 
     // Open profile modal
     await this.openProfileModal();
@@ -164,7 +166,7 @@ export class ProfilePage extends BasePage {
     // Verify modal closes
     await this.verifyProfileModalClosed();
 
-    console.log('✅ Profile creation/update completed successfully');
+    logger.log('✅ Profile creation/update completed successfully');
   }
 
   /**
@@ -179,7 +181,7 @@ export class ProfilePage extends BasePage {
     province: string;
     postalCode: string;
   }>): Promise<void> {
-    console.log('Verifying profile data...');
+    logger.log('Verifying profile data...');
 
     // Open profile modal to check data
     await this.openProfileModal();
@@ -213,19 +215,19 @@ export class ProfilePage extends BasePage {
     // Close modal
     await this.closeProfileModal();
 
-    console.log('✅ Profile data verification completed');
+    logger.log('✅ Profile data verification completed');
   }
 
   /**
    * Verify profile modal is loaded
    */
   async verifyProfilePageLoaded(): Promise<void> {
-    console.log('Verifying profile modal is loaded...');
+    logger.log('Verifying profile modal is loaded...');
     await expect(this.page.locator(this.profileHeading)).toBeVisible();
     await expect(this.page.locator(this.nameInput)).toBeVisible();
     await expect(this.page.locator(this.emailInput)).toBeVisible();
     await expect(this.page.locator(this.phoneInput)).toBeVisible();
     await expect(this.page.locator(this.saveButton)).toBeVisible();
-    console.log('✅ Profile modal verification completed');
+    logger.log('✅ Profile modal verification completed');
   }
 }

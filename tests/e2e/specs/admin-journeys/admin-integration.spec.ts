@@ -18,6 +18,8 @@
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { TEST_USERS } from '../../fixtures/test-data';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Admin Integration Workflows', () => {
   let authPage: AuthPage;
@@ -28,12 +30,12 @@ test.describe('Admin Integration Workflows', () => {
   });
 
   test('should complete full admin quote workflow', async ({ page }) => {
-    console.log('🧪 Testing complete admin quote workflow...');
+    logger.log('🧪 Testing complete admin quote workflow...');
 
     // Step 1: Admin authentication
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
     expect(signInSuccess).toBe(true);
-    console.log('✅ Step 1: Admin authenticated');
+    logger.log('✅ Step 1: Admin authenticated');
 
     // Step 2: Navigate to dashboard
     const userMenuButton = page.locator('button:has(svg.lucide-chevron-down)');
@@ -41,24 +43,24 @@ test.describe('Admin Integration Workflows', () => {
     const commandCenterButton = page.getByRole('button', { name: 'Command Center' });
     await commandCenterButton.click();
     await expect(page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
-    console.log('✅ Step 2: Dashboard accessed');
+    logger.log('✅ Step 2: Dashboard accessed');
 
     // Step 3: Check for existing requests
     const requestRows = page.locator('div[data-request-id], button[data-request-id]');
     const initialRequestCount = await requestRows.count();
-    console.log(`📊 Step 3: Found ${initialRequestCount} existing requests`);
+    logger.log(`📊 Step 3: Found ${initialRequestCount} existing requests`);
 
     let requestId = null;
     if (initialRequestCount === 0) {
       // Create a test request if none exist
-      console.log('⚠️ No requests found, creating test request...');
+      logger.log('⚠️ No requests found, creating test request...');
       await authPage.signOut();
 
       const { QuoteRequestPage } = await import('../../page-objects/pages/QuoteRequestPage');
       const quoteRequestPage = new QuoteRequestPage(page);
       await authPage.signInAsUserType('user');
       requestId = await quoteRequestPage.createQuoteRequest('perimeter_drains');
-      console.log(`✅ Created test request: ${requestId}`);
+      logger.log(`✅ Created test request: ${requestId}`);
 
       // Sign back in as admin
       await authPage.signOut();
@@ -73,7 +75,7 @@ test.describe('Admin Integration Workflows', () => {
     const updatedRequestCount = await requestRows.count();
     expect(updatedRequestCount).toBeGreaterThan(0);
     await requestRows.first().click();
-    console.log('✅ Step 4: Request details opened');
+    logger.log('✅ Step 4: Request details opened');
 
     // Step 5: Attempt quote creation (may not be fully implemented yet)
     const quoteButtons = [
@@ -86,12 +88,12 @@ test.describe('Admin Integration Workflows', () => {
     for (const button of quoteButtons) {
       if (await button.count() > 0) {
         await button.click();
-        console.log('✅ Step 5: Quote creation initiated');
+        logger.log('✅ Step 5: Quote creation initiated');
 
         // Check if quote form appeared
         const formElements = page.locator('input[name*="price"], input[name*="amount"], textarea[name*="description"]');
         if (await formElements.count() > 0) {
-          console.log('✅ Quote form detected - workflow partially complete');
+          logger.log('✅ Quote form detected - workflow partially complete');
           quoteWorkflowCompleted = true;
         }
         break;
@@ -99,7 +101,7 @@ test.describe('Admin Integration Workflows', () => {
     }
 
     if (!quoteWorkflowCompleted) {
-      console.log('ℹ️ Quote creation UI not fully implemented yet - workflow foundation established');
+      logger.log('ℹ️ Quote creation UI not fully implemented yet - workflow foundation established');
     }
 
     // Step 6: Verify workflow completion
@@ -108,18 +110,18 @@ test.describe('Admin Integration Workflows', () => {
                           (await page.getByRole('heading', { name: "Plumber's Command Center" }).count() > 0);
 
     expect(isStillInAdmin).toBe(true);
-    console.log('✅ Step 6: Admin workflow maintained throughout');
+    logger.log('✅ Step 6: Admin workflow maintained throughout');
 
-    console.log('🎉 Complete admin quote workflow test passed');
+    logger.log('🎉 Complete admin quote workflow test passed');
   });
 
   test('should handle admin session persistence', async ({ page }) => {
-    console.log('🧪 Testing admin session persistence across operations...');
+    logger.log('🧪 Testing admin session persistence across operations...');
 
     // Step 1: Initial admin sign in
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
     expect(signInSuccess).toBe(true);
-    console.log('✅ Initial admin authentication successful');
+    logger.log('✅ Initial admin authentication successful');
 
     // Step 2: Navigate to dashboard
     const userMenuButton = page.locator('button:has(svg.lucide-chevron-down)');
@@ -127,13 +129,13 @@ test.describe('Admin Integration Workflows', () => {
     const commandCenterButton = page.getByRole('button', { name: 'Command Center' });
     await commandCenterButton.click();
     await expect(page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
-    console.log('✅ Dashboard navigation successful');
+    logger.log('✅ Dashboard navigation successful');
 
     // Step 3: Perform multiple operations to test session persistence
     const operations = [
       { name: 'Check request count', action: async () => {
         const requestCount = await page.locator('div[data-request-id], button[data-request-id]').count();
-        console.log(`   Found ${requestCount} requests`);
+        logger.log(`   Found ${requestCount} requests`);
         return requestCount >= 0; // Should not error
       }},
       { name: 'Test UI responsiveness', action: async () => {
@@ -160,9 +162,9 @@ test.describe('Admin Integration Workflows', () => {
       try {
         const result = await op.action();
         expect(result).toBe(true);
-        console.log(`✅ ${op.name} - session maintained`);
+        logger.log(`✅ ${op.name} - session maintained`);
       } catch (error) {
-        console.log(`❌ ${op.name} - session may have been lost`);
+        logger.log(`❌ ${op.name} - session may have been lost`);
         throw error;
       }
 
@@ -173,13 +175,13 @@ test.describe('Admin Integration Workflows', () => {
     // Step 4: Final session verification
     const finalCheck = await authPage.isLoggedIn();
     expect(finalCheck).toBe(true);
-    console.log('✅ Admin session persisted throughout all operations');
+    logger.log('✅ Admin session persisted throughout all operations');
 
-    console.log('🎉 Admin session persistence test passed');
+    logger.log('🎉 Admin session persistence test passed');
   });
 
   test('should validate admin data consistency', async ({ page }) => {
-    console.log('🧪 Testing admin data consistency across operations...');
+    logger.log('🧪 Testing admin data consistency across operations...');
 
     // Step 1: Admin sign in and dashboard access
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -190,14 +192,14 @@ test.describe('Admin Integration Workflows', () => {
     const commandCenterButton = page.getByRole('button', { name: 'Command Center' });
     await commandCenterButton.click();
     await expect(page.getByRole('heading', { name: "Plumber's Command Center" })).toBeVisible();
-    console.log('✅ Admin dashboard accessed');
+    logger.log('✅ Admin dashboard accessed');
 
     // Step 2: Collect initial data state
     const initialRequestCount = await page.locator('div[data-request-id], button[data-request-id]').count();
     const initialAdminHeading = await page.getByRole('heading', { name: "Plumber's Command Center" }).textContent();
     const initialUserMenuVisible = await page.locator('button:has(svg.lucide-chevron-down)').isVisible();
 
-    console.log(`📊 Initial state: ${initialRequestCount} requests, admin heading: "${initialAdminHeading}", user menu: ${initialUserMenuVisible}`);
+    logger.log(`📊 Initial state: ${initialRequestCount} requests, admin heading: "${initialAdminHeading}", user menu: ${initialUserMenuVisible}`);
 
     // Step 3: Perform navigation operations
     const operations = [
@@ -229,7 +231,7 @@ test.describe('Admin Integration Workflows', () => {
 
     // Execute operations and verify data consistency
     for (const op of operations) {
-      console.log(`🔄 Executing: ${op.name}`);
+      logger.log(`🔄 Executing: ${op.name}`);
       await op.action();
 
       // Verify critical admin state persists
@@ -241,7 +243,7 @@ test.describe('Admin Integration Workflows', () => {
       expect(userMenuVisible).toBe(true);
       expect(isLoggedIn).toBe(true);
 
-      console.log(`✅ ${op.name} - admin state consistent`);
+      logger.log(`✅ ${op.name} - admin state consistent`);
     }
 
     // Step 4: Final consistency check
@@ -252,9 +254,9 @@ test.describe('Admin Integration Workflows', () => {
     expect(finalRequestCount).toBeGreaterThanOrEqual(0);
     expect(finalAdminHeading).toBe(initialAdminHeading);
 
-    console.log(`📊 Final state: ${finalRequestCount} requests, admin heading consistent`);
-    console.log('✅ Admin data consistency validation passed');
+    logger.log(`📊 Final state: ${finalRequestCount} requests, admin heading consistent`);
+    logger.log('✅ Admin data consistency validation passed');
 
-    console.log('🎉 Admin integration workflow test passed');
+    logger.log('🎉 Admin integration workflow test passed');
   });
 });

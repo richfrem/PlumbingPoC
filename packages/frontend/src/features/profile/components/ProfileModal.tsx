@@ -7,6 +7,7 @@ import { Box, Typography, Paper, TextField, Button, Select, MenuItem, InputLabel
 import { X as XIcon, User, MapPin } from 'lucide-react';
 import ModalHeader from '../../requests/components/ModalHeader';
 import ModalFooter from '../../requests/components/ModalFooter';
+import { logger } from '../../../lib/logger';
 
 interface ProfileModalProps {
   isClosable?: boolean;
@@ -89,7 +90,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
     try {
       const fullAddress = `${address}, ${city}, ${province} ${postalCode}, Canada`;
-      console.log('Geocoding profile address:', fullAddress);
+      logger.log('Geocoding profile address:', fullAddress);
 
       // Load Google Maps API if not already loaded
       if (!window.google || !window.google.maps) {
@@ -99,7 +100,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
           throw new Error('Google Maps API key not found');
         }
 
-        console.log('Loading Google Maps API for profile geocoding');
+        logger.log('Loading Google Maps API for profile geocoding');
 
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=places`;
@@ -108,7 +109,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
         await new Promise((resolve, reject) => {
           script.onload = () => {
-            console.log('Google Maps API loaded for profile');
+            logger.log('Google Maps API loaded for profile');
             resolve(void 0);
           };
           script.onerror = (error) => {
@@ -124,7 +125,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
 
       return new Promise<{lat: number, lng: number, formattedAddress: string} | null>((resolve) => {
         geocoder.geocode({ address: fullAddress }, (results: any, status: any) => {
-          console.log('Profile geocoding response:', {
+          logger.log('Profile geocoding response:', {
             status,
             resultsCount: results?.length,
             firstResult: results?.[0]?.formatted_address
@@ -136,7 +137,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isClosable = false, onClose
             const lng = location.lng();
             const formattedAddress = results[0].formatted_address;
 
-            console.log('Profile geocoding successful:', { lat, lng, formattedAddress });
+            logger.log('Profile geocoding successful:', { lat, lng, formattedAddress });
             setGeocodingStatus('success');
             resolve({ lat, lng, formattedAddress });
           } else {

@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import YAML from 'yaml';
 import OpenAI from 'openai';
+import { logger } from '../../src/lib/logger.js';
 
 // Environment detection
 const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -34,11 +35,31 @@ if (!fs.existsSync(YAML_PATH)) {
 let yamlConfig;
 try {
   yamlConfig = YAML.parse(fs.readFileSync(YAML_PATH, 'utf-8'));
-  console.log('[QuoteAgent] Loaded YAML from:', YAML_PATH);
+  logger.log('[QuoteAgent] Loaded YAML from:', YAML_PATH);
 } catch (error) {
   console.error('[QuoteAgent] Failed to load YAML:', error.message);
   throw new Error(`Failed to load quote-agent.yaml: ${error.message}`);
 }
+
+// Substitute environment variables in YAML config
+function substituteEnvVars(obj) {
+  if (typeof obj === 'string') {
+    return obj.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+      return process.env[varName] || match;
+    });
+  } else if (Array.isArray(obj)) {
+    return obj.map(substituteEnvVars);
+  } else if (obj && typeof obj === 'object') {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = substituteEnvVars(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
+yamlConfig = substituteEnvVars(yamlConfig);
 
 const openAiClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -126,7 +147,7 @@ function askCurrentNode(session) {
     return;
   }
 
-  console.log('[QuoteAgent] Processing node:', node.id, 'type:', node.type);
+  logger.log('[QuoteAgent] Processing node:', node.id, 'type:', node.type);
 
   switch (node.type) {
     case 'choice':
@@ -194,7 +215,7 @@ async function handleSwitchNode(session, node) {
   const currentIndex = session.nodeData[indexKey];
   const currentQuestion = questions[currentIndex];
 
-  console.log('[QuoteAgent] Switch node state:', {
+  logger.log('[QuoteAgent] Switch node state:', {
     nodeId: node.id,
     totalQuestions: questions.length,
     currentIndex,
@@ -207,7 +228,7 @@ async function handleSwitchNode(session, node) {
       inputType: 'text',
     });
   } else {
-    console.log('[QuoteAgent] All switch questions answered, moving to next node');
+    logger.log('[QuoteAgent] All switch questions answered, moving to next node');
     delete session.nodeData[questionsKey];
     delete session.nodeData[indexKey];
     await moveToNextNode(session, node);
@@ -215,7 +236,7 @@ async function handleSwitchNode(session, node) {
 }
 
 async function moveToNextNode(session, currentNode) {
-  console.log('[QuoteAgent] moveToNextNode called:', {
+  logger.log('[QuoteAgent] moveToNextNode called:', {
     currentNodeId: currentNode.id,
     hasNext: !!currentNode.next,
     nextNodeId: currentNode.next
@@ -225,33 +246,33 @@ async function moveToNextNode(session, currentNode) {
     session.currentNodeId = currentNode.next;
     askCurrentNode(session);
   } else {
-    console.log('[QuoteAgent] No next node, calling checkForAiFollowUps');
+    logger.log('[QuoteAgent] No next node, calling checkForAiFollowUps');
     await checkForAiFollowUps(session);
   }
 }
 
 async function checkForAiFollowUps(session) {
-  console.log('[QuoteAgent] checkForAiFollowUps called');
+  logger.log('[QuoteAgent] checkForAiFollowUps called');
 
   if (session.nodeData.followUpsGenerated) {
-    console.log('[QuoteAgent] Follow-ups already generated, building summary');
+    logger.log('[QuoteAgent] Follow-ups already generated, building summary');
     buildSummary(session);
     return;
   }
 
-  console.log('[QuoteAgent] Generating follow-up questions via OpenAI...');
+  logger.log('[QuoteAgent] Generating follow-up questions via OpenAI...');
   session.nodeData.followUpsGenerated = true;
   const followUps = await generateFollowUpQuestions(session);
-  console.log('[QuoteAgent] Generated follow-ups:', followUps.length, 'questions');
+  logger.log('[QuoteAgent] Generated follow-ups:', followUps.length, 'questions');
 
   if (followUps.length > 0) {
-    console.log('[QuoteAgent] Follow-up questions:', followUps);
+    logger.log('[QuoteAgent] Follow-up questions:', followUps);
     session.nodeData.followUpQuestions = followUps;
     session.nodeData.followUpIndex = 0;
     session.currentNodeId = null; // Clear current node so follow-ups are handled correctly
     askNextFollowUpQuestion(session);
   } else {
-    console.log('[QuoteAgent] No follow-ups needed, building summary');
+    logger.log('[QuoteAgent] No follow-ups needed, building summary');
     buildSummary(session);
   }
 }
@@ -261,7 +282,7 @@ function askNextFollowUpQuestion(session) {
   const index = session.nodeData.followUpIndex || 0;
   const question = questions[index];
 
-  console.log('[QuoteAgent] askNextFollowUpQuestion:', {
+  logger.log('[QuoteAgent] askNextFollowUpQuestion:', {
     totalQuestions: questions.length,
     currentIndex: index,
     hasQuestion: !!question,
@@ -274,7 +295,7 @@ function askNextFollowUpQuestion(session) {
       inputType: 'text',
     });
   } else {
-    console.log('[QuoteAgent] No more follow-up questions, building summary');
+    logger.log('[QuoteAgent] No more follow-up questions, building summary');
     buildSummary(session);
   }
 }
@@ -287,6 +308,8 @@ async function generateFollowUpQuestions(session) {
     console.warn('[QuoteAgent] No ai_followup_config found in YAML');
     return [];
   }
+
+  console.log('[LOG] [QuoteAgent] Using AI model:', config.model);
 
   try {
     // Build conversation summary
@@ -302,21 +325,54 @@ async function generateFollowUpQuestions(session) {
       .replace('{conversation_summary}', conversationSummary);
 
     // Use YAML config for API call
-    const completion = await openAiClient.chat.completions.create({
-      model: config.model || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: config.system_prompt || 'You craft follow-up questions for plumbing quotes.' },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: config.max_tokens || 250,
-      temperature: config.temperature ?? 0.2,
-    });
+    const model = config.model || process.env.VITE_CHAT_GPT_QUOTE_AGENT_MODEL;
+    const isGpt5Model = model?.startsWith('gpt-5');
+    const isGpt4oModel = model?.startsWith('gpt-4o');
+    
+    let completion;
+    if (isGpt5Model) {
+      // Use new Responses API for GPT-5 models
+      const responseParams = {
+        model: model,
+        input: `${config.system_prompt || 'You craft follow-up questions for plumbing quotes.'}\n\n${prompt}`,
+        reasoning: { effort: "minimal" }, // Fast responses for structured tasks
+        text: { verbosity: "low" }, // Concise responses
+        max_output_tokens: config.max_completion_tokens || config.max_tokens || 250,
+      };
+      
+      completion = await openAiClient.responses.create(responseParams);
+    } else {
+      // Use Chat Completions API for older models
+      const apiParams = {
+        model: model,
+        messages: [
+          { role: 'system', content: config.system_prompt || 'You craft follow-up questions for plumbing quotes.' },
+          { role: 'user', content: prompt },
+        ],
+      };
+      
+      // Set max tokens parameter based on model type
+      if (isGpt4oModel) {
+        apiParams.max_completion_tokens = config.max_completion_tokens || config.max_tokens || 250;
+      } else {
+        apiParams.max_tokens = config.max_completion_tokens || config.max_tokens || 250;
+      }
+      
+      // Add temperature for non-GPT-5 models
+      apiParams.temperature = config.temperature ?? 0.2;
+      
+      completion = await openAiClient.chat.completions.create(apiParams);
+    }
 
-    const content = completion.choices?.[0]?.message?.content;
+    // Extract content based on API type
+    const content = isGpt5Model 
+      ? completion.output_text 
+      : completion.choices?.[0]?.message?.content;
     if (!content) return [];
 
     const parsed = JSON.parse(content);
-    if (parsed?.requiresFollowUp && Array.isArray(parsed.questions)) {
+    // Always try to return questions if they exist, regardless of requiresFollowUp flag
+    if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
       return parsed.questions.filter((q) => typeof q === 'string' && q.trim().length > 0);
     }
     return [];
@@ -427,7 +483,7 @@ function extractUserMessages(messages = []) {
 }
 
 async function runQuoteAgent({ sessionId, messages = [] }) {
-  console.log('[QuoteAgent] Called with:', { sessionId, messagesCount: messages.length });
+  logger.log('[QuoteAgent] Called with:', { sessionId, messagesCount: messages.length });
 
   const session = getSession(sessionId);
   const userMessages = extractUserMessages(messages);
@@ -532,3 +588,6 @@ export async function handler(event, context) {
     };
   }
 }
+
+// Export for testing
+export { generateFollowUpQuestions };

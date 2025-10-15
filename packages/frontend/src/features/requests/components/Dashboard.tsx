@@ -12,6 +12,7 @@ import statusColors from '../../../lib/statusColors.json';
 import { QuoteRequest, Quote } from '../types';
 import MapView from '../../admin/components/MapView';
 import { useRealtimeInvalidation } from '../../../hooks/useSupabaseRealtimeV3';
+import { logger } from '../../../lib/logger';
 
 interface DashboardProps {
   requests: QuoteRequest[];
@@ -36,7 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
   useRealtimeInvalidation();
 
   useEffect(() => {
-    console.log('📊 Dashboard: allRequests prop updated', {
+    logger.log('📊 Dashboard: allRequests prop updated', {
       requestCount: allRequests.length,
       requestStatuses: allRequests.map(r => ({ id: r.id, status: r.status, hasQuotes: r.quotes?.length || 0 })),
       timestamp: new Date().toISOString()
@@ -45,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
     if (selectedRequest && allRequests.length > 0) {
       const newRequestData = allRequests.find(r => r.id === selectedRequest.id);
       if (newRequestData) {
-        console.log('📊 Dashboard: updating selectedRequest', {
+        logger.log('📊 Dashboard: updating selectedRequest', {
           id: newRequestData.id,
           oldStatus: selectedRequest.status,
           newStatus: newRequestData.status,
@@ -107,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
   // Add data-request-id attributes to DataGrid rows for integration testing
   useEffect(() => {
-    console.log('🔍 DataGrid useEffect running:', {
+    logger.log('🔍 DataGrid useEffect running:', {
       hasRef: !!dataGridRef.current,
       requestCount: filteredRequests.length,
       viewMode
@@ -115,13 +116,13 @@ const Dashboard: React.FC<DashboardProps> = ({ requests: allRequests, loading, e
 
     if (dataGridRef.current && filteredRequests.length > 0) {
       const rows = dataGridRef.current.querySelectorAll('[role="row"]');
-      console.log(`🔍 Found ${rows.length} rows in DataGrid`);
+      logger.log(`🔍 Found ${rows.length} rows in DataGrid`);
 
       rows.forEach((row, index) => {
         if (index > 0 && filteredRequests[index - 1]) { // Skip header row
           const requestId = filteredRequests[index - 1].id;
           row.setAttribute('data-request-id', requestId);
-          console.log(`✅ Added data-request-id="${requestId}" to row ${index}`);
+          logger.log(`✅ Added data-request-id="${requestId}" to row ${index}`);
         }
       });
     }

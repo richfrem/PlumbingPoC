@@ -248,7 +248,7 @@ import { IRealtimeService } from '../../api/services/realtimeService';
 export class SupabaseRealtimeService implements IRealtimeService {
   async notifyRequestUpdate(requestId: string, data: any): Promise<void> {
     // Supabase handles this automatically via database triggers
-    console.log("Supabase Realtime: automatic notification for", requestId);
+    logger.log("Supabase Realtime: automatic notification for", requestId);
     return Promise.resolve();
   }
 

@@ -13,6 +13,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { CheckCircle } from 'lucide-react';
+import { logger } from '../../../lib/logger';
 
 // Define the shape of the data this modal will send back
 interface CompletionData {
@@ -36,12 +37,12 @@ const CompleteJobModal: React.FC<CompleteJobModalProps> = ({ isOpen, onClose, on
 
   // Handler for the confirm button click
   const handleConfirm = () => {
-    console.log('🔘 CompleteJobModal: Confirm button clicked');
+    logger.log('🔘 CompleteJobModal: Confirm button clicked');
     const data = {
       actual_cost: parseFloat(actualCost) || 0,
       completion_notes: completionNotes,
     };
-    console.log('📤 CompleteJobModal: Sending data:', data);
+    logger.log('📤 CompleteJobModal: Sending data:', data);
     // THE FIX: Call the onConfirm function passed down from the parent
     // and provide it with the current state of the form.
     onConfirm(data);

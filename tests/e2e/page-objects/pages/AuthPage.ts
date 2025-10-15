@@ -2,6 +2,8 @@ import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
 import { config } from 'dotenv';
 import path from 'path';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 // Load environment variables from .env file
 config({ path: path.join(process.cwd(), '.env') });
@@ -55,36 +57,36 @@ export class AuthPage extends BasePage {
    */
   async signIn(email: string, password: string): Promise<boolean> {
     try {
-      console.log(`Attempting to sign in as: ${email}`);
+      logger.log(`Attempting to sign in as: ${email}`);
 
       // Check if already logged in
       if (await this.isLoggedIn()) {
-        console.log('✅ Already logged in, skipping sign-in');
+        logger.log('✅ Already logged in, skipping sign-in');
         return true;
       }
 
       // Click Sign In button
-      console.log('Clicking Sign In button...');
+      logger.log('Clicking Sign In button...');
       await this.page.locator(this.signInButton).first().click();
 
       // Wait for email input
-      console.log('Waiting for email input...');
+      logger.log('Waiting for email input...');
       await this.waitForElement(this.emailInput);
 
       // Fill credentials
-      console.log('Filling credentials...');
+      logger.log('Filling credentials...');
       await this.fillInput(this.emailInput, email);
       await this.fillInput(this.passwordInput, password);
 
       // Submit
-      console.log('Submitting sign-in...');
+      logger.log('Submitting sign-in...');
       await this.page.locator(this.submitButton).click();
 
       // Wait for successful login
-      console.log('Waiting for login success...');
+      logger.log('Waiting for login success...');
       await this.waitForElement(this.userMenuButton, 15000);
 
-      console.log(`✅ Successfully signed in as: ${email}`);
+      logger.log(`✅ Successfully signed in as: ${email}`);
       return true;
 
     } catch (error) {
@@ -101,7 +103,7 @@ export class AuthPage extends BasePage {
    */
   async signOut(): Promise<boolean> {
     try {
-      console.log('Attempting to sign out...');
+      logger.log('Attempting to sign out...');
 
       // Click user menu
       await this.page.locator(this.userMenuButton).click();
@@ -112,7 +114,7 @@ export class AuthPage extends BasePage {
       // Wait for sign in button to appear (confirming logout)
       await this.waitForElement(this.signInButton);
 
-      console.log('✅ Successfully signed out');
+      logger.log('✅ Successfully signed out');
       return true;
 
     } catch (error) {
@@ -179,7 +181,7 @@ export class AuthPage extends BasePage {
    * Includes smart checking to avoid unnecessary login if already signed in as correct type
    */
   async signInAsUserType(userType: 'user' | 'admin'): Promise<void> {
-    console.log(`Attempting to sign in as ${userType}...`);
+    logger.log(`Attempting to sign in as ${userType}...`);
 
     const { email, password } = userType === 'admin' ? this.getAdminTestCredentials() : this.getTestCredentials();
 
@@ -190,11 +192,11 @@ export class AuthPage extends BasePage {
 
     // First check if we're already logged in at all
     if (await this.isLoggedIn()) {
-      console.log(`✅ Already logged in. Checking user type...`);
+      logger.log(`✅ Already logged in. Checking user type...`);
 
       // For admin, we can't easily check if we're logged in as admin vs regular user
       // So we'll just proceed with the login flow to ensure we have the right user type
-      console.log(`ℹ️ Already logged in, but proceeding to ensure correct user type...`);
+      logger.log(`ℹ️ Already logged in, but proceeding to ensure correct user type...`);
       await this.signOut();
     }
 
@@ -213,6 +215,6 @@ export class AuthPage extends BasePage {
 
     // Wait for the login-specific success element to appear
     await expect(successSelector).toBeVisible({ timeout: 15000 });
-    console.log(`✅ Successfully signed in as ${userType}.`);
+    logger.log(`✅ Successfully signed in as ${userType}.`);
   }
 }

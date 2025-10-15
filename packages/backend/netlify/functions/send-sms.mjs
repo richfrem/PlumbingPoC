@@ -1,6 +1,7 @@
 // packages/backend/netlify/functions/send-sms.mjs
 
 import twilio from 'twilio';
+import { logger } from '../../src/lib/logger.js';
 
 export async function handler(event) {
   // 1. Security Check: Only allow POST requests with the correct secret header.
@@ -39,7 +40,7 @@ export async function handler(event) {
       to: to, // Must be in E.164 format (e.g., "+12505551234")
     });
 
-    console.log(`SMS sent successfully to ${to}. SID: ${smsResponse.sid}`);
+    logger.log(`SMS sent successfully to ${to}. SID: ${smsResponse.sid}`);
     return { statusCode: 200, body: JSON.stringify({ success: true, sid: smsResponse.sid }) };
 
   } catch (error) {

@@ -19,6 +19,8 @@ import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../page-objects/pages/AuthPage';
 import { DashboardPage } from '../../page-objects/pages/DashboardPage';
 import { TEST_USERS } from '../../fixtures/test-data';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Admin Dashboard Access', () => {
   let authPage: AuthPage;
@@ -31,7 +33,7 @@ test.describe('Admin Dashboard Access', () => {
   });
 
   test('should navigate to admin dashboard after login', async ({ page }) => {
-    console.log('🧪 Testing admin dashboard navigation...');
+    logger.log('🧪 Testing admin dashboard navigation...');
 
     // Sign in as admin
     const success = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -43,11 +45,11 @@ test.describe('Admin Dashboard Access', () => {
     // Verify we're on the admin dashboard
     await dashboardPage.verifyOnAdminDashboard();
 
-    console.log('✅ Admin dashboard navigation test passed');
+    logger.log('✅ Admin dashboard navigation test passed');
   });
 
   test('should access admin command center via user menu', async ({ page }) => {
-    console.log('🧪 Testing user menu navigation to Command Center...');
+    logger.log('🧪 Testing user menu navigation to Command Center...');
 
     // Sign in as admin first
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -59,11 +61,11 @@ test.describe('Admin Dashboard Access', () => {
     // Verify we're on the admin dashboard
     await dashboardPage.verifyOnAdminDashboard();
 
-    console.log('✅ Admin Command Center navigation test passed');
+    logger.log('✅ Admin Command Center navigation test passed');
   });
 
   test('should handle admin dashboard loading states', async ({ page }) => {
-    console.log('🧪 Testing admin dashboard loading and empty states...');
+    logger.log('🧪 Testing admin dashboard loading and empty states...');
 
     // Sign in and navigate to admin dashboard
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -89,18 +91,18 @@ test.describe('Admin Dashboard Access', () => {
     const hasEmptyState = await emptyStateElements.count() > 0;
 
     if (hasLoading) {
-      console.log('⏳ Dashboard is loading...');
+      logger.log('⏳ Dashboard is loading...');
     } else if (hasEmptyState) {
-      console.log('📭 Dashboard loaded with empty state (expected for fresh system)');
+      logger.log('📭 Dashboard loaded with empty state (expected for fresh system)');
     } else {
-      console.log('✅ Dashboard loaded with content or ready for interaction');
+      logger.log('✅ Dashboard loaded with content or ready for interaction');
     }
 
-    console.log('✅ Admin dashboard loading states test passed');
+    logger.log('✅ Admin dashboard loading states test passed');
   });
 
   test('should verify admin dashboard UI elements', async ({ page }) => {
-    console.log('🧪 Testing admin dashboard UI element verification...');
+    logger.log('🧪 Testing admin dashboard UI element verification...');
 
     // Sign in and navigate to admin dashboard
     const signInSuccess = await authPage.signIn(TEST_USERS.admin.email, TEST_USERS.admin.password);
@@ -130,7 +132,7 @@ test.describe('Admin Dashboard Access', () => {
     for (const element of possibleElements) {
       try {
         await element.waitFor({ timeout: 2000 });
-        console.log(`✅ Found admin element: ${await element.textContent()}`);
+        logger.log(`✅ Found admin element: ${await element.textContent()}`);
         foundElements++;
       } catch (e) {
         // Element not found, continue checking others
@@ -139,8 +141,8 @@ test.describe('Admin Dashboard Access', () => {
 
     // Should find at least the basic admin heading
     expect(foundElements).toBeGreaterThan(0);
-    console.log(`📊 Found ${foundElements} admin dashboard UI elements`);
+    logger.log(`📊 Found ${foundElements} admin dashboard UI elements`);
 
-    console.log('✅ Admin dashboard UI verification test passed');
+    logger.log('✅ Admin dashboard UI verification test passed');
   });
 });

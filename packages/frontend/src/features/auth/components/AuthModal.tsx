@@ -1,5 +1,6 @@
 import React from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import { logger } from '../../../lib/logger';
 import ModalHeader from '../../requests/components/ModalHeader';
 import { User, Mail, Lock } from 'lucide-react';
 
@@ -23,7 +24,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <button
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold w-full mb-4"
           onClick={async () => {
-            await supabase.auth.signInWithOAuth({ provider: 'google' });
+            logger.log('🔐 Starting Google OAuth sign-in...');
+            try {
+              const result = await supabase.auth.signInWithOAuth({ provider: 'google' });
+              logger.log('🔍 Google OAuth initiated:', result);
+            } catch (error) {
+              logger.error('❌ Google OAuth error:', error);
+            }
           }}
         >
           Continue with Google
@@ -31,7 +38,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <button
           className="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold w-full mb-4"
           onClick={async () => {
-            await supabase.auth.signInWithOAuth({ provider: 'azure' });
+            logger.log('🔐 Starting Microsoft OAuth sign-in...');
+            try {
+              const result = await supabase.auth.signInWithOAuth({ provider: 'azure' });
+              logger.log('🔍 Microsoft OAuth initiated:', result);
+            } catch (error) {
+              logger.error('❌ Microsoft OAuth error:', error);
+            }
           }}
         >
           Continue with Microsoft
@@ -54,21 +67,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             const password = (e.target as any).password.value;
             try {
               if (isSignUp) {
+                logger.log('🔐 Starting email/password sign-up process...');
+                logger.log('📧 Email:', email);
+                logger.log('👤 Name:', name);
                 const { data, error } = await supabase.auth.signUp({ email, password });
+                logger.log('🔍 Sign-up response:', { data: data ? 'present' : 'null', error: error ? error.message : 'null' });
                 if (error) {
+                  logger.error('❌ Sign-up error:', error);
                   setMessage(error.message || 'Sign up failed.');
                   setMessageType('error');
                 } else if (data.user) {
+                  logger.log('✅ Sign-up successful, creating user profile...');
                   await supabase.from('user_profiles').insert({ user_id: data.user.id, name });
+                  logger.log('✅ User profile created');
                   setMessage('Sign up successful! Please check your email and click the confirmation link before signing in.');
                   setMessageType('success');
                 }
               } else {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                logger.log('🔐 Starting email/password sign-in process...');
+                logger.log('📧 Email:', email);
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                logger.log('🔍 Sign-in response:', { data: data ? 'present' : 'null', error: error ? error.message : 'null' });
                 if (error) {
+                  logger.error('❌ Sign-in error:', error);
                   setMessage(error.message || 'Sign in failed.');
                   setMessageType('error');
                 } else {
+                  logger.log('✅ Sign-in successful, user data:', data?.user ? 'present' : 'null');
                   setMessage('Sign in successful!');
                   setMessageType('success');
                   setTimeout(() => {

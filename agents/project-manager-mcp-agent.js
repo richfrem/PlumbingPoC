@@ -26,12 +26,15 @@ const path = require('path');
 const { editableFileManifest } = require('./projectFileManifest.js');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { logger } = require('../packages/frontend/src/lib/logger');
+
+
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function runCommand(command) {
   return new Promise((resolve, reject) => {
-    console.log(`\n▶️ EXECUTING: ${command}`);
+    logger.log(`\n▶️ EXECUTING: ${command}`);
     const childProcess = exec(command, { cwd: __dirname });
     childProcess.stdout.pipe(process.stdout);
     childProcess.stderr.pipe(process.stderr);
@@ -52,21 +55,21 @@ function runCommand(command) {
  * ======================================================
  */
 async function runWorkflow(email, password, target) {
-  console.log('============================================');
-  console.log(`🚀 STARTING PROJECT MANAGER WORKFLOW for target: '${target}'`);
-  console.log('============================================');
+  logger.log('============================================');
+  logger.log(`🚀 STARTING PROJECT MANAGER WORKFLOW for target: '${target}'`);
+  logger.log('============================================');
 
   const feedbackFilePath = path.join(__dirname, 'feedback', 'ui-feedback.json');
 
   try {
     // === STEP 1: Run the UI Designer Agent with the specified target ===
-    console.log(`\n--- STEP 1: Assigning task to UI Designer Agent for target '${target}' ---`);
+    logger.log(`\n--- STEP 1: Assigning task to UI Designer Agent for target '${target}' ---`);
     const designerCommand = `node ui-designer-mcp-agent.js analyze-ui ${email} ${password} --target ${target}`;
     await runCommand(designerCommand);
-    console.log('✅ UI Designer Agent finished analysis.');
+    logger.log('✅ UI Designer Agent finished analysis.');
 
     // === STEP 2: Project Manager Reviews, VALIDATES BATCH, and Assigns Task ===
-    console.log('\n--- STEP 2: Reviewing and VALIDATING feedback batch ---');
+    logger.log('\n--- STEP 2: Reviewing and VALIDATING feedback batch ---');
     if (!fs.existsSync(feedbackFilePath)) {
       throw new Error('Critical Error: ui-feedback.json was not generated.');
     }
@@ -82,16 +85,16 @@ async function runWorkflow(email, password, target) {
         throw new Error(`VALIDATION FAILED: An invalid file path was proposed: "${proposedFilePath}". Halting workflow.`);
       }
     }
-    console.log(`✅ Validation successful: All ${feedback.improvements.length} proposed file paths are in the manifest.`);
+    logger.log(`✅ Validation successful: All ${feedback.improvements.length} proposed file paths are in the manifest.`);
 
     if (feedback.status === 'implemented') {
-      console.log("✅ Task has already been implemented. Archiving and completing workflow.");
+      logger.log("✅ Task has already been implemented. Archiving and completing workflow.");
       const archiveDir = path.join(__dirname, 'feedback', 'archive');
       if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       const archivePath = path.join(archiveDir, `ui-feedback-${timestamp}.json`);
       fs.renameSync(feedbackFilePath, archivePath);
-      console.log(`✅ Task archived to: ${archivePath}`);
+      logger.log(`✅ Task archived to: ${archivePath}`);
       return;
     }
 
@@ -113,37 +116,37 @@ async function runWorkflow(email, password, target) {
 
     const result = await model.generateContent(prompt);
     const summary = await result.response.text();
-    console.log('\n--- PROJECT MANAGER STATUS UPDATE ---');
-    console.log(summary);
-    console.log('-------------------------------------\n');
+    logger.log('\n--- PROJECT MANAGER STATUS UPDATE ---');
+    logger.log(summary);
+    logger.log('-------------------------------------\n');
 
     // === STEP 3: Run the Frontend Developer Agent ===
-    console.log('\n--- STEP 3: Assigning implementation task to Frontend Developer Agent ---');
+    logger.log('\n--- STEP 3: Assigning implementation task to Frontend Developer Agent ---');
     await runCommand(`node frontend-developer-mcp-agent.js implement-feedback --feedback-file feedback/ui-feedback.json`);
-    console.log('✅ Frontend Developer Agent finished implementation.');
+    logger.log('✅ Frontend Developer Agent finished implementation.');
 
     // === STEP 4: Verification and Archiving ===
-    console.log('\n--- STEP 4: Verifying implementation and archiving task ---');
+    logger.log('\n--- STEP 4: Verifying implementation and archiving task ---');
     const updatedFeedback = JSON.parse(fs.readFileSync(feedbackFilePath, 'utf-8'));
 
     if (updatedFeedback.status === 'implemented') {
-        console.log('Verification successful. Status is "implemented".');
+        logger.log('Verification successful. Status is "implemented".');
 
         const archiveDir = path.join(__dirname, 'feedback', 'archive');
         if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
         const timestamp = new Date().toISOString().replace(/:/g, '-');
         const archivePath = path.join(archiveDir, `ui-feedback-${timestamp}.json`);
         fs.renameSync(feedbackFilePath, archivePath);
-        console.log(`✅ Task archived to: ${archivePath}`);
+        logger.log(`✅ Task archived to: ${archivePath}`);
     } else {
         throw new Error(`Verification FAILED. Expected status 'implemented', but found '${updatedFeedback.status}'.`);
     }
 
     // === STEP 5: Final Summary ===
-    console.log('\n============================================');
-    console.log('🎉 WORKFLOW COMPLETED SUCCESSFULLY');
-    console.log('============================================');
-    console.log(`The '${target}' UI has been updated and the workflow is complete.`);
+    logger.log('\n============================================');
+    logger.log('🎉 WORKFLOW COMPLETED SUCCESSFULLY');
+    logger.log('============================================');
+    logger.log(`The '${target}' UI has been updated and the workflow is complete.`);
 
   } catch (error) {
     console.error('\n============================================');
@@ -172,5 +175,5 @@ if (targetIndex !== -1 && args[targetIndex + 1]) {
 if (command === 'run-workflow' && email && password) {
   runWorkflow(email, password, target);
 } else {
-  console.log('Usage: node project-manager-mcp-agent.js run-workflow <email> <password> [--target <target_name>]');
+  logger.log('Usage: node project-manager-mcp-agent.js run-workflow <email> <password> [--target <target_name>]');
 }

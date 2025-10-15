@@ -13,7 +13,7 @@ nodes:
 
   - id: analyze_request
     type: model
-    model: gpt-4o  # Use more capable model for analysis
+    model: ${CHAT_GPT_TRIAGE_MODEL}  # Use more capable model for analysis
     prompt: >
       You are an expert plumbing business analyst with 25 years of experience.
       Analyze this customer request and provide a comprehensive triage assessment.

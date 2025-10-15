@@ -4,6 +4,7 @@
 import express from 'express';
 import { submitQuoteRequest } from '../controllers/requestController.js';
 import { updateRequestTriage } from '../controllers/triageController.js';
+import { logger } from '../../src/lib/logger.js';
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.post('/quote/run', async (req, res) => {
 // Agent action: Submit quote request
 router.post('/submit-quote', async (req, res) => {
   try {
-    console.log('Agent submitting quote request:', req.body);
+    logger.log('Agent submitting quote request:', req.body);
 
     // Transform agent data to match our API format
     const requestData = {
@@ -73,7 +74,7 @@ router.post('/submit-quote', async (req, res) => {
 // Agent action: Update request triage
 router.post('/update-triage/:requestId', async (req, res) => {
   try {
-    console.log('Agent updating triage for request:', req.params.requestId, req.body);
+    logger.log('Agent updating triage for request:', req.params.requestId, req.body);
 
     const triageData = {
       triage_summary: req.body.triage_summary,

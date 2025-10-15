@@ -116,7 +116,7 @@ export function useRequests(userId?: string) {
     const channel = supabase.channel(channelId);
 
     const handleUpdate = (payload: any) => {
-      console.log(`Realtime update on channel ${channelId}:`, payload);
+      logger.log(`Realtime update on channel ${channelId}:`, payload);
       fetchRequests();
     };
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, Grid, IconButton, Alert } from '@mui/material';
 import { Pencil, Check, X, User } from 'lucide-react';
+import { logger } from '../../../lib/logger';
 
 interface AddressData {
   service_address: string;
@@ -109,7 +110,7 @@ const CustomerInfoSection: React.FC<CustomerInfoSectionProps> = ({
 
     try {
       const fullAddress = `${serviceAddress}, ${serviceCity}, ${serviceProvince} ${servicePostalCode}, Canada`;
-      console.log('Geocoding address:', fullAddress);
+      logger.log('Geocoding address:', fullAddress);
 
       // Load Google Maps API if not already loaded
       if (!window.google || !window.google.maps) {

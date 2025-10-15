@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Page object for quote management functionality
@@ -15,7 +17,7 @@ export class QuotePage extends BasePage {
    * @param quoteDetails.price The price for the first labor item.
    */
   async createQuote({ description, price }: { description: string, price: string }): Promise<void> {
-    console.log(`Creating quote with description: "${description}"`);
+    logger.log(`Creating quote with description: "${description}"`);
 
     const addNewQuoteButton = this.page.getByRole('button', { name: 'Add New Quote' });
     await addNewQuoteButton.click({ timeout: 10000 });
@@ -29,7 +31,7 @@ export class QuotePage extends BasePage {
     // Verify success by waiting for the quote to appear in the list
     const expectedTotal = (parseFloat(price) * 1.12).toFixed(2); // Price + 12% tax
     await expect(this.page.getByText(new RegExp(`Quote #\\d+ - \\$${expectedTotal}`))).toBeVisible({ timeout: 10000 });
-    console.log('✅ Quote created successfully.');
+    logger.log('✅ Quote created successfully.');
   }
 
   /**
@@ -39,7 +41,7 @@ export class QuotePage extends BasePage {
    * @param quoteDetails.price The new price for the labor item.
    */
   async updateQuote({ quoteId, description, price }: { quoteId: string, description: string, price: string }): Promise<void> {
-    console.log(`Updating quote ${quoteId} with description: "${description}"`);
+    logger.log(`Updating quote ${quoteId} with description: "${description}"`);
 
     // Find the quote by its ID and click the edit button
     const quoteRow = this.page.locator(`[data-quote-id="${quoteId}"]`);
@@ -64,7 +66,7 @@ export class QuotePage extends BasePage {
     // Verify success by waiting for the updated quote to appear
     const expectedTotal = (parseFloat(price) * 1.12).toFixed(2); // Price + 12% tax
     await expect(this.page.getByText(new RegExp(`Quote #${quoteId} - \\$${expectedTotal}`))).toBeVisible({ timeout: 10000 });
-    console.log(`✅ Quote ${quoteId} updated successfully.`);
+    logger.log(`✅ Quote ${quoteId} updated successfully.`);
   }
 
   /**
@@ -72,7 +74,7 @@ export class QuotePage extends BasePage {
    * @param quoteId The ID of the quote to delete.
    */
   async deleteQuote(quoteId: string): Promise<void> {
-    console.log(`Deleting quote ${quoteId}...`);
+    logger.log(`Deleting quote ${quoteId}...`);
 
     // Find the quote by its ID
     const quoteRow = this.page.locator(`[data-quote-id="${quoteId}"]`);
@@ -94,6 +96,6 @@ export class QuotePage extends BasePage {
 
     // Verify the quote is no longer visible
     await expect(quoteRow).not.toBeVisible({ timeout: 10000 });
-    console.log(`✅ Quote ${quoteId} deleted successfully.`);
+    logger.log(`✅ Quote ${quoteId} deleted successfully.`);
   }
 }

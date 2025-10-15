@@ -27,8 +27,10 @@ import {
   X
 } from 'lucide-react';
 
+import { logger } from './lib/logger';
+
 const AppContent: React.FC = () => {
-  console.log('🔥 AppContent component RENDERED - Testing webhook after reconnection');
+  logger.log('🔥 AppContent component RENDERED - Testing webhook after reconnection');
   const { user, profile, profileIncomplete, refreshProfile, loading: authLoading } = useAuth();
 
   // THE FIX: This logic is now robust.
@@ -37,7 +39,7 @@ const AppContent: React.FC = () => {
   // 3. Otherwise, it's a regular user, so we MUST pass their `user.id`.
   const userIdForQuery = profile && profile.role === 'admin' ? undefined : user?.id;
 
-  console.log('🔍 User authentication check:', {
+  logger.log('🔍 User authentication check:', {
     userId: user?.id,
     profileRole: profile?.role,
     isAdmin: profile?.role === 'admin',
@@ -55,7 +57,7 @@ const AppContent: React.FC = () => {
   // Select the appropriate hook result
   const { data: requests, loading, error, refetch } = isAdmin ? allRequestsHook : userRequestsHook;
 
-  console.log('🔍 useUserRequests/useAllRequests result:', {
+  logger.log('🔍 useUserRequests/useAllRequests result:', {
     requestsLength: requests?.length,
     loading,
     error,
@@ -65,7 +67,7 @@ const AppContent: React.FC = () => {
 
   // Log when requests data changes
   useEffect(() => {
-    console.log('📡 Main.tsx requests updated:', {
+    logger.log('📡 Main.tsx requests updated:', {
       count: requests?.length,
       statuses: requests?.map(r => ({ id: r.id, status: r.status })),
       hasQuotes: requests?.map(r => ({ id: r.id, quoteCount: r.quotes?.length || 0 }))
@@ -105,14 +107,14 @@ const AppContent: React.FC = () => {
   };
 
   const handleServiceSelect = (service: ServiceDefinition) => {
-    console.log(`Service selected: ${service.title}`);
+    logger.log(`Service selected: ${service.title}`);
     setPreselectedService(service.key);
     handleOpenQuoteModal(); // Reuse the existing function to open the modal
   };
 
   // *** THE FIX: This callback now has access to the central refresh function. ***
   const handleNewRequestSuccess = () => {
-    console.log("New request submitted. Triggering a manual refresh and redirecting to dashboard.");
+    logger.log("New request submitted. Triggering a manual refresh and redirecting to dashboard.");
     refetch();
     // Redirect to dashboard after successful quote submission
     setRoute('#/dashboard');
@@ -412,9 +414,9 @@ const AppContent: React.FC = () => {
                 <UserMenu
                   onOpenProfile={() => setShowProfileModal(true)}
                   onNavigateToDashboard={() => {
-                    console.log('🚀 Desktop UserMenu: Navigating to dashboard');
+                    logger.log('🚀 Desktop UserMenu: Navigating to dashboard');
                     setRoute('#/dashboard');
-                    console.log('✅ Desktop UserMenu: Route set to:', '#/dashboard');
+                    logger.log('✅ Desktop UserMenu: Route set to:', '#/dashboard');
                   }}
                 />
               ) : (
@@ -467,11 +469,11 @@ const AppContent: React.FC = () => {
                         setIsMenuOpen(false);
                       }}
                       onNavigateToDashboard={() => {
-                        console.log('🚀 UserMenu: Navigating to dashboard');
+                        logger.log('🚀 UserMenu: Navigating to dashboard');
                         // Navigate to dashboard and close mobile menu
                         setRoute('#/dashboard');
                         setIsMenuOpen(false);
-                        console.log('✅ UserMenu: Route set to:', '#/dashboard');
+                        logger.log('✅ UserMenu: Route set to:', '#/dashboard');
                       }}
                     />
                   </div>

@@ -68,6 +68,7 @@ import { useQuery, UseQueryOptions, useQueryClient } from '@tanstack/react-query
 import { useMemo } from 'react';
 import apiClient from '../lib/apiClient';
 import { useSupabaseRealtimeV3 } from './useSupabaseRealtimeV3';
+import { logger } from '../lib/logger';
 
 interface TableQueryOptions<T> extends Omit<UseQueryOptions<T[], Error>, 'queryKey' | 'queryFn'> {
   // Real-time subscription options
@@ -129,7 +130,7 @@ export function useTableQuery<T = any>(
 
   // Query function
   const queryFn = async (): Promise<T[]> => {
-    console.log(`🔍 Fetching ${table} data from ${apiEndpoint}`);
+    logger.log(`🔍 Fetching ${table} data from ${apiEndpoint}`);
 
     try {
       const response = await apiClient.get<T | T[]>(apiEndpoint);
@@ -137,10 +138,10 @@ export function useTableQuery<T = any>(
 
       // Handle both single object and array responses
       const data = Array.isArray(responseData) ? responseData : [responseData];
-      console.log(`✅ Fetched ${data.length} ${table} records`);
+      logger.log(`✅ Fetched ${data.length} ${table} records`);
       return data;
     } catch (error) {
-      console.error(`❌ Error fetching ${table}:`, error);
+      logger.error(`❌ Error fetching ${table}:`, error);
       throw error;
     }
   };

@@ -7,6 +7,7 @@ import { FilePlus } from 'lucide-react';
 import { QuoteRequest } from '../types';
 import QuoteFormModal from './QuoteFormModal';
 import { getQuoteStatusChipColor } from '../../../lib/statusColors';
+import { logger } from '../../../lib/logger';
 
 interface QuoteListProps {
   request: QuoteRequest;
@@ -62,7 +63,7 @@ const QuoteList: React.FC<QuoteListProps> = ({ request, isReadOnly, isUpdating, 
               <ListItem key={quote.id} disablePadding secondaryAction={
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   {!isAdmin && quote.status !== 'accepted' && quote.status !== 'rejected' && request.status !== 'accepted' && (
-                    <Button variant="contained" size="small" color="success" onClick={() => { console.log('Accepting quote:', quote.id); onAcceptQuote(quote.id); }} disabled={isUpdating}>
+                    <Button variant="contained" size="small" color="success" onClick={() => { logger.log('Accepting quote:', quote.id); onAcceptQuote(quote.id); }} disabled={isUpdating}>
                       Accept
                     </Button>
                   )}

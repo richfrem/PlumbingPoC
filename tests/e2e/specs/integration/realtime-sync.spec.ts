@@ -16,6 +16,8 @@
 
 import { test, expect } from '@playwright/test';
 import { signInForTest, getTestCredentials, getAdminTestCredentials } from '../helpers/auth';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 test.describe('Real-time Synchronization', () => {
   test.describe.configure({ mode: 'serial' });
@@ -76,7 +78,7 @@ test.describe('Real-time Synchronization', () => {
         expect(currentRequests).toBeGreaterThan(initialUserRequests);
       }).toPass({ timeout: 35000 });
 
-      console.log('✅ Quote creation realtime sync test passed');
+      logger.log('✅ Quote creation realtime sync test passed');
 
     } finally {
       await userPage.close();
@@ -103,7 +105,7 @@ test.describe('Real-time Synchronization', () => {
       }).first();
 
       if (await quotedRequest.count() === 0) {
-        console.log('⚠️ No quoted requests found, skipping test');
+        logger.log('⚠️ No quoted requests found, skipping test');
         return;
       }
 
@@ -116,7 +118,7 @@ test.describe('Real-time Synchronization', () => {
       const requestId = requestIdMatch?.[1];
 
       if (!requestId) {
-        console.log('⚠️ Could not extract request ID, skipping test');
+        logger.log('⚠️ Could not extract request ID, skipping test');
         return;
       }
 
@@ -134,7 +136,7 @@ test.describe('Real-time Synchronization', () => {
       }).first();
 
       if (await userRequest.count() === 0) {
-        console.log('⚠️ User has no quoted requests, skipping test');
+        logger.log('⚠️ User has no quoted requests, skipping test');
         return;
       }
 
@@ -165,7 +167,7 @@ test.describe('Real-time Synchronization', () => {
         expect(await acceptedRequest.count()).toBeGreaterThan(0);
       }).toPass({ timeout: 35000 });
 
-      console.log('✅ Quote acceptance realtime sync test passed');
+      logger.log('✅ Quote acceptance realtime sync test passed');
 
     } finally {
       await userPage.close();
@@ -219,7 +221,7 @@ test.describe('Real-time Synchronization', () => {
         expect(currentNoteCount).toBeGreaterThan(initialNoteCount);
       }).toPass({ timeout: 35000 });
 
-      console.log('✅ Communication log realtime sync test passed');
+      logger.log('✅ Communication log realtime sync test passed');
 
     } finally {
       await userPage.close();

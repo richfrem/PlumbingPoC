@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
+
 
 /**
  * Component Page Object for Service Location Manager functionality
@@ -20,16 +22,16 @@ export class ServiceLocationManager extends BasePage {
     province?: string;
     postalCode?: string;
   }): Promise<void> {
-    console.log('Filling service address form...');
+    logger.log('Filling service address form...');
 
     if (addressData.useProfileAddress) {
       // Click "Use My Address" button
-      console.log('Using profile address...');
+      logger.log('Using profile address...');
       await this.page.getByRole('button', { name: 'Use My Address' }).click();
-      console.log('✅ Profile address selected');
+      logger.log('✅ Profile address selected');
     } else {
       // Click "Different Address" button to show form
-      console.log('Using different address...');
+      logger.log('Using different address...');
       const differentAddressButton = this.page.getByRole('button', { name: 'Different Address' });
       await differentAddressButton.waitFor({ state: 'visible' });
       await differentAddressButton.click();
@@ -40,34 +42,34 @@ export class ServiceLocationManager extends BasePage {
 
       // Fill address fields
       if (addressData.address) {
-        console.log(`Filling street address: ${addressData.address}`);
+        logger.log(`Filling street address: ${addressData.address}`);
         await streetField.fill(addressData.address);
         const streetValue = await streetField.inputValue();
-        console.log(`Street field value: "${streetValue}"`);
+        logger.log(`Street field value: "${streetValue}"`);
       }
       if (addressData.city) {
-        console.log(`Filling city: ${addressData.city}`);
+        logger.log(`Filling city: ${addressData.city}`);
         const cityField = this.page.getByLabel('City');
         await cityField.fill(addressData.city);
         const cityValue = await cityField.inputValue();
-        console.log(`City field value: "${cityValue}"`);
+        logger.log(`City field value: "${cityValue}"`);
       }
       if (addressData.province) {
-        console.log(`Filling province: ${addressData.province}`);
+        logger.log(`Filling province: ${addressData.province}`);
         const provinceField = this.page.getByLabel('Province');
         await provinceField.fill(addressData.province);
         const provinceValue = await provinceField.inputValue();
-        console.log(`Province field value: "${provinceValue}"`);
+        logger.log(`Province field value: "${provinceValue}"`);
       }
       if (addressData.postalCode) {
-        console.log(`Filling postal code: ${addressData.postalCode}`);
+        logger.log(`Filling postal code: ${addressData.postalCode}`);
         const postalField = this.page.getByLabel('Postal Code');
         await postalField.fill(addressData.postalCode);
         const postalValue = await postalField.inputValue();
-        console.log(`Postal code field value: "${postalValue}"`);
+        logger.log(`Postal code field value: "${postalValue}"`);
       }
 
-      console.log('✅ Address form fields filled');
+      logger.log('✅ Address form fields filled');
     }
   }
 
@@ -75,7 +77,7 @@ export class ServiceLocationManager extends BasePage {
    * Verify address geocoding and validation
    */
   async verifyAddressGeocoding(): Promise<void> {
-    console.log('Verifying address geocoding...');
+    logger.log('Verifying address geocoding...');
 
     // Click "Verify Address" button
     const verifyButton = this.page.getByRole('button', { name: 'Verify Address' });
@@ -86,7 +88,7 @@ export class ServiceLocationManager extends BasePage {
     const successMessage = this.page.getByText('✓ Address verified and located on map');
     await successMessage.waitFor({ state: 'visible', timeout: 10000 });
 
-    console.log('✅ Address geocoding verified');
+    logger.log('✅ Address geocoding verified');
   }
 
   /**
@@ -97,7 +99,7 @@ export class ServiceLocationManager extends BasePage {
     city: string;
     postalCode: string;
   }): Promise<void> {
-    console.log('Updating service address...');
+    logger.log('Updating service address...');
 
     // Implementation for updating addresses
     // - Open address editing mode
@@ -105,7 +107,7 @@ export class ServiceLocationManager extends BasePage {
     // - Save changes
     // - Verify update success
 
-    console.log('✅ Service address updated');
+    logger.log('✅ Service address updated');
   }
 
   /**
@@ -116,47 +118,47 @@ export class ServiceLocationManager extends BasePage {
     city: string;
     postalCode: string;
   }): Promise<void> {
-    console.log('Verifying current address display...');
+    logger.log('Verifying current address display...');
 
     // Implementation for verifying displayed address
     // - Check address display elements
     // - Assert address matches expected
 
-    console.log('✅ Current address verified');
+    logger.log('✅ Current address verified');
   }
 
   /**
    * Toggle between profile address and custom address
    */
   async toggleAddressMode(useProfileAddress: boolean): Promise<void> {
-    console.log(`Toggling address mode: ${useProfileAddress ? 'profile' : 'custom'}`);
+    logger.log(`Toggling address mode: ${useProfileAddress ? 'profile' : 'custom'}`);
 
     // Implementation for toggling address modes
     // - Click profile/custom address toggle
     // - Verify correct form fields are shown
 
-    console.log('✅ Address mode toggled');
+    logger.log('✅ Address mode toggled');
   }
 
   /**
    * Handle geocoding errors and validation messages
    */
   async handleGeocodingError(): Promise<void> {
-    console.log('Handling geocoding error...');
+    logger.log('Handling geocoding error...');
 
     // Implementation for error handling
     // - Check for error messages
     // - Verify appropriate user feedback
     // - Handle retry scenarios
 
-    console.log('✅ Geocoding error handled');
+    logger.log('✅ Geocoding error handled');
   }
 
   /**
    * Get current coordinates for the service address
    */
   async getCurrentCoordinates(): Promise<{ lat: number; lng: number } | null> {
-    console.log('Getting current coordinates...');
+    logger.log('Getting current coordinates...');
 
     // Implementation for getting coordinates
     // - Extract latitude/longitude from form or display

@@ -1,5 +1,6 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
+import { logger } from '../../../../packages/frontend/src/lib/logger';
 
 /**
  * Component Page Object for AI Triage Summary functionality
@@ -14,14 +15,14 @@ export class AITriageSummary extends BasePage {
    * Trigger AI triage analysis for a request
    */
   async triggerAITriage(): Promise<void> {
-    console.log('Triggering AI triage analysis...');
+    logger.log('Triggering AI triage analysis...');
 
     // Implementation for triggering AI triage
     // - Find and click AI triage button
     // - Wait for analysis to complete
     // - Verify triage summary appears
 
-    console.log('✅ AI triage triggered successfully');
+    logger.log('✅ AI triage triggered successfully');
   }
 
   /**
@@ -33,21 +34,21 @@ export class AITriageSummary extends BasePage {
     recommendations?: string[];
     confidence?: string;
   }): Promise<void> {
-    console.log('Verifying AI triage summary content...');
+    logger.log('Verifying AI triage summary content...');
 
     // Implementation for verifying triage content
     // - Check triage summary section
     // - Verify priority, category, recommendations
     // - Assert confidence level if provided
 
-    console.log('✅ AI triage summary verified');
+    logger.log('✅ AI triage summary verified');
   }
 
   /**
    * Check if AI triage is available for the current request
    */
   async isTriageAvailable(): Promise<boolean> {
-    console.log('Checking if AI triage is available...');
+    logger.log('Checking if AI triage is available...');
 
     // Implementation for checking triage availability
     // - Look for triage button or section
@@ -60,7 +61,7 @@ export class AITriageSummary extends BasePage {
    * Get the AI triage priority level
    */
   async getTriagePriority(): Promise<string> {
-    console.log('Getting AI triage priority...');
+    logger.log('Getting AI triage priority...');
 
     // Implementation for getting priority
     // - Extract priority from triage summary
@@ -73,42 +74,42 @@ export class AITriageSummary extends BasePage {
    * Verify AI recommendations are displayed
    */
   async verifyRecommendationsExist(): Promise<void> {
-    console.log('Verifying AI recommendations exist...');
+    logger.log('Verifying AI recommendations exist...');
 
     // Implementation for checking recommendations
     // - Look for recommendations section
     // - Assert recommendations are visible
     // - Check minimum number of recommendations
 
-    console.log('✅ AI recommendations verified');
+    logger.log('✅ AI recommendations verified');
   }
 
   /**
    * Check AI confidence level display
    */
   async verifyConfidenceLevel(): Promise<void> {
-    console.log('Verifying AI confidence level...');
+    logger.log('Verifying AI confidence level...');
 
     // Implementation for confidence verification
     // - Find confidence indicator/score
     // - Verify it's within acceptable range
     // - Assert confidence display is clear
 
-    console.log('✅ AI confidence level verified');
+    logger.log('✅ AI confidence level verified');
   }
 
   /**
    * Wait for AI triage analysis to complete
    */
   async waitForTriageCompletion(timeout = 30000): Promise<void> {
-    console.log('Waiting for AI triage completion...');
+    logger.log('Waiting for AI triage completion...');
 
     // Implementation for waiting on triage
     // - Wait for loading indicators to disappear
     // - Wait for triage summary to appear
     // - Handle timeout scenarios
 
-    console.log('✅ AI triage analysis completed');
+    logger.log('✅ AI triage analysis completed');
   }
 
   /**
@@ -121,7 +122,7 @@ export class AITriageSummary extends BasePage {
     confidence: number;
     analysis: string;
   }> {
-    console.log('Getting full triage analysis...');
+    logger.log('Getting full triage analysis...');
 
     // Implementation for getting complete analysis
     // - Extract all triage data

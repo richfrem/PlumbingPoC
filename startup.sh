@@ -211,10 +211,10 @@ else
     echo -e "${GREEN}✓${NC} Frontend (Vite): http://localhost:$FRONTEND_PORT"
     echo -e "${GREEN}✓${NC} Backend (ESM):   http://localhost:$BACKEND_PORT"
     echo ""
-    echo -e "${BLUE}ℹ${NC}  Services are running in the background (PID: $DEV_PID)"
+    echo -e "${BLUE}ℹ${NC}  Services are running in the foreground"
     echo -e "${BLUE}ℹ${NC}  Press Ctrl+C to stop all services"
     echo ""
 
-    # Wait for the development process
+    # Wait for the process
     wait $DEV_PID
 fi

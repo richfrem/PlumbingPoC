@@ -9,6 +9,7 @@ import { Box, Typography, Paper, Button, CircularProgress, Alert, IconButton, Di
 import { FileText as FileTextIcon, Paperclip, X as XIcon, UploadCloud } from 'lucide-react';
 import { QuoteAttachment } from '../types';
 import { useRequestById } from '../../../hooks';
+import { logger } from '../../../lib/logger';
 
 interface AttachmentSectionProps {
   requestId: string;
@@ -70,7 +71,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  console.log('🔧 AttachmentSection DEBUG:', {
+  logger.log('🔧 AttachmentSection DEBUG:', {
     requestId,
     editable,
     typeof_editable: typeof editable,
@@ -100,7 +101,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     });
   }, [requestId]);
 
-  console.log('🔍 AttachmentSection using standardized real-time system:', {
+  logger.log('🔍 AttachmentSection using standardized real-time system:', {
     requestId,
     attachmentsLength: attachments?.length,
     attachmentIds: attachments?.map(a => a.id) || [],
@@ -116,7 +117,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
-      console.log('🔧 AttachmentSection onDrop triggered:', {
+      logger.log('🔧 AttachmentSection onDrop triggered:', {
         filesCount: acceptedFiles.length,
         hasOnNewFiles: !!onNewFiles,
         requestId,
@@ -205,7 +206,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
   const uploadFiles = async (files: File[]) => {
     if (!files || files.length === 0) return;
 
-    console.log('🚀 AttachmentSection uploadFiles called:', {
+    logger.log('🚀 AttachmentSection uploadFiles called:', {
       filesCount: files.length,
       requestId,
       quoteId,
@@ -228,8 +229,8 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      console.log('✅ Attachment uploaded successfully:', response.data);
-      console.log('✅ Attachment upload complete, real-time system will handle updates automatically');
+      logger.log('✅ Attachment uploaded successfully:', response.data);
+      logger.log('✅ Attachment upload complete, real-time system will handle updates automatically');
 
       // Call onUpdate callback if parent component needs additional side effects
       onUpdate?.();
@@ -245,7 +246,7 @@ const AttachmentSection: React.FC<AttachmentSectionProps> = ({ requestId, attach
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    console.log('🔧 AttachmentSection handleFileUpload:', {
+    logger.log('🔧 AttachmentSection handleFileUpload:', {
       filesCount: files.length,
       hasOnNewFiles: !!onNewFiles,
       requestId,

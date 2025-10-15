@@ -8,6 +8,7 @@ import { QuoteRequest } from '../types';
 import { getRequestStatusChipColor, getRequestStatusPinColor } from '../../../lib/statusColors';
 import statusColors from '../../../lib/statusColors.json';
 import { useRealtimeInvalidation } from '../../../hooks/useSupabaseRealtimeV3';
+import { logger } from '../../../lib/logger';
 
 interface MyRequestsProps {
   requests: QuoteRequest[];
@@ -25,7 +26,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
   useRealtimeInvalidation(user?.id);
 
   useEffect(() => {
-    console.log('📋 MyRequests: requests prop updated', {
+    logger.log('📋 MyRequests: requests prop updated', {
       requestCount: requests.length,
       requestIds: requests.map(r => ({ id: r.id, status: r.status }))
     });
@@ -33,7 +34,7 @@ const MyRequests: React.FC<MyRequestsProps> = ({ requests, loading, error, refre
     if (selectedRequest && requests.length > 0) {
       const newRequestData = requests.find(r => r.id === selectedRequest.id);
       if (newRequestData) {
-        console.log('📋 MyRequests: updating selectedRequest', {
+        logger.log('📋 MyRequests: updating selectedRequest', {
           id: newRequestData.id,
           oldStatus: selectedRequest.status,
           newStatus: newRequestData.status
