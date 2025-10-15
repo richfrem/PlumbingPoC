@@ -5,7 +5,7 @@ import { logger } from '../../src/lib/logger.js';
 
 // Call the triage-agent as a separate Netlify function for proper logging
 async function runTriageAnalysis(requestData) {
-  const isNetlify = process.env.NETLIFY === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const isNetlify = process.env.NETLIFY === 'true';
 
   if (isNetlify) {
     // In production, call the triage-agent as a separate function
