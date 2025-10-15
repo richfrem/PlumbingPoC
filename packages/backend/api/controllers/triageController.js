@@ -5,7 +5,7 @@ import { logger } from '../../src/lib/logger.js';
 
 // Call the triage-agent as a separate Netlify function for proper logging
 async function runTriageAnalysis(requestData) {
-  const isNetlify = process.env.NETLIFY === 'true';
+  const isNetlify = process.env.NETLIFY == true; // Netlify sets this to boolean true
 
   if (isNetlify) {
     // In production, call the triage-agent as a separate function
