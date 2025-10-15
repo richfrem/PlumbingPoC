@@ -208,9 +208,9 @@ Return your analysis as a JSON object matching the specified output schema.`;
     const isGpt4oModel = model?.startsWith('gpt-4o');
 
     let response;
-    let maxTokens = 2000;
+    let maxTokens = 4000; // Increased from 2000 to 4000 for more reliable completions
     let retryCount = 0;
-    const maxRetries = 1;
+    const maxRetries = 2; // Increased from 1 to 2 retries
 
     while (retryCount <= maxRetries) {
       if (isGpt5Model) {
@@ -261,7 +261,7 @@ Return your analysis as a JSON object matching the specified output schema.`;
       // Check if response is complete for GPT-5 models
       if (isGpt5Model && response.status === 'incomplete' && response.incomplete_details?.reason === 'max_output_tokens' && retryCount < maxRetries) {
         logger.log(`[TriageAgent] Response incomplete due to max_output_tokens, retrying with higher limit. Attempt ${retryCount + 1}/${maxRetries}`);
-        maxTokens = Math.min(maxTokens * 2, 8000); // Double tokens, max 8000
+        maxTokens = Math.min(maxTokens * 2, 16000); // Double tokens, max 16000 (increased from 8000)
         retryCount++;
         continue;
       }
