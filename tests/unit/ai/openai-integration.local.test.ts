@@ -27,66 +27,50 @@
 - both agents handle empty OpenAI responses gracefully
 */
 
-// Global variables to control mock behavior per test
-let mockResponse = {
-  output: [
-    {
-      type: "function_call",
-      name: "provide_quote_questions",
-      arguments: JSON.stringify({
-        qa_pairs: [
-          { question: "What is leaking?", answer: "Toilet" },
-          { question: "Where?", answer: "Upstairs bathroom" },
-        ],
-      }),
-    },
-  ],
-};
-let shouldReject = false;
-
-// Mock OpenAI with partial mock using vi.importActual
-vi.mock("openai", async () => {
-  const actual = await vi.importActual("openai");
-  return {
-    ...actual,
-    default: class MockOpenAI {
-      constructor() {
-        this.responses = {
-          create: vi.fn().mockImplementation(() =>
-            shouldReject ? Promise.reject(new Error("API failure")) : Promise.resolve(mockResponse)
-          ),
-        };
-      }
-    },
-  };
-});
-
-// Mock the agent modules to replace their openAiClient
-vi.doMock("../../../packages/backend/netlify/functions/quote-agent.mjs", async () => {
-  const actual = await vi.importActual("../../../packages/backend/netlify/functions/quote-agent.mjs");
-  return {
-    ...actual,
-    // Replace openAiClient with our mock
-    openAiClient: {
-      responses: {
-        create: vi.fn().mockResolvedValue(mockResponse),
+// Helper function to setup mocks for each test
+async function setupMocks(mockResponse: any, shouldReject = false) {
+  // Mock OpenAI
+  vi.doMock("openai", async () => {
+    const actual = await vi.importActual("openai");
+    return {
+      ...actual,
+      default: class MockOpenAI {
+        constructor() {
+          this.responses = {
+            create: vi.fn().mockImplementation(() =>
+              shouldReject ? Promise.reject(new Error("API failure")) : Promise.resolve(mockResponse)
+            ),
+          };
+        }
       },
-    },
-  };
-});
+    };
+  });
 
-vi.doMock("../../../packages/backend/netlify/functions/triage-agent.mjs", async () => {
-  const actual = await vi.importActual("../../../packages/backend/netlify/functions/triage-agent.mjs");
-  return {
-    ...actual,
-    // Replace openAiClient with our mock
-    openAiClient: {
-      responses: {
-        create: vi.fn().mockResolvedValue(mockResponse),
+  // Mock the agent modules
+  vi.doMock("../../../packages/backend/netlify/functions/quote-agent.mjs", async () => {
+    const actual = await vi.importActual("../../../packages/backend/netlify/functions/quote-agent.mjs");
+    return {
+      ...actual,
+      openAiClient: {
+        responses: {
+          create: vi.fn().mockResolvedValue(mockResponse),
+        },
       },
-    },
-  };
-});
+    };
+  });
+
+  vi.doMock("../../../packages/backend/netlify/functions/triage-agent.mjs", async () => {
+    const actual = await vi.importActual("../../../packages/backend/netlify/functions/triage-agent.mjs");
+    return {
+      ...actual,
+      openAiClient: {
+        responses: {
+          create: vi.fn().mockResolvedValue(mockResponse),
+        },
+      },
+    };
+  });
+}
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -109,7 +93,6 @@ describe("OpenAI Integration Agents", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules(); // ensures handlers re-import with fresh mocks
-    shouldReject = false; // reset rejection flag
   });
 
   // -----------------------
@@ -118,7 +101,7 @@ describe("OpenAI Integration Agents", () => {
   describe("Quote Agent (quote-agent.mjs)", () => {
     it("parses Q/A correctly from GPT-5 function_call", async () => {
       // Set mock response for this test
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "function_call",
@@ -132,6 +115,8 @@ describe("OpenAI Integration Agents", () => {
           },
         ],
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
@@ -155,7 +140,7 @@ describe("OpenAI Integration Agents", () => {
 
     it("falls back to parsing output_text if function_call missing", async () => {
       // Override the default OpenAI mock just for this test
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "output_text",
@@ -167,6 +152,8 @@ describe("OpenAI Integration Agents", () => {
           },
         ],
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
@@ -182,7 +169,7 @@ describe("OpenAI Integration Agents", () => {
 
     it("handles malformed JSON in output_text gracefully", async () => {
       // Override the OpenAI mock to return invalid JSON text
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "output_text",
@@ -190,6 +177,8 @@ describe("OpenAI Integration Agents", () => {
           },
         ],
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
@@ -206,7 +195,7 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("handles empty qa_pairs array gracefully", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "function_call",
@@ -217,6 +206,8 @@ describe("OpenAI Integration Agents", () => {
           }
         ]
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
@@ -236,7 +227,7 @@ describe("OpenAI Integration Agents", () => {
   // -----------------------
   describe("Triage Agent (triage-agent.mjs)", () => {
     it("parses triage assessment from GPT-5 function_call", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "function_call",
@@ -257,6 +248,8 @@ describe("OpenAI Integration Agents", () => {
         ]
       };
 
+      await setupMocks(mockResponse);
+
       const { handler: triageAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/triage-agent.mjs"
       );
@@ -270,7 +263,7 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("falls back to output_text JSON when no function_call provided", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "output_text",
@@ -290,6 +283,8 @@ describe("OpenAI Integration Agents", () => {
         ],
       };
 
+      await setupMocks(mockResponse);
+
       const { handler: triageAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/triage-agent.mjs"
       );
@@ -302,22 +297,16 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("handles malformed JSON response", async () => {
-      vi.doMock("openai", () => ({
-        default: class MockOpenAI {
-          constructor() {
-            this.responses = {
-              create: vi.fn().mockResolvedValue({
-                output: [
-                  {
-                    type: "output_text",
-                    text: "{ triage_summary: 'Bad JSON', priority_score: 10", // ❌ invalid JSON
-                  },
-                ],
-              }),
-            };
-          }
-        },
-      }));
+      const mockResponse = {
+        output: [
+          {
+            type: "output_text",
+            text: "{ triage_summary: 'Bad JSON', priority_score: 10", // ❌ invalid JSON
+          },
+        ],
+      };
+
+      await setupMocks(mockResponse);
 
       const { handler: triageAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/triage-agent.mjs"
@@ -333,7 +322,9 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("handles OpenAI API errors gracefully", async () => {
-      shouldReject = true;
+      const mockResponse = {}; // Not used when rejecting
+
+      await setupMocks(mockResponse, true);
 
       const { handler: triageAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/triage-agent.mjs"
@@ -348,7 +339,7 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("handles missing required fields", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "function_call",
@@ -361,6 +352,8 @@ describe("OpenAI Integration Agents", () => {
           }
         ]
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: triageAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/triage-agent.mjs"
@@ -407,7 +400,7 @@ describe("OpenAI Integration Agents", () => {
   // -----------------------
   describe("Cross-Agent Behaviors", () => {
     it("both agents log OpenAI raw responses", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: [
           {
             type: "function_call",
@@ -418,6 +411,8 @@ describe("OpenAI Integration Agents", () => {
           }
         ]
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
@@ -436,9 +431,11 @@ describe("OpenAI Integration Agents", () => {
     });
 
     it("both agents handle empty OpenAI responses gracefully", async () => {
-      mockResponse = {
+      const mockResponse = {
         output: []
       };
+
+      await setupMocks(mockResponse);
 
       const { handler: quoteAgentHandler } = await import(
         "../../../packages/backend/netlify/functions/quote-agent.mjs"
