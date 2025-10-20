@@ -231,9 +231,6 @@ This document outlines comprehensive manual test scenarios to validate PlumbingP
 
 ### Environment Variables
 Verify production environment has correct values:
-- `VITE_SUPABASE_URL=https://oxoiwzijacglgueemlva.supabase.co`
-- `VITE_FRONTEND_BASE_URL=https://plumbingpoc.netlify.app`
-- `VITE_BACKEND_BASE_URL=https://plumbingpoc.netlify.app`
 
 ## Post-Deployment Monitoring
 - Monitor error logs

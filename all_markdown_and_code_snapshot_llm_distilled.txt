@@ -1,8 +1,8 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-20T21:35:36.244Z
+Generated On: 2025-10-20T21:46:17.305Z
 
-# Mnemonic Weight (Token Count): ~381,994 tokens
+# Mnemonic Weight (Token Count): ~381,883 tokens
 
 # Directory Structure (relative to project root)
   ./.githooks/
@@ -6214,6 +6214,7 @@ This approach provides better isolation between environments, allows for separat
 
 - Task 0055: GitHub Branches and Pipeline Setup
 - Netlify Documentation: Branch Deploys vs. Multiple Sites
+
 --- END OF FILE ---
 
 --- START OF FILE ./agents/AGENT_REPOS.md ---
@@ -16028,6 +16029,7 @@ This is my first time setting up a full CI/CD pipeline, so I'll need detailed gu
 ## Related Tasks
 - Task 0054: Enhanced Status Lifecycle (dependency)
 - Future: Environment-specific database setup
+
 --- END OF FILE ---
 
 --- START OF FILE ./docs/configuring-resend-email.md ---
@@ -31250,24 +31252,22 @@ open cli in terminal
 3. supabase functions deploy geocode
 will say something like
 Deployed Functions on project oxoiwzijacglgueemlva: geocode
-You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/.../functions
 
 4. Set Google Maps API Key in Supabase Secrets
 You need to add your Google Maps API key to Supabase secrets. You can do this through the Supabase Dashboard:
 Go to your project dashboard
 Navigate to Settings → Edge Functions
 Navigate to function secrets
-https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions/secrets
+https://supabase.com/dashboard/project/..../functions/secrets
 Add a new secret:
-Name: GOOGLE_MAPS_API_KEY
-Value: Your Google Maps API key
 
 5. create the external function in supabase.
 code for function see supabase/supabase/functions/index.ts
 call function "geocode"
 note can delete with "supabase functions delete geocode" in cli
 note can test new function in gui.
-Go to your Supabase Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+Go to your Supabase Dashboard: https://supabase.com/dashboard/project/.../functions
 {
   "requestId": "0c4714f8-df2e-41f1-9f60-615b78613cb6"
 } gives result {
@@ -31323,7 +31323,7 @@ BEGIN
         -- Call geocoding function (ignore response to avoid field errors)
         PERFORM http((
             'POST',
-            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            'https://...supabase.co/functions/v1/geocode',
             ARRAY[
                 http_header('Authorization', 'Bearer ' || service_role_key),
                 http_header('Content-Type', 'application/json')
@@ -43041,9 +43041,6 @@ This document outlines comprehensive manual test scenarios to validate PlumbingP
 
 ### Environment Variables
 Verify production environment has correct values:
-- `VITE_SUPABASE_URL=https://oxoiwzijacglgueemlva.supabase.co`
-- `VITE_FRONTEND_BASE_URL=https://plumbingpoc.netlify.app`
-- `VITE_BACKEND_BASE_URL=https://plumbingpoc.netlify.app`
 
 ## Post-Deployment Monitoring
 - Monitor error logs
