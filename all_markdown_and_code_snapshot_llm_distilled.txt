@@ -1,15 +1,14 @@
 # All Markdown Files Snapshot (LLM-Distilled)
 
-Generated On: 2025-10-15T05:54:29.240Z
+Generated On: 2025-10-20T21:35:36.244Z
 
-# Mnemonic Weight (Token Count): ~373,879 tokens
+# Mnemonic Weight (Token Count): ~381,994 tokens
 
 # Directory Structure (relative to project root)
   ./.githooks/
   ./.githooks/pre-commit.sh
   ./.github/
   ./.github/copilot-instructions.md
-  ./.github/workflows/
   ./.netlify/
   ./.netlify/blobs-serve/
   ./.netlify/functions-internal/
@@ -66,6 +65,7 @@ Generated On: 2025-10-15T05:54:29.240Z
   ./adrs/030-domain-registration-and-dns-hosting-strategy.md
   ./adrs/031-choice-of-secrets-detection-implementation.md
   ./adrs/032-choice-of-environment-controlled-logging-system.md
+  ./adrs/033-choice-of-netlify-environment-deployment-strategy.md
   ./agents/
   ./agents/AGENT_REPOS.md
   ./agents/README2.md
@@ -102,6 +102,10 @@ Generated On: 2025-10-15T05:54:29.240Z
   ./docs/CONSULTANT_02_CLIENT_PROPOSAL_TEMPLATE.md
   ./docs/CONSULTANT_03_DEPLOYMENT_CHECKLIST.md
   ./docs/CONSULTANT_04_MASTER_DEPLOYMENT_GUIDE.md
+  ./docs/ConsultantPlanning/
+  ./docs/ConsultantPlanning/consulting_launch_blueprint.md
+  ./docs/ConsultantPlanning/email_template.md
+  ./docs/ConsultantPlanning/transcript.md
   ./docs/DEVELOPMENT_ENVIRONMENT_SETUP.md
   ./docs/DataContracts.md
   ./docs/FutureRoadmap.md
@@ -117,7 +121,15 @@ Generated On: 2025-10-15T05:54:29.240Z
   ./docs/SECURITY.md
   ./docs/SMS_TROUBLESHOOTING.md
   ./docs/TWILIO_AND_NETLIFY_SETUP.md
+  ./docs/Tasks/
+  ./docs/Tasks/blocked/
+  ./docs/Tasks/in-progress/
+  ./docs/Tasks/in-progress/0055-github-branches-pipeline.md
+  ./docs/Tasks/planned/
+  ./docs/Tasks/to-do/
   ./docs/configuring-resend-email.md
+  ./docs/requirements/
+  ./docs/requirements/PlumbingAgentRequirements.md
   ./environments/
   ./netlify.toml
   ./package.json
@@ -542,7 +554,8 @@ exit 0
 			"postalCode": "V5Z"
 		},
 		"timestamp": 1757797437797
-	}
+	},
+	"siteId": "519d1900-3b81-498b-a924-185a80c87516"
 }
 --- END OF FILE ---
 
@@ -1830,6 +1843,7 @@ sequenceDiagram
     deactivate Supabase Realtime Server
 ```# Test commit to trigger Netlify deployment
 # Force deployment trigger - Thu Oct  9 07:47:11 PDT 2025
+# Trigger deploy
 
 --- END OF FILE ---
 
@@ -6152,6 +6166,54 @@ We will implement a centralized logging utility (`packages/frontend/src/lib/logg
     *   **Third-party Logging Libraries:** Libraries like Winston or Pino - rejected due to added complexity and dependencies for a frontend application
     *   **Build-time Logging Removal:** Using build tools to strip logging in production - rejected due to need for runtime logging control and debugging capabilities
 
+--- END OF FILE ---
+
+--- START OF FILE ./adrs/033-choice-of-netlify-environment-deployment-strategy.md ---
+
+# ADR-033: Choice of Netlify Environment Deployment Strategy
+
+## Status
+
+Accepted
+
+## Context
+
+The PlumbingPOC project requires separate environments for development, testing, and production to ensure safe deployment and testing of changes. The existing production site is already set up on Netlify connected to the main branch. We need to decide how to handle deployments for dev and test branches, weighing the options of adding branch deploys to the existing site versus creating separate sites for each environment.
+
+## Decision
+
+We will create separate Netlify sites for each environment:
+- Production: Connected to main branch (existing site)
+- Test: Connected to test branch (new site)
+- Dev: Connected to dev branch (new site)
+
+This approach provides better isolation between environments, allows for separate domains/subdomains, and enables environment-specific configurations (e.g., different environment variables).
+
+## Consequences
+
+- **Positive:**
+  - Clear separation of concerns: Dev, test, and prod environments are completely isolated
+  - Easier testing and debugging: Changes in dev/test don't risk affecting production
+  - Flexible configuration: Each site can have its own build settings, environment variables, and domains
+  - Better CI/CD integration: GitHub Actions can deploy to specific sites based on branch
+
+- **Negative:**
+  - Additional setup complexity: Requires creating and managing multiple Netlify sites
+  - Potential cost: Multiple sites may exceed free tier limits (though Netlify's free plan allows 1 site per account, additional sites require paid plans)
+  - More secrets to manage: Each site needs its own Site ID and potentially separate auth tokens
+
+- **Risks:**
+  - None significant, as the existing production site remains untouched during setup
+  - If free tier limitations are hit, we can consolidate or upgrade as needed
+
+## Alternatives Considered
+
+- **Branch deploys on single site:** Add dev and test branches to the existing production site. This is simpler but risks mixing environments and could temporarily affect the live site with untested changes.
+
+## References
+
+- Task 0055: GitHub Branches and Pipeline Setup
+- Netlify Documentation: Branch Deploys vs. Multiple Sites
 --- END OF FILE ---
 
 --- START OF FILE ./agents/AGENT_REPOS.md ---
@@ -11147,6 +11209,392 @@ Complete AI-powered business management platform for the cost of 1-2 service cal
 
 --- END OF FILE ---
 
+--- START OF FILE ./docs/ConsultantPlanning/consulting_launch_blueprint.md ---
+
+# 72-Hour Consulting Launch: Mission Blueprint
+**Version:** 6.0 (Full Arsenal Showcase)
+**Codename:** Operation Overmatch
+**Objective:** Secure a high-value barter agreement by demonstrating an overwhelmingly superior, end-to-end client management solution to a local tradesperson in Victoria, B.C.
+
+---
+
+## I. Mission Profile & Strategy
+
+*   **Primary Target:** Owner-operated local trades & home service businesses.
+*   **Core Pain Point:** Wasting billable hours on unqualified leads, losing jobs due to slow quoting, and lacking a central system to track jobs from intake to completion.
+*   **Your Solution (The Weapon):** A fully functional Proof of Concept of an **AI-Powered Client Management Platform**. This is not a demo; it is a working, end-to-end application with a database backend, multi-provider authentication, file uploads, and an internal command center.
+*   **Acquisition Tactic (Shock & Awe):**
+    1.  Lead with your most impressive asset to immediately establish yourself as a high-tier expert.
+    2.  Demonstrate undeniable, end-to-end value by showing how your platform automates their *entire* client intake and management process.
+    3.  Frame the barter offer as a unique, one-time opportunity for them to acquire a complete business operating system that puts them years ahead of their competition.
+*   **Authority Signal:** A powerful, 2-minute "Full Arsenal" video demo of your working application.
+
+---
+
+## II. Execution Plan: Tactical Breakdown
+
+### **Day 1: FORGE A SUPERIOR WEAPON (40 Hours) — ✅ COMPLETED**
+
+You have successfully forged a complete, end-to-end client management platform. This far exceeds the original objective and provides a decisive strategic advantage.
+
+---
+
+### **Day 2: PACKAGE THE ASSET & HUNT (12 Hours)**
+
+**Objective:** Package your advanced POC into a compelling sales weapon and deploy it.
+
+**🎯 Full Arsenal Video Demo:** https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+**2. Update the "Operation Overmatch" Blueprint.**
+
+The blueprint's core tactic is sound, but the timing was too aggressive. We will update it to reflect the nature of the asset you have created.
+
+---
+
+### Updated `consulting_launch_blueprint.md`
+
+Here is the revised "Package the Asset" section. I have updated the time, refined the shot descriptions to match what you've recorded, and updated the email script.
+
+*   **Hours 1-4: Package the Asset**
+    *   `[✅]` **Record the "Full Arsenal" Product Tour (Target: ~5 Minutes):** Use Loom. The recording should be a smooth, professional walkthrough that tells a complete end-to-end story.
+        *   **Chapter 1: The Seamless Customer Experience**
+            *   Show the professional landing page and the "Request a Quote" flow.
+            *   Demonstrate the effortless login process (e.g., Google).
+            *   Walk through the intelligent, conversational AI intake, including answering questions and **uploading a photo** of the issue.
+            *   Show the final, clean summary and the "Submitted" confirmation.
+        *   **Chapter 2: The Owner's Command Center**
+            *   Switch views to the **Admin Dashboard**. Show the new request appearing at the top **in real-time**.
+            *   Execute the **AI Triage**, explaining how it saves time by summarizing the job and assigning priority scores.
+            *   Open the request details. Tour the "Job Docket," showing all the customer's answers, the uploaded photo, and the communication log.
+            *   Demonstrate creating a quote and changing the job status.
+        *   **Chapter 3: The Real-time Client Portal**
+            *   Switch back to the customer's "My Requests" view and show the new quote and status appearing **instantly without a refresh**.
+            *   Demonstrate the live chat by sending a message from the admin and showing it appear immediately for the customer.
+    *   `[✅]` **Host the Video:** Use the direct Loom share link: `https://www.loom.com/share/1ead7162412140bea1f46988af675adf`
+    *   `[✅]` **Build the One-Page Showcase:** Use Carrd. The existing blueprint copy is perfect. https://plumbingai.carrd.co/
+
+---
+
+*   **Hours 5-12: Build Target List & Execute Outreach**
+    *   `[ ]` This part of the plan remains unchanged. Compile the list of 50 businesses and execute the outreach using the existing, high-quality email script.
+
+### Upgraded Email Script (v6.1) - Ready to Send
+
+This version pre-frames the video length and emphasizes the end-to-end nature of the solution.
+
+**Copy-Paste Ready Email Template:**
+
+```
+Subject: Trade proposal - AI plumbing platform for service work?
+
+Hi,
+
+You did some plumbing work for me a couple of years ago. You did the plumbing work for my ensuite bathroom reno - 1517 San Juan Ave.
+
+I'm looking to do some side work, and was wondering if we could work out some sort of trade.
+
+As a side job, I developed a proof-of-concept site for an AI enabled plumbing business command center. It's much more of a complete client management system for a trades business, rather than a simple website with a contact form.
+
+Imagine your customer can go and request a job quote, but instead of just providing information in an email form, an AI agent guides them through some questions relevant to their type of request, to get the type of information you need to give a quote. After they submit the quote request through website (using their computer or phone), you receive an SMS message indicating a request for quote was received. You open your "command center", you can view all the answers to their questions, see any pictures they've attached, and you can send them a quote, that would send them an SMS message as well.
+
+You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
+
+I made a 5-minute tour showing exactly how this end-to-end system works:
+https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+You can also try the client experience yourself at:
+https://plumbingpoc.netlify.app/
+
+Feel free to register/sign in (using your Microsoft or Gmail account) and go through requesting a quote - you'll see how the AI guides customers through the questions and how they can upload photos of their plumbing issues. I can show you the business owner side separately if you're interested - that's where you'd see all the incoming requests, use the AI triage, send quotes, etc.
+
+Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I remember from our conversations you also do gas installs too in addition to plumbing, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
+
+If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
+
+Thanks,
+Richard Fremmerlid
+2508857003
+```
+
+---
+
+### **Day 3: ENGAGE, CLOSE, & UPSELL (12 Hours)**
+
+**Objective:** Convert interest into a high-value agreement by demonstrating overwhelming value and a clear future roadmap.
+
+*   **Hours 1-4: Follow-up & Response Management**
+    *   `[ ]` Unchanged. Execute as planned.
+
+*   **Hours 5-12: Conduct Discovery Calls & Close (with Hardened Script)**
+    *   `[ ]` Get on the phone/Zoom with interested prospects.
+    *   `[ ]` **Follow the Hardened Call Script v6.0:**
+        1.  **Rapport (2 mins):** Unchanged. Build connection.
+        2.  **Diagnose Pain (5 mins):** Unchanged. Let them articulate their frustrations.
+        3.  **Present Solution - "Full Arsenal" (3 mins):** "That's the exact problem I built this to solve, from end to end." Share your screen and play your **2-minute "Full Arsenal" demo**. Narrate it, emphasizing the AI Triage and the seamless admin dashboard. "This isn't just a contact form; it's a complete command center for your business."
+        4.  **The Upsell - Introduce the "Automation & Growth Engine":** "What I've just shown you is the core operating system. As part of our partnership, we would enable the **'Automation & Growth Engine.'** This is where the system starts working for you proactively."
+            *   **Automated Follow-ups:** "Imagine the system automatically sending polite follow-up emails to clients who haven't responded to a quote, saving you hours of administrative work."
+            *   **Automated Invoicing:** "Once a job is marked 'Completed,' the system can automatically generate a professional PDF invoice and email it to the client."
+            *   **Business Intelligence:** "It can even export all your job data to Excel or Google Sheets, giving you a clear overview of your revenue, job types, and most profitable clients."
+        5.  **Frame the Partnership (3 mins):** "A complete, custom end-to-end system like this—the AI-powered front door, the internal command center, *and* the future automation engine—is a project I would typically scope at **$15,000-$20,000**. But I'm more interested in building a long-term partnership. What I need done initially is a tankless gas hot water heater installation in my garage - equipment, gas line hookup from the crawlspace, proper venting, and conversion from my current electric tank system. I'm estimating that's around **$5,000-$6,000** in equipment and labor. But here's the real value: as your business grows and you want customizations, new features, or updates to the platform, we can continue trading services. You get ongoing tech support and development, I get access to quality plumbing expertise when I need it. This could be a mutually beneficial relationship that grows over time."
+        6.  **Pivot to Cash (if needed):** Unchanged. The pilot program offer is a strong fallback.
+        7.  **Close the Deal:** Unchanged. Draft the agreement outlining the full scope.
+
+--- END OF FILE ---
+
+--- START OF FILE ./docs/ConsultantPlanning/email_template.md ---
+
+# Email Templates for Plumbing Business Outreach
+
+## Template 1: Professional Value-Focused Approach
+
+**Subject:** A better way to manage jobs at [Business Name]?
+
+**Hi [Owner's Name],**
+
+My name is Richard Fremmerlid, and I'm a Victoria-based tech consultant. I build software for local trades businesses that solves the biggest headaches I hear about: wasting time, losing jobs, and disorganized communication.
+
+I've built a complete "Command Center" platform that I believe can give you back hours every week.
+
+Instead of a long explanation, here's a 5-minute video tour showing exactly how it works:
+
+**[Click Here to Watch the 5-Minute Demo](https://www.loom.com/share/1ead7162412140bea1f46988af675adf)**
+
+*Video highlights: AI-powered quote intake, interactive Map View with job locations, one-click AI Triage, and the complete Command Center workflow.*
+
+You can try out the site yourself here:  [https://copilotfortrades.com/](https://copilotfortrades.com/)
+
+---
+
+Here are the specific problems this system is built to solve:
+
+*   **Problem: Wasting billable hours on unqualified leads?**
+    *   **✅ Solved.** An AI assistant asks all the right questions up front, delivering perfectly qualified leads directly to your dashboard. No more 15-minute phone calls just to get basic info.
+
+*   **Problem: Losing jobs because quoting is slow or details are scattered?**
+    *   **✅ Solved.** The Command Center organizes every detail—customer info, photos, and even an AI-generated summary—into one place. You can create and send professional quotes in minutes, not hours.
+
+*   **Problem: Wasting hours driving between jobs?**
+    *   **✅ Solved.** The interactive Map View plots all your jobs geographically. Instantly see nearby jobs and optimize your daily route.
+
+---
+
+This platform is ready to go today, but it's also a foundation we can easily build on. Once the core system is in place, we can quickly enable features like **instant SMS alerts** for new leads, **automated quote follow-ups**, and **online credit card payments** via Stripe.
+
+**A Unique Opportunity:**
+
+I'm looking to get a tankless gas hot water heater installed in my garage. I know many plumbing businesses also do gas installs, and I'm interested in establishing a partnership where we can trade services. You get a cutting-edge business platform, and I get access to quality plumbing expertise.
+
+If you have 5 minutes to watch the video, I'm confident you'll see a tool that could become the engine for your business's growth for years to come.
+
+Would you be open to a quick chat about it?
+
+Thanks,
+
+**Richard Fremmerlid**
+250-885-7003
+Victoria, B.C.
+
+---
+
+## Template 2: Direct Trade Proposal Approach
+
+**Subject:** Trade proposal - AI plumbing platform for service work?
+
+**Hi [Business Owner's Name],**
+
+I'm looking to do some side work, and was wondering if we could work out some sort of trade.
+
+As a side job, I developed a proof-of-concept site for an AI enabled plumbing business command center. It's much more of a complete client management system for a trades business, rather than a simple website with a contact form.
+
+Imagine your customer can go and request a job quote, but instead of just providing information in an email form, an AI agent guides them through some questions relevant to their type of request, to get the type of information you need to give a quote. After they submit the quote request through website (using their computer or phone), you receive an SMS message indicating a request for quote was received. You open your "command center", you can view all the answers to their questions, see any pictures they've attached, and you can send them a quote, that would send them an SMS message as well.
+
+You can see all your quote requests, approved quotes, scheduled jobs, etc. It's actually quite smart.
+
+I made a 5-minute tour showing exactly how this end-to-end system works:
+https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+
+You can also try the client experience yourself at:
+https://copilotfortrades.com
+
+Feel free to register/sign in (using your Microsoft or Gmail account) and go through requesting a quote - you'll see how the AI guides customers through the questions and how they can upload photos of their plumbing issues. I can show you the business owner side separately if you're interested - that's where you'd see all the incoming requests, use the AI triage, send quotes, etc.
+
+Here's the unique part: I'm looking to get a tankless gas hot water heater installed in my garage at some point in the future. I know many plumbing businesses also do gas installs, and I'm interested in establishing a partnership where we can trade services. I'm thinking this could be the start of an ongoing relationship - you get a cutting-edge business platform, and I get access to quality plumbing expertise as needed.
+
+If you have 5 minutes, I think you'll see something that could put you years ahead of your competition.
+
+Thanks,
+Richard Fremmerlid
+2508857003
+
+---
+
+## Template 3: Bridgeman Plumbing - Personalized Legacy Approach
+
+**TO:** info@bridgemanplumbing.ca
+
+**Subject:** AI Plumbing Platform for Bridgeman Plumbing
+
+**Hi Bridgeman team,**
+
+My name is Richard Fremmerlid. I was searching for a top-rated local company plumbing and gas fitting company. I see you've been operating in Victoria for over 30 years.
+
+This might be a different kind of email than you usually get. By day, I work in IT for the government. As a personal project, I build software that automates many of the most time-consuming parts of running a trades business.
+
+The system I created gives you a central place to manage the entire lifecycle of a job from the initial customer request for a quote all the way to final payment. It leverages the power of AI, more specifically a conversational AI agent to ask questions about their problem or need to qualify leads, this lets you quote jobs in minutes, add quotes to those requests, track all your work, and even shows you a map of all your scheduled work to help optimize your routes.
+
+Instead of a long explanation, here's a 5-minute video showing the complete workflow (both the customer experience and your admin view):
+
+**[Click Here to Watch the 5-Minute Demo](https://www.loom.com/share/1ead7162412140bea1f46988af675adf)**
+
+You can also try the customer experience yourself on the live site:
+**[Explore the Live Site](https://copilotfortrades.com)**
+
+Here are the specific problems this system is built to solve:
+
+**Stop Wasting Time on the Phone:** An AI assistant asks all the right questions, gets photos of the issue, and delivers a perfectly qualified lead. No more 15-minute calls just to find out it's a small, unqualified job.
+
+**Get Instant SMS Alerts for New Leads:** The moment a customer submits a request, your phone gets a text. Being the first to respond is the best way to win the job.
+
+**Track Every Job in One Place:** See the entire history—from the first AI conversation to the final quote—all organized and instantly accessible. Never lose a detail again.
+
+**Optimize Your Day with a Map View:** See all your jobs plotted on an interactive map, helping you plan the most efficient routes and cut down on fuel and drive time.
+
+**A Straightforward Proposal:**
+
+My main goal with this project is to build a long-term relationship with a trusted local plumber for future work at my home. In the near future, I'll be looking at projects like replacing my hot water tank.
+
+Thanks for your time,
+
+**Richard Fremmerlid**
+250-885-7003
+Victoria, B.C.
+
+---
+
+## Usage Notes
+
+### When to Use Each Template:
+
+**Template 1 (Professional Value-Focused):**
+- For businesses you've never contacted before
+- When you want to emphasize business value and ROI
+- More formal, consultant-style approach
+- Good for larger or more established businesses
+
+**Template 2 (Direct Trade Proposal):**
+- When you want to immediately propose the trade arrangement
+- More casual, side-work positioning
+- Good for smaller local businesses
+- Creates urgency around the trade opportunity
+
+**Template 3 (Personalized Legacy Approach):**
+- For established businesses with rich history (like Bridgeman's 100+ years)
+- When you can reference specific details from their website
+- Emphasizes partnership with established professionals
+- Perfect for businesses with strong community reputation and extensive service areas
+
+### Customization Tips:
+- Replace [Business Name] and [Owner's Name] with actual details
+- Update the Loom link if you create a new demo
+- Modify the trade proposal based on what service you actually need
+- Consider localizing the phone number format if sending outside BC
+
+### Follow-up Strategy:
+- Send initial email with demo link
+- Follow up in 3-5 days if no response
+- Offer to schedule a call to show the business owner side
+- Have the trade proposal ready to discuss
+
+### Key Links to Include:
+- Demo Video: https://www.loom.com/share/1ead7162412140bea1f46988af675adf
+- Live Client Experience: https://copilotfortrades.com
+- Your Contact: 250-885-7003
+
+--- END OF FILE ---
+
+--- START OF FILE ./docs/ConsultantPlanning/transcript.md ---
+
+### **"Full Arsenal" Demo Script (v2.0 - Complete Workflow & Advanced Features)**
+
+**Total Estimated Time:** ~4.0 - 5.0 minutes
+
+**Instructions:**
+*   Have your two browser windows open and ready: **Customer View** (logged out) and **Admin View** (logged in).
+*   Speak clearly and naturally. Imagine you're showing this to a friend who runs a plumbing business.
+*   Follow the **[ACTION]** cues precisely.
+*   **NEW in v2.0:** Enhanced map view with custom styling, advanced filtering (status/emergency/schedule), complete workflow tracking, optimized table layout, and mobile-responsive design.
+---
+**(Start Recording)**
+**(Shot 1: Customer Experience - Start on your landing page)**
+"Hi, I wanted to show you a quick look at an AI-powered system I've built to help local trades businesses save time and win more jobs."
+"This is the professional homepage your customers would see. Let's walk through how a new customer requests a quote."
+**[ACTION]: Click "Request a Quote".**
+"First, the customer can sign in instantly and securely using their own Google or Microsoft accounts, or a standard email and password. There's no new account for them to manage."
+**[ACTION]: Click "Continue with Google" and quickly complete the login.**
+"Once they're in, they start a conversation with your AI assistant. The assistant's first job is to understand exactly what they need."
+**[ACTION]: Select a service category, like "Perimeter Drains".**
+"The AI starts with the standard questions for that service. But here's where it gets smart."
+**[ACTION]: Answer the initial questions quickly.**
+*(Pause for a moment as the "Thinking..." message appears)*
+"Right now, the AI is analyzing the customer's answers. It understands the context and generates intelligent, follow-up questions to get all the details you'd normally have to ask over the phone."
+**[ACTION]: Show the new AI-generated questions appearing. Answer them.**
+"The customer can also upload photos of the problem area directly from their phone or computer, which gives you eyes on the job before you even send a quote."
+**[ACTION]: Upload a dummy photo file.**
+"Finally, the system gives them a clean summary to review. Once they confirm, the job is done for them, and you get a perfect lead."
+**[ACTION]: Click "Confirm & Submit Request". Show the "Thank you" screen.**
+"Right at this moment, you're getting an instant SMS alert on your phone about this new lead, so you can respond immediately while it's still hot."
+---
+**(Shot 2: Owner's Experience - Switch to your Admin Browser Window)**
+"Now, let's look at what you see as the business owner. This is your command center."
+**[ACTION]: Refresh the Admin Dashboard. The new request should appear at the top of the Table View.**
+"The new request from our customer appears instantly at the top of your job list. You can see all your jobs here, but the real power comes from visualizing them."
+**[ACTION]: Click the "Map" toggle at the top of the dashboard to switch to Map View.**
+"With one click, your entire workload is plotted on a map with a clean, professional interface. **No more manually typing addresses into Google Maps at the end of the day.**"
+**[ACTION]: Zoom in and out on the map to show how the pins cluster together.**
+"You can instantly see which jobs are in the same neighborhood so you can plan the most efficient route. **This is how you turn wasted drive time back into billable hours.**"
+**[ACTION]: Point out the color-coded pins - blue for new, yellow for viewed, orange for quoted, green for accepted, etc.**
+"Each pin color tells you the exact status at a glance - no need to click to see if it's been quoted or scheduled."
+**[ACTION]: Demonstrate the advanced filtering controls at the top.**
+"Want to focus on today's work? Use the Schedule filter to show only jobs scheduled for today. Need to see emergencies only? Toggle the emergency filter. The system gives you surgical precision over your workload."
+**[ACTION]: Click on one of the new pins to open the info window.**
+"And from the map, you can get a quick look at the job details and jump right into the full docket."
+**[ACTION]: Click the "View Full Job Docket" button from inside the map's info window. This should open the modal directly.**
+"But first, let me show you the improved table view that makes triage even faster."
+**[ACTION]: Switch back to Table view to demonstrate the optimized layout.**
+"The table is now organized by priority - status first, then AI priority score, then urgency flags. You can see at a glance which jobs need attention and which are emergencies."
+**[ACTION]: Point out the color-coded status chips and the clean null value handling.**
+"Now let's see the complete workflow in action. Inside the docket, everything is perfectly organized. But before you even read the details, you have an AI partner."
+**[ACTION]: Click the "AI Triage" button. Let the results appear.**
+"With one click, your AI assistant analyzes the entire request and gives you a triage summary and a priority score, so you know instantly if this is a high-value job that needs your attention now."
+**[ACTION]: Scroll down through the Job Docket modal, showing the organized sections: customer answers, photos, etc.**
+"You've got everything you need right here—no more juggling texts, emails, or notepads. From here, you can add your official quote..."
+**[ACTION]: Quickly create a simple quote. Change the status from "New" to "Quoted".**
+"...and with that, a professional quote is sent, and the customer is notified. The whole process, from new lead to quote sent, takes about 90 seconds."
+**[ACTION]: Demonstrate the complete workflow by showing how the status automatically updates when the customer views the quote.**
+"When the customer opens their portal to review the quote, the system automatically changes the status from 'Quoted' to 'Viewed' - no manual intervention needed. This gives you perfect visibility into customer engagement."
+**[ACTION]: Briefly switch back to the Customer View and refresh the "My Requests" page to show the new "Quoted" status appearing instantly.**
+"And the customer sees that update in their portal in real-time, which gives them the confidence that you're on top of it."
+"When the customer accepts your quote, you'll get another SMS alert instantly, so you can start scheduling the job right away. The system tracks the complete lifecycle: New → Quoted → Viewed → Accepted → Scheduled → Completed."
+---
+
+**(Final Shot: Back on Admin View, ready to close)**
+**YOU:**
+"So, in under five minutes, the system:
+- **Handled a new lead** with an AI assistant that generates intelligent follow-up questions,
+- **Sent you an instant SMS alert** about the new opportunity,
+- **Showed you exactly where it is** on a clean, color-coded map with advanced filtering,
+- **Analyzed and prioritized it for you** with AI Triage and priority scoring,
+- Let you send a **professional quote in seconds** with itemized pricing,
+- **Tracked the complete workflow** from new → quoted → viewed → accepted → scheduled → completed,
+- **Provided advanced filtering** by status, emergencies, and schedule dates,
+- **Optimized your table view** with priority-based column ordering and visual status indicators,
+- And **ensured mobile accessibility** so you can manage jobs from anywhere... all without a single back-and-forth phone call."
+"This is the kind of comprehensive tool that transforms how trades businesses operate, saving hours every week on calls, drive time, and paperwork while providing a competitive edge."
+
+**(End Recording)**
+
+--- END OF FILE ---
+
 --- START OF FILE ./docs/DEVELOPMENT_ENVIRONMENT_SETUP.md ---
 
 # Development Environment Setup & Troubleshooting
@@ -15473,6 +15921,115 @@ Your work is now done. Provide this guide and the following technical specificat
 
 --- END OF FILE ---
 
+--- START OF FILE ./docs/Tasks/in-progress/0055-github-branches-pipeline.md ---
+
+# Task 0055: Setup GitHub Branches and Deployment Pipeline
+
+**Status:** In Progress
+**Priority:** High
+**Created:** 2025-10-20
+**Assignee:** Richard Fremmerlid
+
+## Current Status: Development Mode Workaround
+
+**Branch Protection Issue:** GitHub Free doesn't enforce branch protection on private repos. Need GitHub Pro ($4/month) for full enforcement.
+
+**Temporary Solution:** Set up pipeline structure without strict enforcement. Add branch protection later when upgrading to Pro.
+
+**Important Context:** Existing Netlify site already deploys from main branch automatically. Will keep as production site and create separate sites for dev/test.
+
+## Overview
+Set up a proper Git branching strategy and CI/CD pipeline for the PlumbingPOC project with dev/test/production environments.
+
+## Requirements
+
+### Branch Structure
+- `main` - Production branch (protected, only accepts PRs from test)
+- `test` - Staging/testing branch (protected, only accepts PRs from dev)
+- `dev` - Development branch (accepts direct pushes for rapid development)
+
+### Deployment Pipeline
+1. **Dev Environment**: Automatic deployment on every push to `dev` branch
+2. **Test Environment**: Deploy via PR from `dev` → `test`
+3. **Production Environment**: Deploy via PR from `test` → `main`
+
+### GitHub Actions Workflow
+- Automated testing on all branches
+- Build verification before deployment
+- Environment-specific configurations
+- Rollback capabilities
+
+### Environment Setup
+- **Dev**: `dev.copilotfortrades.com` (Netlify)
+- **Test**: `test.copilotfortrades.com` (Netlify)
+- **Prod**: `copilotfortrades.com` (Netlify)
+
+## Acceptance Criteria
+- [x] Dev branch created and configured
+- [x] Test branch created and configured
+- [x] Main branch protection rules updated
+- [x] GitHub Actions workflow created for CI/CD
+- [ ] Netlify dev site created and configured
+- [ ] Netlify test site created and configured
+- [ ] Netlify production site created and configured
+- [ ] Environment variables configured for all Netlify sites
+- [ ] Custom domains set up for dev/test/prod environments
+- [ ] Build settings configured for each Netlify site
+- [ ] Dev environment deploys automatically
+- [ ] Test environment deploys via PR approval
+- [ ] Production environment deploys via PR approval
+- [ ] All environments have proper domain configuration
+- [ ] Rollback procedures documented
+
+## Technical Details
+
+### Branch Protection Rules
+**Test Branch:**
+- Require PR reviews (1 reviewer)
+- Require status checks to pass
+- Restrict pushes to maintainers only
+
+**Main Branch:**
+- Require PR reviews (2 reviewers)
+- Require status checks to pass
+- Require branch to be up to date
+- Restrict pushes to maintainers only
+
+### Environment Variables
+Each environment needs specific configuration:
+- Database URLs
+- API keys (different for each env)
+- Domain configurations
+- Feature flags
+
+### Testing Strategy
+- Unit tests run on every push
+- Integration tests run on dev/test branches
+- E2E tests run on test branch before production
+
+## Dependencies
+- Netlify accounts configured for multiple sites
+- Domain setup for subdomains
+- Environment-specific secrets configured in GitHub
+
+## Estimated Effort
+- Setup: 4-6 hours
+- Testing: 2-3 hours
+- Documentation: 1-2 hours
+- **Total: 7-11 hours**
+
+## Notes
+This is my first time setting up a full CI/CD pipeline, so I'll need detailed guidance on:
+- GitHub Actions workflow syntax
+- Netlify deployment configuration for multiple environments
+- Branch protection rule setup
+- Environment variable management across branches
+
+## Related Tasks
+- Task 0054: Enhanced Status Lifecycle (dependency)
+- Future: Environment-specific database setup
+--- END OF FILE ---
+
 --- START OF FILE ./docs/configuring-resend-email.md ---
 
 # How to Configure Resend for Email Sending on Netlify
@@ -15539,6 +16096,55 @@ If you still cannot verify, open a support ticket with Resend and include the DN
 ---
 
 If you'd like, I can create a short script or a checklist to export Netlify DNS records for auditing, or add an entry to `docs/OPS.md` showing who owns the registrar and Netlify accounts and where to find MFA/contact info.
+
+--- END OF FILE ---
+
+--- START OF FILE ./docs/requirements/PlumbingAgentRequirements.md ---
+
+# Plumbing Quote Agent Requirements
+
+## 1. User Registration & Profile
+- Users must register and be signed in to request a quote.
+- The agent pulls contact info from the user profile to complete the quote request.
+- A profile with contact info is required.
+
+## 2. Efficient Questioning & Cost Reduction
+- The agent reduces chattiness with GPT-4 to minimize API costs.
+- Common questions are anticipated and built into the app.
+- The first question is: "What would you like a quote for?" (user selects from a list of service types).
+
+## 3. Service Quote Request Types & Common Questions
+- Maintain a separate JSON/TypeScript file of service quote request types (e.g., bathroom reno, perimeter drains, water heater install, etc.).
+- For each type, maintain a list of common anticipated questions. Example for bathroom reno:
+  - What specific fixtures does the homeowner plan to use, or would they like options/recommendations?
+  - Are there any special requirements or features the homeowner is interested in, such as water-saving or smart fixtures?
+  - Is there an existing blueprint or design plan to follow for the renovation?
+  - Will any additional renovations be happening simultaneously that might affect the plumbing work?
+  - Are there any known issues with the existing plumbing that might complicate the renovation process?
+- Maintain similar common questions for other service types.
+
+## 4. Conversational Flow
+- Ask all questions one at a time in a chat-style conversation.
+- Use a text box at the bottom for user answers.
+
+## 5. Profile Data Usage
+- Pull user profile information into the quote request.
+- Do not ask for information already known.
+
+## 6. Privacy & GPT Interaction
+- Do not share personal information (name, phone, email, address) with GPT.
+- Only send context-specific info needed for follow-up questions.
+
+## 7. Packaging & Submitting the Quote
+- Package the quote for GPT with all answers and known info, formatted efficiently.
+- Ask GPT if additional questions are required for the current context.
+- If GPT returns more questions, ask them in the same conversational style (user is unaware they are talking to GPT).
+- Repeat until GPT confirms all key questions are answered.
+
+## 8. Final Summary & Submission
+- Package a summary of the request in a user-readable format, including contact info.
+- Display the summary to the user before submission.
+- On submission, show: "Submitting request for quote. We will get back to you with a quote soon. Thank you very much."
 
 --- END OF FILE ---
 
@@ -17329,25 +17935,45 @@ export {
 import { database as supabase } from '../config/supabase/index.js';
 import { logger } from '../../src/lib/logger.js';
 
-// Import the Netlify function handler to reuse the logic
+// Call the triage-agent as a separate Netlify function for proper logging
 async function runTriageAnalysis(requestData) {
-  // Dynamically import to avoid circular dependencies
-  const { handler } = await import('../../netlify/functions/triage-agent.mjs');
+  const isNetlify = process.env.NETLIFY == true; // Netlify sets this to boolean true
 
-  // Create a mock Netlify event
-  const event = {
-    httpMethod: 'POST',
-    body: JSON.stringify(requestData)
-  };
+  if (isNetlify) {
+    // In production, call the triage-agent as a separate function
+    const response = await fetch('/.netlify/functions/triage-agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
 
-  const result = await handler(event, {});
-  const analysis = JSON.parse(result.body);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Triage analysis failed');
+    }
 
-  if (result.statusCode !== 200) {
-    throw new Error(analysis.error || 'Triage analysis failed');
+    return await response.json();
+  } else {
+    // In local development, import and call directly
+    const { handler } = await import('../../netlify/functions/triage-agent.mjs');
+
+    // Create a mock Netlify event
+    const event = {
+      httpMethod: 'POST',
+      body: JSON.stringify(requestData)
+    };
+
+    const result = await handler(event, {});
+    const analysis = JSON.parse(result.body);
+
+    if (result.statusCode !== 200) {
+      throw new Error(analysis.error || 'Triage analysis failed');
+    }
+
+    return analysis;
   }
-
-  return analysis;
 }
 
 const triageRequest = async (req, res) => {
@@ -19847,9 +20473,9 @@ Return your analysis as a JSON object matching the specified output schema.`;
     const isGpt4oModel = model?.startsWith('gpt-4o');
 
     let response;
-    let maxTokens = 2000;
+    let maxTokens = 4000; // Increased from 2000 to 4000 for more reliable completions
     let retryCount = 0;
-    const maxRetries = 1;
+    const maxRetries = 2; // Increased from 1 to 2 retries
 
     while (retryCount <= maxRetries) {
       if (isGpt5Model) {
@@ -19900,7 +20526,7 @@ Return your analysis as a JSON object matching the specified output schema.`;
       // Check if response is complete for GPT-5 models
       if (isGpt5Model && response.status === 'incomplete' && response.incomplete_details?.reason === 'max_output_tokens' && retryCount < maxRetries) {
         logger.log(`[TriageAgent] Response incomplete due to max_output_tokens, retrying with higher limit. Attempt ${retryCount + 1}/${maxRetries}`);
-        maxTokens = Math.min(maxTokens * 2, 8000); // Double tokens, max 8000
+        maxTokens = Math.min(maxTokens * 2, 16000); // Double tokens, max 16000 (increased from 8000)
         retryCount++;
         continue;
       }
