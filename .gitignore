@@ -1,5 +1,8 @@
 # Local environment variables - IGNORE ALL .env files...
 .env*
+prod_env.env
+dev_env.env
+test_env.env
 # ... but DO NOT ignore the example file.
 !.env.example
 

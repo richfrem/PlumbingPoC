@@ -68,7 +68,9 @@ function appendFileContent(filePath, basePath) {
         'VITE_GOOGLE_MAPS_API_KEY',
         'SUPABASE_SERVICE_ROLE_KEY',
         'SUPABASE_ANON_KEY',
-        'PGPASSWORD'
+        'PGPASSWORD',
+        'NPM_FLAGS',
+        'SUPABASE_URL'
     ];
 
     // Build a regex that matches assignments like KEY=VALUE or KEY: "value"
