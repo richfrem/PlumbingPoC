@@ -125,6 +125,19 @@ Location: Victoria, BC
 
 Need a managed/hosted version or a custom adaptation for another service industry? Reach out.
 
+---
+
+## 📜 License
+
+This project is licensed under the **Creative Commons Attribution 4.0 International License (CC BY 4.0)**.
+You are free to use, modify, and distribute this project — even commercially — as long as proper credit is given.
+
+**Attribution requirement:**
+"Created by [Richard Fremmerlid](https://github.com/richardfremmerlid) — Copilot for Trades (https://copilotfortrades.com)"
+
+© 2025 Richard Fremmerlid
+[View full license →](https://creativecommons.org/licenses/by/4.0/)
+
 
 ---
 
