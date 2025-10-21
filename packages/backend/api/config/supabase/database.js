@@ -11,14 +11,39 @@ import dotenv from 'dotenv';
 try {
   // Only attempt to load .env when the key env vars are missing (local dev)
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const envPath = path.resolve(process.cwd(), '.env');
-    dotenv.config({ path: envPath });
+    // Try multiple likely .env locations so starting from different cwd works
+    const candidatePaths = [
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), '..', '.env'),
+      path.resolve(process.cwd(), '..', '..', '.env'),
+    ];
+
+    let loaded = false;
+    for (const p of candidatePaths) {
+      try {
+        dotenv.config({ path: p });
+        if (process.env.SUPABASE_URL || process.env.SUPABASE_SERVICE_ROLE_KEY) {
+          loaded = true;
+          break;
+        }
+      } catch (e) {
+        // ignore and try next
+      }
+    }
+
+    if (!loaded) {
+      try {
+        dotenv.config();
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Could not load .env using default dotenv behaviour');
+      }
+    }
   }
 } catch (err) {
-  // If anything goes wrong, we continue and let the missing env vars be handled later.
-  // This keeps Netlify Lambdas from failing during init due to import.meta.url usage.
+  // If anything goes wrong, continue and let the missing env vars be handled later.
   // eslint-disable-next-line no-console
-  console.warn('Could not load .env from process.cwd():', err && err.message);
+  console.warn('Could not load .env from candidate paths:', err && err.message);
 }
 
 const supabaseUrl = process.env.SUPABASE_URL;

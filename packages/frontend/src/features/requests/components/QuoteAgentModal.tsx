@@ -1,6 +1,6 @@
 // packages/frontend/src/features/requests/components/QuoteAgentModal.tsx
 // YAML-driven quote intake modal with conversational interface
-
+// date: october 20, 2025 9:19pm
 import React, {
   useCallback,
   useEffect,
@@ -36,7 +36,7 @@ import {
 import { useAuth } from "../../auth/AuthContext";
 import CustomerInfoSection from "./CustomerInfoSection";
 import AttachmentSection from "./AttachmentSection";
-import { uploadAttachments } from "../../../lib/apiClient";
+import apiClient, { uploadAttachments } from "../../../lib/apiClient";
 import { useSubmitQuoteRequest } from "../../../hooks";
 import { services as SERVICE_DEFINITIONS } from "../../../lib/serviceDefinitions";
 import { logger } from '../../../lib/logger';
@@ -282,35 +282,28 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
           throw new Error("Unable to initialize agent session.");
         }
 
-        const response = await fetch(AGENT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [],
-            context: {
-              sessionId: sessionIdRef.current,
-              preselectedService,
-              userId: user?.id,
-              profile: profile
-                ? {
-                    name: profile.name,
-                    email: profile.email,
-                    phone: profile.phone,
-                    address: profile.address,
-                    city: profile.city,
-                    province: profile.province,
-                    postal_code: profile.postal_code,
-                  }
-                : null,
-            },
-          }),
+        // Use apiClient so dev requests go to backend on port 3000
+        const resp = await apiClient.post('/agents/quote/run', {
+          messages: [],
+          context: {
+            sessionId: sessionIdRef.current,
+            preselectedService,
+            userId: user?.id,
+            profile: profile
+              ? {
+                  name: profile.name,
+                  email: profile.email,
+                  phone: profile.phone,
+                  address: profile.address,
+                  city: profile.city,
+                  province: profile.province,
+                  postal_code: profile.postal_code,
+                }
+              : null,
+          },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to start agent conversation.");
-        }
-
-        const data = await response.json();
+        const data = resp.data;
         if (!isCancelled) {
           handleAgentResponse(data);
         }
@@ -372,24 +365,16 @@ export const QuoteAgentModal: React.FC<QuoteAgentModalProps> = ({
           throw new Error("Agent session is not initialized.");
         }
 
-        const response = await fetch(AGENT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: messagesPayload,
-            context: {
-              sessionId: sessionIdRef.current,
-              preselectedService,
-              userId: user?.id,
-            },
-          }),
+        const resp = await apiClient.post('/agents/quote/run', {
+          messages: messagesPayload,
+          context: {
+            sessionId: sessionIdRef.current,
+            preselectedService,
+            userId: user?.id,
+          },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to continue agent conversation.");
-        }
-
-        const data = await response.json();
+        const data = resp.data;
         handleAgentResponse(data);
       } catch (err) {
         console.error("QuoteAgentModal: callAgent error", err);
