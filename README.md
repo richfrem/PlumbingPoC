@@ -383,3 +383,4 @@ sequenceDiagram
     deactivate Supabase Realtime Server
 ```# Test commit to trigger Netlify deployment
 # Force deployment trigger - Thu Oct  9 07:47:11 PDT 2025
+# Trigger deploy

@@ -5,24 +5,22 @@ open cli in terminal
 3. supabase functions deploy geocode
 will say something like
 Deployed Functions on project oxoiwzijacglgueemlva: geocode
-You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/.../functions
 
 4. Set Google Maps API Key in Supabase Secrets
 You need to add your Google Maps API key to Supabase secrets. You can do this through the Supabase Dashboard:
 Go to your project dashboard
 Navigate to Settings → Edge Functions
 Navigate to function secrets
-https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions/secrets
+https://supabase.com/dashboard/project/..../functions/secrets
 Add a new secret:
-Name: GOOGLE_MAPS_API_KEY
-Value: Your Google Maps API key
 
 5. create the external function in supabase.
 code for function see supabase/supabase/functions/index.ts
 call function "geocode"
 note can delete with "supabase functions delete geocode" in cli
 note can test new function in gui.
-Go to your Supabase Dashboard: https://supabase.com/dashboard/project/oxoiwzijacglgueemlva/functions
+Go to your Supabase Dashboard: https://supabase.com/dashboard/project/.../functions
 {
   "requestId": "0c4714f8-df2e-41f1-9f60-615b78613cb6"
 } gives result {
@@ -78,7 +76,7 @@ BEGIN
         -- Call geocoding function (ignore response to avoid field errors)
         PERFORM http((
             'POST',
-            'https://oxoiwzijacglgueemlva.supabase.co/functions/v1/geocode',
+            'https://...supabase.co/functions/v1/geocode',
             ARRAY[
                 http_header('Authorization', 'Bearer ' || service_role_key),
                 http_header('Content-Type', 'application/json')

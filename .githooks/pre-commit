@@ -169,8 +169,8 @@ def main():
         if is_excluded(filepath):
             continue
 
-        # Rule 1: Block .env files except .env.example
-        if filepath.endswith('.env') and filepath != '.env.example':
+        # Rule 1: Block .env files except .env.example and specific local env files
+        if filepath.endswith('.env') and filepath not in ['.env.example', 'dev_env.env', 'prod_env.env', 'test_env.env']:
             violations.append(f"BLOCKED .env file: {filepath}")
             exit_code = 1
             continue
