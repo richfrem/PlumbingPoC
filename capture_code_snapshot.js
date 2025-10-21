@@ -18,13 +18,33 @@ const distilledOutputFile = path.join(projectRoot, 'all_markdown_and_code_snapsh
 const excludeDirNames = new Set([
     'node_modules', '.next', '.git', '.cache', '.turbo', '.vscode', 'dist', 'build', 'coverage', 'out', 'tmp', 'temp', 'logs', '.idea', '.parcel-cache', '.storybook', '.husky', '.pnpm', '.yarn', '.svelte-kit', '.vercel', '.firebase', '.expo', '.expo-shared',
     '__pycache__', '.ipynb_checkpoints', '.tox', '.eggs', 'eggs', '.venv', 'venv', 'env',
-    '.svn', '.hg', '.bzr', 'agents/feedback', 'agents/screenshots', 'playwright-report', 'test-results', 'supabase/.temp'
+    '.svn', '.hg', '.bzr', 'agents/feedback', 'agents/screenshots', 'playwright-report', 'test-results', 'supabase/.temp', 'docs/screenshots', 'agents/screenshots', './agents/feedback', 'tests/__snapshots__', 'tests/e2e/debug', 'tests/e2e/screenshots',
+    './agents/feedback/archive/'
 ]);
 
 // Exclude relative paths from the project root.
 const excludeRelativePaths = [
-    // No top-level paths need to be excluded by default in this project structure.
-    // '.github' would be a good example if you had it.
+    'docs/',
+    'PROMPTS/',
+    'adrs/',
+    'agents/',
+    'tests/',
+    'packages/frontend/node_modules/',
+    'packages/frontend/public/',
+    'docs/screenshots/',
+    'playwright-report/',
+    'test-results/',
+    'supabase/.temp/',
+    'agents/feedback/',
+    'agents/screenshots/',
+    'agents/feedback/archive/',
+    'tests/e2e/debug/',
+    '.netlify/',
+    'packages/frontend/dist/',
+    'packages/backend/dist/',
+    'EXAMPLE_UI_REFERENCE/',
+    'EXAMPLE_UI_REFERENCE2/',
+    'supabase/.temp/'
 ];
 
 const alwaysExcludeFiles = new Set([
@@ -35,11 +55,17 @@ const alwaysExcludeFiles = new Set([
     'capture_code_snapshot.js',
     'package-lock.json', // Exclude lock files as they are very large and machine-generated
     'pnpm-lock.yaml',
-    'yarn.lock'
+    'yarn.lock',
+    '.secrets.baseline',
+    'prod_env.env',
+    'dev_env.env',
+    'test_env.env'
 ]);
 
 // THE FIX: Added '.cjs' to the list of allowed extensions.
 const allowedExtensions = ['.md', '.js', '.ts', '.tsx', '.sh', '.sql', '.cjs', '.mjs', '.json', '.toml', '.yml', '.yaml'];
+
+const excludeExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.bmp', '.tiff', '.ico', '.webp', '.heic', '.heif', '.log', '.zip', '.tar', '.gz', '.rar', '.7z', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.sqlite3', '.db', '.pkl']);
 // --- END CONFIGURATION ---
 
 const fileSeparatorStart = '--- START OF FILE';
@@ -153,6 +179,13 @@ try {
 
             // Rule 5: Only include files with allowed extensions
             if (!allowedExtensions.includes(path.extname(baseName).toLowerCase())) {
+                itemsSkipped++;
+                return;
+            }
+
+            // Rule 6: Exclude files with explicitly excluded extensions
+            const ext = path.extname(baseName).toLowerCase();
+            if (excludeExtensions.has(ext)) {
                 itemsSkipped++;
                 return;
             }
