@@ -13,14 +13,14 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 **Required Accounts/Services:**
 - Domain registrar (Namecheap/Netlify)
 - Google Workspace/Microsoft 365 (email)
-- Netlify Pro (~$25 CAD/month)
+- Netlify Personal/Pro (~$9-20 USD/month per member)
 - Supabase Pro (~$35 CAD/month)
 - OpenAI API (~$10-30 CAD/month)
 - Google Cloud/Maps (~$10-20 CAD/month)
 - Resend Email (~$20 CAD/month)
 - Twilio SMS (~$15-25 CAD/month)
 
-**Total Monthly Cost: ~$115-155 CAD**
+**Total Monthly Cost: ~$99-139 CAD**
 
 ---
 
@@ -55,8 +55,10 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 ### Core Platform Accounts
 - [ ] **Netlify Account:**
   - [ ] Sign up for new account
-  - [ ] Upgrade to Pro Plan (~$25 CAD/month)
-  - [ ] Invite your email as Team Member
+  - [ ] Upgrade to Personal ($9 USD/month) or Pro ($20 USD/month per member) based on team size
+  - [ ] Invite your email as Team Member (if using Pro plan)
+  - [ ] **Plan Selection Guide:** Personal (1,000 credits) for single client deployments, Pro (3,000 credits) for multiple sites or team collaboration
+  - [ ] **Multi-Client Management:** One Personal account can host up to 500 projects - all sharing the same 1,000 credits/month
 - [ ] **Supabase Account:**
   - [ ] Sign up for new account
   - [ ] Create Organization and Project
@@ -274,7 +276,8 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 
 | Service | Monthly Cost (CAD) | Annual Cost (CAD) |
 |---------|-------------------|-------------------|
-| Netlify Pro | $25 | $300 |
+| Netlify Personal | $12 | $144 |
+| Netlify Pro (per member) | $27 | $324 |
 | Supabase Pro | $35 | $420 |
 | OpenAI API | $10-30 | $120-360 |
 | Google Maps | $10-20 | $120-240 |
@@ -282,7 +285,11 @@ This checklist covers everything needed to deploy a fully customized AI-powered 
 | Twilio SMS | $15-25 | $180-300 |
 | Domain | $2 | $20 |
 | Professional Email | $8 | $96 |
-| **TOTAL** | **$115-155** | **$1,380-1,860** |
+| **TOTAL (Personal)** | **$112-142** | **$1,344-1,704** |
+| **TOTAL (Pro)** | **$129-159** | **$1,555-1,904** |
 
 **🎯 Client Value Proposition:**
 Complete AI-powered business management platform for the cost of 1-2 service calls per month.
+
+**💡 Multi-Client Scaling Note:**
+One Personal account supports up to 500 client sites, all sharing 1,000 credits/month. Perfect for growing your deployment business without separate accounts per client.
