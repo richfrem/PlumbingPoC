@@ -3,8 +3,8 @@
 **Copilot for Trades** is an AI-enabled web app I built to automate the unglamorous, time-consuming parts of running a local trade business (plumbing, electrical, HVAC, etc.). It turns a simple website form into a **conversational intake**, centralizes **job & quote management**, auto-generates **invoices**, and supports **SMS notifications** — all in one place.
 
 > 🧑‍💻 **Built by:** *Richard Fremmerlid* — IT professional & AI systems builder based in Victoria, BC.
-> 🌐 Live demo: <!-- Add your live URL if you want -->
-> 📹 5-minute walkthrough: <!-- Add your video link -->
+> 🌐 Live demo: https://copilotfortrades.com/
+> 📹 5-minute walkthrough: https://www.loom.com/share/1ead7162412140bea1f46988af675adf
 
 ---
 
