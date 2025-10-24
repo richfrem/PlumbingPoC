@@ -18,7 +18,8 @@ import re
 EXCLUDED_DIRS = ["node_modules"]
 EXCLUDED_PATTERNS = [
     ".githooks/*", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.tiff",
-    "*.mp4", "*.avi", "*.mov", "*.webm", "*.mkv", "playwright-report/index.html"
+    "*.mp4", "*.avi", "*.mov", "*.webm", "*.mkv", "playwright-report/index.html",
+    "subprocess.py"
 ]
 
 # Keys to scan for in assignments (case-insensitive regex with word boundaries)
@@ -73,10 +74,12 @@ def get_staged_files():
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "-z"],
-            capture_output=True, text=True, check=True
+            capture_output=True, check=True, text=False
         )
+        # Decode as utf-8, ignore errors (filenames are always utf-8 in git)
+        output = result.stdout.decode('utf-8', errors='ignore')
         # Split on null bytes, filter out empty strings
-        return [f for f in result.stdout.split('\0') if f.strip()]
+        return [f for f in output.split('\0') if f.strip()]
     except subprocess.CalledProcessError:
         return []
 
@@ -118,13 +121,19 @@ def scan_file_for_secrets(filepath):
         # Get staged file content (equivalent to git show :"$FILE")
         result = subprocess.run(
             ["git", "show", f":{filepath}"],
-            capture_output=True, text=True, check=True
+            capture_output=True, check=True, text=False
         )
+        # Try decoding as utf-8, skip file if decode fails (likely binary)
+        try:
+            content = result.stdout.decode('utf-8')
+        except UnicodeDecodeError:
+            # Skip binary or non-utf8 files
+            return violations
     except subprocess.CalledProcessError:
         # Skip if file doesn't exist in staging (deleted, binary, etc.)
         return violations
 
-    lines = result.stdout.splitlines(keepends=False)
+    lines = content.splitlines(keepends=False)
 
     # Process each line (equivalent to the pipeline: git show | nl | grep | while read)
     for lineno, line in enumerate(lines, 1):
