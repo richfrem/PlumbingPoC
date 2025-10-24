@@ -16,8 +16,8 @@ except Exception:
 EMAIL_REGEX = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
 PHONE_REGEX = re.compile(r"(\+?\d{1,2}[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}")
 POSTAL_REGEX = re.compile(r"\b[ABCEGHJ-NPRSTVXYabceghj-nprstvxy]\d[ABCEGHJ-NPRSTV-Zabceghj-nprstv-z][ -]?\d[ABCEGHJ-NPRSTV-Zabceghj-nprstv-z]\d\b")
-# Address regex: matches street number, street, city, province/state (simple, not perfect)
-ADDRESS_REGEX = re.compile(r"\b\d{1,5}\s+([A-Za-z0-9'.#\-]+\s+){1,5}(Ave|Avenue|St|Street|Rd|Road|Blvd|Boulevard|Dr|Drive|Way|Lane|Ln|Court|Ct|Circle|Cres|Crescent|Pl|Place|Terrace|Terr|Trail|Trl|Parkway|Pkwy|Highway|Hwy|#\d+|Unit|Suite|Apt|Apartment)?[\s,]+[A-Za-z .'-]+,[\s]*[A-Z]{2,3}\b", re.IGNORECASE)
+# Improved address regex: matches uppercase, lowercase, multi-word, and common address patterns
+ADDRESS_REGEX = re.compile(r"\b\d{1,5}\s+[A-Za-z0-9'.#\-\s]+,\s*[A-Za-z .'-]+,?\s*[A-Z]{2,3}\b", re.IGNORECASE)
 # Add a simple name list for your case
 NAME_LIST = ["richard fremmerlid"]
 
@@ -39,20 +39,50 @@ def is_pii(word):
 
 def redact_text(img, text, boxes):
     draw = ImageDraw.Draw(img)
+    header_keywords = ["custom info", "customer name", "service address"]
+    label_keywords = ["name:", "address:", "from:", "email:", "phone:"]
+    header_indices = {}
+    header_rows = set()
+    # First pass: find header indices and rows
+    for i, word in enumerate(text):
+        w_lower = word.lower().strip()
+        for header in header_keywords:
+            if header in w_lower:
+                x, y, w, h = boxes[i]
+                header_indices[header] = x
+                header_rows.add(y)
+    # Second pass: redact
+    redact_next = False
     for i, word in enumerate(text):
         if not word.strip():
+            redact_next = False
             continue
+        w_lower = word.lower().strip()
+        x, y, w, h = boxes[i]
         # Redact by regex
         if is_pii(word):
-            x, y, w, h = boxes[i]
             draw.rectangle([x, y, x + w, y + h], fill="black")
+            redact_next = False
+            continue
         # Redact by spaCy NER (names, addresses)
-        elif SPACY_ENABLED:
+        if SPACY_ENABLED:
             doc = nlp(word)
             for ent in doc.ents:
                 if ent.label_ in ["PERSON", "GPE", "ORG", "LOC"]:
-                    x, y, w, h = boxes[i]
                     draw.rectangle([x, y, x + w, y + h], fill="black")
+                    redact_next = False
+                    break
+        # Aggressively redact all values in rows under sensitive headers
+        for header, header_x in header_indices.items():
+            if y > min(header_rows) and abs(x - header_x) < max(30, w):
+                draw.rectangle([x, y, x + w, y + h], fill="black")
+                redact_next = False
+        # Redact any value following a sensitive label (on same or next word)
+        if redact_next:
+            draw.rectangle([x, y, x + w, y + h], fill="black")
+            redact_next = False
+        if any(label in w_lower for label in label_keywords):
+            redact_next = True
     return img
 
 SCREENSHOTS_DIR = "docs/screenshots/"
