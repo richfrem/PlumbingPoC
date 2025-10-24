@@ -35,3 +35,11 @@ tests/e2e/debug/
 # Local Netlify folder
 .netlify
 .secrets.baseline
+# Ignore ConsultantPlanning and Tasks folders in docs
+docs/ConsultantPlanning/
+docs/Tasks/
+docs/screenshots/
+playwright-report/
+test-results/
+capture_code_snapshot.js
+all_markdown_and_code_snapshot_llm_distilled.txt
