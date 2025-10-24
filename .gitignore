@@ -38,11 +38,11 @@ tests/e2e/debug/
 # Ignore ConsultantPlanning and Tasks folders in docs
 docs/ConsultantPlanning/
 docs/Tasks/
+
+code_snapshot.txt
 playwright-report/
 test-results/
 capture_code_snapshot.js
 all_markdown_and_code_snapshot_llm_distilled.txt
-# Ignore redaction scripts
-redact_personal_info.py
 docs/screenshots_redacted/
-docs/screenshots/
+redact_personal_info.py
